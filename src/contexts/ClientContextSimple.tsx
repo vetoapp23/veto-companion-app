@@ -318,3 +318,5 @@ interface ClientContextType {
   accountingEntries: AccountingEntry[];
   presetEntries: PresetEntry[];
   addClient: (clientData: Omit<Client, 'id' | 'pets' | 'lastVisit' | 'totalVisits'>) => void;
+}
+

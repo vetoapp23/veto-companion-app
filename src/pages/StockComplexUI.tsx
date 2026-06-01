@@ -30,8 +30,6 @@ const categoryConfig = {
   equipment: { label: 'Équipement', color: 'bg-purple-100 text-purple-800', icon: '🔧' },
   supplement: { label: 'Suppléments', color: 'bg-yellow-100 text-yellow-800', icon: '🧪' }
 };
-  supplement: { label: 'Suppléments', color: 'bg-yellow-100 text-yellow-800', icon: '🧪' }
-};
 
 // Unités disponibles
 const units = [
