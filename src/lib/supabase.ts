@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://pkcsgysdwnpisumshlwy.supabase.co'
+const supabasePublishableKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InBrY3NneXNkd25waXN1bXNobHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDA3MTAsImV4cCI6MjA5NTkxNjcxMH0.43sdKoNAqM7mEd_qF-8INmC0Azh-4_TbK7cSe91EppU'
 
 if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error('Missing Supabase environment variables')
