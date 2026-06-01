@@ -244,7 +244,7 @@ export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${import.meta.env.VITE_APP_URL}/dashboard`
+      redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/dashboard`
     }
   })
 
@@ -254,7 +254,7 @@ export const signInWithGoogle = async () => {
 
 export const resetPassword = async (email: string) => {
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${import.meta.env.VITE_APP_URL}/reset-password`
+    redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/reset-password`
   })
 
   if (error) throw error
