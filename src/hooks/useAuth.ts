@@ -193,25 +193,21 @@ export const useRefreshProfile = () => {
   })
 }
 
-// Google login mutation
+// Google login mutation (via Lovable Cloud managed OAuth)
+import { lovable } from '../integrations/lovable'
+
 export const useGoogleLogin = () => {
   return useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${import.meta.env.VITE_APP_URL}/dashboard`
-        }
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: `${window.location.origin}/dashboard`,
       })
-
-      if (error) {
-        throw error
-      }
-
-      return data
+      if (result.error) throw result.error
+      return result
     }
   })
 }
+
 
 // Reset password mutation
 export const useResetPassword = () => {
