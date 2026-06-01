@@ -193,17 +193,10 @@ export const useRefreshProfile = () => {
   })
 }
 
-// Google login mutation (via Lovable Cloud managed OAuth)
-import { lovable } from '../integrations/lovable'
-
 export const useGoogleLogin = () => {
   return useMutation({
     mutationFn: async () => {
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: `${window.location.origin}/dashboard`,
-      })
-      if (result.error) throw result.error
-      return result
+      return signInWithGoogle()
     }
   })
 }
