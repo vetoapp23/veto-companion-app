@@ -49,6 +49,8 @@ export function MobileBottomNav() {
 
   const visibleMore = moreItems.filter((i) => !i.adminOnly || isAdmin);
 
+  if (!user) return null;
+
   return (
     <>
       <nav
