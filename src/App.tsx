@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { VetNavigation } from "@/components/VetNavigation";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ClientProvider } from "@/contexts/ClientContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -228,6 +229,7 @@ const App = () => (
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                       <Route path="*" element={<NotFound />} />
                     </Routes>
+                    <MobileBottomNav />
                   </div>
                 </BrowserRouter>
               </ThemeProvider>
