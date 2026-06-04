@@ -182,45 +182,12 @@ export function VetNavigation() {
             <LogoutButton />
           </div>
 
-          {/* Menu mobile */}
-          <div className="lg:hidden flex items-center gap-2">
-            <div className="sm:hidden">
-              <ThemeToggle />
-            </div>
+          {/* Mobile : juste theme + avatar (la navigation est dans le bottom nav) */}
+          <div className="lg:hidden flex items-center gap-1">
+            <ThemeToggle />
             <LogoutButton />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="gap-1 p-2"
-            >
-              {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-            </Button>
           </div>
         </div>
-
-        {/* Menu mobile déroulant */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden mt-2 pt-2 border-t">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-              {allNavItems.map((item) => (
-                <Button
-                  key={item.path}
-                  variant={location.pathname === item.path ? "default" : "ghost"}
-                  size="sm"
-                  className="gap-2 justify-start text-xs sm:text-sm"
-                  asChild
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Link to={item.path}>
-                    <item.icon className="h-3 w-3 sm:h-4 sm:w-4" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );
