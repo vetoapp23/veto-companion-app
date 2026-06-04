@@ -108,8 +108,8 @@ export function VetNavigation() {
   console.log(`📊 Filtered Navigation: ${filteredPrimaryNavItems.length} primary, ${filteredSecondaryNavItems.length} secondary, ${allNavItems.length} total`);
 
   return (
-    <nav className="bg-card border-b shadow-card">
-      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
+    <nav className="bg-card/95 backdrop-blur border-b shadow-card sticky top-0 z-30">
+      <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
         <div className="flex items-center justify-between">
           {/* Logo et Toggle Thème */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
