@@ -286,21 +286,9 @@
     overflow-y: auto !important;
   }
 
-  /* Multi-column grids collapse to single column unless explicitly mobile-friendly */
-  .grid.grid-cols-2:not([class*="sm:grid-cols-2"]):not([class*="md:grid-cols-2"]) {
-    grid-template-columns: 1fr 1fr;
-  }
-  .grid.grid-cols-3,
-  .grid.grid-cols-4,
-  .grid.grid-cols-5,
-  .grid.grid-cols-6 {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-  .md\:grid-cols-2.grid-cols-1,
-  .lg\:grid-cols-3.grid-cols-1,
-  .lg\:grid-cols-4.grid-cols-1 {
-    grid-template-columns: 1fr;
-  }
+  /* Leave grid layouts to each component — Tailwind's own sm:/md:/lg: variants
+     already handle responsive breakpoints. Forcing a global collapse breaks
+     intentional mobile grids (tabs, stats, action grids). */
 
   /* Flex action-bars (toolbar + buttons) wrap on small screens */
   .flex.items-center.justify-between:not(.flex-nowrap),
