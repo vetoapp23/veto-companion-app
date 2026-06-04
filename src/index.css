@@ -222,3 +222,136 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================
+   MOBILE RESPONSIVE LAYER
+   Applies to all existing pages (Consultations,
+   Vaccinations, Antiparasites, Historiques,
+   Fermes, Stock, Comptabilité, Équipe, Paramètres…)
+   without rewriting each page.
+   ============================================ */
+@media (max-width: 1023px) {
+  /* Leave space for the fixed mobile bottom nav (h-16 + safe area) */
+  main,
+  .container,
+  [class*="container"] {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Tighter container padding on phones */
+  .container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Force tables inside cards to scroll horizontally instead of overflowing */
+  .card table,
+  [class*="rounded-lg"] table,
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  table thead,
+  table tbody,
+  table tr {
+    display: table;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  /* Tabs lists with many items: scroll horizontally instead of squishing */
+  [role="tablist"] {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    justify-content: flex-start !important;
+  }
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+  [role="tab"] {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Dialog / Modal: use almost full viewport width with margin */
+  [role="dialog"][data-state="open"] {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100vh - 2rem) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Multi-column grids collapse to single column unless explicitly mobile-friendly */
+  .grid.grid-cols-2:not([class*="sm:grid-cols-2"]):not([class*="md:grid-cols-2"]) {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grid.grid-cols-3,
+  .grid.grid-cols-4,
+  .grid.grid-cols-5,
+  .grid.grid-cols-6 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  .md\:grid-cols-2.grid-cols-1,
+  .lg\:grid-cols-3.grid-cols-1,
+  .lg\:grid-cols-4.grid-cols-1 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Flex action-bars (toolbar + buttons) wrap on small screens */
+  .flex.items-center.justify-between:not(.flex-nowrap),
+  .flex.justify-between:not(.flex-nowrap) {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Buttons in toolbars don't shrink awkwardly */
+  button {
+    min-height: 2.25rem;
+  }
+
+  /* Prevent horizontal page overflow caused by long words / urls */
+  body,
+  main,
+  .container {
+    overflow-x: hidden;
+  }
+
+  /* Card headers: smaller padding on mobile */
+  .card > [class*="CardHeader"],
+  [class*="card"] > [class*="header"] {
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* Typography: oversized titles scale down */
+  h1.text-4xl,
+  h1.text-5xl,
+  .text-4xl,
+  .text-5xl {
+    font-size: 1.75rem !important;
+    line-height: 2.25rem !important;
+  }
+  h2.text-3xl,
+  .text-3xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+
+  /* Inputs and selects full-width by default in forms */
+  form .grid > * > input,
+  form .grid > * > [role="combobox"] {
+    width: 100%;
+  }
+}
+
+/* Small phones: extra-tight padding */
+@media (max-width: 480px) {
+  .container {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+}
