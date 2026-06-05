@@ -35,9 +35,9 @@ const moreItems = [
   { icon: Syringe, label: "Vaccinations", path: "/vaccinations" },
   { icon: Bug, label: "Antiparasites", path: "/antiparasites" },
   { icon: BarChart3, label: "Historiques", path: "/history" },
-  { icon: Building2, label: "Fermes", path: "/farms" },
-  { icon: Package, label: "Stock", path: "/stock" },
-  { icon: Euro, label: "Comptabilité", path: "/accounting", adminOnly: true },
+  { icon: Building2, label: "Fermes", path: "/farms", planFeature: "farm" as const },
+  { icon: Package, label: "Stock", path: "/stock", planFeature: "stock" as const },
+  { icon: Euro, label: "Comptabilité", path: "/accounting", adminOnly: true, planFeature: "accounting" as const },
   { icon: UsersIcon, label: "Équipe", path: "/admin/team", adminOnly: true },
   { icon: Cog, label: "Paramètres", path: "/settings" },
 ];
@@ -45,10 +45,19 @@ const moreItems = [
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const { user } = useAuth();
+  const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
   const [open, setOpen] = useState(false);
   const isAdmin = user?.profile?.role === "admin";
 
-  const visibleMore = moreItems.filter((i) => !i.adminOnly || isAdmin);
+  const planAllows = (f?: "farm" | "accounting" | "stock") =>
+    !f ||
+    (f === "farm" && hasFarmManagement) ||
+    (f === "accounting" && hasAccounting) ||
+    (f === "stock" && hasStock);
+
+  const visibleMore = moreItems.filter(
+    (i: any) => (!i.adminOnly || isAdmin) && planAllows(i.planFeature)
+  );
 
   if (!user) return null;
 
