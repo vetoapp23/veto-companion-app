@@ -248,6 +248,42 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          setting_category: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          setting_category: string
+          setting_key: string
+          setting_value?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          setting_category?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           animal_id: string | null

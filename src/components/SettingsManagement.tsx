@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Settings, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Settings, Save, X, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  useAppSettingsByCategory, 
-  useUpdateAppSetting, 
+import {
+  useAppSettings,
+  useAppSettingsByCategory,
+  useUpdateAppSetting,
   useDeleteAppSetting,
   useInitializeDefaultSettings,
   DEFAULT_SETTINGS
@@ -44,10 +45,30 @@ export const SettingsManagement = () => {
   const [newSetting, setNewSetting] = useState({ key: '', description: '', value: '' });
 
   const { toast } = useToast();
+  const { data: allSettings } = useAppSettings();
   const { data: categorySettings, isLoading } = useAppSettingsByCategory(selectedCategory);
   const updateSettingMutation = useUpdateAppSetting();
   const deleteSettingMutation = useDeleteAppSetting();
   const { initializeDefaults, isLoading: isInitializing } = useInitializeDefaultSettings();
+  const autoInitRef = useRef(false);
+
+  // Auto-load default settings on first visit if the user has none yet
+  useEffect(() => {
+    if (autoInitRef.current) return;
+    if (allSettings && allSettings.length === 0 && !isInitializing) {
+      autoInitRef.current = true;
+      initializeDefaults().then(() => {
+        toast({
+          title: "Paramètres prêts",
+          description: "Les valeurs par défaut ont été chargées. Vous pouvez les modifier ou les restaurer à tout moment.",
+        });
+      }).catch(() => {
+        autoInitRef.current = false;
+      });
+    } else if (allSettings && allSettings.length > 0) {
+      autoInitRef.current = true;
+    }
+  }, [allSettings, isInitializing, initializeDefaults, toast]);
 
   useEffect(() => {
     if (categorySettings) {
@@ -60,16 +81,19 @@ export const SettingsManagement = () => {
   }, [categorySettings]);
 
   const handleInitializeDefaults = async () => {
+    if (!confirm("Restaurer toutes les valeurs par défaut ? Vos personnalisations actuelles seront écrasées.")) {
+      return;
+    }
     try {
       await initializeDefaults();
       toast({
-        title: "Paramètres initialisés",
-        description: "Les paramètres par défaut ont été chargés avec succès",
+        title: "Valeurs restaurées",
+        description: "Tous les paramètres ont été réinitialisés aux valeurs par défaut",
       });
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Impossible d'initialiser les paramètres par défaut",
+        description: "Impossible de restaurer les paramètres par défaut",
         variant: "destructive"
       });
     }
@@ -310,8 +334,9 @@ export const SettingsManagement = () => {
             Configurez les valeurs utilisées dans toute l'application
           </p>
         </div>
-        <Button onClick={handleInitializeDefaults} disabled={isInitializing}>
-          {isInitializing ? "Initialisation..." : "Charger les valeurs par défaut"}
+        <Button onClick={handleInitializeDefaults} disabled={isInitializing} variant="outline">
+          <RotateCcw className="h-4 w-4 mr-2" />
+          {isInitializing ? "Restauration..." : "Restaurer les valeurs par défaut"}
         </Button>
       </div>
 
