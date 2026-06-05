@@ -23,6 +23,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 // Navigation principale (accessible to all authenticated users - admins and assistants)
 const primaryNavItems = [
