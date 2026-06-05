@@ -7,7 +7,7 @@ export function SuperAdminRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   return (
     <ProtectedRoute>
-      {user?.profile?.role === "super_admin" ? <>{children}</> : <Navigate to="/dashboard" replace />}
+      {(user?.profile?.role as string) === "super_admin" ? <>{children}</> : <Navigate to="/dashboard" replace />}
     </ProtectedRoute>
   );
 }
