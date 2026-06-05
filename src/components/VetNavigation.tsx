@@ -23,6 +23,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 // Navigation principale (accessible to all authenticated users - admins and assistants)
 const primaryNavItems = [
@@ -38,9 +39,9 @@ const primaryNavItems = [
 
 // Navigation secondaire (restricted items - farms, stock, accounting = admin only)
 const secondaryNavItems = [
-  { icon: Building2, label: "Fermes", path: "/farms", permission: null },
-  { icon: Package, label: "Stock", path: "/stock", permission: null },
-  { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true },
+  { icon: Building2, label: "Fermes", path: "/farms", permission: null, planFeature: "farm" as const },
+  { icon: Package, label: "Stock", path: "/stock", permission: null, planFeature: "stock" as const },
+  { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true, planFeature: "accounting" as const },
   { icon: Users, label: "Équipe", path: "/admin/team", permission: null, adminOnly: true },
   { icon: Cog, label: "Paramètres", path: "/settings", permission: null }
 ];
@@ -68,6 +69,14 @@ export function VetNavigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
+  const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
+  const planAllows = (feature?: "farm" | "accounting" | "stock") => {
+    if (!feature) return true;
+    if (feature === "farm") return hasFarmManagement;
+    if (feature === "accounting") return hasAccounting;
+    if (feature === "stock") return hasStock;
+    return true;
+  };
 
   // Debug logging for permissions
   console.log('🔍 Navigation Debug - Full User Object:', user);
@@ -96,8 +105,8 @@ export function VetNavigation() {
   console.log('✅ Filtered Primary Items:', filteredPrimaryNavItems.map(i => i.label));
   
   const filteredSecondaryNavItems = secondaryNavItems.filter(item => {
-    const allowed = hasPermission(user, item);
-    console.log(`  SECONDARY - ${item.label}: ${allowed ? '✅' : '❌'} (permission: ${item.permission || 'none'}, adminOnly: ${item.adminOnly || false})`);
+    const allowed = hasPermission(user, item) && planAllows((item as any).planFeature);
+    console.log(`  SECONDARY - ${item.label}: ${allowed ? '✅' : '❌'} (permission: ${item.permission || 'none'}, adminOnly: ${item.adminOnly || false}, planFeature: ${(item as any).planFeature || 'none'})`);
     return allowed;
   });
   

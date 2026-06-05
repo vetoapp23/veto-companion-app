@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LoginForm } from "@/components/LoginForm";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
@@ -123,7 +124,7 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <VetNavigation />
-                            <Farm />
+                            <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
                           </ProtectedRoute>
                         }
                       />
@@ -150,7 +151,7 @@ const App = () => (
                         element={
                           <AdminRoute>
                             <VetNavigation />
-                            <AccountingNew />
+                            <PlanFeatureRoute feature="accounting"><AccountingNew /></PlanFeatureRoute>
                           </AdminRoute>
                         }
                       />
@@ -159,7 +160,7 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <VetNavigation />
-                            <Farm />
+                            <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
                           </ProtectedRoute>
                         }
                       />
@@ -168,7 +169,7 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <VetNavigation />
-                            <Stock />
+                            <PlanFeatureRoute feature="stock"><Stock /></PlanFeatureRoute>
                           </ProtectedRoute>
                         }
                       />

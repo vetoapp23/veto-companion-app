@@ -36,9 +36,14 @@ export function usePlanLimits() {
   });
 
   const quota = query.data;
+  const planCode = quota?.plan_code ?? "free";
+  const FARM_PLANS = ["pro_plus", "duo", "clinic"];
+  const ACCOUNTING_PLANS = ["pro_plus", "duo", "clinic"];
+  const STOCK_PLANS = ["pro", "pro_plus", "duo", "clinic"];
 
   return {
     quota,
+    planCode,
     isLoading: query.isLoading,
     refetch: query.refetch,
     canUpload: (additionalBytes: number) => {
@@ -46,8 +51,11 @@ export function usePlanLimits() {
       const projectedMb = quota.storage_used_mb + additionalBytes / (1024 * 1024);
       return projectedMb <= quota.storage_total_mb;
     },
-    isFree: quota?.plan_code === "free",
-    isPaid: quota ? quota.plan_code !== "free" : false,
+    isFree: planCode === "free",
+    isPaid: planCode !== "free",
+    hasFarmManagement: FARM_PLANS.includes(planCode),
+    hasAccounting: ACCOUNTING_PLANS.includes(planCode),
+    hasStock: STOCK_PLANS.includes(planCode),
     storageWarning: quota ? quota.percent_used >= 80 : false,
     storageBlocked: quota ? quota.percent_used >= 100 : false,
   };
