@@ -124,7 +124,7 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <VetNavigation />
-                            <Farm />
+                            <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
                           </ProtectedRoute>
                         }
                       />
@@ -151,7 +151,7 @@ const App = () => (
                         element={
                           <AdminRoute>
                             <VetNavigation />
-                            <AccountingNew />
+                            <PlanFeatureRoute feature="accounting"><AccountingNew /></PlanFeatureRoute>
                           </AdminRoute>
                         }
                       />
@@ -160,7 +160,7 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <VetNavigation />
-                            <Farm />
+                            <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
                           </ProtectedRoute>
                         }
                       />
@@ -169,7 +169,7 @@ const App = () => (
                         element={
                           <ProtectedRoute>
                             <VetNavigation />
-                            <Stock />
+                            <PlanFeatureRoute feature="stock"><Stock /></PlanFeatureRoute>
                           </ProtectedRoute>
                         }
                       />
