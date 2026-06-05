@@ -2,6 +2,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { Prescription } from '@/contexts/ClientContext';
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 
 interface InvoicePrescriptionPrintProps {
   prescription: Prescription;
@@ -9,6 +11,7 @@ interface InvoicePrescriptionPrintProps {
 
 export function InvoicePrescriptionPrint({ prescription }: InvoicePrescriptionPrintProps) {
   const { settings } = useSettings();
+  const { isFree } = usePlanLimits();
   const { logo, clinicName, address, phone, email, website, currency } = settings;
 
   // Calcul des totaux
@@ -112,9 +115,11 @@ export function InvoicePrescriptionPrint({ prescription }: InvoicePrescriptionPr
               body { margin: 0; }
               .print-hidden { display: none !important; }
             }
+            ${watermarkStyle}
           </style>
         </head>
         <body>
+          ${buildWatermarkHtml(isFree)}
           <div class="header">
             ${logo ? `<img src="${logo}" alt="Logo clinique" style="height:60px;width:60px;object-fit:contain;"/>` : '<div style="width:60px;"></div>'}
             <div class="clinic-info">

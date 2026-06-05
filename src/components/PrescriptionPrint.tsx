@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { Prescription } from "@/contexts/ClientContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 // Clé localStorage pour vétérinaires
 const VETS_KEY = 'vetpro-veterinarians';
 
@@ -11,6 +13,7 @@ interface PrescriptionPrintProps {
 
 export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
   const { settings } = useSettings();
+  const { isFree } = usePlanLimits();
   const vets = JSON.parse(localStorage.getItem(VETS_KEY) || '[]');
   const prescriber = prescription.prescribedBy;
   const handlePrint = () => {
@@ -91,9 +94,11 @@ export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
               text-align: right;
               margin-top: 20px;
             }
+            ${watermarkStyle}
           </style>
         </head>
         <body>
+          ${buildWatermarkHtml(isFree)}
           <div class="header">
             ${settings.logo ? `<img src="${settings.logo}" alt="Logo clinique" style="height:60px;margin-bottom:10px;"/>` : ''}
             <h1>PRESCRIPTION MÉDICALE</h1>

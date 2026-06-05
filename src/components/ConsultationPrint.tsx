@@ -2,6 +2,8 @@ import { Consultation } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 
 interface ConsultationPrintProps {
   consultation: Consultation;
@@ -9,6 +11,7 @@ interface ConsultationPrintProps {
 
 export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
   const { settings } = useSettings();
+  const { isFree } = usePlanLimits();
   
   // Transform dynamic database consultation to expected format
   const transformConsultation = (dbConsultation: any) => {
@@ -120,9 +123,11 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
               body { margin: 0; }
               .no-print { display: none; }
             }
+            ${watermarkStyle}
           </style>
         </head>
         <body>
+          ${buildWatermarkHtml(isFree)}
           <div class="header">
             <div class="clinic-name">${settings.clinicName || 'VetPro CRM'}</div>
             <div class="consultation-title">Rapport de Consultation</div>

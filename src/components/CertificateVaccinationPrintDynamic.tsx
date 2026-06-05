@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAnimals, useClients, useVaccinations } from '@/hooks/useDatabase';
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -12,6 +14,7 @@ interface CertificateProps {
 
 export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProps) {
   const { settings } = useSettings();
+  const { isFree } = usePlanLimits();
   const { data: animals } = useAnimals();
   const { data: clients } = useClients();
   const { data: vaccinations } = useVaccinations();
@@ -223,9 +226,11 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                 body { margin: 0; }
                 .no-print { display: none; }
               }
+              ${watermarkStyle}
             </style>
           </head>
           <body>
+            ${buildWatermarkHtml(isFree)}
             <div class="header">
               ${settings.logo ? `<img src="${settings.logo}" alt="Logo clinique" />` : ''}
               <h1>CERTIFICAT DE VACCINATION</h1>

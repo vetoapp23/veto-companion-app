@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { useAnimalSpecies, useAnimalBreeds, useAnimalColors } from "@/hooks/useAppSettings";
 import { useClients, useCreateAnimal, useAnimals } from "@/hooks/useDatabase";
+import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { CreateAnimalData } from "@/lib/database";
 
@@ -186,8 +187,12 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
     }
   };
 
+  const { enforce } = useQuotaCheck();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!enforce("animals")) return;
+    
     
     // Validate form
     const errors = validateForm();

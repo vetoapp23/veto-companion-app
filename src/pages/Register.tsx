@@ -187,7 +187,7 @@ const Register = () => {
           <RadioGroup
             value={selectedPlan}
             onValueChange={setSelectedPlan}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
           >
             {plans.map((plan) => {
               const price = plan.prices?.[cycle]?.[currency] ?? 0;
