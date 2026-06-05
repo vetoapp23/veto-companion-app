@@ -430,6 +430,7 @@ export function LoginForm() {
           )}
         </CardContent>
       </Card>
+      <DemoLoginPanel />
     </div>
   );
 }
