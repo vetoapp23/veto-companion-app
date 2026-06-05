@@ -43,6 +43,7 @@ const secondaryNavItems = [
   { icon: Package, label: "Stock", path: "/stock", permission: null, planFeature: "stock" as const },
   { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true, planFeature: "accounting" as const },
   { icon: Users, label: "Équipe", path: "/admin/team", permission: null, adminOnly: true },
+  { icon: Shield, label: "Super Admin", path: "/super-admin", permission: null, superAdminOnly: true },
   { icon: Cog, label: "Paramètres", path: "/settings", permission: null }
 ];
 
