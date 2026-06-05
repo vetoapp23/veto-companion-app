@@ -135,7 +135,7 @@ export default function Pricing() {
           {loading ? (
             <div className="text-center text-muted-foreground py-12">Chargement des formules…</div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-7xl mx-auto">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 max-w-7xl mx-auto">
               {plans.map((plan) => {
                 const price = plan.prices?.[cycle]?.[currency] ?? 0;
                 const isFree = plan.code === "free";
