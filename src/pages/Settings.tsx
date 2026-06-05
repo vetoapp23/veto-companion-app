@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserProfile } from "@/components/UserProfile";
 import { User } from "lucide-react";
 import { SettingsManagement } from "@/components/SettingsManagement";
+import { StorageUsageCard } from "@/components/StorageUsageCard";
 import { 
   useVeterinarianSettings,
   useUpdateVeterinarianSettings,
@@ -360,6 +361,8 @@ export default function Settings() {
           ) : (
             <div className="grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-8">
+                {/* Subscription & storage usage */}
+                <StorageUsageCard />
                 {/* Clinic Settings */}
                 <Card>
                   <CardHeader>
