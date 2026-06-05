@@ -1349,6 +1349,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       record_storage_change: {
         Args: {
           p_bytes_delta: number
@@ -1359,7 +1360,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "assistant"
+      app_role: "admin" | "assistant" | "super_admin"
       user_status: "pending" | "approved" | "rejected" | "suspended"
     }
     CompositeTypes: {
@@ -1488,7 +1489,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "assistant"],
+      app_role: ["admin", "assistant", "super_admin"],
       user_status: ["pending", "approved", "rejected", "suspended"],
     },
   },

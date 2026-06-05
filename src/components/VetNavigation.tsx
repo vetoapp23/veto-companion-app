@@ -43,25 +43,24 @@ const secondaryNavItems = [
   { icon: Package, label: "Stock", path: "/stock", permission: null, planFeature: "stock" as const },
   { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true, planFeature: "accounting" as const },
   { icon: Users, label: "Équipe", path: "/admin/team", permission: null, adminOnly: true },
+  { icon: Shield, label: "Super Admin", path: "/super-admin", permission: null, superAdminOnly: true },
   { icon: Cog, label: "Paramètres", path: "/settings", permission: null }
 ];
 
 // Function to check if user has permission for a nav item
 const hasPermission = (user: any, item: any) => {
-  // Admin has access to everything
+  const isSuper = (user?.profile?.role as string) === 'super_admin';
+  // Super-admin-only items
+  if (item.superAdminOnly) return isSuper;
+  // Super admin sees everything else too
+  if (isSuper) return true;
+  // Admin has access to everything (except super-admin-only handled above)
   if (user?.profile?.role === 'admin') return true;
-  
   // Admin-only items - only admins can access
   if (item.adminOnly && user?.profile?.role !== 'admin') return false;
-  
-  // Items without permission requirements are accessible to all authenticated users
+  // Items without permission requirements
   if (!item.permission) return true;
-  
-  // For items with permission requirements, check if user has that permission
-  // If permissions object doesn't exist, deny access (don't grant access by default)
   if (!user?.profile?.permissions) return false;
-  
-  // Check specific permission - must be explicitly set to true
   return user?.profile?.permissions[item.permission] === true;
 };
 

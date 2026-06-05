@@ -13,6 +13,8 @@ import { LoginForm } from "@/components/LoginForm";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
+import { SuperAdminRoute } from "@/components/SuperAdminRoute";
+import SuperAdmin from "@/pages/SuperAdmin";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
@@ -225,6 +227,16 @@ const App = () => (
                             <VetNavigation />
                             <AuthSettings />
                           </ProtectedRoute>
+                        }
+                      />
+
+                      <Route
+                        path="/super-admin"
+                        element={
+                          <SuperAdminRoute>
+                            <VetNavigation />
+                            <SuperAdmin />
+                          </SuperAdminRoute>
                         }
                       />
                       <Route path="/reset-password" element={<ResetPassword />} />
