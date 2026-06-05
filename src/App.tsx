@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LoginForm } from "@/components/LoginForm";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
+import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
