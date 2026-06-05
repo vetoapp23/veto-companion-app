@@ -334,8 +334,9 @@ export const SettingsManagement = () => {
             Configurez les valeurs utilisées dans toute l'application
           </p>
         </div>
-        <Button onClick={handleInitializeDefaults} disabled={isInitializing}>
-          {isInitializing ? "Initialisation..." : "Charger les valeurs par défaut"}
+        <Button onClick={handleInitializeDefaults} disabled={isInitializing} variant="outline">
+          <RotateCcw className="h-4 w-4 mr-2" />
+          {isInitializing ? "Restauration..." : "Restaurer les valeurs par défaut"}
         </Button>
       </div>
 
