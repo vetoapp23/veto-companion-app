@@ -20,6 +20,7 @@ import {
   Users as UsersIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { cn } from "@/lib/utils";
 
 const mainTabs = [
