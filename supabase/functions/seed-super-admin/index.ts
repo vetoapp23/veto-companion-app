@@ -8,7 +8,7 @@ const cors = {
 };
 
 const EMAIL = "vetoapp23@gmail.com";
-const PASSWORD = "M@roc2025";
+const PASSWORD = "V3t0App!Adm1n#2026$Sec";
 const FULL_NAME = "Super Admin";
 
 Deno.serve(async (req) => {
