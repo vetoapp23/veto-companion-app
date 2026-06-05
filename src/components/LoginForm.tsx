@@ -9,6 +9,7 @@ import { Heart, Loader2, Eye, EyeOff, ArrowLeft, Building2, UserPlus } from "luc
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleLogin, useResetPassword, useLogin } from '@/hooks/useAuth';
+import { DemoLoginPanel } from '@/components/DemoLoginPanel';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
