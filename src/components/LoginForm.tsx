@@ -9,6 +9,7 @@ import { Heart, Loader2, Eye, EyeOff, ArrowLeft, Building2, UserPlus } from "luc
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import { useGoogleLogin, useResetPassword, useLogin } from '@/hooks/useAuth';
+import { DemoLoginPanel } from '@/components/DemoLoginPanel';
 
 export function LoginForm() {
   const [email, setEmail] = useState('');
@@ -87,7 +88,7 @@ export function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4 py-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
@@ -429,6 +430,7 @@ export function LoginForm() {
           )}
         </CardContent>
       </Card>
+      <DemoLoginPanel />
     </div>
   );
 }
