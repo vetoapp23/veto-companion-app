@@ -3,6 +3,8 @@ import { type Consultation } from "@/hooks/useDatabase";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 
 interface ConsultationPrintProps {
   consultation: Consultation;
@@ -10,6 +12,7 @@ interface ConsultationPrintProps {
 
 export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
   const { settings } = useSettings();
+  const { isFree } = usePlanLimits();
   
   const handlePrint = () => {
     try {
@@ -116,9 +119,11 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
               .header { page-break-after: avoid; }
               @page { size: auto; margin: 10mm; }
             }
+            ${watermarkStyle}
           </style>
         </head>
         <body>
+          ${buildWatermarkHtml(isFree)}
           <div class="header">
             <h1>${settings.clinicName || 'Clinique Vétérinaire'}</h1>
             <div class="clinic-info">
