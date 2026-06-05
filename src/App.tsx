@@ -63,6 +63,7 @@ const App = () => (
                         }
                       />
                       <Route path="/register" element={<Register />} />
+                      <Route path="/pricing" element={<Pricing />} />
                       <Route
                         path="/dashboard"
                         element={
