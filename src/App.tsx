@@ -15,6 +15,7 @@ import { AdminRoute } from "@/components/AdminRoute";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
+import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Pets from "./pages/Pets";
