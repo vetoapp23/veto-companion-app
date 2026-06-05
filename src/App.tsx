@@ -13,6 +13,8 @@ import { LoginForm } from "@/components/LoginForm";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
+import { SuperAdminRoute } from "@/components/SuperAdminRoute";
+import SuperAdmin from "@/pages/SuperAdmin";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
