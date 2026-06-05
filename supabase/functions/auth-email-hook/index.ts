@@ -3,7 +3,7 @@
 import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/google_mail/gmail/v1'
-const FROM_NAME = 'Veto Companion App'
+const FROM_NAME = 'VetoCrm.com'
 const FROM_EMAIL = 'vetoapp23@gmail.com'
 
 function b64url(input: string): string {
@@ -79,7 +79,7 @@ function renderEmail(opts: {
     <p style="font-size:15px;line-height:1.6;color:#374151;">
       ${
         email_action_type === 'signup'
-          ? 'Merci de vous être inscrit sur Veto Companion App. Veuillez confirmer votre adresse email.'
+          ? 'Merci de vous être inscrit sur VetoCrm.com. Veuillez confirmer votre adresse email.'
           : email_action_type === 'recovery'
           ? 'Vous avez demandé à réinitialiser votre mot de passe.'
           : email_action_type === 'reauthentication'
@@ -91,7 +91,7 @@ function renderEmail(opts: {
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0;">
     <p style="font-size:12px;color:#9ca3af;">
       Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.<br>
-      — L'équipe Veto Companion App
+      — L'équipe VetoCrm.com
     </p>
   </div>
 </body></html>`

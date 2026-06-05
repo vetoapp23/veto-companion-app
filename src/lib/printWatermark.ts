@@ -3,7 +3,7 @@
  * À injecter dans le HTML d'impression : voir buildWatermarkHtml().
  */
 
-export const WATERMARK_TEXT = "VetPro · Plan Découverte";
+export const WATERMARK_TEXT = "VetoCrm.com · Plan Découverte";
 
 export const watermarkStyle = `
   .vp-watermark {
@@ -49,7 +49,7 @@ export function buildWatermarkHtml(show: boolean): string {
   if (!show) return "";
   return `
     <div class="vp-watermark"><span>${WATERMARK_TEXT}</span></div>
-    <div class="vp-watermark-footer">Document généré avec VetPro — Passez à un pack payant pour retirer ce filigrane</div>
+    <div class="vp-watermark-footer">Document généré avec VetoCrm.com — Passez à un pack payant pour retirer ce filigrane</div>
   `;
 }
 
