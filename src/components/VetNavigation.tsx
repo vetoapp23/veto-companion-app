@@ -39,9 +39,9 @@ const primaryNavItems = [
 
 // Navigation secondaire (restricted items - farms, stock, accounting = admin only)
 const secondaryNavItems = [
-  { icon: Building2, label: "Fermes", path: "/farms", permission: null },
-  { icon: Package, label: "Stock", path: "/stock", permission: null },
-  { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true },
+  { icon: Building2, label: "Fermes", path: "/farms", permission: null, planFeature: "farm" as const },
+  { icon: Package, label: "Stock", path: "/stock", permission: null, planFeature: "stock" as const },
+  { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true, planFeature: "accounting" as const },
   { icon: Users, label: "Équipe", path: "/admin/team", permission: null, adminOnly: true },
   { icon: Cog, label: "Paramètres", path: "/settings", permission: null }
 ];
