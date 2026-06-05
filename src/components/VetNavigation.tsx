@@ -69,6 +69,14 @@ export function VetNavigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
+  const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
+  const planAllows = (feature?: "farm" | "accounting" | "stock") => {
+    if (!feature) return true;
+    if (feature === "farm") return hasFarmManagement;
+    if (feature === "accounting") return hasAccounting;
+    if (feature === "stock") return hasStock;
+    return true;
+  };
 
   // Debug logging for permissions
   console.log('🔍 Navigation Debug - Full User Object:', user);
