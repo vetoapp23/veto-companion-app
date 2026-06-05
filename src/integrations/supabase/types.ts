@@ -657,6 +657,74 @@ export type Database = {
           },
         ]
       }
+      organization_subscriptions: {
+        Row: {
+          billing_cycle: string
+          cancel_at_period_end: boolean
+          created_at: string
+          currency: string
+          current_period_end: string | null
+          current_period_start: string
+          extra_users: number
+          id: string
+          organization_id: string
+          plan_code: string
+          status: string
+          storage_addon_mb: number
+          storage_quota_mb: number
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          currency?: string
+          current_period_end?: string | null
+          current_period_start?: string
+          extra_users?: number
+          id?: string
+          organization_id: string
+          plan_code?: string
+          status?: string
+          storage_addon_mb?: number
+          storage_quota_mb?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          currency?: string
+          current_period_end?: string | null
+          current_period_start?: string
+          extra_users?: number
+          id?: string
+          organization_id?: string
+          plan_code?: string
+          status?: string
+          storage_addon_mb?: number
+          storage_quota_mb?: number
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: string | null
@@ -957,6 +1025,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_plans: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          features: Json
+          id: string
+          is_active: boolean
+          is_highlighted: boolean
+          limits: Json
+          max_animals: number | null
+          max_clients: number | null
+          max_users: number
+          name: string
+          prices: Json
+          storage_mb: number
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_highlighted?: boolean
+          limits?: Json
+          max_animals?: number | null
+          max_clients?: number | null
+          max_users?: number
+          name: string
+          prices?: Json
+          storage_mb?: number
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_highlighted?: boolean
+          limits?: Json
+          max_animals?: number | null
+          max_clients?: number | null
+          max_users?: number
+          name?: string
+          prices?: Json
+          storage_mb?: number
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_profiles: {
         Row: {
