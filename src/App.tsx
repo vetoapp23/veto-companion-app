@@ -229,7 +229,6 @@ const App = () => (
                           </ProtectedRoute>
                         }
                       />
-                      <Route path="/reset-password" element={<ResetPassword />} />
 
                       <Route
                         path="/super-admin"
