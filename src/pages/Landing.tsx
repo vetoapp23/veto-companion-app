@@ -13,7 +13,10 @@ export default function Landing() {
             <Heart className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold">VetPro</span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4 items-center">
+            <Button variant="ghost" asChild>
+              <Link to="/pricing">Tarifs</Link>
+            </Button>
             <Button variant="ghost" asChild>
               <Link to="/login">Se connecter</Link>
             </Button>
