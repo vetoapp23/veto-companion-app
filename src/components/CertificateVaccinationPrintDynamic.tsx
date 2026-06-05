@@ -360,7 +360,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
 
             <div class="footer">
               <p>Certificat généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })}</p>
-              <p>VetPro - Système de Gestion Vétérinaire</p>
+              <p>VetoCrm.com - Système de Gestion Vétérinaire</p>
             </div>
 
             <script>

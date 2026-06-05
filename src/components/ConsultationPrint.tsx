@@ -129,7 +129,7 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
         <body>
           ${buildWatermarkHtml(isFree)}
           <div class="header">
-            <div class="clinic-name">${settings.clinicName || 'VetPro CRM'}</div>
+            <div class="clinic-name">${settings.clinicName || 'VetoCrm.com'}</div>
             <div class="consultation-title">Rapport de Consultation</div>
             <div>Date: ${new Date(transformedConsultation.date).toLocaleDateString('fr-FR')}</div>
           </div>
@@ -203,7 +203,7 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
 
           <div class="footer">
             <p>Consultation générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-            <p>VetPro CRM - Gestion Vétérinaire Complète</p>
+            <p>VetoCrm.com - Gestion Vétérinaire Complète</p>
           </div>
         </body>
       </html>

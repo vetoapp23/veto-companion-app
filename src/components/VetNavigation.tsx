@@ -124,10 +124,10 @@ export function VetNavigation() {
             <Link to="/dashboard" className="flex items-center gap-1 sm:gap-2">
               <Heart className="h-6 w-6 sm:h-7 sm:w-7 text-primary" />
               <h1 className="text-lg sm:text-xl font-bold gradient-primary bg-clip-text text-transparent hidden sm:block">
-                VetPro CRM
+                VetoCrm.com
               </h1>
               <h1 className="text-base sm:text-lg font-bold gradient-primary bg-clip-text text-transparent sm:hidden">
-                VetPro
+                VetoCrm.com
               </h1>
             </Link>
             <div className="hidden sm:block">

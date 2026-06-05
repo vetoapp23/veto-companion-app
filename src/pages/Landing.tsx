@@ -11,7 +11,7 @@ export default function Landing() {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Heart className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">VetPro</span>
+            <span className="text-xl font-bold">VetoCrm.com</span>
           </div>
           <div className="flex gap-2 md:gap-4 items-center">
             <Button variant="ghost" asChild>
@@ -48,7 +48,7 @@ export default function Landing() {
                 </h1>
                 
                 <p className="text-xl text-muted-foreground max-w-2xl">
-                  VetPro vous aide à gérer vos clients, leurs animaux, les rendez-vous, 
+                  VetoCrm.com vous aide à gérer vos clients, leurs animaux, les rendez-vous, 
                   consultations et l'historique médical. Optimisez votre pratique avec 
                   notre solution tout-en-un.
                 </p>
@@ -153,7 +153,7 @@ export default function Landing() {
               Prêt à moderniser votre pratique ?
             </h2>
             <p className="text-lg text-muted-foreground">
-              Rejoignez des centaines de vétérinaires qui font confiance à VetPro 
+              Rejoignez des centaines de vétérinaires qui font confiance à VetoCrm.com 
               pour gérer leur clinique efficacement.
             </p>
             <div className="flex gap-4 justify-center">
@@ -171,7 +171,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="container mx-auto px-6 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} VetPro. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} VetoCrm.com. Tous droits réservés.</p>
         </div>
       </footer>
     </div>

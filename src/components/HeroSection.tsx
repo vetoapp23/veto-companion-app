@@ -71,7 +71,7 @@ export function HeroSection() {
                 {greeting}
               </h1>
               <p className="text-lg md:text-3xl font-bold gradient-primary bg-clip-text text-transparent mt-1">
-                Dashboard VetPro
+                Dashboard VetoCrm.com
               </p>
             </div>
             <p className="hidden md:block text-base md:text-lg text-muted-foreground max-w-3xl">

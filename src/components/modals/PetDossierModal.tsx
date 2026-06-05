@@ -486,7 +486,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
         </head>
         <body>
           <div class="header">
-            <div class="clinic-name">VetPro CRM</div>
+            <div class="clinic-name">VetoCrm.com</div>
             <h2>Dossier Médical Complet</h2>
             <p><strong>Animal:</strong> ${pet.name} | <strong>Généré le:</strong> ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
           </div>
@@ -709,7 +709,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
           </div>
 
           <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
-            <p>VetPro CRM - Gestion Vétérinaire Complète</p>
+            <p>VetoCrm.com - Gestion Vétérinaire Complète</p>
           </div>
         </body>
       </html>

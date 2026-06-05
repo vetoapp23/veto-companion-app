@@ -96,7 +96,7 @@ export function LoginForm() {
               <Heart className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">VetPro CRM3</CardTitle>
+          <CardTitle className="text-2xl font-bold">VetoCrm.com</CardTitle>
           <CardDescription>
             {isForgotPassword 
               ? resetEmailSent 
