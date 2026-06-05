@@ -1026,6 +1026,36 @@ export type Database = {
           },
         ]
       }
+      storage_usage: {
+        Row: {
+          bytes_used: number
+          category: string
+          created_at: string
+          files_count: number
+          id: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          bytes_used?: number
+          category?: string
+          created_at?: string
+          files_count?: number
+          id?: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          bytes_used?: number
+          category?: string
+          created_at?: string
+          files_count?: number
+          id?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           code: string
@@ -1310,6 +1340,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_organization_quota: { Args: never; Returns: Json }
       get_user_org: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1317,6 +1348,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      record_storage_change: {
+        Args: {
+          p_bytes_delta: number
+          p_category: string
+          p_files_delta?: number
+        }
+        Returns: Json
       }
     }
     Enums: {
