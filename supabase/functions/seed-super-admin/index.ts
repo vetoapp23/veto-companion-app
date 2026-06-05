@@ -8,7 +8,7 @@ const cors = {
 };
 
 const EMAIL = "vetoapp23@gmail.com";
-const PASSWORD = "M@roc2025";
+const PASSWORD = "V3t0App!Adm1n#2026$Sec";
 const FULL_NAME = "Super Admin";
 
 Deno.serve(async (req) => {
@@ -26,10 +26,11 @@ Deno.serve(async (req) => {
 
     if (existing) {
       userId = existing.id;
-      await admin.auth.admin.updateUserById(userId, {
+      const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
         password: PASSWORD,
         email_confirm: true,
       });
+      if (updErr) throw new Error("updateUserById: " + updErr.message);
     } else {
       const { data: created, error } = await admin.auth.admin.createUser({
         email: EMAIL,
