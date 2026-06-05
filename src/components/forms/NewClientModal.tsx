@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useCreateClient } from "@/hooks/useDatabase";
 import { useClientTypes } from '@/hooks/useAppSettings';
+import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CreateClientData } from "@/lib/database";
@@ -20,6 +21,8 @@ interface NewClientModalProps {
 export function NewClientModal({ open, onOpenChange }: NewClientModalProps) {
   const createClientMutation = useCreateClient();
   const { toast } = useToast();
+  const { enforce } = useQuotaCheck();
+  
   
   // Dynamic settings
   const { data: clientTypes = [], isLoading: typesLoading } = useClientTypes();
@@ -71,6 +74,8 @@ export function NewClientModal({ open, onOpenChange }: NewClientModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!enforce("clients")) return;
+    
     
     // Validation
     if (!formData.first_name?.trim() || !formData.last_name?.trim()) {
