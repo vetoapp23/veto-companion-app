@@ -105,8 +105,8 @@ export function VetNavigation() {
   console.log('✅ Filtered Primary Items:', filteredPrimaryNavItems.map(i => i.label));
   
   const filteredSecondaryNavItems = secondaryNavItems.filter(item => {
-    const allowed = hasPermission(user, item);
-    console.log(`  SECONDARY - ${item.label}: ${allowed ? '✅' : '❌'} (permission: ${item.permission || 'none'}, adminOnly: ${item.adminOnly || false})`);
+    const allowed = hasPermission(user, item) && planAllows((item as any).planFeature);
+    console.log(`  SECONDARY - ${item.label}: ${allowed ? '✅' : '❌'} (permission: ${item.permission || 'none'}, adminOnly: ${item.adminOnly || false}, planFeature: ${(item as any).planFeature || 'none'})`);
     return allowed;
   });
   
