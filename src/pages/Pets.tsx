@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Heart, User, Calendar, Stethoscope, Eye, Edit, Activity, Grid, List, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, Settings } from "lucide-react";
+import { Plus, Search, Heart, User, Calendar, Stethoscope, Eye, Edit, Activity, Grid, List, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, Settings, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { NewPetModal } from "@/components/forms/NewPetModal";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
@@ -675,6 +675,10 @@ const PetsContent = () => {
               <Stethoscope className="h-4 w-4 mr-2" />
               Consultation
             </Button>
+            <Button size="sm" variant="secondary" className="flex-1" onClick={() => handleShowDossier(pet)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Dossier
+            </Button>
             </div>
           </div>
           </CardContent>
@@ -794,6 +798,7 @@ const PetsContent = () => {
       <NewConsultationModal 
       open={showConsultationModal} 
       onOpenChange={setShowConsultationModal} 
+      prefillData={selectedPet ? { clientId: selectedPet.dbClientId, animalId: selectedPet.dbId } : undefined}
       />
       
       <PetViewModal
