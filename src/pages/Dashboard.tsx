@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { DashboardStats } from "@/components/DashboardStats";

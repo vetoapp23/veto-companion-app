@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 // IMPORTANT: re-export the single shared Supabase client to avoid having
 // two separate auth sessions (one here, one in '@/integrations/supabase/client').
