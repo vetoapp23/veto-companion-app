@@ -89,7 +89,7 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
       animalsPayload.push({
         organization_id: orgId, user_id: userId, client_id: c.id,
         name: rand(PET_NAMES), species: sp, breed: rand(BREEDS[sp]),
-        sex: rand(["mâle", "femelle"]),
+        sex: rand(["Mâle", "Femelle"]),
         weight: randInt(2, 35),
         birth_date: daysAgo(randInt(180, 3000)).toISOString().slice(0, 10),
         sterilized: Math.random() > 0.5,
