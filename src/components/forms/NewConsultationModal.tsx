@@ -275,7 +275,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
                     </SelectTrigger>
                     <SelectContent>
                       {clients.length === 0 && !clientsLoading ? (
-                        <SelectItem value="" disabled>Aucun client disponible</SelectItem>
+                        <SelectItem value="__none__" disabled>Aucun client disponible</SelectItem>
                       ) : (
                         clients.map(client => (
                           <SelectItem key={client.id} value={client.id}>
