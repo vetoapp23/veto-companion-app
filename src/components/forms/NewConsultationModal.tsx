@@ -275,7 +275,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
                     </SelectTrigger>
                     <SelectContent>
                       {clients.length === 0 && !clientsLoading ? (
-                        <SelectItem value="" disabled>Aucun client disponible</SelectItem>
+                        <SelectItem value="__none__" disabled>Aucun client disponible</SelectItem>
                       ) : (
                         clients.map(client => (
                           <SelectItem key={client.id} value={client.id}>
@@ -319,7 +319,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
                     </SelectTrigger>
                     <SelectContent>
                       {availablePets.length === 0 && formData.clientId && !animalsLoading ? (
-                        <SelectItem value="" disabled>Aucun animal pour ce client</SelectItem>
+                        <SelectItem value="__none__" disabled>Aucun animal pour ce client</SelectItem>
                       ) : (
                         availablePets.map(animal => (
                           <SelectItem key={animal.id} value={animal.id}>
