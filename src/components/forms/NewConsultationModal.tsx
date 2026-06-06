@@ -228,26 +228,28 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
     }
   };
 
-  // Reset form when modal opens
+  // Reset form when modal opens (respecting prefillData)
   useEffect(() => {
     if (open) {
+      const preClient = prefillData?.clientId ? clients.find(c => c.id === prefillData.clientId) : null;
+      const preAnimal = prefillData?.animalId ? animals.find(a => a.id === prefillData.animalId) : null;
       setFormData({
-        clientId: "",
-        clientName: "",
-        animalId: "",
-        animalName: "",
-        date: today,
-        weight: "",
-        temperature: "",
-        symptoms: "",
-        diagnosis: "",
-        treatment: "",
-        followUp: "",
-        notes: "",
-        photos: []
+        clientId: prefillData?.clientId || "",
+        clientName: preClient ? `${preClient.first_name} ${preClient.last_name}` : "",
+        animalId: prefillData?.animalId || "",
+        animalName: preAnimal?.name || "",
+        date: prefillData?.consultation_date ? new Date(prefillData.consultation_date).toISOString().split('T')[0] : today,
+        weight: prefillData?.weight?.toString() || "",
+        temperature: prefillData?.temperature?.toString() || "",
+        symptoms: prefillData?.symptoms || "",
+        diagnosis: prefillData?.diagnosis || "",
+        treatment: prefillData?.treatment || "",
+        followUp: prefillData?.follow_up_notes || "",
+        notes: prefillData?.notes || "",
+        photos: prefillData?.photos || []
       });
     }
-  }, [open, today]);
+  }, [open, today, prefillData, clients, animals]);
 
   return (
     <>

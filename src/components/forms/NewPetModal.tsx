@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { useAnimalSpecies, useAnimalBreeds, useAnimalColors } from "@/hooks/useAppSettings";
 import { useClients, useCreateAnimal, useAnimals } from "@/hooks/useDatabase";
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
@@ -388,24 +389,14 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="breed">Race</Label>
-              <Select value={formData.breed} onValueChange={(value) => handleSelectChange("breed", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la race" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableBreeds.length > 0 ? (
-                    availableBreeds.map(breed => (
-                      <SelectItem key={breed} value={breed}>
-                        {breed}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="not-available" disabled>
-                      {formData.type ? "Aucune race disponible" : "Sélectionnez d'abord un type"}
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.breed}
+                onChange={(v) => handleSelectChange("breed", v)}
+                options={availableBreeds}
+                category={formData.type ? `breed_${formData.type.toLowerCase()}` : "breed_other"}
+                placeholder={formData.type ? "Sélectionner ou taper" : "Sélectionnez d'abord un type"}
+                disabled={!formData.type}
+              />
             </div>
             <div className="space-y-2">
               <Label>Sexe</Label>
@@ -462,18 +453,14 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="color">Couleur</Label>
-              <Select value={formData.color} onValueChange={(value) => handleSelectChange("color", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la couleur" />
-                </SelectTrigger>
-                <SelectContent>
-                  {animalColors.map(color => (
-                    <SelectItem key={color} value={color}>
-                      {color}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.color}
+                onChange={(v) => handleSelectChange("color", v)}
+                options={animalColors}
+                category="color"
+                placeholder="Sélectionner ou taper la couleur"
+              />
+
             </div>
             <div className="space-y-2">
               {/* Champ vide pour maintenir la grille */}

@@ -14,10 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      animal_pedigree: {
+        Row: {
+          animal_id: string
+          created_at: string
+          father_animal_id: string | null
+          father_breed: string | null
+          father_name: string | null
+          father_registration: string | null
+          id: string
+          maternal_grandfather_breed: string | null
+          maternal_grandfather_name: string | null
+          maternal_grandmother_breed: string | null
+          maternal_grandmother_name: string | null
+          mother_animal_id: string | null
+          mother_breed: string | null
+          mother_name: string | null
+          mother_registration: string | null
+          notes: string | null
+          organization_id: string
+          paternal_grandfather_breed: string | null
+          paternal_grandfather_name: string | null
+          paternal_grandmother_breed: string | null
+          paternal_grandmother_name: string | null
+          pedigree_origin: string | null
+          registration_number: string | null
+          titles: string | null
+          updated_at: string
+        }
+        Insert: {
+          animal_id: string
+          created_at?: string
+          father_animal_id?: string | null
+          father_breed?: string | null
+          father_name?: string | null
+          father_registration?: string | null
+          id?: string
+          maternal_grandfather_breed?: string | null
+          maternal_grandfather_name?: string | null
+          maternal_grandmother_breed?: string | null
+          maternal_grandmother_name?: string | null
+          mother_animal_id?: string | null
+          mother_breed?: string | null
+          mother_name?: string | null
+          mother_registration?: string | null
+          notes?: string | null
+          organization_id: string
+          paternal_grandfather_breed?: string | null
+          paternal_grandfather_name?: string | null
+          paternal_grandmother_breed?: string | null
+          paternal_grandmother_name?: string | null
+          pedigree_origin?: string | null
+          registration_number?: string | null
+          titles?: string | null
+          updated_at?: string
+        }
+        Update: {
+          animal_id?: string
+          created_at?: string
+          father_animal_id?: string | null
+          father_breed?: string | null
+          father_name?: string | null
+          father_registration?: string | null
+          id?: string
+          maternal_grandfather_breed?: string | null
+          maternal_grandfather_name?: string | null
+          maternal_grandmother_breed?: string | null
+          maternal_grandmother_name?: string | null
+          mother_animal_id?: string | null
+          mother_breed?: string | null
+          mother_name?: string | null
+          mother_registration?: string | null
+          notes?: string | null
+          organization_id?: string
+          paternal_grandfather_breed?: string | null
+          paternal_grandfather_name?: string | null
+          paternal_grandmother_breed?: string | null
+          paternal_grandmother_name?: string | null
+          pedigree_origin?: string | null
+          registration_number?: string | null
+          titles?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       animals: {
         Row: {
+          allergies: string[] | null
           birth_date: string | null
           breed: string | null
+          chronic_conditions: string[] | null
           client_id: string
           color: string | null
           created_at: string
@@ -25,6 +111,7 @@ export type Database = {
           death_date: string | null
           height: number | null
           id: string
+          medical_history: string | null
           microchip_number: string | null
           name: string
           notes: string | null
@@ -41,8 +128,10 @@ export type Database = {
           weight: number | null
         }
         Insert: {
+          allergies?: string[] | null
           birth_date?: string | null
           breed?: string | null
+          chronic_conditions?: string[] | null
           client_id: string
           color?: string | null
           created_at?: string
@@ -50,6 +139,7 @@ export type Database = {
           death_date?: string | null
           height?: number | null
           id?: string
+          medical_history?: string | null
           microchip_number?: string | null
           name: string
           notes?: string | null
@@ -66,8 +156,10 @@ export type Database = {
           weight?: number | null
         }
         Update: {
+          allergies?: string[] | null
           birth_date?: string | null
           breed?: string | null
+          chronic_conditions?: string[] | null
           client_id?: string
           color?: string | null
           created_at?: string
@@ -75,6 +167,7 @@ export type Database = {
           death_date?: string | null
           height?: number | null
           id?: string
+          medical_history?: string | null
           microchip_number?: string | null
           name?: string
           notes?: string | null
@@ -516,6 +609,39 @@ export type Database = {
           },
         ]
       }
+      custom_dropdown_values: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          updated_at: string
+          usage_count: number
+          value: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          updated_at?: string
+          usage_count?: number
+          value: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          updated_at?: string
+          usage_count?: number
+          value?: string
+        }
+        Relationships: []
+      }
       farm_interventions: {
         Row: {
           animal_count: number | null
@@ -656,6 +782,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organization_settings: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          pedigree_depth: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          pedigree_depth?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          pedigree_depth?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       organization_subscriptions: {
         Row: {
