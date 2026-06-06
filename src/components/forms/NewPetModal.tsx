@@ -388,24 +388,14 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="breed">Race</Label>
-              <Select value={formData.breed} onValueChange={(value) => handleSelectChange("breed", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la race" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableBreeds.length > 0 ? (
-                    availableBreeds.map(breed => (
-                      <SelectItem key={breed} value={breed}>
-                        {breed}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="not-available" disabled>
-                      {formData.type ? "Aucune race disponible" : "Sélectionnez d'abord un type"}
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.breed}
+                onChange={(v) => handleSelectChange("breed", v)}
+                options={availableBreeds}
+                category={formData.type ? `breed_${formData.type.toLowerCase()}` : "breed_other"}
+                placeholder={formData.type ? "Sélectionner ou taper" : "Sélectionnez d'abord un type"}
+                disabled={!formData.type}
+              />
             </div>
             <div className="space-y-2">
               <Label>Sexe</Label>
