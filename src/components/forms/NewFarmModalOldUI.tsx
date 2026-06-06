@@ -240,31 +240,14 @@ const NewFarmModalOldUI = ({ open, onOpenChange }: NewFarmModalOldUIProps) => {
         user_id: user.id,
         organization_id: profile.organization_id,
         active: true,
-        
-        // Convert form data to database format
         farm_type: formData.farm_types[0] || null, // Keep single type for compatibility
-        farm_types: formData.farm_types.length > 0 ? formData.farm_types : null,
         registration_number: formData.registration_number || null,
         address: formData.address || null,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
         phone: formData.phone || null,
         email: formData.email || null,
         herd_size: formData.herd_size ? parseInt(formData.herd_size) : null,
-        total_animals: formData.total_animals ? parseInt(formData.total_animals) : null,
-        surface_area: formData.surface_area ? parseFloat(formData.surface_area) : null,
-        owner_name: formData.owner_name || null,
-        owner_id_number: formData.owner_id_number || null,
-        veterinarian: formData.veterinarian || null,
-        building_details: formData.building_details || null,
-        equipment_details: formData.equipment_details || null,
-        insurance_details: formData.insurance_details || null,
-        status: formData.status,
         notes: formData.notes || null,
-        certifications: formData.certifications.length > 0 ? formData.certifications : null,
-        emergency_contact: (formData.emergency_contact.name || formData.emergency_contact.phone) ? formData.emergency_contact : null,
-        animal_details: formData.animal_details.length > 0 ? formData.animal_details : null,
-        photos: []
+        certifications: formData.certifications.length > 0 ? formData.certifications : null
       };
 
       const { error } = await supabase
