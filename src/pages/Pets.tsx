@@ -675,6 +675,10 @@ const PetsContent = () => {
               <Stethoscope className="h-4 w-4 mr-2" />
               Consultation
             </Button>
+            <Button size="sm" variant="secondary" className="flex-1" onClick={() => handleShowDossier(pet)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Dossier
+            </Button>
             </div>
           </div>
           </CardContent>
