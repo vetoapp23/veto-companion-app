@@ -4,17 +4,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, FileText, Stethoscope, Syringe, AlertCircle, Activity, Weight, Thermometer, Plus, Camera, Heart, User, MapPin, Award, Edit } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Calendar, FileText, Stethoscope, Syringe, AlertCircle, Activity,
+  Plus, Heart, User, Award, Printer, ClipboardList, CalendarPlus
+} from "lucide-react";
 import { calculateAge } from "@/lib/utils";
+import {
+  useConsultationsByAnimal,
+  useVaccinationsByAnimal,
+  useAntiparasiticsByAnimal,
+  usePrescriptionsByAnimal,
+} from "@/hooks/useDatabase";
+import { PedigreeSection } from "@/components/pedigree/PedigreeSection";
+import { PrintMedicalRecordModal } from "@/components/modals/PrintMedicalRecordModal";
+import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
+import NewVaccinationModal from "@/components/forms/NewVaccinationModalDynamic";
+import NewAntiparasiticModalDynamic from "@/components/forms/NewAntiparasiticModalDynamic";
+import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
+import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
 
-// Interface extending Pet to include database ID
 interface PetUI {
   id: number;
   name: string;
   type: string;
   breed?: string;
-  gender?: 'male' | 'female';
+  gender?: "male" | "female";
   birthDate?: string;
   weight?: string;
   color?: string;
@@ -23,12 +38,12 @@ interface PetUI {
   photo?: string;
   ownerId: number;
   owner: string;
-  status: 'healthy' | 'treatment' | 'urgent';
+  status: "healthy" | "treatment" | "urgent";
   lastVisit?: string;
   nextAppointment?: string;
   vaccinations?: string[];
-  dbId: string; // Database UUID
-  dbClientId: string; // Client's database UUID
+  dbId: string;
+  dbClientId: string;
 }
 
 interface SimplePetDossierModalProps {
@@ -39,380 +54,301 @@ interface SimplePetDossierModalProps {
 
 export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDossierModalProps) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showPrint, setShowPrint] = useState(false);
+  const [showConsultation, setShowConsultation] = useState(false);
+  const [showVaccination, setShowVaccination] = useState(false);
+  const [showAntiparasitic, setShowAntiparasitic] = useState(false);
+  const [showPrescription, setShowPrescription] = useState(false);
+  const [showAppointment, setShowAppointment] = useState(false);
+
+  const animalId = pet?.dbId || "";
+  const { data: consultations = [] } = useConsultationsByAnimal(animalId);
+  const { data: vaccinations = [] } = useVaccinationsByAnimal(animalId);
+  const { data: antiparasitics = [] } = useAntiparasiticsByAnimal(animalId);
+  const { data: prescriptions = [] } = usePrescriptionsByAnimal(animalId);
 
   if (!pet) return null;
 
-  const age = pet.birthDate ? calculateAge(pet.birthDate) : 'Non renseigné';
-  const currentWeight = pet.weight ? `${pet.weight} kg` : 'Non renseigné';
+  const age = pet.birthDate ? calculateAge(pet.birthDate) : "Non renseigné";
+  const currentWeight = pet.weight ? `${pet.weight} kg` : "Non renseigné";
+  const lastConsult = consultations[0];
+  const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
+
+  // build animal-like object for print modal
+  const animalForPrint = {
+    id: animalId,
+    name: pet.name,
+    species: pet.type,
+    breed: pet.breed,
+    color: pet.color,
+    sex: pet.gender === "male" ? "Mâle" : pet.gender === "female" ? "Femelle" : undefined,
+    weight: pet.weight,
+    birth_date: pet.birthDate,
+    microchip_number: pet.microchip,
+    status: pet.status,
+    client_id: pet.dbClientId,
+    owner: pet.owner,
+  };
+
+  const QuickAction = ({
+    icon: Icon, label, onClick, color,
+  }: { icon: any; label: string; onClick: () => void; color: string }) => (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      className="gap-2 h-auto py-2 flex-col items-center text-xs"
+    >
+      <Icon className={`h-5 w-5 ${color}`} />
+      {label}
+    </Button>
+  );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Dossier Médical - {pet.name} (Propriétaire: {pet.owner})
-          </DialogTitle>
-        </DialogHeader>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview" className="flex items-center gap-1">
-              <Activity className="h-4 w-4" />
-              Vue d'ensemble
-            </TabsTrigger>
-            <TabsTrigger value="historique" className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" />
-              Historique
-            </TabsTrigger>
-            <TabsTrigger value="prescriptions" className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
-              Prescriptions
-            </TabsTrigger>
-            <TabsTrigger value="vaccinations" className="flex items-center gap-1">
-              <Syringe className="h-4 w-4" />
-              Vaccinations
-            </TabsTrigger>
-            <TabsTrigger value="antiparasites" className="flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              Antiparasites
-            </TabsTrigger>
-            <TabsTrigger value="pedigree" className="flex items-center gap-1">
-              <Award className="h-4 w-4" />
-              Pedigree
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informations générales</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start gap-6">
-                  <div className="flex flex-col items-center space-y-4">
-                    <Avatar className="h-32 w-32">
-                      {pet.photo ? (
-                        <AvatarImage src={pet.photo} alt={pet.name} />
-                      ) : (
-                        <AvatarFallback className="bg-primary-glow text-primary-foreground">
-                          <Heart className="h-16 w-16" />
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Camera className="h-4 w-4" />
-                      Ajouter photo
-                    </Button>
-                  </div>
-                  
-                  <div className="flex-1 grid grid-cols-2 gap-4">
-                    <div>
-                      <h3 className="font-semibold text-lg">{pet.name}</h3>
-                      <div className="space-y-2 mt-4">
-                        <div>
-                          <span className="font-medium">Type:</span> {pet.type}
-                        </div>
-                        <div>
-                          <span className="font-medium">Race:</span> {pet.breed || 'Non renseignée'}
-                        </div>
-                        <div>
-                          <span className="font-medium">Sexe:</span> {pet.gender === 'male' ? 'Mâle' : pet.gender === 'female' ? 'Femelle' : 'Inconnu'}
-                        </div>
-                        <div>
-                          <span className="font-medium">Âge:</span> {age}
-                        </div>
-                        <div>
-                          <span className="font-medium">Date de naissance:</span> {pet.birthDate || 'Non renseignée'}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div>
-                        <span className="font-medium">Couleur:</span> {pet.color || 'Non renseignée'}
-                      </div>
-                      <div>
-                        <span className="font-medium">Poids actuel:</span> {currentWeight}
-                      </div>
-                      <div>
-                        <span className="font-medium">N° puce:</span> {pet.microchip || 'Non renseigné'}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Statut de santé:</span>
-                        <Badge variant={pet.status === 'healthy' ? 'default' : pet.status === 'treatment' ? 'secondary' : 'destructive'}>
-                          {pet.status === 'healthy' ? 'En bonne santé' : 
-                           pet.status === 'treatment' ? 'En traitement' : 'Urgent'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Propriétaire:</span> {pet.owner}
-                      </div>
-                      <div>
-                        <span className="font-medium">Dernière visite:</span> {pet.lastVisit || 'Aucune'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Galerie photos */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Galerie photos</CardTitle>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Ajouter une photo
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                  <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Aucune photo disponible</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Ajoutez des photos de l'animal pour enrichir son dossier
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Stats rapides */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Weight className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Poids actuel</p>
-                      <p className="text-lg font-bold">{currentWeight}</p>
-                      <p className="text-xs text-muted-foreground">-28.2kg</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Thermometer className="h-5 w-5 text-red-500" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Température</p>
-                      <p className="text-lg font-bold">38.5°C</p>
-                      <p className="text-xs text-muted-foreground">Moy: 38.5°C</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Stethoscope className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Consultations</p>
-                      <p className="text-lg font-bold">1</p>
-                      <p className="text-xs text-muted-foreground">Dernière: 15/01/2024</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Alertes</p>
-                      <p className="text-lg font-bold">1</p>
-                      <p className="text-xs text-muted-foreground">À traiter</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-start justify-between gap-4">
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Dossier Médical — {pet.name} <span className="text-sm font-normal text-muted-foreground">({pet.owner})</span>
+              </DialogTitle>
+              <Button onClick={() => setShowPrint(true)} variant="outline" size="sm" className="gap-2">
+                <Printer className="h-4 w-4" /> Imprimer
+              </Button>
             </div>
+          </DialogHeader>
 
-            {/* Prochains suivis recommandés */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Prochain suivi recommandé
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-                  <p className="font-medium">Contrôle dans 3 an</p>
-                  <Button size="sm" className="mt-2 gap-2">
-                    <Plus className="h-4 w-4" />
-                    Planifier
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Quick actions */}
+          <Card>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <QuickAction icon={Stethoscope} label="Consultation" color="text-emerald-600" onClick={() => setShowConsultation(true)} />
+                <QuickAction icon={Syringe} label="Vaccination" color="text-blue-600" onClick={() => setShowVaccination(true)} />
+                <QuickAction icon={AlertCircle} label="Antiparasitaire" color="text-orange-600" onClick={() => setShowAntiparasitic(true)} />
+                <QuickAction icon={ClipboardList} label="Ordonnance" color="text-purple-600" onClick={() => setShowPrescription(true)} />
+                <QuickAction icon={CalendarPlus} label="Rendez-vous" color="text-pink-600" onClick={() => setShowAppointment(true)} />
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Alertes importantes */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-red-600">Alertes importantes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-medium">Contrôle de routine recommandé</p>
-                    <p className="text-sm text-muted-foreground">Dernière consultation il y a 20 mois</p>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="overview"><Activity className="h-4 w-4 mr-1" />Vue</TabsTrigger>
+              <TabsTrigger value="historique"><Calendar className="h-4 w-4 mr-1" />Historique</TabsTrigger>
+              <TabsTrigger value="consultations"><Stethoscope className="h-4 w-4 mr-1" />Consult.</TabsTrigger>
+              <TabsTrigger value="vaccinations"><Syringe className="h-4 w-4 mr-1" />Vaccins</TabsTrigger>
+              <TabsTrigger value="antiparasites"><AlertCircle className="h-4 w-4 mr-1" />Antiparas.</TabsTrigger>
+              <TabsTrigger value="prescriptions"><FileText className="h-4 w-4 mr-1" />Ordo.</TabsTrigger>
+              <TabsTrigger value="pedigree"><Award className="h-4 w-4 mr-1" />Pédigrée</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle>Informations générales</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-6">
+                    <Avatar className="h-28 w-28">
+                      {pet.photo ? <AvatarImage src={pet.photo} alt={pet.name} /> :
+                        <AvatarFallback className="bg-primary-glow text-primary-foreground">
+                          <Heart className="h-12 w-12" />
+                        </AvatarFallback>}
+                    </Avatar>
+                    <div className="flex-1 grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">{pet.name}</h3>
+                        <div><span className="font-medium">Type :</span> {pet.type}</div>
+                        <div><span className="font-medium">Race :</span> {pet.breed || "—"}</div>
+                        <div><span className="font-medium">Sexe :</span> {pet.gender === "male" ? "Mâle" : pet.gender === "female" ? "Femelle" : "—"}</div>
+                        <div><span className="font-medium">Âge :</span> {age}</div>
+                        <div><span className="font-medium">Naissance :</span> {pet.birthDate || "—"}</div>
+                      </div>
+                      <div className="space-y-2">
+                        <div><span className="font-medium">Couleur :</span> {pet.color || "—"}</div>
+                        <div><span className="font-medium">Poids :</span> {currentWeight}</div>
+                        <div><span className="font-medium">N° puce :</span> {pet.microchip || "—"}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Statut :</span>
+                          <Badge variant={pet.status === "healthy" ? "default" : pet.status === "treatment" ? "secondary" : "destructive"}>
+                            {pet.status === "healthy" ? "En bonne santé" : pet.status === "treatment" ? "En traitement" : "Urgent"}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">Propriétaire :</span> {pet.owner}</div>
+                        <div><span className="font-medium">Dernière visite :</span> {lastConsult ? fmt(lastConsult.consultation_date) : "Aucune"}</div>
+                      </div>
+                    </div>
                   </div>
-                  <Button size="sm" variant="outline">
-                    Planifier consultation
-                  </Button>
-                </div>
+                </CardContent>
+              </Card>
 
-                <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-medium">Vaccination en retard</p>
-                    <p className="text-sm text-muted-foreground">DHPP - 247 jour(s) de retard</p>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Planifier vaccination
-                  </Button>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Consultations</p><p className="text-2xl font-bold">{consultations.length}</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Vaccinations</p><p className="text-2xl font-bold">{vaccinations.length}</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Antiparasitaires</p><p className="text-2xl font-bold">{antiparasitics.length}</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Ordonnances</p><p className="text-2xl font-bold">{prescriptions.length}</p></CardContent></Card>
+              </div>
 
-                <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-medium">Vaccination en retard</p>
-                    <p className="text-sm text-muted-foreground">Lyme - 512 jour(s) de retard</p>
-                  </div>
-                  <Button size="sm" variant="outline">
-                    Planifier vaccination
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              {pet.medicalNotes && (
+                <Card>
+                  <CardHeader><CardTitle className="text-sm">Notes / antécédents</CardTitle></CardHeader>
+                  <CardContent><p className="text-sm whitespace-pre-line">{pet.medicalNotes}</p></CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
-          <TabsContent value="historique" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Historique médical</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Pas assez de données pour afficher les tendances</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Ajoutez plus de consultations avec poids et température
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="historique" className="space-y-2">
+              <Card>
+                <CardHeader><CardTitle>Frise chronologique</CardTitle></CardHeader>
+                <CardContent>
+                  {(() => {
+                    const events = [
+                      ...consultations.map((c: any) => ({ d: c.consultation_date, t: "Consultation", l: c.diagnosis || c.consultation_type, color: "bg-emerald-500" })),
+                      ...vaccinations.map((v: any) => ({ d: v.vaccination_date, t: "Vaccination", l: v.vaccine_name, color: "bg-blue-500" })),
+                      ...antiparasitics.map((a: any) => ({ d: a.treatment_date, t: "Antiparasitaire", l: a.product_name, color: "bg-orange-500" })),
+                      ...prescriptions.map((p: any) => ({ d: p.prescription_date, t: "Ordonnance", l: p.diagnosis || "Prescription", color: "bg-purple-500" })),
+                    ].filter(e => e.d).sort((a, b) => (a.d < b.d ? 1 : -1));
+                    if (events.length === 0) return <p className="text-sm text-muted-foreground">Aucun événement enregistré</p>;
+                    return (
+                      <ul className="space-y-2">
+                        {events.map((e, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm border-l-2 pl-3" style={{ borderColor: "hsl(var(--border))" }}>
+                            <span className={`h-2 w-2 mt-2 rounded-full ${e.color}`} />
+                            <div className="flex-1">
+                              <div className="font-medium">{e.t}</div>
+                              <div className="text-muted-foreground">{e.l}</div>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{fmt(e.d)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="prescriptions" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Prescriptions</CardTitle>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nouvelle prescription
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Aucune prescription disponible</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="consultations" className="space-y-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Consultations ({consultations.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowConsultation(true)} className="gap-2"><Plus className="h-4 w-4" />Nouvelle</Button>
+                </CardHeader>
+                <CardContent>
+                  {consultations.length === 0 ? <p className="text-sm text-muted-foreground">Aucune consultation.</p> :
+                  <div className="space-y-2">
+                    {consultations.map((c: any) => (
+                      <div key={c.id} className="border rounded p-3 text-sm">
+                        <div className="flex justify-between"><span className="font-medium">{fmt(c.consultation_date)}</span><span className="text-muted-foreground">{c.consultation_type}</span></div>
+                        {c.diagnosis && <div className="mt-1"><strong>Diagnostic :</strong> {c.diagnosis}</div>}
+                        {c.treatment && <div><strong>Traitement :</strong> {c.treatment}</div>}
+                      </div>
+                    ))}
+                  </div>}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="vaccinations" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Vaccinations</CardTitle>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nouvelle vaccination
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 text-sm font-medium">
-                    <div>Rage</div>
-                    <div>DHPP</div>
-                    <div>Lyme</div>
-                  </div>
-                  
-                  <div className="text-center py-8">
-                    <Syringe className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Aucune vaccination enregistrée</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="vaccinations" className="space-y-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Vaccinations ({vaccinations.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowVaccination(true)} className="gap-2"><Plus className="h-4 w-4" />Nouvelle</Button>
+                </CardHeader>
+                <CardContent>
+                  {vaccinations.length === 0 ? <p className="text-sm text-muted-foreground">Aucune vaccination.</p> :
+                  <div className="space-y-2">
+                    {vaccinations.map((v: any) => (
+                      <div key={v.id} className="border rounded p-3 text-sm">
+                        <div className="flex justify-between"><span className="font-medium">{v.vaccine_name}</span><span className="text-muted-foreground">{fmt(v.vaccination_date)}</span></div>
+                        <div className="text-xs text-muted-foreground">Type : {v.vaccine_type || "—"} · Lot : {v.batch_number || "—"} · Rappel : {fmt(v.next_due_date)}</div>
+                      </div>
+                    ))}
+                  </div>}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="antiparasites" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Antiparasitaires</CardTitle>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nouveau traitement
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Aucun traitement antiparasitaire enregistré</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="antiparasites" className="space-y-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Antiparasitaires ({antiparasitics.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowAntiparasitic(true)} className="gap-2"><Plus className="h-4 w-4" />Nouveau</Button>
+                </CardHeader>
+                <CardContent>
+                  {antiparasitics.length === 0 ? <p className="text-sm text-muted-foreground">Aucun traitement.</p> :
+                  <div className="space-y-2">
+                    {antiparasitics.map((a: any) => (
+                      <div key={a.id} className="border rounded p-3 text-sm">
+                        <div className="flex justify-between"><span className="font-medium">{a.product_name}</span><span className="text-muted-foreground">{fmt(a.treatment_date)}</span></div>
+                        <div className="text-xs text-muted-foreground">{a.parasite_type || "—"} · {a.active_ingredient || ""} · Prochain : {fmt(a.next_treatment_date)}</div>
+                      </div>
+                    ))}
+                  </div>}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="pedigree" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informations de pedigree</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Award className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Aucune information de pedigree disponible</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="prescriptions" className="space-y-2">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Ordonnances ({prescriptions.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowPrescription(true)} className="gap-2"><Plus className="h-4 w-4" />Nouvelle</Button>
+                </CardHeader>
+                <CardContent>
+                  {prescriptions.length === 0 ? <p className="text-sm text-muted-foreground">Aucune ordonnance.</p> :
+                  <div className="space-y-2">
+                    {prescriptions.map((p: any) => (
+                      <div key={p.id} className="border rounded p-3 text-sm">
+                        <div className="flex justify-between"><span className="font-medium">{fmt(p.prescription_date)}</span><Badge variant="outline">{p.status}</Badge></div>
+                        {p.diagnosis && <div className="mt-1">{p.diagnosis}</div>}
+                      </div>
+                    ))}
+                  </div>}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <FileText className="h-4 w-4 mr-2" />
-              Voir Dossier Médical
-            </Button>
+            <TabsContent value="pedigree">
+              <PedigreeSection animalId={animalId} />
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Fermer</Button>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Fermer
-            </Button>
-            <Button>
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
-            </Button>
-          </div>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm font-medium">Animal modifié</p>
-          <p className="text-xs text-muted-foreground">
-            Les informations de {pet.name} ont été mises à jour.
-          </p>
-        </div>
-      </DialogContent>
-    </Dialog>
+      <PrintMedicalRecordModal open={showPrint} onOpenChange={setShowPrint} animal={animalForPrint} />
+      <NewConsultationModal
+        open={showConsultation}
+        onOpenChange={setShowConsultation}
+        prefillData={{ clientId: pet.dbClientId, animalId: pet.dbId }}
+      />
+      <NewVaccinationModal
+        open={showVaccination}
+        onOpenChange={setShowVaccination}
+        selectedAnimalId={pet.dbId}
+      />
+      <NewAntiparasiticModalDynamic
+        open={showAntiparasitic}
+        onOpenChange={setShowAntiparasitic}
+        selectedAnimalId={pet.dbId}
+        selectedClientId={pet.dbClientId}
+      />
+      <NewPrescriptionModal
+        open={showPrescription}
+        onOpenChange={setShowPrescription}
+        petId={pet.dbId}
+        consultationId=""
+      />
+      <NewAppointmentModal
+        open={showAppointment}
+        onOpenChange={setShowAppointment}
+        prefillClientId={pet.dbClientId}
+        prefillPetId={pet.dbId}
+      />
+    </>
   );
 }
