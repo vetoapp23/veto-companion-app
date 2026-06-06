@@ -798,6 +798,7 @@ const PetsContent = () => {
       <NewConsultationModal 
       open={showConsultationModal} 
       onOpenChange={setShowConsultationModal} 
+      prefillData={selectedPet ? { clientId: selectedPet.dbClientId, animalId: selectedPet.dbId } : undefined}
       />
       
       <PetViewModal
