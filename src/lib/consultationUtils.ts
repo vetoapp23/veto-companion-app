@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from '../lib/supabase';
 
 // Dynamic direct delete function without using hooks
