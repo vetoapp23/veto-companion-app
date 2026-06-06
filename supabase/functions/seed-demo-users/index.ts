@@ -96,8 +96,8 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
       });
     }
   }
-  const { data: animals } = await admin.from("animals").insert(animalsPayload).select("id, client_id");
-  if (!animals) return { skipped: false, error: "animals insert failed" };
+  const { data: animals, error: animErr } = await admin.from("animals").insert(animalsPayload).select("id, client_id");
+  if (animErr || !animals) return { skipped: false, error: "animals: " + (animErr?.message ?? "no data") };
 
   // Consultations (1-3 per animal)
   const consPayload: any[] = [];
