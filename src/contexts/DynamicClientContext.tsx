@@ -370,6 +370,20 @@ export const useAppointments = (filters: Record<string, any> = {}) => {
   });
 };
 
+const getUserOrganizationId = async (userId: string) => {
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select('organization_id')
+    .eq('id', userId)
+    .single();
+
+  if (error || !profile?.organization_id) {
+    throw new Error('User profile or organization not found');
+  }
+
+  return profile.organization_id;
+};
+
 // ================================
 // MUTATION HOOKS
 // ================================
@@ -384,11 +398,18 @@ export const useCreateClient = () => {
         throw new Error('User not authenticated');
       }
 
+      const organizationId = await getUserOrganizationId(user.id);
+
       const { data, error } = await supabase
         .from('clients')
         .insert({
           ...input,
           user_id: user.id,
+          organization_id: organizationId,
+          city: input.city || '',
+          country: input.country || 'Maroc',
+          client_type: 'particulier',
+          status: 'actif',
         })
         .select()
         .single();
@@ -474,11 +495,18 @@ export const useCreateAnimal = () => {
         throw new Error('User not authenticated');
       }
 
+      const organizationId = await getUserOrganizationId(user.id);
+
       const { data, error } = await supabase
         .from('animals')
         .insert({
           ...input,
           user_id: user.id,
+          organization_id: organizationId,
+          sex: input.gender === 'male' ? 'Mâle' : input.gender === 'female' ? 'Femelle' : 'Inconnu',
+          birth_date: input.date_of_birth || null,
+          sterilized: input.is_sterilized || false,
+          status: 'vivant',
         })
         .select(`
           *,

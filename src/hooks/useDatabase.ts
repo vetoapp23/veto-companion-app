@@ -510,11 +510,22 @@ export const useCreateConsultation = () => {
           throw new Error('User not authenticated');
         }
 
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError || !profile?.organization_id) {
+          throw new Error('User profile or organization not found');
+        }
+
         // Dynamic data preparation that adapts to the actual schema
         const consultationData = {
           animal_id: data.animal_id,
           client_id: data.client_id,
           veterinarian_id: user.id,
+          organization_id: profile.organization_id,
           consultation_date: data.consultation_date || new Date().toISOString(),
           consultation_type: data.consultation_type,
           symptoms: data.symptoms || null,
@@ -1180,6 +1191,16 @@ export const useCreatePrescription = () => {
           throw new Error('User not authenticated');
         }
 
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError || !profile?.organization_id) {
+          throw new Error('User profile or organization not found');
+        }
+
         // Dynamic data preparation that adapts to the actual schema
         const { medications, ...prescriptionDataWithoutMedications } = prescriptionData;
 
@@ -1189,6 +1210,7 @@ export const useCreatePrescription = () => {
           animal_id: prescriptionDataWithoutMedications.animal_id,
           client_id: prescriptionDataWithoutMedications.client_id,
           veterinarian_id: prescriptionDataWithoutMedications.veterinarian_id || user.id,
+          organization_id: profile.organization_id,
           prescription_date: prescriptionDataWithoutMedications.prescription_date || new Date().toISOString(),
           diagnosis: prescriptionDataWithoutMedications.diagnosis || null,
           notes: prescriptionDataWithoutMedications.notes || null,

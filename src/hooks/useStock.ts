@@ -393,9 +393,19 @@ export const useStock = () => {
     if (!user) return null;
 
     try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.organization_id) {
+        throw new Error('User profile or organization not found');
+      }
+
       const { data, error } = await supabase
         .from('stock_movements')
-        .insert([movementData])
+        .insert([{ ...movementData, organization_id: profile.organization_id, performed_by: user.id }])
         .select()
         .single();
 
