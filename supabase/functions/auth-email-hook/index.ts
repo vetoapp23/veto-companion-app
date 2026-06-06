@@ -129,7 +129,17 @@ Deno.serve(async (req) => {
     }
 
     const { user, email_data } = data
-    const confirmation_url = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(email_data.redirect_to || email_data.site_url)}`
+
+    // Force la redirection post-vérification vers l'URL publique du projet
+    // (sinon Supabase renvoie sur lovable.dev/auth-bridge qui exige un login Lovable
+    // lorsque le lien est ouvert dans un navigateur externe).
+    const PUBLIC_APP_URL = 'https://cuddle-care-cloud.lovable.app'
+    const incoming_redirect = email_data.redirect_to || ''
+    const safe_redirect = incoming_redirect && !/lovable\.(dev|app)\/(login|auth-bridge)/.test(incoming_redirect)
+      ? incoming_redirect
+      : PUBLIC_APP_URL
+
+    const confirmation_url = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(safe_redirect)}`
 
     const { subject, html } = renderEmail({
       action: email_data.email_action_type,
