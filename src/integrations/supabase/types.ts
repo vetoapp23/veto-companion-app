@@ -28,7 +28,7 @@ export type Database = {
           microchip_number: string | null
           name: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           photo_url: string | null
           sex: string | null
           species: string
@@ -53,7 +53,7 @@ export type Database = {
           microchip_number?: string | null
           name: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           photo_url?: string | null
           sex?: string | null
           species: string
@@ -78,7 +78,7 @@ export type Database = {
           microchip_number?: string | null
           name?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           photo_url?: string | null
           sex?: string | null
           species?: string
@@ -118,7 +118,7 @@ export type Database = {
           frequency: string | null
           id: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           parasite_type: string
           product_name: string
           species: string
@@ -135,7 +135,7 @@ export type Database = {
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           parasite_type: string
           product_name: string
           species: string
@@ -152,7 +152,7 @@ export type Database = {
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           parasite_type?: string
           product_name?: string
           species?: string
@@ -182,7 +182,7 @@ export type Database = {
           id: string
           next_treatment_date: string | null
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           parasite_type: string | null
           product_name: string
           treatment_date: string
@@ -200,7 +200,7 @@ export type Database = {
           id?: string
           next_treatment_date?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           parasite_type?: string | null
           product_name: string
           treatment_date?: string
@@ -218,7 +218,7 @@ export type Database = {
           id?: string
           next_treatment_date?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           parasite_type?: string | null
           product_name?: string
           treatment_date?: string
@@ -294,7 +294,7 @@ export type Database = {
           duration_minutes: number
           id: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           reminder_sent: boolean
           status: string
           updated_at: string
@@ -309,7 +309,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           reminder_sent?: boolean
           status?: string
           updated_at?: string
@@ -324,7 +324,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           reminder_sent?: boolean
           status?: string
           updated_at?: string
@@ -367,7 +367,7 @@ export type Database = {
           last_name: string
           mobile_phone: string | null
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           postal_code: string | null
           status: string
@@ -386,7 +386,7 @@ export type Database = {
           last_name: string
           mobile_phone?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           postal_code?: string | null
           status?: string
@@ -405,7 +405,7 @@ export type Database = {
           last_name?: string
           mobile_phone?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           postal_code?: string | null
           status?: string
@@ -435,7 +435,7 @@ export type Database = {
           heart_rate: number | null
           id: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           photos: string[] | null
           respiratory_rate: number | null
           status: string
@@ -458,7 +458,7 @@ export type Database = {
           heart_rate?: number | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           photos?: string[] | null
           respiratory_rate?: number | null
           status?: string
@@ -481,7 +481,7 @@ export type Database = {
           heart_rate?: number | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           photos?: string[] | null
           respiratory_rate?: number | null
           status?: string
@@ -530,7 +530,7 @@ export type Database = {
           intervention_type: string
           medications_used: string[] | null
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           treatment: string | null
           updated_at: string
           veterinarian_id: string | null
@@ -548,7 +548,7 @@ export type Database = {
           intervention_type: string
           medications_used?: string[] | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           treatment?: string | null
           updated_at?: string
           veterinarian_id?: string | null
@@ -566,7 +566,7 @@ export type Database = {
           intervention_type?: string
           medications_used?: string[] | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           treatment?: string | null
           updated_at?: string
           veterinarian_id?: string | null
@@ -601,7 +601,7 @@ export type Database = {
           herd_size: number | null
           id: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           registration_number: string | null
           updated_at: string
@@ -618,7 +618,7 @@ export type Database = {
           herd_size?: number | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           registration_number?: string | null
           updated_at?: string
@@ -635,7 +635,7 @@ export type Database = {
           herd_size?: number | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           registration_number?: string | null
           updated_at?: string
@@ -821,7 +821,7 @@ export type Database = {
           diagnosis: string | null
           id: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           prescription_date: string
           refill_count: number
           status: string
@@ -837,7 +837,7 @@ export type Database = {
           diagnosis?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           prescription_date?: string
           refill_count?: number
           status?: string
@@ -853,7 +853,7 @@ export type Database = {
           diagnosis?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           prescription_date?: string
           refill_count?: number
           status?: string
@@ -906,7 +906,7 @@ export type Database = {
           maximum_quantity: number | null
           minimum_quantity: number
           name: string
-          organization_id: string | null
+          organization_id: string
           requires_prescription: boolean
           selling_price: number | null
           supplier: string | null
@@ -927,7 +927,7 @@ export type Database = {
           maximum_quantity?: number | null
           minimum_quantity?: number
           name: string
-          organization_id?: string | null
+          organization_id: string
           requires_prescription?: boolean
           selling_price?: number | null
           supplier?: string | null
@@ -948,7 +948,7 @@ export type Database = {
           maximum_quantity?: number | null
           minimum_quantity?: number
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           requires_prescription?: boolean
           selling_price?: number | null
           supplier?: string | null
@@ -973,7 +973,7 @@ export type Database = {
           movement_date: string
           movement_type: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           performed_by: string | null
           quantity: number
           reason: string | null
@@ -987,7 +987,7 @@ export type Database = {
           movement_date?: string
           movement_type: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           performed_by?: string | null
           quantity: number
           reason?: string | null
@@ -1001,7 +1001,7 @@ export type Database = {
           movement_date?: string
           movement_type?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           performed_by?: string | null
           quantity?: number
           reason?: string | null
@@ -1202,7 +1202,7 @@ export type Database = {
           frequency: string | null
           id: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           species: string
           updated_at: string
           vaccine_name: string
@@ -1216,7 +1216,7 @@ export type Database = {
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           species: string
           updated_at?: string
           vaccine_name: string
@@ -1230,7 +1230,7 @@ export type Database = {
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           species?: string
           updated_at?: string
           vaccine_name?: string
@@ -1257,7 +1257,7 @@ export type Database = {
           manufacturer: string | null
           next_due_date: string | null
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           reminder_sent: boolean
           updated_at: string
           vaccination_date: string
@@ -1274,7 +1274,7 @@ export type Database = {
           manufacturer?: string | null
           next_due_date?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           reminder_sent?: boolean
           updated_at?: string
           vaccination_date?: string
@@ -1291,7 +1291,7 @@ export type Database = {
           manufacturer?: string | null
           next_due_date?: string | null
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           reminder_sent?: boolean
           updated_at?: string
           vaccination_date?: string
