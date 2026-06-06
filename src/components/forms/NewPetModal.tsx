@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { useAnimalSpecies, useAnimalBreeds, useAnimalColors } from "@/hooks/useAppSettings";
 import { useClients, useCreateAnimal, useAnimals } from "@/hooks/useDatabase";
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
