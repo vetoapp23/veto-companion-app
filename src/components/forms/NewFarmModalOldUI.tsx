@@ -224,10 +224,21 @@ const NewFarmModalOldUI = ({ open, onOpenChange }: NewFarmModalOldUIProps) => {
 
     setLoading(true);
     try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.organization_id) {
+        throw new Error('Profil utilisateur ou organisation introuvable');
+      }
+
       const insertData: any = {
         farm_name: formData.farm_name.trim(),
         client_id: formData.client_id,
         user_id: user.id,
+        organization_id: profile.organization_id,
         active: true,
         
         // Convert form data to database format
