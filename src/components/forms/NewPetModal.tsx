@@ -453,18 +453,14 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="color">Couleur</Label>
-              <Select value={formData.color} onValueChange={(value) => handleSelectChange("color", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la couleur" />
-                </SelectTrigger>
-                <SelectContent>
-                  {animalColors.map(color => (
-                    <SelectItem key={color} value={color}>
-                      {color}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.color}
+                onChange={(v) => handleSelectChange("color", v)}
+                options={animalColors}
+                category="color"
+                placeholder="Sélectionner ou taper la couleur"
+              />
+
             </div>
             <div className="space-y-2">
               {/* Champ vide pour maintenir la grille */}
