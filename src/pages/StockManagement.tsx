@@ -123,6 +123,22 @@ const StockManagement: React.FC = () => {
     'unit', 'kg', 'g', 'l', 'ml', 'boîte', 'flacon', 'ampoule', 'comprimé', 'dose'
   ];
 
+  const getCurrentOrganizationId = async () => {
+    if (!user?.id) throw new Error('User not authenticated');
+
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !profile?.organization_id) {
+      throw new Error('User profile or organization not found');
+    }
+
+    return profile.organization_id;
+  };
+
   useEffect(() => {
     if (user) {
       fetchStockItems();
@@ -132,10 +148,12 @@ const StockManagement: React.FC = () => {
 
   const fetchStockItems = async () => {
     try {
+      const organizationId = await getCurrentOrganizationId();
+
       const { data, error } = await supabase
         .from('stock_items')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('organization_id', organizationId)
         .order('name');
 
       if (error) throw error;
@@ -154,12 +172,15 @@ const StockManagement: React.FC = () => {
 
   const fetchStockMovements = async () => {
     try {
+      const organizationId = await getCurrentOrganizationId();
+
       const { data, error } = await supabase
         .from('stock_movements')
         .select(`
           *,
           stock_item:stock_items(name)
         `)
+        .eq('organization_id', organizationId)
         .order('movement_date', { ascending: false })
         .limit(50);
 
@@ -174,6 +195,8 @@ const StockManagement: React.FC = () => {
     e.preventDefault();
     
     try {
+      const organizationId = await getCurrentOrganizationId();
+
       const itemData = {
         ...formData,
         current_quantity: parseInt(formData.current_quantity.toString()) || 0,
@@ -181,7 +204,8 @@ const StockManagement: React.FC = () => {
         maximum_quantity: parseInt(formData.maximum_quantity.toString()) || 0,
         unit_cost: parseFloat(formData.unit_cost.toString()) || 0,
         selling_price: parseFloat(formData.selling_price.toString()) || 0,
-        user_id: user?.id
+        user_id: user?.id,
+        organization_id: organizationId
       };
 
       if (editingItem) {
@@ -227,11 +251,14 @@ const StockManagement: React.FC = () => {
     e.preventDefault();
     
     try {
+      const organizationId = await getCurrentOrganizationId();
+
       const { error } = await supabase
         .from('stock_movements')
         .insert([{
           ...movementData,
           quantity: parseInt(movementData.quantity.toString()) || 0,
+          organization_id: organizationId,
           performed_by: user?.id
         }]);
 
