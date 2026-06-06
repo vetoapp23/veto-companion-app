@@ -95,10 +95,20 @@ const NewFarmInterventionModalSupabase = ({
     if (!user) return;
     
     try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.organization_id) {
+        throw new Error('Profil utilisateur ou organisation introuvable');
+      }
+
       const { data, error } = await supabase
         .from('farms')
         .select('id, farm_name')
-        .eq('user_id', user.id)
+        .eq('organization_id', profile.organization_id)
         .eq('active', true)
         .order('farm_name');
 
@@ -165,8 +175,19 @@ const NewFarmInterventionModalSupabase = ({
 
     setLoading(true);
     try {
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.organization_id) {
+        throw new Error('Profil utilisateur ou organisation introuvable');
+      }
+
       const insertData: any = {
         farm_id: formData.farm_id,
+        organization_id: profile.organization_id,
         veterinarian_id: user.id, // Current user as veterinarian
         intervention_date: formData.intervention_date,
         intervention_type: formData.intervention_type,
