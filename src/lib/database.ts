@@ -1605,16 +1605,24 @@ export const getAntiparasiticProtocolsBySpecies = async (species: string): Promi
 }
 
 export const createAntiparasiticProtocol = async (protocolData: Omit<AntiparasiticProtocol, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<AntiparasiticProtocol> => {
-  // Get current user
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     throw new Error('User must be authenticated to create antiparasitic protocol')
   }
 
-  // Add user_id to the protocol data
-  const protocolWithUserId = {
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  if (profileError || !profile?.organization_id) {
+    throw new Error('Organisation introuvable pour cet utilisateur')
+  }
+
+  const protocolWithUserId: any = {
     ...protocolData,
-    user_id: user.id
+    user_id: user.id,
+    organization_id: profile.organization_id,
   }
 
   const { data, error } = await supabase
