@@ -5,10 +5,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Activity, Stethoscope, Users2, MapPin, Phone, Mail, Tractor, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Activity, Stethoscope, Users2, MapPin, Phone, Mail, Tractor, Calendar, Building2, Image as ImageIcon } from "lucide-react";
 import { useFarmBatches, useDeleteFarmBatch, useFarmHealthEvents, useDeleteFarmHealthEvent } from "@/hooks/useFarmBatches";
+import { useFarmInfrastructures, useDeleteFarmInfrastructure } from "@/hooks/useFarmInfrastructures";
 import { useFarmInterventionsByFarm } from "@/hooks/useDatabase";
 import BatchEditorDialog from "@/components/forms/BatchEditorDialog";
+import FarmInfrastructureDialog from "@/components/forms/FarmInfrastructureDialog";
 import NewFarmInterventionModalSupabase from "@/components/forms/NewFarmInterventionModalSupabase";
 import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
 import { formatDate } from "@/lib/utils";
@@ -24,15 +26,22 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
   const [batchOpen, setBatchOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const [interventionOpen, setInterventionOpen] = useState(false);
+  const [infraOpen, setInfraOpen] = useState(false);
+  const [editingInfra, setEditingInfra] = useState<any>(null);
 
   const { data: batches = [] } = useFarmBatches(farm?.id);
   const { data: events = [] } = useFarmHealthEvents(farm?.id);
   const { data: interventions = [] } = useFarmInterventionsByFarm(farm?.id || "");
+  const { data: infrastructures = [] } = useFarmInfrastructures(farm?.id);
   const delBatch = useDeleteFarmBatch();
   const delEvent = useDeleteFarmHealthEvent();
+  const delInfra = useDeleteFarmInfrastructure();
 
   if (!farm) return null;
-  const config = getFarmTypeConfig(farm.farm_type);
+  const farmTypes: string[] = (farm.farm_types && farm.farm_types.length > 0)
+    ? farm.farm_types
+    : (farm.farm_type ? [farm.farm_type] : []);
+  const config = getFarmTypeConfig(farm.farm_type || farmTypes[0]);
   const totalBatchAnimals = batches.reduce((s, b) => s + (b.animal_count || 0), 0);
 
   return (
@@ -44,7 +53,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
             {farm.farm_name}
           </SheetTitle>
           <SheetDescription className="flex flex-wrap gap-2 items-center">
-            {farm.farm_type && <Badge variant="secondary">{farm.farm_type}</Badge>}
+            {farmTypes.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}
             {farm.production_type && <Badge variant="outline">{farm.production_type}</Badge>}
             {farm.active ? <Badge>Actif</Badge> : <Badge variant="destructive">Inactif</Badge>}
           </SheetDescription>
@@ -60,11 +69,13 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsList className="grid grid-cols-6 w-full">
+            <TabsTrigger value="overview">Vue</TabsTrigger>
             <TabsTrigger value="batches">Lots ({batches.length})</TabsTrigger>
-            <TabsTrigger value="interventions">Interventions ({interventions.length})</TabsTrigger>
+            <TabsTrigger value="infra">Infra ({infrastructures.length})</TabsTrigger>
+            <TabsTrigger value="interventions">Inter. ({interventions.length})</TabsTrigger>
             <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
+            <TabsTrigger value="photos">Photos ({(farm.photos || []).length})</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
@@ -194,6 +205,63 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
               </Card>
             ))}
           </TabsContent>
+
+          {/* INFRASTRUCTURES */}
+          <TabsContent value="infra" className="space-y-3">
+            <div className="flex justify-end">
+              <Button size="sm" onClick={() => { setEditingInfra(null); setInfraOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" /> Ajouter une infrastructure
+              </Button>
+            </div>
+            {infrastructures.length === 0 && <EmptyState text="Aucune infrastructure. Ajoutez écuries, poulaillers, bassins…" />}
+            {infrastructures.map((inf: any) => (
+              <Card key={inf.id}>
+                <CardContent className="pt-4 flex items-start justify-between gap-3">
+                  <div className="space-y-1 flex-1">
+                    <div className="font-medium flex items-center gap-2">
+                      <Building2 className="h-4 w-4" /> {inf.name}
+                      <Badge variant="secondary">{inf.infra_type}</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
+                      {typeof inf.capacity === "number" && <span>Capacité : {inf.capacity}</span>}
+                      {typeof inf.surface_sqm === "number" && <span>· {inf.surface_sqm} m²</span>}
+                      {inf.location && <span>· {inf.location}</span>}
+                    </div>
+                    {inf.notes && <p className="text-xs">{inf.notes}</p>}
+                    {inf.photos?.length > 0 && (
+                      <div className="flex gap-1 flex-wrap pt-1">
+                        {inf.photos.slice(0, 4).map((src: string, i: number) => (
+                          <img key={i} src={src} alt="" className="h-14 w-14 object-cover rounded border" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="icon" variant="ghost" onClick={() => { setEditingInfra(inf); setInfraOpen(true); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer ?") && delInfra.mutate(inf.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          {/* PHOTOS */}
+          <TabsContent value="photos" className="space-y-3">
+            {(!farm.photos || farm.photos.length === 0) && (
+              <EmptyState text="Aucune photo. Utilisez « Modifier » pour ajouter des photos à l'exploitation." />
+            )}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {(farm.photos || []).map((src: string, i: number) => (
+                <a key={i} href={src} target="_blank" rel="noreferrer" className="block">
+                  <img src={src} alt={`Photo ${i + 1}`} className="w-full h-40 object-cover rounded border hover:opacity-90" />
+                </a>
+              ))}
+            </div>
+          </TabsContent>
         </Tabs>
 
         <BatchEditorDialog
@@ -201,7 +269,14 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           onOpenChange={setBatchOpen}
           farmId={farm.id}
           farmType={farm.farm_type}
+          farmTypes={farmTypes}
           batch={editingBatch}
+        />
+        <FarmInfrastructureDialog
+          open={infraOpen}
+          onOpenChange={setInfraOpen}
+          farmId={farm.id}
+          infra={editingInfra}
         />
         <NewFarmInterventionModalSupabase
           open={interventionOpen}

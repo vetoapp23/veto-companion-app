@@ -16,18 +16,19 @@ interface BatchEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   farmId: string;
   farmType?: string | null;
+  farmTypes?: string[];
   batch?: FarmBatch | null;
 }
 
-const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: BatchEditorDialogProps) => {
+const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [], batch }: BatchEditorDialogProps) => {
   const { toast } = useToast();
   const create = useCreateFarmBatch();
   const update = useUpdateFarmBatch();
-  const config = getFarmTypeConfig(farmType);
 
   const [data, setData] = useState({
     name: "", species: "", category: "", animal_count: "0",
     birth_period: "", location: "", status: "active", notes: "",
+    farm_type: "",
   });
 
   useEffect(() => {
@@ -42,11 +43,18 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: Batc
         location: batch.location || "",
         status: batch.status || "active",
         notes: batch.notes || "",
+        farm_type: (batch as any).farm_type || farmType || farmTypes[0] || "",
       });
     } else {
-      setData({ name: "", species: "", category: "", animal_count: "0", birth_period: "", location: "", status: "active", notes: "" });
+      setData({
+        name: "", species: "", category: "", animal_count: "0",
+        birth_period: "", location: "", status: "active", notes: "",
+        farm_type: farmType || farmTypes[0] || "",
+      });
     }
-  }, [open, batch]);
+  }, [open, batch, farmType, farmTypes]);
+
+  const config = getFarmTypeConfig(data.farm_type || farmType);
 
   const set = (k: string, v: any) => setData((p) => ({ ...p, [k]: v }));
   const busy = create.isPending || update.isPending;
@@ -57,7 +65,7 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: Batc
       toast({ title: "Nom du lot requis", variant: "destructive" });
       return;
     }
-    const payload = {
+    const payload: any = {
       farm_id: farmId,
       name: data.name.trim(),
       species: data.species || null,
@@ -67,6 +75,7 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: Batc
       location: data.location || null,
       status: data.status,
       notes: data.notes || null,
+      farm_type: data.farm_type || null,
     };
     try {
       if (batch?.id) {
@@ -90,6 +99,19 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: Batc
           <DialogDescription>Groupe d'animaux au sein de l'exploitation.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
+          {farmTypes.length > 1 && (
+            <div className="space-y-2">
+              <Label>Type d'élevage du lot</Label>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={data.farm_type} onChange={(e) => set("farm_type", e.target.value)}>
+                <option value="">— Choisir —</option>
+                {farmTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Les catégories ci-dessous s'adaptent au type choisi.
+              </p>
+            </div>
+          )}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nom du lot *</Label>

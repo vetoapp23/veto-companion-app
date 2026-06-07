@@ -31,13 +31,19 @@ const FarmPage = () => {
 
   const farmTypes = useMemo(() => {
     const s = new Set<string>(farmSettings?.farm_types || []);
-    farms.forEach((f: any) => f.farm_type && s.add(f.farm_type));
+    farms.forEach((f: any) => {
+      (f.farm_types || []).forEach((t: string) => t && s.add(t));
+      if (f.farm_type) s.add(f.farm_type);
+    });
     return Array.from(s);
   }, [farmSettings, farms]);
 
   const filtered = useMemo(() => {
     return farms.filter((f: any) => {
-      if (typeFilter !== "all" && f.farm_type !== typeFilter) return false;
+      if (typeFilter !== "all") {
+        const types = (f.farm_types && f.farm_types.length > 0) ? f.farm_types : [f.farm_type];
+        if (!types.includes(typeFilter)) return false;
+      }
       if (!search) return true;
       const q = search.toLowerCase();
       return (
@@ -142,8 +148,16 @@ const FarmPage = () => {
                     </Button>
                   </div>
                 </div>
+                {f.photos?.[0] && (
+                  <img src={f.photos[0]} alt={f.farm_name}
+                    className="w-full h-32 object-cover rounded border cursor-pointer"
+                    onClick={() => setDetailFarm(f)} />
+                )}
                 <div className="flex flex-wrap gap-1">
-                  {f.farm_type && <Badge variant="secondary">{f.farm_type}</Badge>}
+                  {(f.farm_types && f.farm_types.length > 0
+                    ? f.farm_types
+                    : (f.farm_type ? [f.farm_type] : [])
+                  ).map((t: string) => <Badge key={t} variant="secondary">{t}</Badge>)}
                   {f.production_type && <Badge variant="outline">{f.production_type}</Badge>}
                   {f.housing_type && <Badge variant="outline">{f.housing_type}</Badge>}
                 </div>

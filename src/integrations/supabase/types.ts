@@ -706,6 +706,7 @@ export type Database = {
           category: string | null
           created_at: string
           farm_id: string
+          farm_type: string | null
           id: string
           location: string | null
           metadata: Json
@@ -722,6 +723,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           farm_id: string
+          farm_type?: string | null
           id?: string
           location?: string | null
           metadata?: Json
@@ -738,6 +740,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           farm_id?: string
+          farm_type?: string | null
           id?: string
           location?: string | null
           metadata?: Json
@@ -746,6 +749,54 @@ export type Database = {
           organization_id?: string
           species?: string | null
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      farm_infrastructures: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          farm_id: string
+          id: string
+          infra_type: string
+          location: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          organization_id: string
+          photos: string[] | null
+          surface_sqm: number | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          farm_id: string
+          id?: string
+          infra_type: string
+          location?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          organization_id: string
+          photos?: string[] | null
+          surface_sqm?: number | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          farm_id?: string
+          id?: string
+          infra_type?: string
+          location?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          photos?: string[] | null
+          surface_sqm?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -845,6 +896,7 @@ export type Database = {
           email: string | null
           farm_name: string
           farm_type: string | null
+          farm_types: string[] | null
           herd_size: number | null
           housing_type: string | null
           id: string
@@ -852,6 +904,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           phone: string | null
+          photos: string[] | null
           production_type: string | null
           registration_number: string | null
           surface_hectares: number | null
@@ -867,6 +920,7 @@ export type Database = {
           email?: string | null
           farm_name: string
           farm_type?: string | null
+          farm_types?: string[] | null
           herd_size?: number | null
           housing_type?: string | null
           id?: string
@@ -874,6 +928,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           phone?: string | null
+          photos?: string[] | null
           production_type?: string | null
           registration_number?: string | null
           surface_hectares?: number | null
@@ -889,6 +944,7 @@ export type Database = {
           email?: string | null
           farm_name?: string
           farm_type?: string | null
+          farm_types?: string[] | null
           herd_size?: number | null
           housing_type?: string | null
           id?: string
@@ -896,6 +952,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          photos?: string[] | null
           production_type?: string | null
           registration_number?: string | null
           surface_hectares?: number | null
