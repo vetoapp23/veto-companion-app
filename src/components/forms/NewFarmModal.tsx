@@ -163,6 +163,10 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
       surface_hectares: data.surface_hectares ? parseFloat(data.surface_hectares) : null,
       certifications: data.certifications.length ? data.certifications : null,
       photos: data.photos.length ? data.photos : null,
+      metadata: {
+        ...(farm?.metadata || {}),
+        per_type: data.farm_types.length > 1 ? data.per_type : undefined,
+      },
       notes: data.notes || null,
       active: data.active,
     };
