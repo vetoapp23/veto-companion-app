@@ -380,8 +380,11 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+            <Button variant="outline" onClick={handleDownloadPdf} className="gap-2">
+              <Download className="h-4 w-4" /> Télécharger PDF
+            </Button>
             <Button onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" /> Imprimer / PDF
+              <Printer className="h-4 w-4" /> Imprimer
             </Button>
           </div>
         </div>
