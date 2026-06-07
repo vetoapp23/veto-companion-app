@@ -118,6 +118,23 @@ export default function NewVaccinationModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.vaccinationDate]);
 
+  // Auto-suggest protocol when vaccine type or name matches and none applied yet.
+  useEffect(() => {
+    if (appliedProtocolId || protocols.length === 0) return;
+    const type = formData.vaccineType?.trim().toLowerCase();
+    const name = formData.vaccineName?.trim().toLowerCase();
+    if (!type && !name) return;
+    const matches = protocols.filter(p => {
+      const pt = p.vaccine_type?.toLowerCase() || '';
+      const pn = p.vaccine_name?.toLowerCase() || '';
+      return (type && pt === type) || (name && pn === name);
+    });
+    if (matches.length === 1 && (matches[0].booster_schedule?.length || 0) > 0) {
+      applyProtocol(matches[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.vaccineType, formData.vaccineName, protocols]);
+
   const updateDoseDate = (index: number, date: string) =>
     setPlannedDoses(prev => prev.map((d, i) => (i === index ? { ...d, date } : d)));
 
