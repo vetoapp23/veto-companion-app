@@ -10,7 +10,8 @@ import { useCreateAntiparasiticProtocol, useUpdateAntiparasiticProtocol } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAnimalSpecies, useParasiteTypes } from '@/hooks/useAppSettings';
 import { Shield, Loader2 } from 'lucide-react';
-import type { AntiparasiticProtocol } from '@/lib/database';
+import type { AntiparasiticProtocol, BoosterScheduleEntry } from '@/lib/database';
+import BoosterScheduleEditor from './BoosterScheduleEditor';
 
 interface AntiparasiticProtocolModalDynamicProps {
   open: boolean;
