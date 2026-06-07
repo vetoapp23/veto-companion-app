@@ -91,7 +91,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     }
   }, [open, farm]);
 
-  const config = getFarmTypeConfig(data.farm_type);
+  const config = getFarmTypeConfig(data.farm_type || data.farm_types[0]);
 
   const set = (k: string, v: any) => setData((p) => ({ ...p, [k]: v }));
 
@@ -102,6 +102,36 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
         ? p.certifications.filter((x) => x !== c)
         : [...p.certifications, c],
     }));
+
+  const toggleType = (t: string) =>
+    setData((p) => {
+      const has = p.farm_types.includes(t);
+      const next = has ? p.farm_types.filter((x) => x !== t) : [...p.farm_types, t];
+      return { ...p, farm_types: next, farm_type: next[0] || "" };
+    });
+
+  const onPhotoFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const out: string[] = [];
+    for (const f of files) {
+      try {
+        const { dataUrl } = await compressPhoto(f);
+        out.push(dataUrl);
+      } catch {
+        out.push(await new Promise<string>((r) => {
+          const fr = new FileReader();
+          fr.onload = () => r(fr.result as string);
+          fr.readAsDataURL(f);
+        }));
+      }
+    }
+    setData((p) => ({ ...p, photos: [...p.photos, ...out] }));
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const removePhoto = (i: number) =>
+    setData((p) => ({ ...p, photos: p.photos.filter((_, k) => k !== i) }));
 
   const submitting = createFarm.isPending || updateFarm.isPending;
 
@@ -118,7 +148,8 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     const payload = {
       client_id: data.client_id,
       farm_name: data.farm_name.trim(),
-      farm_type: data.farm_type || null,
+      farm_type: data.farm_type || data.farm_types[0] || null,
+      farm_types: data.farm_types.length ? data.farm_types : null,
       production_type: data.production_type || null,
       housing_type: data.housing_type || null,
       registration_number: data.registration_number || null,
@@ -129,6 +160,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
       herd_size: data.herd_size ? parseInt(data.herd_size) : null,
       surface_hectares: data.surface_hectares ? parseFloat(data.surface_hectares) : null,
       certifications: data.certifications.length ? data.certifications : null,
+      photos: data.photos.length ? data.photos : null,
       notes: data.notes || null,
       active: data.active,
     };
