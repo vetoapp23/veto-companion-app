@@ -69,11 +69,13 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsList className="grid grid-cols-6 w-full">
+            <TabsTrigger value="overview">Vue</TabsTrigger>
             <TabsTrigger value="batches">Lots ({batches.length})</TabsTrigger>
-            <TabsTrigger value="interventions">Interventions ({interventions.length})</TabsTrigger>
+            <TabsTrigger value="infra">Infra ({infrastructures.length})</TabsTrigger>
+            <TabsTrigger value="interventions">Inter. ({interventions.length})</TabsTrigger>
             <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
+            <TabsTrigger value="photos">Photos ({(farm.photos || []).length})</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
