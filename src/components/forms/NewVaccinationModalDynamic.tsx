@@ -190,7 +190,7 @@ export default function NewVaccinationModal({
         administered_by: formData.administeredBy?.trim() || undefined,
       };
 
-      if (plannedDoses.length > 1) {
+      if (plannedDoses.length >= 1) {
         // Multi-dose mode: create one row per planned dose, chaining next_due_date.
         const sorted = [...plannedDoses].sort((a, b) => a.date.localeCompare(b.date));
         for (let i = 0; i < sorted.length; i++) {
