@@ -11,6 +11,7 @@ import { Plus, Shield } from 'lucide-react';
 import { useCreateVaccinationProtocol, useUpdateVaccinationProtocol } from '@/hooks/useDatabase';
 import type { VaccinationProtocol, BoosterScheduleEntry } from '@/lib/database';
 import BoosterScheduleEditor from './BoosterScheduleEditor';
+import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
 
 interface VaccinationProtocolModalProps {
   children?: React.ReactNode;
