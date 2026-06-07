@@ -124,6 +124,30 @@ export default function NewVaccinationModal({
   const removeDose = (index: number) =>
     setPlannedDoses(prev => prev.filter((_, i) => i !== index));
 
+  const addManualDose = () => {
+    setPlannedDoses(prev => {
+      // If no plan yet, seed with the current vaccination date as 1ère dose
+      if (prev.length === 0) {
+        const first: PlannedDose = { label: '1ère dose', date: formData.vaccinationDate };
+        const next: PlannedDose = {
+          label: 'Rappel 1',
+          date: format(addDays(new Date(formData.vaccinationDate), 28), 'yyyy-MM-dd'),
+        };
+        return [first, next];
+      }
+      const last = prev[prev.length - 1];
+      const rappelNum = prev.filter(d => /rappel/i.test(d.label)).length + 1;
+      return [
+        ...prev,
+        {
+          label: `Rappel ${rappelNum}`,
+          date: format(addDays(new Date(last.date), 28), 'yyyy-MM-dd'),
+        },
+      ];
+    });
+  };
+
+
   const resetForm = () => {
     setFormData({
       animalId: selectedAnimalId || '',
@@ -166,7 +190,7 @@ export default function NewVaccinationModal({
         administered_by: formData.administeredBy?.trim() || undefined,
       };
 
-      if (plannedDoses.length > 1) {
+      if (plannedDoses.length >= 1) {
         // Multi-dose mode: create one row per planned dose, chaining next_due_date.
         const sorted = [...plannedDoses].sort((a, b) => a.date.localeCompare(b.date));
         for (let i = 0; i < sorted.length; i++) {
@@ -209,7 +233,7 @@ export default function NewVaccinationModal({
     }
   };
 
-  const hasMultiPlan = plannedDoses.length > 1;
+  const hasMultiPlan = plannedDoses.length >= 1;
 
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
@@ -351,54 +375,69 @@ export default function NewVaccinationModal({
           </div>
 
           {/* Dates: simple mode vs multi-dose plan */}
-          {!hasMultiPlan ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="vaccinationDate">Date de vaccination *</Label>
-                <Input
-                  id="vaccinationDate"
-                  type="date"
-                  value={formData.vaccinationDate}
-                  onChange={(e) => setFormData({ ...formData, vaccinationDate: e.target.value })}
-                  required
-                />
+          {plannedDoses.length === 0 ? (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vaccinationDate">Date de vaccination *</Label>
+                  <Input
+                    id="vaccinationDate"
+                    type="date"
+                    value={formData.vaccinationDate}
+                    onChange={(e) => setFormData({ ...formData, vaccinationDate: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nextDueDate">Prochain rappel</Label>
+                  <Input
+                    id="nextDueDate"
+                    type="date"
+                    value={formData.nextDueDate}
+                    onChange={(e) => setFormData({ ...formData, nextDueDate: e.target.value })}
+                    min={formData.vaccinationDate}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="nextDueDate">Prochain rappel</Label>
-                <Input
-                  id="nextDueDate"
-                  type="date"
-                  value={formData.nextDueDate}
-                  onChange={(e) => setFormData({ ...formData, nextDueDate: e.target.value })}
-                  min={formData.vaccinationDate}
-                />
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" size="sm" onClick={addManualDose}>
+                  <CalendarClock className="h-4 w-4 mr-1" />
+                  Planifier plusieurs rappels
+                </Button>
               </div>
-            </div>
+            </>
           ) : (
             <Card className="border-primary/40 bg-primary/5">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <CalendarClock className="h-4 w-4" />
-                    Calendrier prévisionnel ({plannedDoses.length} doses)
+                    Calendrier prévisionnel ({plannedDoses.length} dose{plannedDoses.length > 1 ? 's' : ''})
                   </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPlannedDoses([]);
-                      setAppliedProtocolId(null);
-                    }}
-                  >
-                    Réinitialiser
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button type="button" variant="outline" size="sm" onClick={addManualDose}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Ajouter un rappel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPlannedDoses([]);
+                        setAppliedProtocolId(null);
+                      }}
+                    >
+                      Réinitialiser
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Les dates idéales sont calculées selon le protocole. Vous pouvez les modifier ou
-                  supprimer une dose. Une vaccination sera enregistrée pour chaque ligne.
+                  {appliedProtocolId
+                    ? 'Dates idéales calculées selon le protocole. Modifiez librement, ajoutez ou supprimez des rappels.'
+                    : 'Définissez chaque dose et sa date. Une vaccination sera enregistrée pour chaque ligne.'}
                 </p>
                 {plannedDoses.map((dose, i) => (
                   <div key={i} className="grid grid-cols-[1fr_160px_40px] gap-2 items-center">
