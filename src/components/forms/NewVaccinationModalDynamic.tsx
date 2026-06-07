@@ -18,6 +18,7 @@ import {
   useVaccinationProtocolsBySpecies,
 } from '@/hooks/useDatabase';
 import type { BoosterScheduleEntry, VaccinationProtocol } from '@/lib/database';
+import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
 
 interface NewVaccinationModalProps {
   children?: React.ReactNode;
