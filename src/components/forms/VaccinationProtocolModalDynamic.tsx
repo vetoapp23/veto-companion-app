@@ -50,6 +50,11 @@ export default function VaccinationProtocolModal({
     notes: protocol?.notes || '',
     active: protocol?.active ?? true
   });
+  const [boosterSchedule, setBoosterSchedule] = useState<BoosterScheduleEntry[]>(
+    protocol?.booster_schedule && protocol.booster_schedule.length > 0
+      ? protocol.booster_schedule
+      : [{ label: '1ère dose', offset_days: 0 }]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
