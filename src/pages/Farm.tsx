@@ -40,7 +40,10 @@ const FarmPage = () => {
 
   const filtered = useMemo(() => {
     return farms.filter((f: any) => {
-      if (typeFilter !== "all" && f.farm_type !== typeFilter) return false;
+      if (typeFilter !== "all") {
+        const types = (f.farm_types && f.farm_types.length > 0) ? f.farm_types : [f.farm_type];
+        if (!types.includes(typeFilter)) return false;
+      }
       if (!search) return true;
       const q = search.toLowerCase();
       return (
