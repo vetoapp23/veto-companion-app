@@ -2282,7 +2282,6 @@ export const createFarm = async (farmData: CreateFarmData): Promise<Farm> => {
 
   const insertData = {
     ...farmData,
-    user_id: user.id,
     organization_id: profile.organization_id,
     active: farmData.active ?? true
   }
