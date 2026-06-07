@@ -1294,6 +1294,38 @@ export const useCreatePrescription = () => {
             throw new Error(`Error creating prescription medications: ${medicationsError.message}`);
           }
 
+          // Stock decrement: for each medication linked to a stock item, record an "out" movement and decrement
+          for (const med of medications) {
+            if (!med.stock_item_id || !med.quantity || med.quantity <= 0) continue;
+            try {
+              const { data: stockItem } = await supabase
+                .from('stock_items')
+                .select('id, current_quantity, organization_id')
+                .eq('id', med.stock_item_id)
+                .single();
+              if (!stockItem) continue;
+
+              const newQty = Math.max(0, Number(stockItem.current_quantity || 0) - Number(med.quantity));
+              await supabase
+                .from('stock_items')
+                .update({ current_quantity: newQty, updated_at: new Date().toISOString() })
+                .eq('id', stockItem.id);
+
+              await supabase.from('stock_movements').insert({
+                stock_item_id: stockItem.id,
+                organization_id: stockItem.organization_id,
+                movement_type: 'out',
+                quantity: med.quantity,
+                reason: 'Prescription',
+                reference_id: prescriptionResult.id,
+                reference_type: 'prescription',
+                performed_by: user.id,
+                notes: `Médicament: ${med.medication_name}`,
+              });
+            } catch (e) {
+              console.warn('Stock decrement failed for med', med.medication_name, e);
+            }
+          }
           // Successfully created prescription medications
         }
 
