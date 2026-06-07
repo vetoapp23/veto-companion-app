@@ -326,6 +326,11 @@ export interface Antiparasitic {
   animal?: Animal
 }
 
+export interface BoosterScheduleEntry {
+  label: string
+  offset_days: number
+}
+
 export interface VaccinationProtocol {
   id: string
   species: string
@@ -336,6 +341,7 @@ export interface VaccinationProtocol {
   duration_days?: number
   notes?: string
   active: boolean
+  booster_schedule?: BoosterScheduleEntry[]
   created_at: string
   updated_at: string
 }
@@ -353,6 +359,7 @@ export interface AntiparasiticProtocol {
   age_restriction?: string
   notes?: string
   active: boolean
+  booster_schedule?: BoosterScheduleEntry[]
   created_at: string
   updated_at: string
 }
