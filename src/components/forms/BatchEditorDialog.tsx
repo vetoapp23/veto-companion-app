@@ -99,6 +99,19 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
           <DialogDescription>Groupe d'animaux au sein de l'exploitation.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
+          {farmTypes.length > 1 && (
+            <div className="space-y-2">
+              <Label>Type d'élevage du lot</Label>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={data.farm_type} onChange={(e) => set("farm_type", e.target.value)}>
+                <option value="">— Choisir —</option>
+                {farmTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Les catégories ci-dessous s'adaptent au type choisi.
+              </p>
+            </div>
+          )}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nom du lot *</Label>
