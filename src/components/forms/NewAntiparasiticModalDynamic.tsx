@@ -471,40 +471,102 @@ export default function NewAntiparasiticModalDynamic({
               />
             </div>
 
-            {/* Treatment Date */}
-            <div className="space-y-2">
-              <Label htmlFor="treatmentDate">Date du traitement *</Label>
-              <Input
-                id="treatmentDate"
-                type="date"
-                value={formData.treatmentDate}
-                onChange={(e) => handleInputChange('treatmentDate', e.target.value)}
-                required
-              />
-            </div>
+            {plannedDoses.length <= 1 && (
+              <>
+                {/* Treatment Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="treatmentDate">Date du traitement *</Label>
+                  <Input
+                    id="treatmentDate"
+                    type="date"
+                    value={formData.treatmentDate}
+                    onChange={(e) => handleInputChange('treatmentDate', e.target.value)}
+                    required
+                  />
+                </div>
 
-            {/* Next Treatment Date */}
-            <div className="space-y-2">
-              <Label htmlFor="nextTreatmentDate">Prochain traitement</Label>
-              <Input
-                id="nextTreatmentDate"
-                type="date"
-                value={formData.nextTreatmentDate}
-                onChange={(e) => handleInputChange('nextTreatmentDate', e.target.value)}
-              />
-            </div>
-
-            {/* Administered By */}
-            {/* <div className="space-y-2">
-              <Label htmlFor="administeredBy">Administré par</Label>
-              <Input
-                id="administeredBy"
-                value={formData.administeredBy}
-                onChange={(e) => handleInputChange('administeredBy', e.target.value)}
-                placeholder="Nom du vétérinaire"
-              />
-            </div> */}
+                {/* Next Treatment Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="nextTreatmentDate">Prochain traitement</Label>
+                  <Input
+                    id="nextTreatmentDate"
+                    type="date"
+                    value={formData.nextTreatmentDate}
+                    onChange={(e) => handleInputChange('nextTreatmentDate', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Multi-dose calendar */}
+          {plannedDoses.length > 1 && (
+            <Card className="border-primary/40 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    Calendrier prévisionnel ({plannedDoses.length} traitements)
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPlannedDoses([]);
+                      setAppliedProtocolId(null);
+                    }}
+                  >
+                    Réinitialiser
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Dates idéales calculées selon le protocole. Modifiables — un enregistrement sera créé pour chaque ligne.
+                </p>
+                <div className="space-y-2">
+                  <Label className="text-xs">Date du 1er traitement</Label>
+                  <Input
+                    type="date"
+                    value={formData.treatmentDate}
+                    onChange={(e) => handleInputChange('treatmentDate', e.target.value)}
+                  />
+                </div>
+                {plannedDoses.map((dose, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_160px_40px] gap-2 items-center">
+                    <Input
+                      value={dose.label}
+                      onChange={(e) =>
+                        setPlannedDoses(prev =>
+                          prev.map((d, idx) => (idx === i ? { ...d, label: e.target.value } : d)),
+                        )
+                      }
+                    />
+                    <Input
+                      type="date"
+                      value={dose.date}
+                      onChange={(e) =>
+                        setPlannedDoses(prev =>
+                          prev.map((d, idx) => (idx === i ? { ...d, date: e.target.value } : d)),
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPlannedDoses(prev => prev.filter((_, idx) => idx !== i))}
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
 
           {/* Effectiveness Rating */}
           <div className="space-y-2">
