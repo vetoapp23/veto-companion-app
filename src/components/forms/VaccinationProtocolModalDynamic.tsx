@@ -77,7 +77,10 @@ export default function VaccinationProtocolModal({
         frequency: formData.frequency || undefined,
         duration_days: formData.durationDays ? parseInt(formData.durationDays) : undefined,
         notes: formData.notes || undefined,
-        active: formData.active
+        active: formData.active,
+        booster_schedule: boosterSchedule
+          .filter(b => b.label.trim())
+          .sort((a, b) => a.offset_days - b.offset_days)
       };
 
       if (mode === 'create') {
