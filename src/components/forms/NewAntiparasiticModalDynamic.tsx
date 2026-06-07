@@ -18,6 +18,12 @@ interface PlannedDose {
   label: string;
   date: string;
 }
+import type { CreateAntiparasiticData, BoosterScheduleEntry } from '@/lib/database';
+
+interface PlannedDose {
+  label: string;
+  date: string;
+}
 
 interface NewAntiparasiticModalDynamicProps {
   open: boolean;
