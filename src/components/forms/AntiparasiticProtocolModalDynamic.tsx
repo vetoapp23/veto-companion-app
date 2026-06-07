@@ -322,6 +322,15 @@ export default function AntiparasiticProtocolModalDynamic({
             />
           </div>
 
+          {/* Booster Schedule */}
+          <BoosterScheduleEditor
+            value={boosterSchedule}
+            onChange={setBoosterSchedule}
+            title="Calendrier des traitements"
+            description="Listez chaque traitement (1er, rappels...) avec son décalage en jours depuis le 1er traitement."
+          />
+
+
           {/* Active Switch */}
           <div className="flex items-center space-x-2">
             <Switch
