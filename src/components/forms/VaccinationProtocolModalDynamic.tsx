@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAnimalSpecies, useVaccinationTypes } from '@/hooks/useAppSettings';
 import { Plus, Shield } from 'lucide-react';
 import { useCreateVaccinationProtocol, useUpdateVaccinationProtocol } from '@/hooks/useDatabase';
-import type { VaccinationProtocol } from '@/lib/database';
+import type { VaccinationProtocol, BoosterScheduleEntry } from '@/lib/database';
+import BoosterScheduleEditor from './BoosterScheduleEditor';
 
 interface VaccinationProtocolModalProps {
   children?: React.ReactNode;
