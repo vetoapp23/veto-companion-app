@@ -326,6 +326,29 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
             </CardContent>
           </Card>
 
+          {/* Photos de l'exploitation */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Photos de l'exploitation</CardTitle></CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {data.photos.map((src, i) => (
+                  <div key={i} className="relative h-24 w-24 rounded overflow-hidden border">
+                    <img src={src} alt="" className="h-full w-full object-cover" />
+                    <button type="button" onClick={() => removePhoto(i)}
+                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl px-1">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  className="h-24 w-24 rounded border border-dashed flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-accent">
+                  <Upload className="h-4 w-4 mb-1" /> Ajouter
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onPhotoFiles} />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Notes */}
           <div className="space-y-2">
             <Label>Notes</Label>
