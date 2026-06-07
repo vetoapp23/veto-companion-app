@@ -59,6 +59,17 @@ export default function NewAntiparasiticModalDynamic({
 
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
   const { data: protocols } = useAntiparasiticProtocolsBySpecies(selectedAnimal?.species);
+  const [plannedDoses, setPlannedDoses] = useState<PlannedDose[]>([]);
+  const [appliedProtocolId, setAppliedProtocolId] = useState<string | null>(null);
+
+  const buildPlanFromSchedule = (baseDate: string, schedule: BoosterScheduleEntry[]): PlannedDose[] => {
+    return [...schedule]
+      .sort((a, b) => a.offset_days - b.offset_days)
+      .map(entry => ({
+        label: entry.label,
+        date: format(addDays(new Date(baseDate), entry.offset_days), 'yyyy-MM-dd'),
+      }));
+  };
 
   // Update form when props change
   useEffect(() => {
