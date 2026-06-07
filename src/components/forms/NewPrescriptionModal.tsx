@@ -15,6 +15,10 @@ import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useClients, useAnimals, useCreatePrescription, useStockItems } from "@/hooks/useDatabase";
 import type { CreatePrescriptionData } from "@/lib/database";
+import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
+
+const DEFAULT_ROUTES = ["oral", "injectable", "topique", "intraveineuse", "intramusculaire", "sous-cutanée"];
+const DEFAULT_FREQUENCIES = ["1x/jour", "2x/jour", "3x/jour", "1x/semaine", "selon besoin"];
 
 interface NewPrescriptionModalProps {
   open: boolean;
@@ -108,8 +112,19 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
       return;
     }
 
-    // Filter out empty medications
-    const validMedications = medications.filter(med => med.medication_name.trim() !== "");
+    // Filter out empty medications & attach stock_item_id when name matches a stock item
+    const validMedications = medications
+      .filter(med => med.medication_name.trim() !== "")
+      .map(med => {
+        const stockMatch = availableMedications.find(
+          item => item.name.toLowerCase() === med.medication_name.trim().toLowerCase()
+        );
+        return {
+          ...med,
+          medication_name: med.medication_name.trim(),
+          stock_item_id: stockMatch?.id,
+        };
+      });
     
     if (validMedications.length === 0) {
       toast({
@@ -247,29 +262,21 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="md:col-span-2 lg:col-span-1">
               <Label className="text-gray-700 dark:text-gray-300">Médicament *</Label>
-              <Select
+              <ComboboxFreeText
                 value={medication.medication_name}
-                onValueChange={(value) => handleMedicationChange(index, 'medication_name', value)}
-              >
-                <SelectTrigger>
-                <SelectValue placeholder="Sélectionner ou taper..." />
-                </SelectTrigger>
-                <SelectContent>
-                {availableMedications.map((item) => (
-                <SelectItem key={item.id} value={item.name}>
-                {item.name} ({item.current_quantity} {item.unit})
-                </SelectItem>
-                ))}
-                </SelectContent>
-              </Select>
-              {!availableMedications.find(item => item.name === medication.medication_name) && (
-                <Input
-                className="mt-2"
-                value={medication.medication_name}
-                onChange={(e) => handleMedicationChange(index, 'medication_name', e.target.value)}
-                placeholder="Nom du médicament personnalisé"
-                />
-              )}
+                onChange={(val) => handleMedicationChange(index, 'medication_name', val)}
+                options={availableMedications.map(i => i.name)}
+                category="medication_name"
+                placeholder="Sélectionner ou créer..."
+              />
+              {(() => {
+                const m = availableMedications.find(i => i.name.toLowerCase() === medication.medication_name.trim().toLowerCase());
+                return m ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stock: {m.current_quantity} {m.unit} — déduit automatiquement
+                  </p>
+                ) : null;
+              })()}
               </div>
 
               <div>
@@ -283,21 +290,13 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
 
               <div>
               <Label className="text-gray-700 dark:text-gray-300">Fréquence</Label>
-              <Select
+              <ComboboxFreeText
                 value={medication.frequency || ""}
-                onValueChange={(value) => handleMedicationChange(index, 'frequency', value)}
-              >
-                <SelectTrigger>
-                <SelectValue placeholder="Sélectionner..." />
-                </SelectTrigger>
-                <SelectContent>
-                <SelectItem value="1x/jour">1 fois par jour</SelectItem>
-                <SelectItem value="2x/jour">2 fois par jour</SelectItem>
-                <SelectItem value="3x/jour">3 fois par jour</SelectItem>
-                <SelectItem value="1x/semaine">1 fois par semaine</SelectItem>
-                <SelectItem value="selon besoin">Selon besoin</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(val) => handleMedicationChange(index, 'frequency', val)}
+                options={DEFAULT_FREQUENCIES}
+                category="frequency"
+                placeholder="Sélectionner ou créer..."
+              />
               </div>
 
               <div>
@@ -321,22 +320,13 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
 
               <div>
               <Label className="text-gray-700 dark:text-gray-300">Voie d'administration</Label>
-              <Select
+              <ComboboxFreeText
                 value={medication.route || "oral"}
-                onValueChange={(value) => handleMedicationChange(index, 'route', value)}
-              >
-                <SelectTrigger>
-                <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                <SelectItem value="oral">Orale</SelectItem>
-                <SelectItem value="injectable">Injectable</SelectItem>
-                <SelectItem value="topique">Topique</SelectItem>
-                <SelectItem value="intraveineuse">Intraveineuse</SelectItem>
-                <SelectItem value="intramusculaire">Intramusculaire</SelectItem>
-                <SelectItem value="sous-cutanée">Sous-cutanée</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(val) => handleMedicationChange(index, 'route', val)}
+                options={DEFAULT_ROUTES}
+                category="administration_route"
+                placeholder="Sélectionner ou créer..."
+              />
               </div>
               </div>
 
