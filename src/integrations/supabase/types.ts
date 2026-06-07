@@ -645,9 +645,116 @@ export type Database = {
         }
         Relationships: []
       }
+      farm_batch_health_events: {
+        Row: {
+          affected_count: number | null
+          batch_id: string | null
+          cost: number | null
+          created_at: string
+          dose: string | null
+          event_date: string
+          event_type: string
+          farm_id: string
+          id: string
+          intervention_id: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          product: string | null
+          updated_at: string
+        }
+        Insert: {
+          affected_count?: number | null
+          batch_id?: string | null
+          cost?: number | null
+          created_at?: string
+          dose?: string | null
+          event_date?: string
+          event_type: string
+          farm_id: string
+          id?: string
+          intervention_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          product?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affected_count?: number | null
+          batch_id?: string | null
+          cost?: number | null
+          created_at?: string
+          dose?: string | null
+          event_date?: string
+          event_type?: string
+          farm_id?: string
+          id?: string
+          intervention_id?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          product?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      farm_batches: {
+        Row: {
+          animal_count: number
+          birth_period: string | null
+          category: string | null
+          created_at: string
+          farm_id: string
+          id: string
+          location: string | null
+          metadata: Json
+          name: string
+          notes: string | null
+          organization_id: string
+          species: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          animal_count?: number
+          birth_period?: string | null
+          category?: string | null
+          created_at?: string
+          farm_id: string
+          id?: string
+          location?: string | null
+          metadata?: Json
+          name: string
+          notes?: string | null
+          organization_id: string
+          species?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          animal_count?: number
+          birth_period?: string | null
+          category?: string | null
+          created_at?: string
+          farm_id?: string
+          id?: string
+          location?: string | null
+          metadata?: Json
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          species?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       farm_interventions: {
         Row: {
+          affected_count: number | null
           animal_count: number | null
+          batch_id: string | null
           cost: number | null
           created_at: string
           description: string | null
@@ -658,14 +765,18 @@ export type Database = {
           intervention_date: string
           intervention_type: string
           medications_used: string[] | null
+          next_visit_date: string | null
           notes: string | null
           organization_id: string
+          protocol_type: string | null
           treatment: string | null
           updated_at: string
           veterinarian_id: string | null
         }
         Insert: {
+          affected_count?: number | null
           animal_count?: number | null
+          batch_id?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -676,14 +787,18 @@ export type Database = {
           intervention_date?: string
           intervention_type: string
           medications_used?: string[] | null
+          next_visit_date?: string | null
           notes?: string | null
           organization_id: string
+          protocol_type?: string | null
           treatment?: string | null
           updated_at?: string
           veterinarian_id?: string | null
         }
         Update: {
+          affected_count?: number | null
           animal_count?: number | null
+          batch_id?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -694,8 +809,10 @@ export type Database = {
           intervention_date?: string
           intervention_type?: string
           medications_used?: string[] | null
+          next_visit_date?: string | null
           notes?: string | null
           organization_id?: string
+          protocol_type?: string | null
           treatment?: string | null
           updated_at?: string
           veterinarian_id?: string | null
@@ -723,16 +840,21 @@ export type Database = {
           address: string | null
           certifications: string[] | null
           client_id: string
+          coordinates: string | null
           created_at: string
           email: string | null
           farm_name: string
           farm_type: string | null
           herd_size: number | null
+          housing_type: string | null
           id: string
+          metadata: Json
           notes: string | null
           organization_id: string
           phone: string | null
+          production_type: string | null
           registration_number: string | null
+          surface_hectares: number | null
           updated_at: string
         }
         Insert: {
@@ -740,16 +862,21 @@ export type Database = {
           address?: string | null
           certifications?: string[] | null
           client_id: string
+          coordinates?: string | null
           created_at?: string
           email?: string | null
           farm_name: string
           farm_type?: string | null
           herd_size?: number | null
+          housing_type?: string | null
           id?: string
+          metadata?: Json
           notes?: string | null
           organization_id: string
           phone?: string | null
+          production_type?: string | null
           registration_number?: string | null
+          surface_hectares?: number | null
           updated_at?: string
         }
         Update: {
@@ -757,16 +884,21 @@ export type Database = {
           address?: string | null
           certifications?: string[] | null
           client_id?: string
+          coordinates?: string | null
           created_at?: string
           email?: string | null
           farm_name?: string
           farm_type?: string | null
           herd_size?: number | null
+          housing_type?: string | null
           id?: string
+          metadata?: Json
           notes?: string | null
           organization_id?: string
           phone?: string | null
+          production_type?: string | null
           registration_number?: string | null
+          surface_hectares?: number | null
           updated_at?: string
         }
         Relationships: [
