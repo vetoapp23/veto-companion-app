@@ -124,6 +124,30 @@ export default function NewVaccinationModal({
   const removeDose = (index: number) =>
     setPlannedDoses(prev => prev.filter((_, i) => i !== index));
 
+  const addManualDose = () => {
+    setPlannedDoses(prev => {
+      // If no plan yet, seed with the current vaccination date as 1ère dose
+      if (prev.length === 0) {
+        const first: PlannedDose = { label: '1ère dose', date: formData.vaccinationDate };
+        const next: PlannedDose = {
+          label: 'Rappel 1',
+          date: format(addDays(new Date(formData.vaccinationDate), 28), 'yyyy-MM-dd'),
+        };
+        return [first, next];
+      }
+      const last = prev[prev.length - 1];
+      const rappelNum = prev.filter(d => /rappel/i.test(d.label)).length + 1;
+      return [
+        ...prev,
+        {
+          label: `Rappel ${rappelNum}`,
+          date: format(addDays(new Date(last.date), 28), 'yyyy-MM-dd'),
+        },
+      ];
+    });
+  };
+
+
   const resetForm = () => {
     setFormData({
       animalId: selectedAnimalId || '',
