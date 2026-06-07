@@ -67,6 +67,9 @@ export default function AntiparasiticProtocolModalDynamic({
         notes: editingProtocol.notes || '',
         active: editingProtocol.active,
       });
+      if (editingProtocol.booster_schedule && editingProtocol.booster_schedule.length > 0) {
+        setBoosterSchedule(editingProtocol.booster_schedule);
+      }
     }
   }, [editingProtocol]);
 
