@@ -122,6 +122,9 @@ export default function AntiparasiticProtocolModalDynamic({
           formData.seasonRecommendation ? `Saison: ${formData.seasonRecommendation}` : ''
         ].filter(Boolean).join(' | ') || undefined,
         active: formData.active,
+        booster_schedule: boosterSchedule
+          .filter(b => b.label.trim())
+          .sort((a, b) => a.offset_days - b.offset_days),
       };
 
       if (editingProtocol) {
