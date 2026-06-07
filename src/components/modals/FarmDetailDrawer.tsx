@@ -26,15 +26,22 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
   const [batchOpen, setBatchOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const [interventionOpen, setInterventionOpen] = useState(false);
+  const [infraOpen, setInfraOpen] = useState(false);
+  const [editingInfra, setEditingInfra] = useState<any>(null);
 
   const { data: batches = [] } = useFarmBatches(farm?.id);
   const { data: events = [] } = useFarmHealthEvents(farm?.id);
   const { data: interventions = [] } = useFarmInterventionsByFarm(farm?.id || "");
+  const { data: infrastructures = [] } = useFarmInfrastructures(farm?.id);
   const delBatch = useDeleteFarmBatch();
   const delEvent = useDeleteFarmHealthEvent();
+  const delInfra = useDeleteFarmInfrastructure();
 
   if (!farm) return null;
-  const config = getFarmTypeConfig(farm.farm_type);
+  const farmTypes: string[] = (farm.farm_types && farm.farm_types.length > 0)
+    ? farm.farm_types
+    : (farm.farm_type ? [farm.farm_type] : []);
+  const config = getFarmTypeConfig(farm.farm_type || farmTypes[0]);
   const totalBatchAnimals = batches.reduce((s, b) => s + (b.animal_count || 0), 0);
 
   return (
