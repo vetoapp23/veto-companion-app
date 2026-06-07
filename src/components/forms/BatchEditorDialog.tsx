@@ -65,7 +65,7 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
       toast({ title: "Nom du lot requis", variant: "destructive" });
       return;
     }
-    const payload = {
+    const payload: any = {
       farm_id: farmId,
       name: data.name.trim(),
       species: data.species || null,
@@ -75,6 +75,7 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
       location: data.location || null,
       status: data.status,
       notes: data.notes || null,
+      farm_type: data.farm_type || null,
     };
     try {
       if (batch?.id) {
