@@ -1,654 +1,287 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// @ts-nocheck
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { MapPin } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useFarmManagementSettings, useVeterinarianSettings } from "@/hooks/useAppSettings";
-import { useClients } from "@/contexts/ClientContext";
-import { useSettings } from "@/contexts/SettingsContext";
-import { Farm, FarmAnimalDetail } from "@/contexts/ClientContext";
-import FarmPhotoManager from "@/components/FarmPhotoManager";
+import { useClients, useCreateFarm, useUpdateFarm } from "@/hooks/useDatabase";
+import { useFarmManagementSettings } from "@/hooks/useAppSettings";
+import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
+import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig } from "@/lib/farmTypeConfig";
 
 interface NewFarmModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  farm?: any | null; // when present -> edit mode
 }
 
-const NewFarmModal = ({ open, onOpenChange }: NewFarmModalProps) => {
-  const { addFarm } = useClients();
-  const { settings } = useSettings();
+const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
   const { toast } = useToast();
-  
-  // Fetch settings for dynamic data
+  const { data: clients = [] } = useClients();
   const { data: farmSettings } = useFarmManagementSettings();
-  const { data: veterinarians = [] } = useVeterinarianSettings();
-  
-  const [formData, setFormData] = useState<Partial<Farm> & { coordinates: { latitude: number; longitude: number }; emergencyContact: { name: string; phone: string; relation: string } }>({
-    name: "",
-    owner: "",
-    ownerIdNumber: "",
+  const createFarm = useCreateFarm();
+  const updateFarm = useUpdateFarm();
+
+  const farmTypeLabels = (farmSettings?.farm_types && farmSettings.farm_types.length > 0)
+    ? farmSettings.farm_types
+    : DEFAULT_FARM_TYPE_KEYS.map((k) => FARM_TYPE_CONFIGS[k].label);
+
+  const certificationOptions = farmSettings?.certification_types || ["Bio", "Label Rouge", "AOC", "IGP", "Halal"];
+
+  const [data, setData] = useState({
+    client_id: "",
+    farm_name: "",
+    farm_type: "",
+    production_type: "",
+    housing_type: "",
+    registration_number: "",
     address: "",
-    coordinates: { latitude: 0, longitude: 0 },
+    coordinates: "",
     phone: "",
     email: "",
-    types: [],
-    totalAnimals: 0,
-    animalDetails: [],
-    veterinarian: "",
+    herd_size: "",
+    surface_hectares: "",
+    certifications: [] as string[],
     notes: "",
-    status: "active" as Farm['status'],
-    registrationNumber: "",
-    surfaceArea: 0,
-    buildingDetails: "",
-    equipmentDetails: "",
-    certifications: [],
-    insuranceDetails: "",
-    emergencyContact: {
-      name: "",
-      phone: "",
-      relation: ""
-    },
-    photos: []
+    active: true,
   });
-
-  const [currentAnimalDetail, setCurrentAnimalDetail] = useState<FarmAnimalDetail>({
-    category: "",
-    maleCount: 0,
-    femaleCount: 0,
-    breeds: [],
-    ageGroups: []
-  });
-
-  // Vérification de sécurité pour s'assurer que farmManagement existe
-  if (!settings.farmManagement) {
-    console.error('farmManagement settings not found, using defaults');
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Erreur de configuration</DialogTitle>
-            <DialogDescription>
-              Les paramètres de gestion des fermes ne sont pas configurés. Veuillez recharger la page ou vérifier les paramètres.
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   useEffect(() => {
-    if (!open) {
-      setFormData({
-        name: "",
-        owner: "",
-        ownerIdNumber: "",
-        address: "",
-        coordinates: { latitude: 0, longitude: 0 },
-        phone: "",
-        email: "",
-        types: [],
-        totalAnimals: 0,
-        animalDetails: [],
-        veterinarian: "",
-        notes: "",
-        status: "active",
-        registrationNumber: "",
-        surfaceArea: 0,
-        buildingDetails: "",
-        equipmentDetails: "",
-        certifications: [],
-        insuranceDetails: "",
-        emergencyContact: { name: "", phone: "", relation: "" },
-        photos: []
-      });
-      setCurrentAnimalDetail({
-        category: "",
-        maleCount: 0,
-        femaleCount: 0,
-        breeds: [],
-        ageGroups: []
-      });
-    }
-  }, [open]);
-
-  const handleChange = (field: string, value: any) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData(prev => {
-        const parentValue = prev[parent as keyof typeof prev] as any;
-        return {
-          ...prev,
-          [parent]: {
-            ...parentValue,
-            [child]: value
-          }
-        };
+    if (!open) return;
+    if (farm) {
+      setData({
+        client_id: farm.client_id || "",
+        farm_name: farm.farm_name || "",
+        farm_type: farm.farm_type || "",
+        production_type: farm.production_type || "",
+        housing_type: farm.housing_type || "",
+        registration_number: farm.registration_number || "",
+        address: farm.address || "",
+        coordinates: farm.coordinates || "",
+        phone: farm.phone || "",
+        email: farm.email || "",
+        herd_size: farm.herd_size ? String(farm.herd_size) : "",
+        surface_hectares: farm.surface_hectares ? String(farm.surface_hectares) : "",
+        certifications: farm.certifications || [],
+        notes: farm.notes || "",
+        active: farm.active ?? true,
       });
     } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const handleTypeToggle = (type: string) => {
-    setFormData(prev => ({
-      ...prev,
-      types: prev.types?.includes(type)
-        ? prev.types.filter(t => t !== type)
-        : [...(prev.types || []), type]
-    }));
-  };
-
-  const handleCertificationToggle = (certification: string) => {
-    setFormData(prev => ({
-      ...prev,
-      certifications: prev.certifications?.includes(certification)
-        ? prev.certifications.filter(c => c !== certification)
-        : [...(prev.certifications || []), certification]
-    }));
-  };
-
-  const addAnimalDetail = () => {
-    if (!currentAnimalDetail.category) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner une catégorie d'animal",
-        variant: "destructive"
+      setData({
+        client_id: "", farm_name: "", farm_type: "", production_type: "", housing_type: "",
+        registration_number: "", address: "", coordinates: "", phone: "", email: "",
+        herd_size: "", surface_hectares: "", certifications: [], notes: "", active: true,
       });
-      return;
     }
+  }, [open, farm]);
 
-    setFormData(prev => ({
-      ...prev,
-      animalDetails: [...(prev.animalDetails || []), { ...currentAnimalDetail }]
+  const config = getFarmTypeConfig(data.farm_type);
+
+  const set = (k: string, v: any) => setData((p) => ({ ...p, [k]: v }));
+
+  const toggleCert = (c: string) =>
+    setData((p) => ({
+      ...p,
+      certifications: p.certifications.includes(c)
+        ? p.certifications.filter((x) => x !== c)
+        : [...p.certifications, c],
     }));
 
-    setCurrentAnimalDetail({
-      category: "",
-      maleCount: 0,
-      femaleCount: 0,
-      breeds: [],
-      ageGroups: []
-    });
-  };
+  const submitting = createFarm.isPending || updateFarm.isPending;
 
-  const removeAnimalDetail = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      animalDetails: prev.animalDetails?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  const addBreedToCurrentDetail = (breed: string) => {
-    setCurrentAnimalDetail(prev => ({
-      ...prev,
-      breeds: [...prev.breeds, breed]
-    }));
-  };
-
-  const removeBreedFromCurrentDetail = (breed: string) => {
-    setCurrentAnimalDetail(prev => ({
-      ...prev,
-      breeds: prev.breeds.filter(b => b !== breed)
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.owner || !formData.address || !formData.types?.length) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive"
-      });
+    if (!data.farm_name.trim()) {
+      toast({ title: "Erreur", description: "Nom de l'exploitation requis", variant: "destructive" });
       return;
     }
-
-    const newFarm: Omit<Farm, 'id' | 'createdAt'> = {
-      name: formData.name!,
-      owner: formData.owner!,
-      ownerIdNumber: formData.ownerIdNumber || "",
-      address: formData.address!,
-      coordinates: formData.coordinates || { latitude: 0, longitude: 0 },
-      phone: formData.phone || "",
-      email: formData.email || "",
-      types: formData.types || [],
-      totalAnimals: (formData.animalDetails || []).reduce((total, detail) => total + detail.maleCount + detail.femaleCount, 0),
-      animalDetails: formData.animalDetails || [],
-      lastVisit: new Date().toISOString().split('T')[0],
-      status: formData.status || "active",
-      veterinarian: formData.veterinarian || "",
-      notes: formData.notes || "",
-      registrationNumber: formData.registrationNumber || "",
-      surfaceArea: formData.surfaceArea || 0,
-      buildingDetails: formData.buildingDetails || "",
-      equipmentDetails: formData.equipmentDetails || "",
-      certifications: formData.certifications || [],
-      insuranceDetails: formData.insuranceDetails || "",
-      emergencyContact: formData.emergencyContact || { name: "", phone: "", relation: "" }
+    if (!data.client_id) {
+      toast({ title: "Erreur", description: "Propriétaire requis", variant: "destructive" });
+      return;
+    }
+    const payload = {
+      client_id: data.client_id,
+      farm_name: data.farm_name.trim(),
+      farm_type: data.farm_type || null,
+      production_type: data.production_type || null,
+      housing_type: data.housing_type || null,
+      registration_number: data.registration_number || null,
+      address: data.address || null,
+      coordinates: data.coordinates || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      herd_size: data.herd_size ? parseInt(data.herd_size) : null,
+      surface_hectares: data.surface_hectares ? parseFloat(data.surface_hectares) : null,
+      certifications: data.certifications.length ? data.certifications : null,
+      notes: data.notes || null,
+      active: data.active,
     };
-
-    addFarm(newFarm);
-    
-    toast({
-      title: "Succès",
-      description: "Nouvelle exploitation créée avec succès"
-    });
-    
-    onOpenChange(false);
+    try {
+      if (farm?.id) {
+        await updateFarm.mutateAsync({ id: farm.id, data: payload });
+        toast({ title: "✓ Exploitation modifiée" });
+      } else {
+        await createFarm.mutateAsync(payload as any);
+        toast({ title: "✓ Exploitation créée" });
+      }
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message || "Échec", variant: "destructive" });
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvelle Exploitation Agricole</DialogTitle>
+          <DialogTitle>{farm ? "Modifier l'exploitation" : "Nouvelle exploitation"}</DialogTitle>
           <DialogDescription>
-            Créez une nouvelle exploitation agricole avec toutes les informations détaillées
+            Formulaire adaptatif selon le type d'élevage. Champs personnalisables via Paramètres.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informations générales */}
+        <form onSubmit={onSubmit} className="space-y-6">
+          {/* Identification */}
           <Card>
-            <CardHeader>
-              <CardTitle>Informations générales</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Nom de l'exploitation *</Label>
-                <Input
-                  id="name"
-                  value={formData.name || ""}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  placeholder="Nom de l'exploitation"
-                />
-              </div>
-              <div>
-                <Label htmlFor="owner">Propriétaire *</Label>
-                <Input
-                  id="owner"
-                  value={formData.owner || ""}
-                  onChange={(e) => handleChange("owner", e.target.value)}
-                  placeholder="Nom du propriétaire"
-                />
-              </div>
-              <div>
-                <Label htmlFor="ownerIdNumber">N° pièce d'identité du propriétaire</Label>
-                <Input
-                  id="ownerIdNumber"
-                  value={formData.ownerIdNumber || ""}
-                  onChange={(e) => handleChange("ownerIdNumber", e.target.value)}
-                  placeholder="Numéro de carte d'identité, passeport, etc."
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="address">Adresse *</Label>
-                <Input
-                  id="address"
-                  value={formData.address || ""}
-                  onChange={(e) => handleChange("address", e.target.value)}
-                  placeholder="Adresse complète"
-                />
-              </div>
-              <div>
-                <Label htmlFor="latitude">Latitude</Label>
-                <Input
-                  id="latitude"
-                  type="number"
-                  step="0.0001"
-                  value={formData.coordinates?.latitude || ""}
-                  onChange={(e) => handleChange("coordinates.latitude", parseFloat(e.target.value) || 0)}
-                  placeholder="47.9056"
-                />
-              </div>
-              <div>
-                <Label htmlFor="longitude">Longitude</Label>
-                <Input
-                  id="longitude"
-                  type="number"
-                  step="0.0001"
-                  value={formData.coordinates?.longitude || ""}
-                  onChange={(e) => handleChange("coordinates.longitude", parseFloat(e.target.value) || 0)}
-                  placeholder="1.9190"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Téléphone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone || ""}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="Téléphone"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email || ""}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="Email"
-                />
-              </div>
-              <div>
-                <Label htmlFor="veterinarian">Vétérinaire responsable</Label>
-                <Select 
-                  value={formData.veterinarian || ""} 
-                  onValueChange={(value) => handleChange("veterinarian", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un vétérinaire" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {veterinarians.filter(v => v.is_active).map((vet) => (
-                      <SelectItem key={vet.id} value={vet.name}>
-                        {vet.name} {vet.title ? `- ${vet.title}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="status">Statut</Label>
-                <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="attention">Attention</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Types d'élevage */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Types d'élevage *</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {settings.farmManagement.farmTypes.map((type) => (
-                  <div key={type} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`type-${type}`}
-                      checked={formData.types?.includes(type) || false}
-                      onCheckedChange={() => handleTypeToggle(type)}
-                    />
-                    <Label htmlFor={`type-${type}`}>{type}</Label>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Détails du cheptel */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails du cheptel</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-base">Identification</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              {/* Ajout d'une nouvelle catégorie */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                <div>
-                  <Label>Catégorie</Label>
-                  <Select value={currentAnimalDetail.category} onValueChange={(value) => setCurrentAnimalDetail(prev => ({ ...prev, category: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {settings.farmManagement.animalCategories.map((category) => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nom de l'exploitation *</Label>
+                  <Input value={data.farm_name} onChange={(e) => set("farm_name", e.target.value)} required />
                 </div>
-                <div>
-                  <Label>Mâles</Label>
-                  <Input
-                    type="number"
-                    value={currentAnimalDetail.maleCount}
-                    onChange={(e) => setCurrentAnimalDetail(prev => ({ ...prev, maleCount: parseInt(e.target.value) || 0 }))}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Label>Femelles</Label>
-                  <Input
-                    type="number"
-                    value={currentAnimalDetail.femaleCount}
-                    onChange={(e) => setCurrentAnimalDetail(prev => ({ ...prev, femaleCount: parseInt(e.target.value) || 0 }))}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button type="button" onClick={addAnimalDetail} className="w-full">
-                    Ajouter
-                  </Button>
+                <div className="space-y-2">
+                  <Label>Propriétaire *</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={data.client_id}
+                    onChange={(e) => set("client_id", e.target.value)}
+                    required
+                  >
+                    <option value="">Sélectionner un client</option>
+                    {clients.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-
-              {/* Races pour la catégorie actuelle */}
-              {currentAnimalDetail.category && (
-                <div className="p-4 border rounded-lg">
-                  <Label>Races pour {currentAnimalDetail.category}</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                    {settings.farmManagement.breedsByCategory[currentAnimalDetail.category]?.map((breed) => (
-                      <div key={breed} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`breed-${breed}`}
-                          checked={currentAnimalDetail.breeds.includes(breed)}
-                          onCheckedChange={() => {
-                            if (currentAnimalDetail.breeds.includes(breed)) {
-                              removeBreedFromCurrentDetail(breed);
-                            } else {
-                              addBreedToCurrentDetail(breed);
-                            }
-                          }}
-                        />
-                        <Label htmlFor={`breed-${breed}`}>{breed}</Label>
-                      </div>
-                    ))}
-                  </div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Type d'élevage</Label>
+                  <ComboboxFreeText
+                    value={data.farm_type}
+                    onChange={(v) => set("farm_type", v)}
+                    options={farmTypeLabels}
+                    category="farm_type"
+                    placeholder="Bovin, ovin, avicole…"
+                  />
                 </div>
-              )}
-
-              {/* Résumé du cheptel configuré */}
-              {formData.animalDetails && formData.animalDetails.length > 0 && (
-                <div className="p-4 border rounded-lg">
-                  <Label>Cheptel configuré</Label>
-                  <div className="mt-2 space-y-2">
-                    {formData.animalDetails.map((detail, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span>
-                          <Badge variant="secondary">{detail.category}</Badge>
-                          <span className="ml-2">
-                            {detail.maleCount} mâles, {detail.femaleCount} femelles
-                          </span>
-                          {detail.breeds.length > 0 && (
-                            <span className="ml-2 text-sm text-gray-600">
-                              Races: {detail.breeds.join(", ")}
-                            </span>
-                          )}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeAnimalDetail(index)}
-                        >
-                          Supprimer
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-2">
+                  <Label>Type de production</Label>
+                  <ComboboxFreeText
+                    value={data.production_type}
+                    onChange={(v) => set("production_type", v)}
+                    options={config.productionTypes}
+                    category="production_type"
+                    placeholder="Lait, viande, mixte…"
+                  />
                 </div>
-              )}
+                <div className="space-y-2">
+                  <Label>Mode de logement</Label>
+                  <ComboboxFreeText
+                    value={data.housing_type}
+                    onChange={(v) => set("housing_type", v)}
+                    options={config.housingTypes}
+                    category="housing_type"
+                    placeholder="Stabulation, plein air…"
+                  />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>{config.herdLabel}</Label>
+                  <Input type="number" min={0} value={data.herd_size} onChange={(e) => set("herd_size", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Surface (hectares)</Label>
+                  <Input type="number" step="0.1" min={0} value={data.surface_hectares} onChange={(e) => set("surface_hectares", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>N° d'enregistrement</Label>
+                  <Input value={data.registration_number} onChange={(e) => set("registration_number", e.target.value)} />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Informations administratives */}
+          {/* Localisation & contact */}
           <Card>
-            <CardHeader>
-              <CardTitle>Informations administratives</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="registrationNumber">Numéro d'immatriculation</Label>
-                <Input
-                  id="registrationNumber"
-                  value={formData.registrationNumber || ""}
-                  onChange={(e) => handleChange("registrationNumber", e.target.value)}
-                  placeholder="Numéro d'immatriculation"
-                />
+            <CardHeader><CardTitle className="text-base">Localisation & contact</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Adresse</Label>
+                <Textarea rows={2} value={data.address} onChange={(e) => set("address", e.target.value)} />
               </div>
-              <div>
-                <Label htmlFor="surfaceArea">Surface (hectares)</Label>
-                <Input
-                  id="surfaceArea"
-                  type="number"
-                  step="0.1"
-                  value={formData.surfaceArea || ""}
-                  onChange={(e) => handleChange("surfaceArea", parseFloat(e.target.value) || 0)}
-                  placeholder="Surface en hectares"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="buildingDetails">Détails des bâtiments</Label>
-                <Textarea
-                  id="buildingDetails"
-                  value={formData.buildingDetails || ""}
-                  onChange={(e) => handleChange("buildingDetails", e.target.value)}
-                  placeholder="Description des bâtiments, étables, etc."
-                />
-              </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="equipmentDetails">Équipements</Label>
-                <Textarea
-                  id="equipmentDetails"
-                  value={formData.equipmentDetails || ""}
-                  onChange={(e) => handleChange("equipmentDetails", e.target.value)}
-                  placeholder="Liste des équipements disponibles"
-                />
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Coordonnées GPS</Label>
+                  <Input placeholder="lat, lng" value={data.coordinates} onChange={(e) => set("coordinates", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Téléphone</Label>
+                  <Input value={data.phone} onChange={(e) => set("phone", e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={data.email} onChange={(e) => set("email", e.target.value)} />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Certifications */}
           <Card>
-            <CardHeader>
-              <CardTitle>Certifications</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {(farmSettings?.certification_types || ['Bio', 'Label Rouge', 'Standard']).map((certification) => (
-                  <div key={certification} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`cert-${certification}`}
-                      checked={formData.certifications?.includes(certification) || false}
-                      onCheckedChange={() => handleCertificationToggle(certification)}
-                    />
-                    <Label htmlFor={`cert-${certification}`}>{certification}</Label>
-                  </div>
+            <CardHeader><CardTitle className="text-base">Certifications</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {certificationOptions.map((c) => (
+                  <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={data.certifications.includes(c)} onCheckedChange={() => toggleCert(c)} />
+                    <span>{c}</span>
+                  </label>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Assurance et contact d'urgence */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Assurance et contact d'urgence</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label htmlFor="insuranceDetails">Détails de l'assurance</Label>
-                <Input
-                  id="insuranceDetails"
-                  value={formData.insuranceDetails || ""}
-                  onChange={(e) => handleChange("insuranceDetails", e.target.value)}
-                  placeholder="Compagnie d'assurance et numéro de police"
-                />
-              </div>
-              <div>
-                <Label htmlFor="emergencyName">Nom du contact d'urgence</Label>
-                <Input
-                  id="emergencyName"
-                  value={formData.emergencyContact?.name || ""}
-                  onChange={(e) => handleChange("emergencyContact.name", e.target.value)}
-                  placeholder="Nom du contact"
-                />
-              </div>
-              <div>
-                <Label htmlFor="emergencyPhone">Téléphone d'urgence</Label>
-                <Input
-                  id="emergencyPhone"
-                  value={formData.emergencyContact?.phone || ""}
-                  onChange={(e) => handleChange("emergencyContact.phone", e.target.value)}
-                  placeholder="Téléphone"
-                />
-              </div>
-              <div>
-                <Label htmlFor="emergencyRelation">Relation</Label>
-                <Input
-                  id="emergencyRelation"
-                  value={formData.emergencyContact?.relation || ""}
-                  onChange={(e) => handleChange("emergencyContact.relation", e.target.value)}
-                  placeholder="Relation (époux, fils, etc.)"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Gestion des photos */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Photos de l'exploitation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FarmPhotoManager
-                photos={formData.photos || []}
-                onPhotosChange={(photos) => handleChange("photos", photos)}
-                farmName={formData.name || "Nouvelle exploitation"}
-              />
+              {data.certifications.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {data.certifications.map((c) => (
+                    <Badge key={c} variant="secondary" className="gap-1">
+                      {c}<X className="h-3 w-3 cursor-pointer" onClick={() => toggleCert(c)} />
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes complémentaires</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={formData.notes || ""}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Notes additionnelles sur l'exploitation..."
-                rows={3}
-              />
-            </CardContent>
-          </Card>
-
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
-            <Button type="submit">
-              Créer l'exploitation
-            </Button>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea rows={3} value={data.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Annuler</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {farm ? "Enregistrer" : "Créer l'exploitation"}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

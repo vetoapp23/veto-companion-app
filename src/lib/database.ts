@@ -629,6 +629,12 @@ export interface CreateFarmData {
   certifications?: string[]
   notes?: string
   active?: boolean
+  // Extended fields
+  surface_hectares?: number | null
+  production_type?: string | null
+  housing_type?: string | null
+  coordinates?: string | null
+  metadata?: Record<string, any> | null
 }
 
 export interface CreateFarmInterventionData {
@@ -644,7 +650,13 @@ export interface CreateFarmInterventionData {
   cost?: number
   follow_up_date?: string
   notes?: string
+  // Extended
+  batch_id?: string | null
+  protocol_type?: string | null
+  affected_count?: number | null
+  next_visit_date?: string | null
 }
+
 
 // =============================================
 // CLIENT OPERATIONS
