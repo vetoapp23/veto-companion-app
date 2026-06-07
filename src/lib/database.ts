@@ -1334,9 +1334,26 @@ export const getVaccinationProtocolsBySpecies = async (species: string): Promise
 }
 
 export const createVaccinationProtocol = async (protocolData: Omit<VaccinationProtocol, 'id' | 'created_at' | 'updated_at'>): Promise<VaccinationProtocol> => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  if (profileError || !profile?.organization_id) {
+    throw new Error('Organisation introuvable pour cet utilisateur')
+  }
+
+  const payload: any = {
+    ...protocolData,
+    organization_id: profile.organization_id,
+  }
+
   const { data, error } = await supabase
     .from('vaccination_protocols')
-    .insert(protocolData)
+    .insert(payload)
     .select()
     .single()
 
