@@ -85,6 +85,12 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                 padding-bottom: 20px;
                 margin-bottom: 30px;
               }
+              .header img {
+                max-height: 70px;
+                width: auto;
+                object-fit: contain;
+                margin-bottom: 8px;
+              }
               .header h1 {
                 color: #2c5530;
                 font-size: 32px;
