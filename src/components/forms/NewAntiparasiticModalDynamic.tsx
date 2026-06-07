@@ -12,7 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useParasiteTypes } from '@/hooks/useAppSettings';
 import { format, addDays } from 'date-fns';
 import { Plus, Package, CheckCircle, Search, AlertTriangle, Loader2, X, CalendarClock, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import type { CreateAntiparasiticData, BoosterScheduleEntry } from '@/lib/database';
 
 interface PlannedDose {
