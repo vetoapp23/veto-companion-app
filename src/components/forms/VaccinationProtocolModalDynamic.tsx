@@ -236,6 +236,14 @@ export default function VaccinationProtocolModal({
             />
           </div>
 
+          {/* Booster Schedule */}
+          <BoosterScheduleEditor
+            value={boosterSchedule}
+            onChange={setBoosterSchedule}
+            description="Définissez chaque dose (1ère injection, rappels...) avec son décalage en jours depuis la 1ère dose."
+          />
+
+
           {/* Active Status */}
           <div className="flex items-center space-x-2">
             <input
