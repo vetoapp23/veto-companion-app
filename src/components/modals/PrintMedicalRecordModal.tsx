@@ -96,10 +96,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     return true;
   };
 
-  const handlePrint = () => {
-    if (!animal) return;
-    const win = window.open("", "_blank");
-    if (!win) return;
+  const buildHtml = () => {
+    if (!animal) return "";
 
     const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
     const ownerName = owner ? `${owner.first_name} ${owner.last_name}` : (animal.owner || "—");
