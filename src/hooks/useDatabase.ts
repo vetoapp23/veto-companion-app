@@ -1346,6 +1346,7 @@ export const useCreatePrescription = () => {
       queryClient.invalidateQueries({ queryKey: ['consultations'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['stock-items'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
     },
     retry: 1,
   });
