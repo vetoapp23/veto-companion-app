@@ -13,6 +13,9 @@ import { useParasiteTypes } from '@/hooks/useAppSettings';
 import { format, addDays } from 'date-fns';
 import { Plus, Package, CheckCircle, Search, AlertTriangle, Loader2, X, CalendarClock, Trash2 } from 'lucide-react';
 import type { CreateAntiparasiticData, BoosterScheduleEntry } from '@/lib/database';
+import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
+
+const DEFAULT_ROUTES_ANTIPARASITIC = ['spot_on', 'oral', 'injection', 'spray', 'collier', 'shampoing'];
 
 interface PlannedDose {
   label: string;
@@ -428,36 +431,25 @@ export default function NewAntiparasiticModalDynamic({
             {/* Parasite Type */}
             <div className="space-y-2">
               <Label htmlFor="parasiteType">Type de parasite</Label>
-              <Select value={formData.parasiteType} onValueChange={(value) => handleInputChange('parasiteType', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {parasiteTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.parasiteType}
+                onChange={(v) => handleInputChange('parasiteType', v)}
+                options={parasiteTypes}
+                category="parasite_type"
+                placeholder="Sélectionner ou créer..."
+              />
             </div>
 
             {/* Administration Route */}
             <div className="space-y-2">
               <Label htmlFor="administrationRoute">Voie d'administration</Label>
-              <Select value={formData.administrationRoute} onValueChange={(value) => handleInputChange('administrationRoute', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la voie" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="spot_on">Spot-on (pipette)</SelectItem>
-                  <SelectItem value="oral">Orale (comprimé/liquide)</SelectItem>
-                  <SelectItem value="injection">Injection</SelectItem>
-                  <SelectItem value="spray">Spray</SelectItem>
-                  <SelectItem value="collier">Collier</SelectItem>
-                  <SelectItem value="shampoing">Shampoing</SelectItem>
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.administrationRoute}
+                onChange={(v) => handleInputChange('administrationRoute', v)}
+                options={DEFAULT_ROUTES_ANTIPARASITIC}
+                category="administration_route"
+                placeholder="Sélectionner ou créer..."
+              />
             </div>
 
             {/* Dosage */}
