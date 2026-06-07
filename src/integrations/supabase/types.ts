@@ -206,6 +206,7 @@ export type Database = {
           active_ingredient: string | null
           administration_route: string | null
           age_restriction: string | null
+          booster_schedule: Json
           created_at: string
           dosage_per_kg: string | null
           frequency: string | null
@@ -223,6 +224,7 @@ export type Database = {
           active_ingredient?: string | null
           administration_route?: string | null
           age_restriction?: string | null
+          booster_schedule?: Json
           created_at?: string
           dosage_per_kg?: string | null
           frequency?: string | null
@@ -240,6 +242,7 @@ export type Database = {
           active_ingredient?: string | null
           administration_route?: string | null
           age_restriction?: string | null
+          booster_schedule?: Json
           created_at?: string
           dosage_per_kg?: string | null
           frequency?: string | null
@@ -1347,6 +1350,7 @@ export type Database = {
         Row: {
           active: boolean
           age_recommendation: string | null
+          booster_schedule: Json
           created_at: string
           duration_days: number | null
           frequency: string | null
@@ -1361,6 +1365,7 @@ export type Database = {
         Insert: {
           active?: boolean
           age_recommendation?: string | null
+          booster_schedule?: Json
           created_at?: string
           duration_days?: number | null
           frequency?: string | null
@@ -1375,6 +1380,7 @@ export type Database = {
         Update: {
           active?: boolean
           age_recommendation?: string | null
+          booster_schedule?: Json
           created_at?: string
           duration_days?: number | null
           frequency?: string | null
