@@ -213,19 +213,34 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                   </select>
                 </div>
               </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Type d'élevage</Label>
+              <div className="space-y-2">
+                <Label>Types d'élevage (multi-sélection)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {farmTypeLabels.map((t) => (
+                    <label key={t} className={`flex items-center gap-2 text-sm cursor-pointer border rounded-md px-2 py-1 ${data.farm_types.includes(t) ? "bg-primary/10 border-primary" : ""}`}>
+                      <Checkbox checked={data.farm_types.includes(t)} onCheckedChange={() => toggleType(t)} />
+                      <span>{t}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex gap-2 items-center pt-1">
                   <ComboboxFreeText
-                    value={data.farm_type}
-                    onChange={(v) => set("farm_type", v)}
-                    options={farmTypeLabels}
+                    value=""
+                    onChange={(v) => v && !data.farm_types.includes(v) && toggleType(v)}
+                    options={farmTypeLabels.filter((t) => !data.farm_types.includes(t))}
                     category="farm_type"
-                    placeholder="Bovin, ovin, avicole…"
+                    placeholder="+ Ajouter un type personnalisé…"
                   />
                 </div>
+                {data.farm_types.length > 1 && (
+                  <p className="text-xs text-muted-foreground">
+                    Exploitation multi-types : les lots préciseront leur type spécifique.
+                  </p>
+                )}
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Type de production</Label>
+                  <Label>Type de production principal</Label>
                   <ComboboxFreeText
                     value={data.production_type}
                     onChange={(v) => set("production_type", v)}
