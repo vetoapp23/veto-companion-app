@@ -31,7 +31,10 @@ const FarmPage = () => {
 
   const farmTypes = useMemo(() => {
     const s = new Set<string>(farmSettings?.farm_types || []);
-    farms.forEach((f: any) => f.farm_type && s.add(f.farm_type));
+    farms.forEach((f: any) => {
+      (f.farm_types || []).forEach((t: string) => t && s.add(t));
+      if (f.farm_type) s.add(f.farm_type);
+    });
     return Array.from(s);
   }, [farmSettings, farms]);
 
