@@ -4,11 +4,15 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
+import { useFarmBatches, useCreateFarmHealthEvent } from "@/hooks/useFarmBatches";
+import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
 
 interface NewFarmInterventionModalSupabaseProps {
   open: boolean;
@@ -17,25 +21,20 @@ interface NewFarmInterventionModalSupabaseProps {
   farmName?: string;
 }
 
-interface SupabaseFarm {
-  id: string;
-  farm_name: string;
-}
+const PROTOCOL_TYPES = ["Curatif", "Préventif", "Diagnostic", "Prophylaxie", "Reproduction", "Autre"];
 
-const NewFarmInterventionModalSupabase = ({ 
-  open, 
-  onOpenChange, 
-  farmId, 
-  farmName 
-}: NewFarmInterventionModalSupabaseProps) => {
+const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName }: NewFarmInterventionModalSupabaseProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  const [farms, setFarms] = useState<SupabaseFarm[]>([]);
+
+  const [farms, setFarms] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     farm_id: "",
-    intervention_date: "",
+    batch_id: "",
+    intervention_date: new Date().toISOString().split("T")[0],
     intervention_type: "",
+    protocol_type: "",
+    affected_count: "",
     animal_count: "",
     description: "",
     diagnosis: "",
@@ -43,398 +42,230 @@ const NewFarmInterventionModalSupabase = ({
     medications_used: [] as string[],
     cost: "",
     follow_up_date: "",
-    notes: ""
+    next_visit_date: "",
+    notes: "",
   });
   const [medicationInput, setMedicationInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Intervention types
-  const interventionTypes = [
-    "vaccination",
-    "traitement_preventif", 
-    "traitement_curatif",
-    "chirurgie",
-    "diagnostic",
-    "suivi_reproduction",
-    "consultation_generale",
-    "urgence",
-    "autre"
-  ];
+  const { data: batches = [] } = useFarmBatches(formData.farm_id || undefined);
+  const createHealthEvent = useCreateFarmHealthEvent();
+  const selectedFarm = farms.find((f) => f.id === formData.farm_id);
+  const config = getFarmTypeConfig(selectedFarm?.farm_type);
 
-  const interventionTypeLabels: Record<string, string> = {
-    vaccination: "Vaccination",
-    traitement_preventif: "Traitement préventif",
-    traitement_curatif: "Traitement curatif", 
-    chirurgie: "Chirurgie",
-    diagnostic: "Diagnostic",
-    suivi_reproduction: "Suivi reproduction",
-    consultation_generale: "Consultation générale",
-    urgence: "Urgence",
-    autre: "Autre"
-  };
-
-  // Fetch farms when modal opens
   useEffect(() => {
     if (open && user) {
       fetchFarms();
-      resetForm();
-    }
-  }, [open, user]);
-
-  // Pre-fill farm if farmId is provided
-  useEffect(() => {
-    if (farmId && farmName) {
-      setFormData(prev => ({
-        ...prev,
-        farm_id: farmId
+      setFormData((p) => ({
+        ...p,
+        farm_id: farmId || p.farm_id || "",
+        batch_id: "",
+        intervention_date: new Date().toISOString().split("T")[0],
+        intervention_type: "", protocol_type: "", affected_count: "", animal_count: "",
+        description: "", diagnosis: "", treatment: "", medications_used: [],
+        cost: "", follow_up_date: "", next_visit_date: "", notes: "",
       }));
+      setMedicationInput("");
     }
-  }, [farmId, farmName]);
+  }, [open, user, farmId]);
 
   const fetchFarms = async () => {
     if (!user) return;
-    
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile?.organization_id) {
-        throw new Error('Profil utilisateur ou organisation introuvable');
-      }
-
-      const { data, error } = await supabase
-        .from('farms')
-        .select('id, farm_name')
-        .eq('organization_id', profile.organization_id)
-        .eq('active', true)
-        .order('farm_name');
-
-      if (error) throw error;
-      setFarms(data || []);
-    } catch (error) {
-      console.error('Error fetching farms:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les exploitations",
-        variant: "destructive",
-      });
-    }
+    const { data: profile } = await supabase.from("user_profiles").select("organization_id").eq("id", user.id).single();
+    if (!profile?.organization_id) return;
+    const { data } = await supabase.from("farms").select("id, farm_name, farm_type").eq("organization_id", profile.organization_id).eq("active", true).order("farm_name");
+    setFarms(data || []);
   };
 
-  const resetForm = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setFormData({
-      farm_id: farmId || "",
-      intervention_date: today,
-      intervention_type: "",
-      animal_count: "",
-      description: "",
-      diagnosis: "",
-      treatment: "",
-      medications_used: [],
-      cost: "",
-      follow_up_date: "",
-      notes: ""
-    });
+  const set = (k: string, v: any) => setFormData((p) => ({ ...p, [k]: v }));
+
+  const addMedication = () => {
+    const m = medicationInput.trim();
+    if (!m || formData.medications_used.includes(m)) return;
+    setFormData((p) => ({ ...p, medications_used: [...p.medications_used, m] }));
     setMedicationInput("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-
-    if (!formData.farm_id) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner une exploitation",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.intervention_type) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un type d'intervention",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!formData.intervention_date) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner une date d'intervention",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!formData.farm_id) return toast({ title: "Sélectionnez une exploitation", variant: "destructive" });
+    if (!formData.intervention_type) return toast({ title: "Type d'intervention requis", variant: "destructive" });
 
     setLoading(true);
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError || !profile?.organization_id) {
-        throw new Error('Profil utilisateur ou organisation introuvable');
-      }
+      const { data: profile } = await supabase.from("user_profiles").select("organization_id").eq("id", user.id).single();
+      if (!profile?.organization_id) throw new Error("Organisation introuvable");
 
       const insertData: any = {
         farm_id: formData.farm_id,
         organization_id: profile.organization_id,
-        veterinarian_id: user.id, // Current user as veterinarian
+        veterinarian_id: user.id,
         intervention_date: formData.intervention_date,
         intervention_type: formData.intervention_type,
         animal_count: formData.animal_count ? parseInt(formData.animal_count) : null,
         description: formData.description || null,
         diagnosis: formData.diagnosis || null,
         treatment: formData.treatment || null,
-        medications_used: formData.medications_used.length > 0 ? formData.medications_used : null,
+        medications_used: formData.medications_used.length ? formData.medications_used : null,
         cost: formData.cost ? parseFloat(formData.cost) : null,
         follow_up_date: formData.follow_up_date || null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        batch_id: formData.batch_id || null,
+        protocol_type: formData.protocol_type || null,
+        affected_count: formData.affected_count ? parseInt(formData.affected_count) : null,
+        next_visit_date: formData.next_visit_date || null,
       };
 
-      const { error } = await supabase
-        .from('farm_interventions')
-        .insert([insertData]);
-
+      const { data: created, error } = await supabase.from("farm_interventions").insert([insertData]).select("id").single();
       if (error) throw error;
 
-      toast({
-        title: "Succès",
-        description: "Intervention créée avec succès",
-      });
+      // Auto-create health event for the batch when relevant
+      if (formData.batch_id && (formData.protocol_type || formData.intervention_type)) {
+        const eventType = /vacc/i.test(formData.intervention_type) ? "vaccination"
+          : /trait/i.test(formData.intervention_type) || /curatif/i.test(formData.protocol_type) ? "treatment"
+          : "other";
+        try {
+          await createHealthEvent.mutateAsync({
+            farm_id: formData.farm_id,
+            batch_id: formData.batch_id,
+            intervention_id: created?.id,
+            event_type: eventType,
+            event_date: formData.intervention_date,
+            product: formData.medications_used[0] || formData.intervention_type,
+            affected_count: formData.affected_count ? parseInt(formData.affected_count) : null,
+            cost: formData.cost ? parseFloat(formData.cost) : null,
+            notes: formData.description || null,
+          });
+        } catch (err) { console.warn("health event auto-create failed", err); }
+      }
 
+      toast({ title: "✓ Intervention créée" });
       onOpenChange(false);
-    } catch (error: any) {
-      console.error('Error creating intervention:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de créer l'intervention",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message || "Échec", variant: "destructive" });
+    } finally { setLoading(false); }
   };
-
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const addMedication = () => {
-    if (medicationInput.trim() && !formData.medications_used.includes(medicationInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        medications_used: [...prev.medications_used, medicationInput.trim()]
-      }));
-      setMedicationInput("");
-    }
-  };
-
-  const removeMedication = (medication: string) => {
-    setFormData(prev => ({
-      ...prev,
-      medications_used: prev.medications_used.filter(m => m !== medication)
-    }));
-  };
-
-  const selectedFarm = farms.find(f => f.id === formData.farm_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvelle Intervention</DialogTitle>
+          <DialogTitle>Nouvelle intervention</DialogTitle>
           <DialogDescription>
-            Créer une nouvelle intervention vétérinaire
-            {farmName && ` pour ${farmName}`}
+            Intervention vétérinaire {farmName && `· ${farmName}`}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="farm_id">Exploitation *</Label>
-              <Select 
-                value={formData.farm_id} 
-                onValueChange={(value) => handleChange('farm_id', value)}
-                disabled={!!farmId} // Disable if farmId is pre-selected
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une exploitation" />
-                </SelectTrigger>
-                <SelectContent>
-                  {farms.map((farm) => (
-                    <SelectItem key={farm.id} value={farm.id}>
-                      {farm.farm_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Exploitation *</Label>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formData.farm_id} onChange={(e) => set("farm_id", e.target.value)} disabled={!!farmId}>
+                <option value="">Sélectionner une exploitation</option>
+                {farms.map((f) => <option key={f.id} value={f.id}>{f.farm_name}</option>)}
+              </select>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="intervention_date">Date d'intervention *</Label>
-              <Input
-                id="intervention_date"
-                type="date"
-                value={formData.intervention_date}
-                onChange={(e) => handleChange('intervention_date', e.target.value)}
-                required
+              <Label>Lot / troupeau</Label>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={formData.batch_id} onChange={(e) => set("batch_id", e.target.value)} disabled={!formData.farm_id}>
+                <option value="">— Toute l'exploitation —</option>
+                {batches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.animal_count})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Date *</Label>
+              <Input type="date" value={formData.intervention_date} onChange={(e) => set("intervention_date", e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Type d'intervention *</Label>
+              <ComboboxFreeText
+                value={formData.intervention_type}
+                onChange={(v) => set("intervention_type", v)}
+                options={config.interventionTypes}
+                category="farm_intervention_type"
+                placeholder="Vaccination, traitement…"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nature</Label>
+              <ComboboxFreeText
+                value={formData.protocol_type}
+                onChange={(v) => set("protocol_type", v)}
+                options={PROTOCOL_TYPES}
+                category="farm_protocol_type"
+                placeholder="Curatif, préventif…"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="intervention_type">Type d'intervention *</Label>
-              <Select 
-                value={formData.intervention_type} 
-                onValueChange={(value) => handleChange('intervention_type', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {interventionTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {interventionTypeLabels[type]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Animaux concernés (effectif)</Label>
+              <Input type="number" min={0} value={formData.affected_count} onChange={(e) => set("affected_count", e.target.value)} />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="animal_count">Nombre d'animaux</Label>
-              <Input
-                id="animal_count"
-                type="number"
-                value={formData.animal_count}
-                onChange={(e) => handleChange('animal_count', e.target.value)}
-                placeholder="Nombre d'animaux concernés"
-                min="1"
-              />
+              <Label>Coût (MAD)</Label>
+              <Input type="number" step="0.01" min={0} value={formData.cost} onChange={(e) => set("cost", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Prochaine visite</Label>
+              <Input type="date" value={formData.next_visit_date} onChange={(e) => set("next_visit_date", e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Description de l'intervention..."
-              rows={2}
-            />
+            <Label>Description</Label>
+            <Textarea rows={2} value={formData.description} onChange={(e) => set("description", e.target.value)} />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="diagnosis">Diagnostic</Label>
-            <Textarea
-              id="diagnosis"
-              value={formData.diagnosis}
-              onChange={(e) => handleChange('diagnosis', e.target.value)}
-              placeholder="Diagnostic vétérinaire..."
-              rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="treatment">Traitement</Label>
-            <Textarea
-              id="treatment"
-              value={formData.treatment}
-              onChange={(e) => handleChange('treatment', e.target.value)}
-              placeholder="Traitement prescrit..."
-              rows={2}
-            />
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Diagnostic</Label>
+              <Textarea rows={2} value={formData.diagnosis} onChange={(e) => set("diagnosis", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Traitement</Label>
+              <Textarea rows={2} value={formData.treatment} onChange={(e) => set("treatment", e.target.value)} />
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>Médicaments utilisés</Label>
             <div className="flex gap-2">
-              <Input
-                value={medicationInput}
-                onChange={(e) => setMedicationInput(e.target.value)}
+              <Input value={medicationInput} onChange={(e) => setMedicationInput(e.target.value)}
                 placeholder="Nom du médicament"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addMedication())}
-              />
-              <Button type="button" onClick={addMedication} variant="outline">
-                Ajouter
-              </Button>
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMedication(); } }} />
+              <Button type="button" variant="outline" onClick={addMedication}>Ajouter</Button>
             </div>
             {formData.medications_used.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.medications_used.map((medication, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm"
-                  >
-                    {medication}
-                    <button
-                      type="button"
-                      onClick={() => removeMedication(medication)}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
-                    >
-                      ×
-                    </button>
-                  </span>
+              <div className="flex flex-wrap gap-1 pt-1">
+                {formData.medications_used.map((m) => (
+                  <Badge key={m} variant="secondary" className="gap-1">
+                    {m}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => set("medications_used", formData.medications_used.filter((x) => x !== m))} />
+                  </Badge>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cost">Coût (MAD)</Label>
-              <Input
-                id="cost"
-                type="number"
-                step="0.01"
-                value={formData.cost}
-                onChange={(e) => handleChange('cost', e.target.value)}
-                placeholder="0.00"
-                min="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="follow_up_date">Date de suivi</Label>
-              <Input
-                id="follow_up_date"
-                type="date"
-                value={formData.follow_up_date}
-                onChange={(e) => handleChange('follow_up_date', e.target.value)}
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Notes additionnelles..."
-              rows={2}
-            />
+            <Label>Notes</Label>
+            <Textarea rows={2} value={formData.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
-            </Button>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Annuler</Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Création..." : "Créer l'intervention"}
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Créer l'intervention
             </Button>
           </div>
         </form>
