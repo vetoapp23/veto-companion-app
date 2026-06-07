@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useDatabase";
 import { PedigreeSection } from "@/components/pedigree/PedigreeSection";
 import { PrintMedicalRecordModal } from "@/components/modals/PrintMedicalRecordModal";
+import { CertificateVaccinationPrintDynamic } from "@/components/CertificateVaccinationPrintDynamic";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import NewVaccinationModal from "@/components/forms/NewVaccinationModalDynamic";
 import NewAntiparasiticModalDynamic from "@/components/forms/NewAntiparasiticModalDynamic";
