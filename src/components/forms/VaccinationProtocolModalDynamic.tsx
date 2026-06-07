@@ -11,6 +11,7 @@ import { Plus, Shield } from 'lucide-react';
 import { useCreateVaccinationProtocol, useUpdateVaccinationProtocol } from '@/hooks/useDatabase';
 import type { VaccinationProtocol, BoosterScheduleEntry } from '@/lib/database';
 import BoosterScheduleEditor from './BoosterScheduleEditor';
+import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
 
 interface VaccinationProtocolModalProps {
   children?: React.ReactNode;
@@ -176,18 +177,14 @@ export default function VaccinationProtocolModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vaccineType">Type de vaccin *</Label>
-              <Select value={formData.vaccineType} onValueChange={(value) => setFormData({...formData, vaccineType: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez le type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vaccinationTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ComboboxFreeText
+                value={formData.vaccineType}
+                onChange={(value) => setFormData({ ...formData, vaccineType: value })}
+                options={vaccinationTypes}
+                category="vaccine_type"
+                placeholder="Sélectionnez ou tapez un type..."
+                emptyText="Aucun type trouvé. Tapez pour en ajouter un."
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="ageRecommendation">Âge recommandé</Label>
