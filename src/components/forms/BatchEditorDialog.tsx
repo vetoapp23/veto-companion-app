@@ -16,18 +16,19 @@ interface BatchEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   farmId: string;
   farmType?: string | null;
+  farmTypes?: string[];
   batch?: FarmBatch | null;
 }
 
-const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: BatchEditorDialogProps) => {
+const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [], batch }: BatchEditorDialogProps) => {
   const { toast } = useToast();
   const create = useCreateFarmBatch();
   const update = useUpdateFarmBatch();
-  const config = getFarmTypeConfig(farmType);
 
   const [data, setData] = useState({
     name: "", species: "", category: "", animal_count: "0",
     birth_period: "", location: "", status: "active", notes: "",
+    farm_type: "",
   });
 
   useEffect(() => {
@@ -42,11 +43,18 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, batch }: Batc
         location: batch.location || "",
         status: batch.status || "active",
         notes: batch.notes || "",
+        farm_type: (batch as any).farm_type || farmType || farmTypes[0] || "",
       });
     } else {
-      setData({ name: "", species: "", category: "", animal_count: "0", birth_period: "", location: "", status: "active", notes: "" });
+      setData({
+        name: "", species: "", category: "", animal_count: "0",
+        birth_period: "", location: "", status: "active", notes: "",
+        farm_type: farmType || farmTypes[0] || "",
+      });
     }
-  }, [open, batch]);
+  }, [open, batch, farmType, farmTypes]);
+
+  const config = getFarmTypeConfig(data.farm_type || farmType);
 
   const set = (k: string, v: any) => setData((p) => ({ ...p, [k]: v }));
   const busy = create.isPending || update.isPending;
