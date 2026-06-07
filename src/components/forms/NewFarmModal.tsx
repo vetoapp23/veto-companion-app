@@ -283,6 +283,65 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
             </CardContent>
           </Card>
 
+          {/* Détails par type d'élevage (si multi-types) */}
+          {data.farm_types.length > 1 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Détails par type d'élevage</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {data.farm_types.map((t) => {
+                  const cfg = getFarmTypeConfig(t);
+                  const cur = data.per_type[t] || {};
+                  const upd = (patch: any) =>
+                    setData((p) => ({ ...p, per_type: { ...p.per_type, [t]: { ...cur, ...patch } } }));
+                  return (
+                    <div key={t} className="border rounded-md p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary">{t}</Badge>
+                        <span className="text-xs text-muted-foreground">{cfg.label}</span>
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Production</Label>
+                          <ComboboxFreeText
+                            value={cur.production_type || ""}
+                            onChange={(v) => upd({ production_type: v })}
+                            options={cfg.productionTypes}
+                            category="production_type"
+                            placeholder="Lait, viande…"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Logement</Label>
+                          <ComboboxFreeText
+                            value={cur.housing_type || ""}
+                            onChange={(v) => upd({ housing_type: v })}
+                            options={cfg.housingTypes}
+                            category="housing_type"
+                            placeholder="Stabulation…"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">{cfg.herdLabel}</Label>
+                          <Input
+                            type="number" min={0}
+                            value={cur.herd_size || ""}
+                            onChange={(e) => upd({ herd_size: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Notes</Label>
+                        <Textarea rows={2} value={cur.notes || ""} onChange={(e) => upd({ notes: e.target.value })} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Localisation & contact */}
           <Card>
             <CardHeader><CardTitle className="text-base">Localisation & contact</CardTitle></CardHeader>
