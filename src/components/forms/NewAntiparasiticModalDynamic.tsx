@@ -611,7 +611,7 @@ export default function NewAntiparasiticModalDynamic({
             </Button>
             <Button type="submit" disabled={createAntiparasitic.isPending}>
               {createAntiparasitic.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingAntiparasitic ? 'Modifier' : 'Enregistrer'}
+              {editingAntiparasitic ? 'Modifier' : plannedDoses.length > 1 ? `Enregistrer ${plannedDoses.length} traitements` : 'Enregistrer'}
             </Button>
           </div>
         </form>
