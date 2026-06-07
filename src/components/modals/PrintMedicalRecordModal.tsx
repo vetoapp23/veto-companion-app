@@ -306,8 +306,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
           filename: `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`,
           html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] },
-        })
+        } as any)
         .from(container)
         .save();
     } finally {
