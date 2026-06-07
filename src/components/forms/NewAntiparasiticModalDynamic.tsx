@@ -368,29 +368,38 @@ export default function NewAntiparasiticModalDynamic({
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2">
-                  {protocols.map(protocol => (
-                    <div key={protocol.id} className="flex items-center justify-between p-2 border rounded">
-                      <div>
-                        <div className="font-medium">{protocol.product_name}</div>
-                        <div className="text-sm text-gray-600">
-                          {protocol.parasite_type} - {protocol.active_ingredient}
+                  {protocols.map(protocol => {
+                    const doses = protocol.booster_schedule?.length || 0;
+                    const isApplied = appliedProtocolId === protocol.id;
+                    return (
+                      <div key={protocol.id} className="flex items-center justify-between p-2 border rounded">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{protocol.product_name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            <span>{protocol.parasite_type}{protocol.active_ingredient ? ` - ${protocol.active_ingredient}` : ''}</span>
+                            {doses > 0 && (
+                              <Badge variant="secondary" className="h-5">
+                                {doses} dose{doses > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                        <Button
+                          type="button"
+                          variant={isApplied ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => applyProtocol(protocol)}
+                        >
+                          {isApplied ? 'Appliqué' : (<><Plus className="h-4 w-4 mr-1" />Appliquer</>)}
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => applyProtocol(protocol)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Appliquer
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           )}
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Product Name */}
