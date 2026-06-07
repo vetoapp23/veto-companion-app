@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Printer, FileText } from "lucide-react";
+import { Printer, FileText, Download } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
@@ -96,10 +96,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     return true;
   };
 
-  const handlePrint = () => {
-    if (!animal) return;
-    const win = window.open("", "_blank");
-    if (!win) return;
+  const buildHtml = () => {
+    if (!animal) return "";
 
     const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
     const ownerName = owner ? `${owner.first_name} ${owner.last_name}` : (animal.owner || "—");
@@ -276,10 +274,44 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
         <div class="sig"><div class="line">Signature et cachet</div></div>
       </div>
     </body></html>`;
+    return html;
+  };
 
+  const handlePrint = () => {
+    const html = buildHtml();
+    if (!html) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
     win.document.write(html);
     win.document.close();
     setTimeout(() => { win.print(); }, 400);
+  };
+
+  const handleDownloadPdf = async () => {
+    const html = buildHtml();
+    if (!html) return;
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    // Hide off-screen
+    container.style.position = "fixed";
+    container.style.left = "-10000px";
+    container.style.top = "0";
+    container.style.width = "800px";
+    document.body.appendChild(container);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`,
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        } as any)
+        .from(container)
+        .save();
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
   if (!animal) return null;
@@ -348,8 +380,11 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+            <Button variant="outline" onClick={handleDownloadPdf} className="gap-2">
+              <Download className="h-4 w-4" /> Télécharger PDF
+            </Button>
             <Button onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" /> Imprimer / PDF
+              <Printer className="h-4 w-4" /> Imprimer
             </Button>
           </div>
         </div>

@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useDatabase";
 import { PedigreeSection } from "@/components/pedigree/PedigreeSection";
 import { PrintMedicalRecordModal } from "@/components/modals/PrintMedicalRecordModal";
+import { CertificateVaccinationPrintDynamic } from "@/components/CertificateVaccinationPrintDynamic";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import NewVaccinationModal from "@/components/forms/NewVaccinationModalDynamic";
 import NewAntiparasiticModalDynamic from "@/components/forms/NewAntiparasiticModalDynamic";
@@ -114,9 +115,12 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                 <FileText className="h-5 w-5" />
                 Dossier Médical — {pet.name} <span className="text-sm font-normal text-muted-foreground">({pet.owner})</span>
               </DialogTitle>
-              <Button onClick={() => setShowPrint(true)} variant="outline" size="sm" className="gap-2">
-                <Printer className="h-4 w-4" /> Imprimer
-              </Button>
+              <div className="flex items-center gap-2">
+                <CertificateVaccinationPrintDynamic animalId={animalId} />
+                <Button onClick={() => setShowPrint(true)} variant="outline" size="sm" className="gap-2">
+                  <Printer className="h-4 w-4" /> Dossier (Imprimer / PDF)
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 
