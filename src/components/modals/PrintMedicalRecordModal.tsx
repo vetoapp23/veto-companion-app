@@ -274,10 +274,45 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
         <div class="sig"><div class="line">Signature et cachet</div></div>
       </div>
     </body></html>`;
+    return html;
+  };
 
+  const handlePrint = () => {
+    const html = buildHtml();
+    if (!html) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
     win.document.write(html);
     win.document.close();
     setTimeout(() => { win.print(); }, 400);
+  };
+
+  const handleDownloadPdf = async () => {
+    const html = buildHtml();
+    if (!html) return;
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    // Hide off-screen
+    container.style.position = "fixed";
+    container.style.left = "-10000px";
+    container.style.top = "0";
+    container.style.width = "800px";
+    document.body.appendChild(container);
+    try {
+      const html2pdf = (await import("html2pdf.js")).default;
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`,
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
+        })
+        .from(container)
+        .save();
+    } finally {
+      document.body.removeChild(container);
+    }
   };
 
   if (!animal) return null;
