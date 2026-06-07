@@ -168,94 +168,93 @@ export default function NewAntiparasiticModalDynamic({
       effectivenessRating: 'none',
       notes: '',
     });
+    setPlannedDoses([]);
+    setAppliedProtocolId(null);
+  };
+
+  const buildBasePayload = () => {
+    const base: any = {
+      animal_id: formData.animalId,
+      product_name: formData.productName,
+    };
+    if (formData.activeIngredient?.trim()) base.active_ingredient = formData.activeIngredient.trim();
+    if (formData.parasiteType?.trim()) base.parasite_type = formData.parasiteType.trim();
+    if (formData.administrationRoute?.trim()) base.administration_route = formData.administrationRoute.trim();
+    if (formData.dosage?.trim()) base.dosage = formData.dosage.trim();
+    if (formData.administeredBy?.trim()) base.administered_by = formData.administeredBy.trim();
+    if (
+      formData.effectivenessRating &&
+      formData.effectivenessRating !== 'none' &&
+      formData.effectivenessRating !== ''
+    ) {
+      const rating = parseInt(formData.effectivenessRating);
+      if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+        base.effectiveness_rating = rating;
+      }
+    }
+    return base;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.animalId || !formData.productName || !formData.treatmentDate) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires.",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Veuillez remplir tous les champs obligatoires.',
+        variant: 'destructive',
       });
       return;
     }
 
-    // Validate effectiveness rating if provided
     if (formData.effectivenessRating && formData.effectivenessRating !== 'none') {
       const rating = parseInt(formData.effectivenessRating);
       if (isNaN(rating) || rating < 1 || rating > 5) {
         toast({
-          title: "Erreur",
+          title: 'Erreur',
           description: "L'évaluation d'efficacité doit être un nombre entre 1 et 5.",
-          variant: "destructive",
+          variant: 'destructive',
         });
         return;
       }
     }
 
     try {
-      // Build the base data object with only required fields first
-      const antiparasiticData: any = {
-        animal_id: formData.animalId,
-        product_name: formData.productName,
-        treatment_date: formData.treatmentDate,
-      };
+      const base = buildBasePayload();
 
-      // Add optional fields only if they have valid values
-      if (formData.activeIngredient?.trim()) {
-        antiparasiticData.active_ingredient = formData.activeIngredient.trim();
-      }
-
-      if (formData.parasiteType?.trim()) {
-        antiparasiticData.parasite_type = formData.parasiteType.trim();
-      }
-
-      if (formData.administrationRoute?.trim()) {
-        antiparasiticData.administration_route = formData.administrationRoute.trim();
-      }
-
-      if (formData.dosage?.trim()) {
-        antiparasiticData.dosage = formData.dosage.trim();
-      }
-
-      if (formData.nextTreatmentDate?.trim()) {
-        antiparasiticData.next_treatment_date = formData.nextTreatmentDate.trim();
-      }
-
-      if (formData.administeredBy?.trim()) {
-        antiparasiticData.administered_by = formData.administeredBy.trim();
-      }
-
-      if (formData.notes?.trim()) {
-        antiparasiticData.notes = formData.notes.trim();
-      }
-
-      // Only add effectiveness_rating if it's explicitly set to a valid number (1-5)
-      if (formData.effectivenessRating && 
-          formData.effectivenessRating !== 'none' && 
-          formData.effectivenessRating !== '' && 
-          formData.effectivenessRating !== 'undefined') {
-        const rating = parseInt(formData.effectivenessRating);
-        if (!isNaN(rating) && rating >= 1 && rating <= 5) {
-          antiparasiticData.effectiveness_rating = rating;
+      if (plannedDoses.length > 1) {
+        const sorted = [...plannedDoses].sort((a, b) => a.date.localeCompare(b.date));
+        for (let i = 0; i < sorted.length; i++) {
+          const dose = sorted[i];
+          const next = sorted[i + 1];
+          await createAntiparasitic.mutateAsync({
+            ...base,
+            treatment_date: dose.date,
+            next_treatment_date: next ? next.date : undefined,
+            notes: [dose.label, formData.notes?.trim()].filter(Boolean).join(' — ') || undefined,
+          } as CreateAntiparasiticData);
         }
+        toast({
+          title: '✓ Calendrier enregistré',
+          description: `${sorted.length} traitements planifiés.`,
+        });
+      } else {
+        const singleDate = plannedDoses[0]?.date || formData.treatmentDate;
+        await createAntiparasitic.mutateAsync({
+          ...base,
+          treatment_date: singleDate,
+          next_treatment_date: formData.nextTreatmentDate?.trim() || undefined,
+          notes: formData.notes?.trim() || undefined,
+        } as CreateAntiparasiticData);
+        toast({
+          title: 'Succès',
+          description: 'Le traitement antiparasitaire a été enregistré avec succès.',
+        });
       }
 
-      console.log('Submitting antiparasitic data:', antiparasiticData);
-      console.log('Effectiveness rating value:', formData.effectivenessRating);
-      console.log('Effectiveness rating type:', typeof formData.effectivenessRating);
-
-      await createAntiparasitic.mutateAsync(antiparasiticData as CreateAntiparasiticData);
-      
-      toast({
-        title: "Succès",
-        description: "Le traitement antiparasitaire a été enregistré avec succès.",
-      });
-      
       resetForm();
       onOpenChange(false);
+
     } catch (error: any) {
       console.error('Erreur lors de la création du traitement antiparasitaire:', error);
       
