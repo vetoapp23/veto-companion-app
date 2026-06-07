@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Upload, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useClients, useCreateFarm, useUpdateFarm } from "@/hooks/useDatabase";
 import { useFarmManagementSettings } from "@/hooks/useAppSettings";
 import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
-import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig } from "@/lib/farmTypeConfig";
+import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig, normalizeFarmTypeKey } from "@/lib/farmTypeConfig";
+import { compressPhoto } from "@/lib/photoCompression";
 
 interface NewFarmModalProps {
   open: boolean;
@@ -34,10 +35,13 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
 
   const certificationOptions = farmSettings?.certification_types || ["Bio", "Label Rouge", "AOC", "IGP", "Halal"];
 
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [data, setData] = useState({
     client_id: "",
     farm_name: "",
     farm_type: "",
+    farm_types: [] as string[],
     production_type: "",
     housing_type: "",
     registration_number: "",
@@ -48,6 +52,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     herd_size: "",
     surface_hectares: "",
     certifications: [] as string[],
+    photos: [] as string[],
     notes: "",
     active: true,
   });
@@ -55,10 +60,14 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
   useEffect(() => {
     if (!open) return;
     if (farm) {
+      const types = farm.farm_types && farm.farm_types.length > 0
+        ? farm.farm_types
+        : (farm.farm_type ? [farm.farm_type] : []);
       setData({
         client_id: farm.client_id || "",
         farm_name: farm.farm_name || "",
-        farm_type: farm.farm_type || "",
+        farm_type: farm.farm_type || types[0] || "",
+        farm_types: types,
         production_type: farm.production_type || "",
         housing_type: farm.housing_type || "",
         registration_number: farm.registration_number || "",
@@ -69,14 +78,15 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
         herd_size: farm.herd_size ? String(farm.herd_size) : "",
         surface_hectares: farm.surface_hectares ? String(farm.surface_hectares) : "",
         certifications: farm.certifications || [],
+        photos: farm.photos || [],
         notes: farm.notes || "",
         active: farm.active ?? true,
       });
     } else {
       setData({
-        client_id: "", farm_name: "", farm_type: "", production_type: "", housing_type: "",
+        client_id: "", farm_name: "", farm_type: "", farm_types: [], production_type: "", housing_type: "",
         registration_number: "", address: "", coordinates: "", phone: "", email: "",
-        herd_size: "", surface_hectares: "", certifications: [], notes: "", active: true,
+        herd_size: "", surface_hectares: "", certifications: [], photos: [], notes: "", active: true,
       });
     }
   }, [open, farm]);
