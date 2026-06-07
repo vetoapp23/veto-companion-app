@@ -53,7 +53,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
             {farm.farm_name}
           </SheetTitle>
           <SheetDescription className="flex flex-wrap gap-2 items-center">
-            {farm.farm_type && <Badge variant="secondary">{farm.farm_type}</Badge>}
+            {farmTypes.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}
             {farm.production_type && <Badge variant="outline">{farm.production_type}</Badge>}
             {farm.active ? <Badge>Actif</Badge> : <Badge variant="destructive">Inactif</Badge>}
           </SheetDescription>
