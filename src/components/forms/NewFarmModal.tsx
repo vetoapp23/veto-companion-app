@@ -53,6 +53,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     surface_hectares: "",
     certifications: [] as string[],
     photos: [] as string[],
+    per_type: {} as Record<string, { production_type?: string; housing_type?: string; herd_size?: string; notes?: string }>,
     notes: "",
     active: true,
   });
