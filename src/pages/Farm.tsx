@@ -148,8 +148,16 @@ const FarmPage = () => {
                     </Button>
                   </div>
                 </div>
+                {f.photos?.[0] && (
+                  <img src={f.photos[0]} alt={f.farm_name}
+                    className="w-full h-32 object-cover rounded border cursor-pointer"
+                    onClick={() => setDetailFarm(f)} />
+                )}
                 <div className="flex flex-wrap gap-1">
-                  {f.farm_type && <Badge variant="secondary">{f.farm_type}</Badge>}
+                  {(f.farm_types && f.farm_types.length > 0
+                    ? f.farm_types
+                    : (f.farm_type ? [f.farm_type] : [])
+                  ).map((t: string) => <Badge key={t} variant="secondary">{t}</Badge>)}
                   {f.production_type && <Badge variant="outline">{f.production_type}</Badge>}
                   {f.housing_type && <Badge variant="outline">{f.housing_type}</Badge>}
                 </div>
