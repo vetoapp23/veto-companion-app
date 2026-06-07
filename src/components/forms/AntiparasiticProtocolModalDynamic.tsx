@@ -46,6 +46,9 @@ export default function AntiparasiticProtocolModalDynamic({
     notes: '',
     active: true,
   });
+  const [boosterSchedule, setBoosterSchedule] = useState<BoosterScheduleEntry[]>([
+    { label: '1er traitement', offset_days: 0 },
+  ]);
 
   // Pre-fill form for editing
   useEffect(() => {
