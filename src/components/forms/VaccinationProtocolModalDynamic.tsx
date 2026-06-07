@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAnimalSpecies, useVaccinationTypes } from '@/hooks/useAppSettings';
 import { Plus, Shield } from 'lucide-react';
 import { useCreateVaccinationProtocol, useUpdateVaccinationProtocol } from '@/hooks/useDatabase';
-import type { VaccinationProtocol } from '@/lib/database';
+import type { VaccinationProtocol, BoosterScheduleEntry } from '@/lib/database';
+import BoosterScheduleEditor from './BoosterScheduleEditor';
 
 interface VaccinationProtocolModalProps {
   children?: React.ReactNode;
@@ -49,6 +50,11 @@ export default function VaccinationProtocolModal({
     notes: protocol?.notes || '',
     active: protocol?.active ?? true
   });
+  const [boosterSchedule, setBoosterSchedule] = useState<BoosterScheduleEntry[]>(
+    protocol?.booster_schedule && protocol.booster_schedule.length > 0
+      ? protocol.booster_schedule
+      : [{ label: '1ère dose', offset_days: 0 }]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +77,10 @@ export default function VaccinationProtocolModal({
         frequency: formData.frequency || undefined,
         duration_days: formData.durationDays ? parseInt(formData.durationDays) : undefined,
         notes: formData.notes || undefined,
-        active: formData.active
+        active: formData.active,
+        booster_schedule: boosterSchedule
+          .filter(b => b.label.trim())
+          .sort((a, b) => a.offset_days - b.offset_days)
       };
 
       if (mode === 'create') {
@@ -226,6 +235,14 @@ export default function VaccinationProtocolModal({
               rows={3}
             />
           </div>
+
+          {/* Booster Schedule */}
+          <BoosterScheduleEditor
+            value={boosterSchedule}
+            onChange={setBoosterSchedule}
+            description="Définissez chaque dose (1ère injection, rappels...) avec son décalage en jours depuis la 1ère dose."
+          />
+
 
           {/* Active Status */}
           <div className="flex items-center space-x-2">

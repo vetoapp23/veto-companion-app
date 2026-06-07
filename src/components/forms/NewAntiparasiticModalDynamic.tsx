@@ -11,8 +11,13 @@ import { useAnimals, useClients, useCreateAntiparasitic, useAntiparasiticProtoco
 import { useToast } from '@/hooks/use-toast';
 import { useParasiteTypes } from '@/hooks/useAppSettings';
 import { format, addDays } from 'date-fns';
-import { Plus, Package, CheckCircle, Search, AlertTriangle, Loader2, X } from 'lucide-react';
-import type { CreateAntiparasiticData } from '@/lib/database';
+import { Plus, Package, CheckCircle, Search, AlertTriangle, Loader2, X, CalendarClock, Trash2 } from 'lucide-react';
+import type { CreateAntiparasiticData, BoosterScheduleEntry } from '@/lib/database';
+
+interface PlannedDose {
+  label: string;
+  date: string;
+}
 
 interface NewAntiparasiticModalDynamicProps {
   open: boolean;
@@ -54,6 +59,17 @@ export default function NewAntiparasiticModalDynamic({
 
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
   const { data: protocols } = useAntiparasiticProtocolsBySpecies(selectedAnimal?.species);
+  const [plannedDoses, setPlannedDoses] = useState<PlannedDose[]>([]);
+  const [appliedProtocolId, setAppliedProtocolId] = useState<string | null>(null);
+
+  const buildPlanFromSchedule = (baseDate: string, schedule: BoosterScheduleEntry[]): PlannedDose[] => {
+    return [...schedule]
+      .sort((a, b) => a.offset_days - b.offset_days)
+      .map(entry => ({
+        label: entry.label,
+        date: format(addDays(new Date(baseDate), entry.offset_days), 'yyyy-MM-dd'),
+      }));
+  };
 
   // Update form when props change
   useEffect(() => {
@@ -107,17 +123,35 @@ export default function NewAntiparasiticModalDynamic({
       activeIngredient: protocol.active_ingredient || '',
       parasiteType: protocol.parasite_type,
       administrationRoute: protocol.administration_route || '',
-      dosage: protocol.dosage_recommendation || '',
-      nextTreatmentDate: protocol.frequency_days ? 
-        format(addDays(new Date(prev.treatmentDate), protocol.frequency_days), 'yyyy-MM-dd') : 
-        '',
+      dosage: protocol.dosage_per_kg || protocol.dosage_recommendation || '',
     }));
-    
-    toast({
-      title: "Protocole appliqué",
-      description: `Le protocole ${protocol.product_name} a été appliqué.`,
-    });
+    setAppliedProtocolId(protocol.id);
+    const schedule: BoosterScheduleEntry[] = protocol.booster_schedule || [];
+    if (schedule.length > 0) {
+      const plan = buildPlanFromSchedule(formData.treatmentDate, schedule);
+      setPlannedDoses(plan);
+      toast({
+        title: 'Protocole appliqué',
+        description: `${plan.length} traitement(s) planifié(s). Modifiez les dates si besoin.`,
+      });
+    } else {
+      setPlannedDoses([]);
+      toast({
+        title: 'Protocole appliqué',
+        description: `Le protocole ${protocol.product_name} a été appliqué.`,
+      });
+    }
   };
+
+  // Shift planned doses when base treatment date changes
+  useEffect(() => {
+    if (plannedDoses.length === 0 || !appliedProtocolId || !protocols) return;
+    const protocol = protocols.find(p => p.id === appliedProtocolId);
+    if (!protocol?.booster_schedule || protocol.booster_schedule.length === 0) return;
+    setPlannedDoses(buildPlanFromSchedule(formData.treatmentDate, protocol.booster_schedule));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.treatmentDate]);
+
 
   const resetForm = () => {
     setFormData({
@@ -134,94 +168,93 @@ export default function NewAntiparasiticModalDynamic({
       effectivenessRating: 'none',
       notes: '',
     });
+    setPlannedDoses([]);
+    setAppliedProtocolId(null);
+  };
+
+  const buildBasePayload = () => {
+    const base: any = {
+      animal_id: formData.animalId,
+      product_name: formData.productName,
+    };
+    if (formData.activeIngredient?.trim()) base.active_ingredient = formData.activeIngredient.trim();
+    if (formData.parasiteType?.trim()) base.parasite_type = formData.parasiteType.trim();
+    if (formData.administrationRoute?.trim()) base.administration_route = formData.administrationRoute.trim();
+    if (formData.dosage?.trim()) base.dosage = formData.dosage.trim();
+    if (formData.administeredBy?.trim()) base.administered_by = formData.administeredBy.trim();
+    if (
+      formData.effectivenessRating &&
+      formData.effectivenessRating !== 'none' &&
+      formData.effectivenessRating !== ''
+    ) {
+      const rating = parseInt(formData.effectivenessRating);
+      if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+        base.effectiveness_rating = rating;
+      }
+    }
+    return base;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.animalId || !formData.productName || !formData.treatmentDate) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires.",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Veuillez remplir tous les champs obligatoires.',
+        variant: 'destructive',
       });
       return;
     }
 
-    // Validate effectiveness rating if provided
     if (formData.effectivenessRating && formData.effectivenessRating !== 'none') {
       const rating = parseInt(formData.effectivenessRating);
       if (isNaN(rating) || rating < 1 || rating > 5) {
         toast({
-          title: "Erreur",
+          title: 'Erreur',
           description: "L'évaluation d'efficacité doit être un nombre entre 1 et 5.",
-          variant: "destructive",
+          variant: 'destructive',
         });
         return;
       }
     }
 
     try {
-      // Build the base data object with only required fields first
-      const antiparasiticData: any = {
-        animal_id: formData.animalId,
-        product_name: formData.productName,
-        treatment_date: formData.treatmentDate,
-      };
+      const base = buildBasePayload();
 
-      // Add optional fields only if they have valid values
-      if (formData.activeIngredient?.trim()) {
-        antiparasiticData.active_ingredient = formData.activeIngredient.trim();
-      }
-
-      if (formData.parasiteType?.trim()) {
-        antiparasiticData.parasite_type = formData.parasiteType.trim();
-      }
-
-      if (formData.administrationRoute?.trim()) {
-        antiparasiticData.administration_route = formData.administrationRoute.trim();
-      }
-
-      if (formData.dosage?.trim()) {
-        antiparasiticData.dosage = formData.dosage.trim();
-      }
-
-      if (formData.nextTreatmentDate?.trim()) {
-        antiparasiticData.next_treatment_date = formData.nextTreatmentDate.trim();
-      }
-
-      if (formData.administeredBy?.trim()) {
-        antiparasiticData.administered_by = formData.administeredBy.trim();
-      }
-
-      if (formData.notes?.trim()) {
-        antiparasiticData.notes = formData.notes.trim();
-      }
-
-      // Only add effectiveness_rating if it's explicitly set to a valid number (1-5)
-      if (formData.effectivenessRating && 
-          formData.effectivenessRating !== 'none' && 
-          formData.effectivenessRating !== '' && 
-          formData.effectivenessRating !== 'undefined') {
-        const rating = parseInt(formData.effectivenessRating);
-        if (!isNaN(rating) && rating >= 1 && rating <= 5) {
-          antiparasiticData.effectiveness_rating = rating;
+      if (plannedDoses.length > 1) {
+        const sorted = [...plannedDoses].sort((a, b) => a.date.localeCompare(b.date));
+        for (let i = 0; i < sorted.length; i++) {
+          const dose = sorted[i];
+          const next = sorted[i + 1];
+          await createAntiparasitic.mutateAsync({
+            ...base,
+            treatment_date: dose.date,
+            next_treatment_date: next ? next.date : undefined,
+            notes: [dose.label, formData.notes?.trim()].filter(Boolean).join(' — ') || undefined,
+          } as CreateAntiparasiticData);
         }
+        toast({
+          title: '✓ Calendrier enregistré',
+          description: `${sorted.length} traitements planifiés.`,
+        });
+      } else {
+        const singleDate = plannedDoses[0]?.date || formData.treatmentDate;
+        await createAntiparasitic.mutateAsync({
+          ...base,
+          treatment_date: singleDate,
+          next_treatment_date: formData.nextTreatmentDate?.trim() || undefined,
+          notes: formData.notes?.trim() || undefined,
+        } as CreateAntiparasiticData);
+        toast({
+          title: 'Succès',
+          description: 'Le traitement antiparasitaire a été enregistré avec succès.',
+        });
       }
 
-      console.log('Submitting antiparasitic data:', antiparasiticData);
-      console.log('Effectiveness rating value:', formData.effectivenessRating);
-      console.log('Effectiveness rating type:', typeof formData.effectivenessRating);
-
-      await createAntiparasitic.mutateAsync(antiparasiticData as CreateAntiparasiticData);
-      
-      toast({
-        title: "Succès",
-        description: "Le traitement antiparasitaire a été enregistré avec succès.",
-      });
-      
       resetForm();
       onOpenChange(false);
+
     } catch (error: any) {
       console.error('Erreur lors de la création du traitement antiparasitaire:', error);
       
@@ -335,29 +368,38 @@ export default function NewAntiparasiticModalDynamic({
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2">
-                  {protocols.map(protocol => (
-                    <div key={protocol.id} className="flex items-center justify-between p-2 border rounded">
-                      <div>
-                        <div className="font-medium">{protocol.product_name}</div>
-                        <div className="text-sm text-gray-600">
-                          {protocol.parasite_type} - {protocol.active_ingredient}
+                  {protocols.map(protocol => {
+                    const doses = protocol.booster_schedule?.length || 0;
+                    const isApplied = appliedProtocolId === protocol.id;
+                    return (
+                      <div key={protocol.id} className="flex items-center justify-between p-2 border rounded">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{protocol.product_name}</div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-2">
+                            <span>{protocol.parasite_type}{protocol.active_ingredient ? ` - ${protocol.active_ingredient}` : ''}</span>
+                            {doses > 0 && (
+                              <Badge variant="secondary" className="h-5">
+                                {doses} dose{doses > 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                        <Button
+                          type="button"
+                          variant={isApplied ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => applyProtocol(protocol)}
+                        >
+                          {isApplied ? 'Appliqué' : (<><Plus className="h-4 w-4 mr-1" />Appliquer</>)}
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => applyProtocol(protocol)}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Appliquer
-                      </Button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           )}
+
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Product Name */}
@@ -429,40 +471,102 @@ export default function NewAntiparasiticModalDynamic({
               />
             </div>
 
-            {/* Treatment Date */}
-            <div className="space-y-2">
-              <Label htmlFor="treatmentDate">Date du traitement *</Label>
-              <Input
-                id="treatmentDate"
-                type="date"
-                value={formData.treatmentDate}
-                onChange={(e) => handleInputChange('treatmentDate', e.target.value)}
-                required
-              />
-            </div>
+            {plannedDoses.length <= 1 && (
+              <>
+                {/* Treatment Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="treatmentDate">Date du traitement *</Label>
+                  <Input
+                    id="treatmentDate"
+                    type="date"
+                    value={formData.treatmentDate}
+                    onChange={(e) => handleInputChange('treatmentDate', e.target.value)}
+                    required
+                  />
+                </div>
 
-            {/* Next Treatment Date */}
-            <div className="space-y-2">
-              <Label htmlFor="nextTreatmentDate">Prochain traitement</Label>
-              <Input
-                id="nextTreatmentDate"
-                type="date"
-                value={formData.nextTreatmentDate}
-                onChange={(e) => handleInputChange('nextTreatmentDate', e.target.value)}
-              />
-            </div>
-
-            {/* Administered By */}
-            {/* <div className="space-y-2">
-              <Label htmlFor="administeredBy">Administré par</Label>
-              <Input
-                id="administeredBy"
-                value={formData.administeredBy}
-                onChange={(e) => handleInputChange('administeredBy', e.target.value)}
-                placeholder="Nom du vétérinaire"
-              />
-            </div> */}
+                {/* Next Treatment Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="nextTreatmentDate">Prochain traitement</Label>
+                  <Input
+                    id="nextTreatmentDate"
+                    type="date"
+                    value={formData.nextTreatmentDate}
+                    onChange={(e) => handleInputChange('nextTreatmentDate', e.target.value)}
+                  />
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Multi-dose calendar */}
+          {plannedDoses.length > 1 && (
+            <Card className="border-primary/40 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4" />
+                    Calendrier prévisionnel ({plannedDoses.length} traitements)
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPlannedDoses([]);
+                      setAppliedProtocolId(null);
+                    }}
+                  >
+                    Réinitialiser
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Dates idéales calculées selon le protocole. Modifiables — un enregistrement sera créé pour chaque ligne.
+                </p>
+                <div className="space-y-2">
+                  <Label className="text-xs">Date du 1er traitement</Label>
+                  <Input
+                    type="date"
+                    value={formData.treatmentDate}
+                    onChange={(e) => handleInputChange('treatmentDate', e.target.value)}
+                  />
+                </div>
+                {plannedDoses.map((dose, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_160px_40px] gap-2 items-center">
+                    <Input
+                      value={dose.label}
+                      onChange={(e) =>
+                        setPlannedDoses(prev =>
+                          prev.map((d, idx) => (idx === i ? { ...d, label: e.target.value } : d)),
+                        )
+                      }
+                    />
+                    <Input
+                      type="date"
+                      value={dose.date}
+                      onChange={(e) =>
+                        setPlannedDoses(prev =>
+                          prev.map((d, idx) => (idx === i ? { ...d, date: e.target.value } : d)),
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setPlannedDoses(prev => prev.filter((_, idx) => idx !== i))}
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
 
           {/* Effectiveness Rating */}
           <div className="space-y-2">
@@ -507,7 +611,7 @@ export default function NewAntiparasiticModalDynamic({
             </Button>
             <Button type="submit" disabled={createAntiparasitic.isPending}>
               {createAntiparasitic.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingAntiparasitic ? 'Modifier' : 'Enregistrer'}
+              {editingAntiparasitic ? 'Modifier' : plannedDoses.length > 1 ? `Enregistrer ${plannedDoses.length} traitements` : 'Enregistrer'}
             </Button>
           </div>
         </form>

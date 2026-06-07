@@ -10,7 +10,8 @@ import { useCreateAntiparasiticProtocol, useUpdateAntiparasiticProtocol } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAnimalSpecies, useParasiteTypes } from '@/hooks/useAppSettings';
 import { Shield, Loader2 } from 'lucide-react';
-import type { AntiparasiticProtocol } from '@/lib/database';
+import type { AntiparasiticProtocol, BoosterScheduleEntry } from '@/lib/database';
+import BoosterScheduleEditor from './BoosterScheduleEditor';
 
 interface AntiparasiticProtocolModalDynamicProps {
   open: boolean;
@@ -45,6 +46,9 @@ export default function AntiparasiticProtocolModalDynamic({
     notes: '',
     active: true,
   });
+  const [boosterSchedule, setBoosterSchedule] = useState<BoosterScheduleEntry[]>([
+    { label: '1er traitement', offset_days: 0 },
+  ]);
 
   // Pre-fill form for editing
   useEffect(() => {
@@ -63,6 +67,9 @@ export default function AntiparasiticProtocolModalDynamic({
         notes: editingProtocol.notes || '',
         active: editingProtocol.active,
       });
+      if (editingProtocol.booster_schedule && editingProtocol.booster_schedule.length > 0) {
+        setBoosterSchedule(editingProtocol.booster_schedule);
+      }
     }
   }, [editingProtocol]);
 
@@ -115,6 +122,9 @@ export default function AntiparasiticProtocolModalDynamic({
           formData.seasonRecommendation ? `Saison: ${formData.seasonRecommendation}` : ''
         ].filter(Boolean).join(' | ') || undefined,
         active: formData.active,
+        booster_schedule: boosterSchedule
+          .filter(b => b.label.trim())
+          .sort((a, b) => a.offset_days - b.offset_days),
       };
 
       if (editingProtocol) {
@@ -311,6 +321,15 @@ export default function AntiparasiticProtocolModalDynamic({
               rows={3}
             />
           </div>
+
+          {/* Booster Schedule */}
+          <BoosterScheduleEditor
+            value={boosterSchedule}
+            onChange={setBoosterSchedule}
+            title="Calendrier des traitements"
+            description="Listez chaque traitement (1er, rappels...) avec son décalage en jours depuis le 1er traitement."
+          />
+
 
           {/* Active Switch */}
           <div className="flex items-center space-x-2">
