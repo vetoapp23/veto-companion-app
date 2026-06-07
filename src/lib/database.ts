@@ -635,6 +635,8 @@ export interface CreateFarmData {
   housing_type?: string | null
   coordinates?: string | null
   metadata?: Record<string, any> | null
+  farm_types?: string[] | null
+  photos?: string[] | null
 }
 
 export interface CreateFarmInterventionData {
