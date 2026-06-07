@@ -12,7 +12,7 @@ import {
   INFRA_TYPE_DEFAULTS, useCreateFarmInfrastructure, useUpdateFarmInfrastructure,
   type FarmInfrastructure,
 } from "@/hooks/useFarmInfrastructures";
-import { compressImage } from "@/lib/photoCompression";
+import { compressPhoto } from "@/lib/photoCompression";
 
 interface Props {
   open: boolean;
@@ -56,10 +56,9 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
       const out: string[] = [];
       for (const f of files) {
         try {
-          const compressed = await compressImage(f, { maxWidth: 1200, quality: 0.75 });
-          out.push(compressed);
+          const { dataUrl } = await compressPhoto(f);
+          out.push(dataUrl);
         } catch {
-          // fallback: read as data URL
           out.push(await new Promise<string>((res, rej) => {
             const r = new FileReader();
             r.onload = () => res(r.result as string);
