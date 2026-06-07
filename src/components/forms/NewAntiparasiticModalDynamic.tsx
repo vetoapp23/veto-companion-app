@@ -123,17 +123,35 @@ export default function NewAntiparasiticModalDynamic({
       activeIngredient: protocol.active_ingredient || '',
       parasiteType: protocol.parasite_type,
       administrationRoute: protocol.administration_route || '',
-      dosage: protocol.dosage_recommendation || '',
-      nextTreatmentDate: protocol.frequency_days ? 
-        format(addDays(new Date(prev.treatmentDate), protocol.frequency_days), 'yyyy-MM-dd') : 
-        '',
+      dosage: protocol.dosage_per_kg || protocol.dosage_recommendation || '',
     }));
-    
-    toast({
-      title: "Protocole appliqué",
-      description: `Le protocole ${protocol.product_name} a été appliqué.`,
-    });
+    setAppliedProtocolId(protocol.id);
+    const schedule: BoosterScheduleEntry[] = protocol.booster_schedule || [];
+    if (schedule.length > 0) {
+      const plan = buildPlanFromSchedule(formData.treatmentDate, schedule);
+      setPlannedDoses(plan);
+      toast({
+        title: 'Protocole appliqué',
+        description: `${plan.length} traitement(s) planifié(s). Modifiez les dates si besoin.`,
+      });
+    } else {
+      setPlannedDoses([]);
+      toast({
+        title: 'Protocole appliqué',
+        description: `Le protocole ${protocol.product_name} a été appliqué.`,
+      });
+    }
   };
+
+  // Shift planned doses when base treatment date changes
+  useEffect(() => {
+    if (plannedDoses.length === 0 || !appliedProtocolId || !protocols) return;
+    const protocol = protocols.find(p => p.id === appliedProtocolId);
+    if (!protocol?.booster_schedule || protocol.booster_schedule.length === 0) return;
+    setPlannedDoses(buildPlanFromSchedule(formData.treatmentDate, protocol.booster_schedule));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.treatmentDate]);
+
 
   const resetForm = () => {
     setFormData({
