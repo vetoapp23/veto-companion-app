@@ -233,7 +233,7 @@ export default function NewVaccinationModal({
     }
   };
 
-  const hasMultiPlan = plannedDoses.length > 1;
+  const hasMultiPlan = plannedDoses.length >= 1;
 
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
