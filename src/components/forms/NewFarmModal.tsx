@@ -80,6 +80,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
         surface_hectares: farm.surface_hectares ? String(farm.surface_hectares) : "",
         certifications: farm.certifications || [],
         photos: farm.photos || [],
+        per_type: (farm.metadata && farm.metadata.per_type) || {},
         notes: farm.notes || "",
         active: farm.active ?? true,
       });
@@ -87,7 +88,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
       setData({
         client_id: "", farm_name: "", farm_type: "", farm_types: [], production_type: "", housing_type: "",
         registration_number: "", address: "", coordinates: "", phone: "", email: "",
-        herd_size: "", surface_hectares: "", certifications: [], photos: [], notes: "", active: true,
+        herd_size: "", surface_hectares: "", certifications: [], photos: [], per_type: {}, notes: "", active: true,
       });
     }
   }, [open, farm]);
