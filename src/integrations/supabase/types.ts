@@ -1695,6 +1695,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      recompute_storage_usage: { Args: never; Returns: Json }
       record_storage_change: {
         Args: {
           p_bytes_delta: number
