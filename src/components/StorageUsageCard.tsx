@@ -59,12 +59,18 @@ export function StorageUsageCard() {
               </Badge>
             </CardDescription>
           </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/pricing">
-              Changer de pack
-              <ArrowUpRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleRecompute} disabled={recomputing}>
+              <RefreshCw className={`mr-1 h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
+              Recalculer
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/pricing">
+                Changer de pack
+                <ArrowUpRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
