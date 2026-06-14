@@ -295,7 +295,7 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Annuler</Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Créer l'intervention
+              {isEdit ? "Enregistrer" : "Créer l'intervention"}
             </Button>
           </div>
         </form>
