@@ -371,6 +371,11 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
         prefillClientId={pet.dbClientId}
         prefillPetId={pet.dbId}
       />
+      <ConsultationDetailModal
+        open={!!selectedConsult}
+        onOpenChange={(o) => !o && setSelectedConsult(null)}
+        consultation={selectedConsult}
+      />
     </>
   );
 }
