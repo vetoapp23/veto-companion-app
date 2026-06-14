@@ -31,21 +31,28 @@ export function useAllOrganizations() {
     queryKey: ["super-admin", "orgs"],
     staleTime: 30_000,
     queryFn: async (): Promise<OrgRow[]> => {
-      const [orgsRes, subsRes, usageRes, usersRes] = await Promise.all([
+      const [orgsRes, subsRes, usageRes, usersRes, liveRes] = await Promise.all([
         supabase.from("organizations").select("*").order("created_at", { ascending: false }),
         supabase.from("organization_subscriptions").select("*"),
         supabase.from("storage_usage").select("organization_id,bytes_used"),
         supabase.from("user_profiles").select("organization_id,status"),
+        supabase.rpc("get_all_orgs_storage" as any),
       ]);
       if (orgsRes.error) throw orgsRes.error;
 
       const subsByOrg = new Map<string, any>();
       (subsRes.data ?? []).forEach((s: any) => subsByOrg.set(s.organization_id, s));
 
+      // Live photo-based bytes (server-computed) take priority over the cached counters.
       const usageByOrg = new Map<string, number>();
       (usageRes.data ?? []).forEach((u: any) => {
         usageByOrg.set(u.organization_id, (usageByOrg.get(u.organization_id) ?? 0) + Number(u.bytes_used ?? 0));
       });
+      if (Array.isArray((liveRes as any)?.data)) {
+        ((liveRes as any).data as any[]).forEach((u: any) => {
+          usageByOrg.set(u.organization_id, Number(u.bytes_used ?? 0));
+        });
+      }
 
       const usersByOrg = new Map<string, number>();
       (usersRes.data ?? []).forEach((u: any) => {
