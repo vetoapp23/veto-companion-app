@@ -54,27 +54,37 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
     if (!files.length) return;
     try {
       const out: string[] = [];
+      let addedBytes = 0;
       for (const f of files) {
         try {
-          const { dataUrl } = await compressPhoto(f);
+          const { dataUrl, bytes } = await compressPhoto(f);
           out.push(dataUrl);
+          addedBytes += bytes;
         } catch {
-          out.push(await new Promise<string>((res, rej) => {
+          const dataUrl = await new Promise<string>((res, rej) => {
             const r = new FileReader();
             r.onload = () => res(r.result as string);
             r.onerror = rej;
             r.readAsDataURL(f);
-          }));
+          });
+          out.push(dataUrl);
+          addedBytes += estimateDataUrlBytes(dataUrl);
         }
       }
       setData((p) => ({ ...p, photos: [...p.photos, ...out] }));
+      if (addedBytes > 0) recordStorageChange("farm", addedBytes, out.length);
     } catch (err: any) {
       toast({ title: "Erreur photo", description: err.message, variant: "destructive" });
     }
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const removePhoto = (i: number) => setData((p) => ({ ...p, photos: p.photos.filter((_, k) => k !== i) }));
+  const removePhoto = (i: number) =>
+    setData((p) => {
+      const removed = p.photos[i];
+      if (removed) recordStorageChange("farm", -estimateDataUrlBytes(removed), -1);
+      return { ...p, photos: p.photos.filter((_, k) => k !== i) };
+    });
 
   const busy = create.isPending || update.isPending;
 
