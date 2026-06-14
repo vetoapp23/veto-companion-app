@@ -13,10 +13,9 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAllOrganizations, useAllUsers, useAllPlans } from "@/hooks/useSuperAdminData";
-import { Search, RefreshCw, Building2, Users, Package, Shield, Trash2, Pencil, Plus } from "lucide-react";
+import { useAllOrganizations, useAllUsers, useAllPlans, useSuperAdminStats, formatLimitUsage, limitPercent } from "@/hooks/useSuperAdminData";
+import { Search, RefreshCw, Building2, Users, Package, Shield, Trash2, Pencil, Plus, PawPrint, UserCheck, AlertTriangle, BarChart3 } from "lucide-react";
 
-const PLAN_CODES = ["free", "pro", "pro_plus", "duo", "clinic"];
 const SUB_STATUSES = ["active", "trialing", "past_due", "canceled", "suspended"];
 const USER_STATUSES = ["pending", "approved", "rejected", "suspended"];
 const USER_ROLES = ["assistant", "admin", "super_admin"];
@@ -49,6 +48,8 @@ function statusBadge(status: string) {
 /* ---------------- Organisations Tab ---------------- */
 function OrgsTab() {
   const { data: orgs = [], isLoading, refetch } = useAllOrganizations();
+  const { data: plans = [] } = useAllPlans();
+  const planCodes = plans.map((p: any) => p.code);
   const { toast } = useToast();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -96,7 +97,7 @@ function OrgsTab() {
           <SelectTrigger className="w-40"><SelectValue placeholder="Plan" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les plans</SelectItem>
-            {PLAN_CODES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            {planCodes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -120,6 +121,8 @@ function OrgsTab() {
                 <th className="p-3">Plan</th>
                 <th className="p-3">Statut</th>
                 <th className="p-3">Utilisateurs</th>
+                <th className="p-3">Clients</th>
+                <th className="p-3">Animaux</th>
                 <th className="p-3">Stockage</th>
                 <th className="p-3">Période</th>
                 <th className="p-3">Actions</th>
@@ -127,14 +130,16 @@ function OrgsTab() {
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Chargement…</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Chargement…</td></tr>
               )}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Aucune organisation</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Aucune organisation</td></tr>
               )}
               {filtered.map((o) => {
                 const quota = (o.subscription?.storage_quota_mb ?? 200) + (o.subscription?.storage_addon_mb ?? 0);
                 const pct = quota > 0 ? Math.round((o.storage_used_mb / quota) * 100) : 0;
+                const clientPct = limitPercent(o.clients_count, o.plan_limits?.max_clients);
+                const clientFull = o.plan_limits?.max_clients != null && o.clients_count >= o.plan_limits.max_clients;
                 return (
                   <tr key={o.id} className="border-b hover:bg-muted/20">
                     <td className="p-3">
@@ -144,6 +149,18 @@ function OrgsTab() {
                     <td className="p-3">{planBadge(o.subscription?.plan_code ?? "free")}</td>
                     <td className="p-3">{statusBadge(o.subscription?.status ?? "active")}</td>
                     <td className="p-3">{o.users_count}</td>
+                    <td className="p-3">
+                      <div className={`text-xs flex items-center gap-1 ${clientFull ? "text-destructive font-medium" : ""}`}>
+                        {clientFull && <AlertTriangle className="h-3 w-3" />}
+                        {formatLimitUsage(o.clients_count, o.plan_limits?.max_clients)}
+                      </div>
+                      {o.plan_limits?.max_clients != null && (
+                        <div className="h-1.5 w-20 rounded bg-muted overflow-hidden mt-1">
+                          <div className={`h-full ${clientPct >= 100 ? "bg-red-500" : "bg-primary"}`} style={{ width: `${clientPct}%` }} />
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-3 text-xs">{formatLimitUsage(o.animals_count, o.plan_limits?.max_animals)}</td>
                     <td className="p-3">
                       <div className="text-xs">{o.storage_used_mb} / {quota} Mo</div>
                       <div className="h-1.5 w-24 rounded bg-muted overflow-hidden mt-1">
@@ -174,6 +191,7 @@ function OrgsTab() {
       {editing && (
         <OrgEditDialog
           org={editing}
+          plans={plans}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); refreshAll(); toast({ title: "Organisation mise à jour" }); }}
         />
@@ -182,7 +200,7 @@ function OrgsTab() {
   );
 }
 
-function OrgEditDialog({ org, onClose, onSaved }: any) {
+function OrgEditDialog({ org, plans, onClose, onSaved }: any) {
   const { toast } = useToast();
   const sub = org.subscription;
   const [form, setForm] = useState({
@@ -195,6 +213,16 @@ function OrgEditDialog({ org, onClose, onSaved }: any) {
     cancel_at_period_end: sub?.cancel_at_period_end ?? false,
   });
   const [saving, setSaving] = useState(false);
+  const planCodes = plans.map((p: any) => p.code);
+
+  const applyPlanDefaults = (code: string) => {
+    const plan = plans.find((p: any) => p.code === code);
+    setForm((f) => ({
+      ...f,
+      plan_code: code,
+      storage_quota_mb: plan?.storage_mb ?? f.storage_quota_mb,
+    }));
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -237,12 +265,20 @@ function OrgEditDialog({ org, onClose, onSaved }: any) {
           <DialogTitle>Gérer l'abonnement — {org.name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          <div className="rounded-md border p-3 text-xs text-muted-foreground grid grid-cols-3 gap-2">
+            <div>Clients : {formatLimitUsage(org.clients_count, org.plan_limits?.max_clients)}</div>
+            <div>Animaux : {formatLimitUsage(org.animals_count, org.plan_limits?.max_animals)}</div>
+            <div>Users : {formatLimitUsage(org.users_count, org.plan_limits?.max_users)}</div>
+          </div>
           <div>
             <Label>Plan</Label>
-            <Select value={form.plan_code} onValueChange={(v) => setForm({ ...form, plan_code: v })}>
+            <Select value={form.plan_code} onValueChange={applyPlanDefaults}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PLAN_CODES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              <SelectContent>{planCodes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Les limites clients/animaux/users viennent du plan (onglet Plans). Le quota stockage est synchronisé à la sélection.
+            </p>
           </div>
           <div>
             <Label>Statut</Label>
@@ -421,12 +457,13 @@ function PlansTab() {
                 <th className="p-3">Stockage</th>
                 <th className="p-3">Max users</th>
                 <th className="p-3">Max clients</th>
+                <th className="p-3">Max animaux</th>
                 <th className="p-3">Actif</th>
                 <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {isLoading && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Chargement…</td></tr>}
+              {isLoading && <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Chargement…</td></tr>}
               {plans.map((p: any) => (
                 <tr key={p.id} className="border-b hover:bg-muted/20">
                   <td className="p-3 font-mono">{p.code}</td>
@@ -434,6 +471,7 @@ function PlansTab() {
                   <td className="p-3">{p.storage_mb} Mo</td>
                   <td className="p-3">{p.max_users}</td>
                   <td className="p-3">{p.max_clients ?? "∞"}</td>
+                  <td className="p-3">{p.max_animals ?? "∞"}</td>
                   <td className="p-3">{p.is_active ? "✓" : "—"}</td>
                   <td className="p-3 space-x-1">
                     <Button size="sm" variant="outline" onClick={() => setEditing(p)}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -449,7 +487,13 @@ function PlansTab() {
         <PlanEditDialog
           plan={editing}
           onClose={() => setEditing(null)}
-          onSaved={() => { setEditing(null); qc.invalidateQueries({ queryKey: ["super-admin"] }); refetch(); toast({ title: "Plan enregistré" }); }}
+          onSaved={() => {
+            setEditing(null);
+            qc.invalidateQueries({ queryKey: ["super-admin"] });
+            qc.invalidateQueries({ queryKey: ["plan-quota"] });
+            refetch();
+            toast({ title: "Plan enregistré — limites mises à jour pour toutes les cliniques sur ce plan" });
+          }}
         />
       )}
     </div>
@@ -459,6 +503,7 @@ function PlansTab() {
 function PlanEditDialog({ plan, onClose, onSaved }: any) {
   const { toast } = useToast();
   const isNew = !plan.id;
+  const limits = (plan.limits && typeof plan.limits === "object") ? plan.limits : {};
   const [form, setForm] = useState<any>({
     code: plan.code ?? "",
     name: plan.name ?? "",
@@ -471,6 +516,9 @@ function PlanEditDialog({ plan, onClose, onSaved }: any) {
     max_users: plan.max_users ?? 1,
     max_clients: plan.max_clients ?? "",
     max_animals: plan.max_animals ?? "",
+    limit_farm: !!limits.farm,
+    limit_stock: !!limits.stock,
+    limit_accounting: !!limits.accounting,
     features: Array.isArray(plan.features) ? plan.features.join("\n") : "",
     prices: JSON.stringify(plan.prices ?? {}, null, 2),
   });
@@ -493,6 +541,11 @@ function PlanEditDialog({ plan, onClose, onSaved }: any) {
         max_users: Number(form.max_users) || 1,
         max_clients: form.max_clients === "" ? null : Number(form.max_clients),
         max_animals: form.max_animals === "" ? null : Number(form.max_animals),
+        limits: {
+          farm: !!form.limit_farm,
+          stock: !!form.limit_stock,
+          accounting: !!form.limit_accounting,
+        },
         features: form.features.split("\n").map((l: string) => l.trim()).filter(Boolean),
         prices,
       };
@@ -537,12 +590,20 @@ function PlanEditDialog({ plan, onClose, onSaved }: any) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div><Label>Max animaux</Label><Input type="number" value={form.max_animals} onChange={(e) => setForm({ ...form, max_animals: e.target.value })} placeholder="∞" /></div>
-            <div className="flex items-end gap-4">
+            <div className="flex items-end gap-4 flex-wrap">
               <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(c) => setForm({ ...form, is_active: c })} /><Label>Actif</Label></div>
               <div className="flex items-center gap-2"><Switch checked={form.is_highlighted} onCheckedChange={(c) => setForm({ ...form, is_highlighted: c })} /><Label>Mis en avant</Label></div>
             </div>
           </div>
-          <div><Label>Fonctionnalités (une par ligne)</Label><Textarea rows={5} value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} /></div>
+          <div>
+            <Label className="mb-2 block">Modules inclus (limites fonctionnelles)</Label>
+            <div className="flex flex-wrap gap-4 rounded border p-3">
+              <label className="flex items-center gap-2 text-sm"><Switch checked={form.limit_farm} onCheckedChange={(c) => setForm({ ...form, limit_farm: c })} />Gestion fermes</label>
+              <label className="flex items-center gap-2 text-sm"><Switch checked={form.limit_stock} onCheckedChange={(c) => setForm({ ...form, limit_stock: c })} />Stock</label>
+              <label className="flex items-center gap-2 text-sm"><Switch checked={form.limit_accounting} onCheckedChange={(c) => setForm({ ...form, limit_accounting: c })} />Comptabilité</label>
+            </div>
+          </div>
+          <div><Label>Fonctionnalités affichées (une par ligne)</Label><Textarea rows={5} value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} /></div>
           <div><Label>Prix (JSON)</Label><Textarea rows={4} className="font-mono text-xs" value={form.prices} onChange={(e) => setForm({ ...form, prices: e.target.value })} /></div>
         </div>
         <DialogFooter className="gap-2">
@@ -558,10 +619,7 @@ function PlanEditDialog({ plan, onClose, onSaved }: any) {
 
 /* ---------------- Page ---------------- */
 export default function SuperAdmin() {
-  const { data: orgs = [] } = useAllOrganizations();
-  const { data: users = [] } = useAllUsers();
-  const totalUsage = orgs.reduce((s, o) => s + o.storage_used_mb, 0);
-  const paidOrgs = orgs.filter((o) => (o.subscription?.plan_code ?? "free") !== "free").length;
+  const stats = useSuperAdminStats();
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-4">
@@ -570,12 +628,37 @@ export default function SuperAdmin() {
         <h1 className="text-2xl font-bold">Console Super Admin</h1>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground flex items-center gap-2"><Building2 className="h-4 w-4" />Cliniques</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{orgs.length}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground flex items-center gap-2"><Package className="h-4 w-4" />Payantes</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{paidOrgs}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />Utilisateurs</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{users.length}</CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground">Stockage total</CardTitle></CardHeader><CardContent className="text-2xl font-bold">{Math.round(totalUsage)} Mo</CardContent></Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <StatCard icon={Building2} label="Cliniques" value={stats.totalOrgs} sub={`${stats.paidOrgs} payantes · ${stats.freeOrgs} free`} />
+        <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} sub={`${stats.pendingUsers} en attente`} />
+        <StatCard icon={UserCheck} label="Clients (total)" value={stats.totalClients} />
+        <StatCard icon={PawPrint} label="Animaux (total)" value={stats.totalAnimals} />
+        <StatCard icon={Package} label="Stockage" value={`${stats.totalStorageMb} Mo`} />
+        <StatCard icon={AlertTriangle} label="Limites clients" value={stats.orgsAtClientLimit} sub="cliniques au plafond" warn={stats.orgsAtClientLimit > 0} />
       </div>
+
+      {stats.byPlan.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4" />Répartition par plan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {stats.byPlan.map((p) => (
+                <div key={p.code} className="rounded border p-2 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    {planBadge(p.code)}
+                    <span className="font-bold">{p.orgs}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {p.max_clients ?? "∞"} clients · {p.max_animals ?? "∞"} anim. · {p.max_users} users
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="orgs">
         <TabsList>
@@ -588,5 +671,21 @@ export default function SuperAdmin() {
         <TabsContent value="plans"><PlansTab /></TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, sub, warn }: { icon: any; label: string; value: any; sub?: string; warn?: boolean }) {
+  return (
+    <Card className={warn ? "border-destructive/40" : ""}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xs text-muted-foreground flex items-center gap-2">
+          <Icon className="h-4 w-4" />{label}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${warn ? "text-destructive" : ""}`}>{value}</div>
+        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      </CardContent>
+    </Card>
   );
 }

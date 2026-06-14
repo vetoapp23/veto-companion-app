@@ -6,11 +6,13 @@ import { HardDrive, Sparkles, AlertTriangle, ArrowUpRight, RefreshCw } from "luc
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { recomputeStorageUsage } from "@/lib/photoCompression";
 import { useToast } from "@/hooks/use-toast";
 
 export function StorageUsageCard() {
   const { quota, isLoading, storageWarning, storageBlocked, isFree, refetch, isPrivileged } = usePlanLimits();
+  const { counts, limitFor, usagePercent, reached } = useQuotaCheck();
   const { toast } = useToast();
   const [recomputing, setRecomputing] = useState(false);
 
@@ -111,10 +113,28 @@ export function StorageUsageCard() {
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-3 pt-2 border-t">
-          <Stat label="Clients" value={quota.max_clients ? `${quota.max_clients}` : "Illimité"} />
-          <Stat label="Animaux" value={quota.max_animals ? `${quota.max_animals}` : "Illimité"} />
-          <Stat label="Utilisateurs" value={quota.max_users ? `${quota.max_users}` : "Illimité"} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
+          <UsageStat
+            label="Clients"
+            current={counts.clients}
+            max={limitFor("clients")}
+            percent={usagePercent("clients")}
+            blocked={reached("clients")}
+          />
+          <UsageStat
+            label="Animaux"
+            current={counts.animals}
+            max={limitFor("animals")}
+            percent={usagePercent("animals")}
+            blocked={reached("animals")}
+          />
+          <UsageStat
+            label="Utilisateurs"
+            current={counts.users}
+            max={limitFor("users")}
+            percent={usagePercent("users")}
+            blocked={reached("users")}
+          />
         </div>
 
         {isFree && (
@@ -130,11 +150,30 @@ export function StorageUsageCard() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function UsageStat({
+  label,
+  current,
+  max,
+  percent,
+  blocked,
+}: {
+  label: string;
+  current: number;
+  max: number | null;
+  percent: number | null;
+  blocked: boolean;
+}) {
   return (
-    <div className="text-center">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-semibold mt-0.5">{value}</p>
+    <div className={`rounded-md border p-2 ${blocked ? "border-destructive/50 bg-destructive/5" : ""}`}>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={`font-medium ${blocked ? "text-destructive" : ""}`}>
+          {current} / {max ?? "∞"}
+        </span>
+      </div>
+      {max != null && (
+        <Progress value={percent ?? 0} className={blocked ? "[&>div]:bg-destructive" : ""} />
+      )}
     </div>
   );
 }

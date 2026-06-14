@@ -16,6 +16,7 @@ export interface PlanQuota {
   max_animals: number | null;
   max_users: number | null;
   features: string[];
+  limits?: Record<string, boolean>;
 }
 
 export function usePlanLimits() {
@@ -38,12 +39,17 @@ export function usePlanLimits() {
 
   const quota = query.data;
   const planCode = quota?.plan_code ?? "free";
+  const limits = (quota?.limits ?? {}) as Record<string, boolean>;
+  const features = Array.isArray(quota?.features) ? quota.features : [];
+
+  const hasLimitFlag = (key: string) => limits[key] === true;
+  const hasFeatureText = (needle: string) =>
+    features.some((f) => String(f).toLowerCase().includes(needle.toLowerCase()));
+
   const FARM_PLANS = ["pro_plus", "duo", "clinic"];
   const ACCOUNTING_PLANS = ["pro_plus", "duo", "clinic"];
   const STOCK_PLANS = ["pro", "pro_plus", "duo", "clinic"];
 
-  // Admins (and super-admins) of an organization bypass plan feature gates
-  // and storage hard-blocks so they can manage every module of the app.
   const role = (user?.profile?.role as string) || "";
   const isPrivileged = role === "admin" || role === "super_admin";
 
@@ -60,9 +66,9 @@ export function usePlanLimits() {
     },
     isFree: planCode === "free",
     isPaid: planCode !== "free",
-    hasFarmManagement: isPrivileged || FARM_PLANS.includes(planCode),
-    hasAccounting: isPrivileged || ACCOUNTING_PLANS.includes(planCode),
-    hasStock: isPrivileged || STOCK_PLANS.includes(planCode),
+    hasFarmManagement: isPrivileged || hasLimitFlag("farm") || FARM_PLANS.includes(planCode) || hasFeatureText("ferme"),
+    hasAccounting: isPrivileged || hasLimitFlag("accounting") || ACCOUNTING_PLANS.includes(planCode) || hasFeatureText("compta"),
+    hasStock: isPrivileged || hasLimitFlag("stock") || STOCK_PLANS.includes(planCode) || hasFeatureText("stock"),
     storageWarning: quota ? quota.percent_used >= 80 : false,
     storageBlocked: isPrivileged ? false : (quota ? quota.percent_used >= 100 : false),
     isPrivileged,

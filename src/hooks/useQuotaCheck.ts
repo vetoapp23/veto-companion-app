@@ -4,8 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useToast } from "@/hooks/use-toast";
-
-export type QuotaKind = "clients" | "animals" | "users";
+import { checkQuotaLimit, quotaKindLabel, type QuotaKind } from "@/lib/quotaEnforcement";
 
 interface Counts {
   clients: number;
@@ -14,9 +13,8 @@ interface Counts {
 }
 
 /**
- * Surveille les compteurs (clients / animaux / utilisateurs) vs les limites du plan.
- * Utilisez `enforce(kind)` dans les handlers de création : affiche un toast et
- * retourne `false` si la limite est atteinte.
+ * Surveille les compteurs vs limites du plan (configurables par le Super Admin).
+ * `enforce(kind)` bloque la création et propose de passer à un pack payant.
  */
 export function useQuotaCheck() {
   const { user, isAuthenticated } = useAuth();
@@ -60,21 +58,40 @@ export function useQuotaCheck() {
     return counts[kind] >= max;
   };
 
-  const role = (user?.profile?.role as string) || "";
-  const isPrivileged = role === "admin" || role === "super_admin";
-
-  const enforce = (kind: QuotaKind): boolean => {
-    if (isPrivileged) return true;
-    if (!reached(kind)) return true;
+  const remaining = (kind: QuotaKind): number | null => {
     const max = limitFor(kind);
-    const labels: Record<QuotaKind, string> = {
-      clients: "clients",
-      animals: "animaux",
-      users: "utilisateurs",
-    };
+    if (max === null || max === undefined) return null;
+    return Math.max(0, max - counts[kind]);
+  };
+
+  const usagePercent = (kind: QuotaKind): number | null => {
+    const max = limitFor(kind);
+    if (!max) return null;
+    return Math.min(100, Math.round((counts[kind] / max) * 100));
+  };
+
+  const role = (user?.profile?.role as string) || "";
+  const isSuperAdmin = role === "super_admin";
+
+  const enforce = async (kind: QuotaKind): Promise<boolean> => {
+    if (isSuperAdmin) return true;
+
+    const result = await checkQuotaLimit(kind);
+    if (result?.bypass) return true;
+
+    const blocked =
+      (result && result.allowed === false) ||
+      (!result && reached(kind));
+
+    if (!blocked) return true;
+
+    const max = result?.max ?? limitFor(kind);
     toast({
       title: "Limite du plan atteinte",
-      description: `Votre pack ${quota?.plan_name ?? ""} est limité à ${max} ${labels[kind]}. Passez à un pack supérieur pour en ajouter davantage.`,
+      description:
+        (result?.message ||
+          `Votre pack ${result?.plan_name ?? quota?.plan_name ?? ""} est limité à ${max} ${quotaKindLabel(kind)}.`) +
+        " Rendez-vous sur la page Tarifs pour passer à un pack payant.",
       variant: "destructive",
     });
     return false;
@@ -85,6 +102,8 @@ export function useQuotaCheck() {
     isLoading: countsQuery.isLoading,
     refetch: countsQuery.refetch,
     reached,
+    remaining,
+    usagePercent,
     enforce,
     limitFor,
   };

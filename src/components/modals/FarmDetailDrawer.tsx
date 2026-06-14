@@ -5,19 +5,16 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Activity, Stethoscope, Users2, MapPin, Phone, Mail, Tractor, Calendar, Building2, Printer, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Activity, Stethoscope, Users2, MapPin, Phone, Mail, Tractor, Calendar, Building2, FileText } from "lucide-react";
 import { useFarmBatches, useDeleteFarmBatch, useFarmHealthEvents, useDeleteFarmHealthEvent } from "@/hooks/useFarmBatches";
 import { useFarmInfrastructures, useDeleteFarmInfrastructure } from "@/hooks/useFarmInfrastructures";
-import { useFarmInterventionsByFarm, useDeleteFarmIntervention, useClients } from "@/hooks/useDatabase";
+import { useFarmInterventionsByFarm, useDeleteFarmIntervention } from "@/hooks/useDatabase";
 import BatchEditorDialog from "@/components/forms/BatchEditorDialog";
 import FarmInfrastructureDialog from "@/components/forms/FarmInfrastructureDialog";
 import NewFarmInterventionModalSupabase from "@/components/forms/NewFarmInterventionModalSupabase";
 import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
 import { formatDate } from "@/lib/utils";
-import { useSettings } from "@/contexts/SettingsContext";
-import { usePlanLimits } from "@/hooks/usePlanLimits";
-import { buildFarmReportHtml, printHtml, downloadHtmlAsPdf } from "@/lib/farmReport";
-import { useToast } from "@/hooks/use-toast";
+import { PrintFarmReportModal } from "@/components/modals/PrintFarmReportModal";
 
 interface FarmDetailDrawerProps {
   open: boolean;
@@ -27,9 +24,7 @@ interface FarmDetailDrawerProps {
 }
 
 const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawerProps) => {
-  const { toast } = useToast();
-  const { settings } = useSettings();
-  const { isFree } = usePlanLimits();
+  const [showPrint, setShowPrint] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const [interventionOpen, setInterventionOpen] = useState(false);
@@ -41,7 +36,6 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
   const { data: events = [] } = useFarmHealthEvents(farm?.id);
   const { data: interventions = [] } = useFarmInterventionsByFarm(farm?.id || "");
   const { data: infrastructures = [] } = useFarmInfrastructures(farm?.id);
-  const { data: clients = [] } = useClients();
   const delBatch = useDeleteFarmBatch();
   const delEvent = useDeleteFarmHealthEvent();
   const delInfra = useDeleteFarmInfrastructure();
@@ -63,28 +57,6 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
     ? farm.farm_types
     : (farm.farm_type ? [farm.farm_type] : []);
   const config = getFarmTypeConfig(farm.farm_type || farmTypes[0]);
-
-  const owner = clients.find((c: any) => c.id === farm.client_id);
-  const ownerName = owner ? `${owner.first_name} ${owner.last_name}` : undefined;
-
-  const buildReport = () => buildFarmReportHtml({
-    farm, ownerName, batches, infrastructures, interventions, events,
-    clinic: {
-      clinicName: settings.clinicName, address: settings.address,
-      phone: settings.phone, email: settings.email, logo: settings.logo,
-    },
-    isFree,
-  });
-
-  const handlePrintReport = async () => { await printHtml(buildReport()); };
-  const handleDownloadReport = async () => {
-    try {
-      await downloadHtmlAsPdf(buildReport(), `Rapport-${farm.farm_name}-${new Date().toISOString().slice(0,10)}.pdf`);
-    } catch (e: any) {
-      toast({ title: "Erreur PDF", description: e.message, variant: "destructive" });
-    }
-  };
-
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -108,11 +80,8 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
             <Stethoscope className="h-4 w-4 mr-2" /> Nouvelle intervention
           </Button>
-          <Button size="sm" variant="outline" onClick={handlePrintReport}>
-            <Printer className="h-4 w-4 mr-2" /> Imprimer rapport
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleDownloadReport}>
-            <Download className="h-4 w-4 mr-2" /> PDF
+          <Button size="sm" variant="outline" onClick={() => setShowPrint(true)}>
+            <FileText className="h-4 w-4 mr-2" /> Rapport PDF / Imprimer
           </Button>
         </div>
 
@@ -362,6 +331,11 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           farmId={farm.id}
           farmName={farm.farm_name}
           intervention={editingIntervention}
+        />
+        <PrintFarmReportModal
+          open={showPrint}
+          onOpenChange={setShowPrint}
+          farm={farm}
         />
       </SheetContent>
     </Sheet>

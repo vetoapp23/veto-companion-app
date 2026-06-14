@@ -1,15 +1,15 @@
 /**
  * Filigrane pour les documents imprimés des comptes Découverte (gratuit).
- * À injecter dans le HTML d'impression : voir buildWatermarkHtml().
+ * z-index bas : le contenu du rapport reste lisible (PDF et impression).
  */
 
 export const WATERMARK_TEXT = "VetoCrm.com · Plan Découverte";
 
 export const watermarkStyle = `
   .vp-watermark {
-    position: fixed;
+    position: absolute;
     inset: 0;
-    z-index: 9999;
+    z-index: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -18,30 +18,39 @@ export const watermarkStyle = `
   }
   .vp-watermark span {
     font-family: Arial, sans-serif;
-    font-size: 90px;
+    font-size: 72px;
     font-weight: 800;
-    color: rgba(120,120,120,0.18);
+    color: rgba(120,120,120,0.16);
     text-transform: uppercase;
     letter-spacing: 4px;
     transform: rotate(-32deg);
     white-space: nowrap;
-    border: 6px solid rgba(120,120,120,0.18);
-    padding: 12px 40px;
+    border: 5px solid rgba(120,120,120,0.16);
+    padding: 10px 32px;
     border-radius: 8px;
   }
   .vp-watermark-footer {
-    position: fixed;
+    position: absolute;
     bottom: 6px;
     left: 0;
     right: 0;
+    z-index: 0;
     text-align: center;
     font-family: Arial, sans-serif;
     font-size: 10px;
     color: #999;
     letter-spacing: 1px;
+    pointer-events: none;
   }
   @media print {
-    .vp-watermark, .vp-watermark-footer { display: flex; }
+    .vp-watermark {
+      position: fixed;
+      z-index: 0;
+    }
+    .vp-watermark-footer {
+      position: fixed;
+      z-index: 0;
+    }
   }
 `;
 
@@ -53,10 +62,6 @@ export function buildWatermarkHtml(show: boolean): string {
   `;
 }
 
-/**
- * Lit le plan courant via fetch direct (utilisable hors hook).
- * Retourne true si le plan est 'free' ou inconnu.
- */
 export async function shouldShowWatermark(): Promise<boolean> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");

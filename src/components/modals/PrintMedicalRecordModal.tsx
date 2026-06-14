@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Printer, FileText, Download } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
-import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
+import { buildWatermarkHtml } from "@/lib/printWatermark";
 import {
   useConsultationsByAnimal,
   useVaccinationsByAnimal,
@@ -18,6 +18,9 @@ import {
 } from "@/hooks/useDatabase";
 import { usePedigree } from "@/hooks/usePedigree";
 import { calculateAge } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { downloadHtmlAsPdf, printHtml } from "@/lib/htmlToPdf";
+import { buildReportDocument, buildDefaultFooter } from "@/lib/reportStyles";
 
 type SectionKey =
   | "identity"
@@ -61,6 +64,7 @@ interface PrintMedicalRecordModalProps {
 }
 
 export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMedicalRecordModalProps) {
+  const { toast } = useToast();
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
   const animalId = animal?.id || animal?.dbId;
@@ -231,98 +235,74 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       `);
     }
 
-    const html = `<!doctype html><html><head><meta charset="utf-8"/>
-      <title>Dossier médical - ${animal.name}</title>
-      <style>
-        * { box-sizing: border-box; }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 32px; line-height: 1.5; }
-        .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 3px solid hsl(160, 60%, 40%); margin-bottom: 24px; }
-        .header h1 { font-size: 22px; margin: 0; color: hsl(160, 60%, 30%); letter-spacing: 0.3px; }
-        .clinic { text-align: right; font-size: 12px; color: #555; }
-        .clinic strong { display: block; font-size: 14px; color: #111; }
-        .block { margin-bottom: 22px; page-break-inside: avoid; }
-        h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px; color: hsl(160, 60%, 30%); border-left: 4px solid hsl(160, 60%, 40%); padding-left: 10px; margin: 0 0 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        table.info th { background: #f3f8f6; text-align: left; font-weight: 600; padding: 6px 8px; width: 22%; color: #444; }
-        table.info td { padding: 6px 8px; border-bottom: 1px solid #eee; }
-        table.data th { background: hsl(160, 60%, 96%); padding: 8px; text-align: left; border-bottom: 2px solid hsl(160, 60%, 40%); font-size: 11px; }
-        table.data td { padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
-        table.data tr:nth-child(even) td { background: #fafafa; }
-        .muted { color: #888; font-style: italic; }
-        .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 11px; color: #555; display: flex; justify-content: space-between; }
-        .footer .sig { width: 220px; text-align: center; }
-        .footer .sig .line { border-top: 1px solid #333; margin-top: 50px; padding-top: 4px; }
-        ${watermarkStyle}
-        @media print { body { padding: 16px; } }
-      </style>
-    </head><body>
-      ${buildWatermarkHtml(isFree)}
-      <div class="header">
-        <div>
-          ${settings.logo ? `<img src="${settings.logo}" style="max-height:50px;"/>` : ""}
-          <h1>Dossier médical vétérinaire</h1>
-        </div>
-        <div class="clinic">
-          <strong>${settings.clinicName ?? ""}</strong>
-          ${settings.address ?? ""}<br/>
-          ${settings.phone ?? ""} · ${settings.email ?? ""}
-        </div>
-      </div>
-      ${sectionsHtml.join("\n")}
-      <div class="footer">
-        <div>Document généré le ${new Date().toLocaleDateString("fr-FR")}</div>
-        <div class="sig"><div class="line">Signature et cachet</div></div>
-      </div>
-    </body></html>`;
-    return html;
+    if (sections.photos) {
+      const photoItems: { src: string; label: string }[] = [];
+      const mainPhoto = animal.photo || animal.photo_url;
+      if (mainPhoto) {
+        photoItems.push({ src: mainPhoto, label: `Photo principale — ${animal.name}` });
+      }
+      consultations
+        .filter((c: any) => inRange(c.consultation_date))
+        .forEach((c: any) => {
+          (c.photos || []).forEach((src: string, idx: number) => {
+            photoItems.push({
+              src,
+              label: `Consultation ${fmtDate(c.consultation_date)} — photo ${idx + 1}`,
+            });
+          });
+        });
+
+      sectionsHtml.push(`
+        <section class="block">
+          <h2>Photos (${photoItems.length})</h2>
+          ${photoItems.length === 0 ? "<p class='muted'>Aucune photo.</p>" : `
+          <div class="photos">
+            ${photoItems.map((p) => `
+              <div class="photo-item">
+                <div class="photo-label">${p.label}</div>
+                <img src="${p.src}" alt="${p.label}" />
+              </div>`).join("")}
+          </div>`}
+        </section>
+      `);
+    }
+
+    return buildReportDocument({
+      title: `Dossier médical - ${animal.name}`,
+      watermarkHtml: buildWatermarkHtml(isFree),
+      headerTitle: "Dossier médical vétérinaire",
+      clinic: {
+        clinicName: settings.clinicName,
+        address: settings.address,
+        phone: settings.phone,
+        email: settings.email,
+        logo: settings.logo,
+      },
+      sectionsHtml: sectionsHtml.join("\n"),
+      footerHtml: buildDefaultFooter(settings.clinicName, true),
+    });
   };
 
   const handlePrint = () => {
     const html = buildHtml();
     if (!html) return;
-    const win = window.open("", "_blank");
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    setTimeout(() => { win.print(); }, 400);
+    printHtml(html);
   };
 
   const handleDownloadPdf = async () => {
     const html = buildHtml();
     if (!html) return;
-    // Render in a real, sized off-screen container so html2canvas captures it.
-    const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "0";
-    container.style.top = "0";
-    container.style.width = "800px";
-    container.style.zIndex = "-1";
-    container.style.opacity = "0";
-    container.style.pointerEvents = "none";
-    // Strip <html>/<head>/<body> wrappers — keep <style> + body content
-    const styleMatch = html.match(/<style[\s\S]*?<\/style>/i)?.[0] || "";
-    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || html;
-    container.innerHTML = `${styleMatch}<div class="pdf-root">${bodyMatch}</div>`;
-    document.body.appendChild(container);
-    // give the browser a tick to layout + load images
-    await new Promise((r) => setTimeout(r, 250));
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
-      await html2pdf()
-        .set({
-          margin: 10,
-          filename: `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`,
-          image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] },
-        } as any)
-        .from(container)
-        .save();
-    } catch (e) {
-      console.error("PDF generation failed", e);
-    } finally {
-      document.body.removeChild(container);
+      await downloadHtmlAsPdf(
+        html,
+        `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`
+      );
+    } catch (e: any) {
+      toast({
+        title: "Erreur PDF",
+        description: e?.message || "Impossible de générer le PDF.",
+        variant: "destructive",
+      });
     }
   };
 

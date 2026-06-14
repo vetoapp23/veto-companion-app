@@ -74,7 +74,7 @@ export function NewClientModal({ open, onOpenChange }: NewClientModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!enforce("clients")) return;
+    if (!await enforce("clients")) return;
     
     
     // Validation

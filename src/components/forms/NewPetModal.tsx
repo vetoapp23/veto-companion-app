@@ -192,7 +192,7 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!enforce("animals")) return;
+    if (!await enforce("animals")) return;
     
     
     // Validate form

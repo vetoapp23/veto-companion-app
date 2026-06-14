@@ -193,6 +193,8 @@ export const useCreateClient = () => {
       
       // Update stats
       queryClient.invalidateQueries({ queryKey: statsKeys.clients() })
+      queryClient.invalidateQueries({ queryKey: ["org-counts"] })
+      queryClient.invalidateQueries({ queryKey: ["plan-quota"] })
     },
   })
 }
@@ -290,6 +292,8 @@ export const useCreateAnimal = () => {
       
       // Update stats
       queryClient.invalidateQueries({ queryKey: statsKeys.clients() })
+      queryClient.invalidateQueries({ queryKey: ["org-counts"] })
+      queryClient.invalidateQueries({ queryKey: ["plan-quota"] })
     },
   })
 }

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { supabase } from './supabase'
+import { assertQuotaAvailable } from './quotaEnforcement'
 
 // =============================================
 // ORGANIZATION TYPES (MULTI-TENANT)
@@ -730,6 +731,8 @@ export const createClient = async (clientData: CreateClientData): Promise<Client
     throw new Error('User profile or organization not found')
   }
 
+  await assertQuotaAvailable('clients')
+
   const { data, error } = await supabase
     .from('clients')
     .insert({
@@ -906,6 +909,8 @@ export const createAnimal = async (animalData: CreateAnimalData): Promise<Animal
   if (profileError || !profile?.organization_id) {
     throw new Error('User profile or organization not found')
   }
+
+  await assertQuotaAvailable('animals')
 
   const { data, error } = await supabase
     .from('animals')
