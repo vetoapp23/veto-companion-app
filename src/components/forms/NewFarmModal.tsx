@@ -14,7 +14,7 @@ import { useClients, useCreateFarm, useUpdateFarm } from "@/hooks/useDatabase";
 import { useFarmManagementSettings } from "@/hooks/useAppSettings";
 import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig, normalizeFarmTypeKey } from "@/lib/farmTypeConfig";
-import { compressPhoto } from "@/lib/photoCompression";
+import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 
 interface NewFarmModalProps {
   open: boolean;
@@ -116,24 +116,33 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     const out: string[] = [];
+    let addedBytes = 0;
     for (const f of files) {
       try {
-        const { dataUrl } = await compressPhoto(f);
+        const { dataUrl, bytes } = await compressPhoto(f);
         out.push(dataUrl);
+        addedBytes += bytes;
       } catch {
-        out.push(await new Promise<string>((r) => {
+        const dataUrl = await new Promise<string>((r) => {
           const fr = new FileReader();
           fr.onload = () => r(fr.result as string);
           fr.readAsDataURL(f);
-        }));
+        });
+        out.push(dataUrl);
+        addedBytes += estimateDataUrlBytes(dataUrl);
       }
     }
     setData((p) => ({ ...p, photos: [...p.photos, ...out] }));
+    if (addedBytes > 0) recordStorageChange("farm", addedBytes, out.length);
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const removePhoto = (i: number) =>
-    setData((p) => ({ ...p, photos: p.photos.filter((_, k) => k !== i) }));
+    setData((p) => {
+      const removed = p.photos[i];
+      if (removed) recordStorageChange("farm", -estimateDataUrlBytes(removed), -1);
+      return { ...p, photos: p.photos.filter((_, k) => k !== i) };
+    });
 
   const submitting = createFarm.isPending || updateFarm.isPending;
 

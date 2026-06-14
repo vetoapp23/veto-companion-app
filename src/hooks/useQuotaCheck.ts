@@ -60,7 +60,11 @@ export function useQuotaCheck() {
     return counts[kind] >= max;
   };
 
+  const role = (user?.profile?.role as string) || "";
+  const isPrivileged = role === "admin" || role === "super_admin";
+
   const enforce = (kind: QuotaKind): boolean => {
+    if (isPrivileged) return true;
     if (!reached(kind)) return true;
     const max = limitFor(kind);
     const labels: Record<QuotaKind, string> = {

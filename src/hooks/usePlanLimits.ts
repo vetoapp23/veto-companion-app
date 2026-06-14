@@ -42,22 +42,29 @@ export function usePlanLimits() {
   const ACCOUNTING_PLANS = ["pro_plus", "duo", "clinic"];
   const STOCK_PLANS = ["pro", "pro_plus", "duo", "clinic"];
 
+  // Admins (and super-admins) of an organization bypass plan feature gates
+  // and storage hard-blocks so they can manage every module of the app.
+  const role = (user?.profile?.role as string) || "";
+  const isPrivileged = role === "admin" || role === "super_admin";
+
   return {
     quota,
     planCode,
     isLoading: query.isLoading,
     refetch: query.refetch,
     canUpload: (additionalBytes: number) => {
+      if (isPrivileged) return true;
       if (!quota) return true;
       const projectedMb = quota.storage_used_mb + additionalBytes / (1024 * 1024);
       return projectedMb <= quota.storage_total_mb;
     },
     isFree: planCode === "free",
     isPaid: planCode !== "free",
-    hasFarmManagement: FARM_PLANS.includes(planCode),
-    hasAccounting: ACCOUNTING_PLANS.includes(planCode),
-    hasStock: STOCK_PLANS.includes(planCode),
+    hasFarmManagement: isPrivileged || FARM_PLANS.includes(planCode),
+    hasAccounting: isPrivileged || ACCOUNTING_PLANS.includes(planCode),
+    hasStock: isPrivileged || STOCK_PLANS.includes(planCode),
     storageWarning: quota ? quota.percent_used >= 80 : false,
-    storageBlocked: quota ? quota.percent_used >= 100 : false,
+    storageBlocked: isPrivileged ? false : (quota ? quota.percent_used >= 100 : false),
+    isPrivileged,
   };
 }
