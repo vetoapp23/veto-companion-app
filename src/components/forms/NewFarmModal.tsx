@@ -14,7 +14,7 @@ import { useClients, useCreateFarm, useUpdateFarm } from "@/hooks/useDatabase";
 import { useFarmManagementSettings } from "@/hooks/useAppSettings";
 import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig, normalizeFarmTypeKey } from "@/lib/farmTypeConfig";
-import { compressPhoto } from "@/lib/photoCompression";
+import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 
 interface NewFarmModalProps {
   open: boolean;
