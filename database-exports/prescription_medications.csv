@@ -1,0 +1,5 @@
+id,prescription_id,stock_item_id,medication_name,dosage,frequency,duration,quantity,instructions,route,created_at
+800f2087-c69c-489b-9525-61c43e18708c,87db5b28-219f-420c-900f-6f883ebf93f1,,Meloxicam,7.5 mg,1x/jour,5 jours,5,À donner avec la nourriture,orale,2026-06-04 21:26:20.089833+00
+d773742a-75bc-45d3-bb97-2267467bf4a3,87db5b28-219f-420c-900f-6f883ebf93f1,,Repos forcé,,,7 jours,1,Limiter les sorties,,2026-06-04 21:26:20.089833+00
+819db7f1-f84f-4362-a04a-c2972b8fd485,d55af8c3-c319-4403-9f93-973a9fdc6070,aa14df39-b293-41de-8f36-ee79831d2301,Amoxicilline 500mg,500 mg,2x/jour,7 jours,14,Cure complète obligatoire,orale,2026-06-04 21:26:20.089833+00
+c6fac38b-38f1-4516-b1d7-106ce1a8f983,d55af8c3-c319-4403-9f93-973a9fdc6070,,Probiotique vétérinaire,1 dose,1x/jour,10 jours,10,,orale,2026-06-04 21:26:20.089833+00

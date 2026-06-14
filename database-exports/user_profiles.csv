@@ -1,0 +1,10 @@
+id,email,username,full_name,role,status,organization_id,approved_by,approved_at,rejection_reason,last_login,permissions,avatar_url,phone,address,specialty,experience,bio,created_at,updated_at
+cc82e01e-98ee-4c75-a12d-dddc8c149356,bilalfaress00@gmail.com,bilalfaress00,Bilal,admin,approved,0dc33e2d-7d30-44b2-b20f-920f5d74dc1b,,,,,{},,,,,,,2026-06-01 22:00:18.90356+00,2026-06-01 22:00:18.90356+00
+d0d0d0d0-0000-0000-0000-000000000001,demo@veto.com,demo,Dr. Démo Vétérinaire,admin,approved,d0d0d0d0-0000-0000-0000-0000000000aa,,2026-06-04 21:26:20.089833+00,,,{},,+212 600 000 000,,Médecine générale,,,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00
+29db44f8-8a4b-4805-9a84-c8b53e6fa6a5,vetoapp23@gmail.com,vetoapp23,Super Admin,super_admin,approved,a45daf81-b02e-4e94-be9d-4b5102228cf1,,,,,{},,,,,,,2026-06-05 20:33:26.243866+00,2026-06-05 20:39:59.320058+00
+68c1cfa1-5161-4d47-8245-51958d5e473d,demo-free@vetpro.test,demo-free,Démo Découverte,admin,approved,632f7dff-e8d7-475f-9424-1d24d314d48f,,,,,{},,,,,,,2026-06-05 20:00:59.523662+00,2026-06-06 14:56:20.405238+00
+33565adb-e21e-49d0-9551-a622fac8a53f,demo-pro@vetpro.test,demo-pro,Démo Pro,admin,approved,26491e2b-2ae5-47af-b474-6a0add18d31a,,,,,{},,,,,,,2026-06-05 20:01:00.034048+00,2026-06-06 14:56:20.903265+00
+8152177f-e660-4203-a0f3-81fc53834a6a,demo-pro-plus@vetpro.test,demo-pro-plus,Démo Pro Plus,admin,approved,cc988c61-3d98-4e51-a0fe-9f8f725d8a07,,,,,{},,,,,,,2026-06-05 20:01:00.361794+00,2026-06-06 14:56:21.306656+00
+219eb8ca-389d-4fde-90d6-3c91ac7a8bd4,demo-duo@vetpro.test,demo-duo,Démo Duo,admin,approved,3fcccb2a-eb26-4118-b592-8bdfd5861502,,,,,{},,,,,,,2026-06-05 20:01:00.696476+00,2026-06-06 14:56:21.673445+00
+5976c74c-399d-4075-a838-8a699e461238,demo-clinic@vetpro.test,demo-clinic,Démo Clinique,admin,approved,296c3281-8119-42a1-aba9-897de5e0ffd2,,,,,{},,,,,,,2026-06-05 20:01:01.027804+00,2026-06-06 14:56:22.112499+00
+5c386173-bae6-4ab9-8b75-56b716365988,sabrialaoui.hicham@gmail.com,sabrialaoui.hicham,Hicham Sabri,super_admin,approved,cbfa8433-b1e1-4e79-968d-0c31b5c0e682,,,,,{},,,,,,,2026-06-05 21:26:03.601009+00,2026-06-14 14:22:37.288302+00
