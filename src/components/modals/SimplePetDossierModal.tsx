@@ -24,6 +24,8 @@ import NewVaccinationModal from "@/components/forms/NewVaccinationModalDynamic";
 import NewAntiparasiticModalDynamic from "@/components/forms/NewAntiparasiticModalDynamic";
 import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
 import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
+import { ConsultationDetailModal } from "@/components/modals/ConsultationDetailModal";
+import { ImageIcon } from "lucide-react";
 
 interface PetUI {
   id: number;
@@ -61,6 +63,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
   const [showAntiparasitic, setShowAntiparasitic] = useState(false);
   const [showPrescription, setShowPrescription] = useState(false);
   const [showAppointment, setShowAppointment] = useState(false);
+  const [selectedConsult, setSelectedConsult] = useState<any | null>(null);
 
   const animalId = pet?.dbId || "";
   const { data: consultations = [] } = useConsultationsByAnimal(animalId);
@@ -242,11 +245,26 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                   {consultations.length === 0 ? <p className="text-sm text-muted-foreground">Aucune consultation.</p> :
                   <div className="space-y-2">
                     {consultations.map((c: any) => (
-                      <div key={c.id} className="border rounded p-3 text-sm">
-                        <div className="flex justify-between"><span className="font-medium">{fmt(c.consultation_date)}</span><span className="text-muted-foreground">{c.consultation_type}</span></div>
+                      <button
+                        type="button"
+                        key={c.id}
+                        onClick={() => setSelectedConsult(c)}
+                        className="w-full text-left border rounded p-3 text-sm hover:bg-muted/40 transition-colors"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{fmt(c.consultation_date)}</span>
+                          <div className="flex items-center gap-2">
+                            {c.photos?.length > 0 && (
+                              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                <ImageIcon className="h-3 w-3" />{c.photos.length}
+                              </span>
+                            )}
+                            <span className="text-muted-foreground text-xs">{c.consultation_type}</span>
+                          </div>
+                        </div>
                         {c.diagnosis && <div className="mt-1"><strong>Diagnostic :</strong> {c.diagnosis}</div>}
                         {c.treatment && <div><strong>Traitement :</strong> {c.treatment}</div>}
-                      </div>
+                      </button>
                     ))}
                   </div>}
                 </CardContent>
