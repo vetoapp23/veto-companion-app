@@ -13,6 +13,8 @@ import { NewPetModal } from "./NewPetModal";
 import { Plus, User, Heart } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext"; // Added for dynamic currency
 import type { Animal, Client, CreateConsultationData } from "@/lib/database";
+import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
+import { Loader2 } from "lucide-react";
 
 interface NewConsultationModalProps {
   open: boolean;
