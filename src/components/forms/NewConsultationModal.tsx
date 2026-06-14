@@ -175,6 +175,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
         photos: formData.photos && formData.photos.length > 0 ? formData.photos : undefined,
       };
 
+      console.log("[consultation] submitting with photos:", formData.photos?.length || 0);
       await createConsultationMutation.mutateAsync(consultationData);
       
       toast({
