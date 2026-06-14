@@ -2,12 +2,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { HardDrive, Sparkles, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { HardDrive, Sparkles, AlertTriangle, ArrowUpRight, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { recomputeStorageUsage } from "@/lib/photoCompression";
+import { useToast } from "@/hooks/use-toast";
 
 export function StorageUsageCard() {
-  const { quota, isLoading, storageWarning, storageBlocked, isFree } = usePlanLimits();
+  const { quota, isLoading, storageWarning, storageBlocked, isFree, refetch, isPrivileged } = usePlanLimits();
+  const { toast } = useToast();
+  const [recomputing, setRecomputing] = useState(false);
+
+  const handleRecompute = async () => {
+    setRecomputing(true);
+    try {
+      await recomputeStorageUsage();
+      await refetch();
+      toast({ title: "✓ Stockage recalculé" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   if (isLoading || !quota) {
     return (
