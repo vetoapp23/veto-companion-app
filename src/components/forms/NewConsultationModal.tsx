@@ -30,6 +30,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
   const { settings } = useSettings(); // Destructure currency for cost label
   const [showClientModal, setShowClientModal] = useState(false);
   const [showPetModal, setShowPetModal] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   
   const [formData, setFormData] = useState({
