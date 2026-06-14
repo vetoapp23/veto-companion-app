@@ -24,9 +24,10 @@ interface NewFarmInterventionModalSupabaseProps {
 
 const PROTOCOL_TYPES = ["Curatif", "Préventif", "Diagnostic", "Prophylaxie", "Reproduction", "Autre"];
 
-const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName }: NewFarmInterventionModalSupabaseProps) => {
+const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName, intervention }: NewFarmInterventionModalSupabaseProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isEdit = !!intervention?.id;
 
   const [farms, setFarms] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -55,8 +56,27 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
   const config = getFarmTypeConfig(selectedFarm?.farm_type);
 
   useEffect(() => {
-    if (open && user) {
-      fetchFarms();
+    if (!open || !user) return;
+    fetchFarms();
+    if (intervention) {
+      setFormData({
+        farm_id: intervention.farm_id || farmId || "",
+        batch_id: intervention.batch_id || "",
+        intervention_date: (intervention.intervention_date || "").slice(0, 10) || new Date().toISOString().split("T")[0],
+        intervention_type: intervention.intervention_type || "",
+        protocol_type: intervention.protocol_type || "",
+        affected_count: intervention.affected_count != null ? String(intervention.affected_count) : "",
+        animal_count: intervention.animal_count != null ? String(intervention.animal_count) : "",
+        description: intervention.description || "",
+        diagnosis: intervention.diagnosis || "",
+        treatment: intervention.treatment || "",
+        medications_used: intervention.medications_used || [],
+        cost: intervention.cost != null ? String(intervention.cost) : "",
+        follow_up_date: intervention.follow_up_date || "",
+        next_visit_date: intervention.next_visit_date || "",
+        notes: intervention.notes || "",
+      });
+    } else {
       setFormData((p) => ({
         ...p,
         farm_id: farmId || p.farm_id || "",
@@ -66,9 +86,9 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
         description: "", diagnosis: "", treatment: "", medications_used: [],
         cost: "", follow_up_date: "", next_visit_date: "", notes: "",
       }));
-      setMedicationInput("");
     }
-  }, [open, user, farmId]);
+    setMedicationInput("");
+  }, [open, user, farmId, intervention]);
 
   const fetchFarms = async () => {
     if (!user) return;
