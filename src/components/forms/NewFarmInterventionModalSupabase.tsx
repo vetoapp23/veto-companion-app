@@ -19,6 +19,7 @@ interface NewFarmInterventionModalSupabaseProps {
   onOpenChange: (open: boolean) => void;
   farmId?: string;
   farmName?: string;
+  intervention?: any | null;
 }
 
 const PROTOCOL_TYPES = ["Curatif", "Préventif", "Diagnostic", "Prophylaxie", "Reproduction", "Autre"];
