@@ -290,25 +290,37 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const handleDownloadPdf = async () => {
     const html = buildHtml();
     if (!html) return;
+    // Render in a real, sized off-screen container so html2canvas captures it.
     const container = document.createElement("div");
-    container.innerHTML = html;
-    // Hide off-screen
     container.style.position = "fixed";
-    container.style.left = "-10000px";
+    container.style.left = "0";
     container.style.top = "0";
     container.style.width = "800px";
+    container.style.zIndex = "-1";
+    container.style.opacity = "0";
+    container.style.pointerEvents = "none";
+    // Strip <html>/<head>/<body> wrappers — keep <style> + body content
+    const styleMatch = html.match(/<style[\s\S]*?<\/style>/i)?.[0] || "";
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] || html;
+    container.innerHTML = `${styleMatch}<div class="pdf-root">${bodyMatch}</div>`;
     document.body.appendChild(container);
+    // give the browser a tick to layout + load images
+    await new Promise((r) => setTimeout(r, 250));
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       await html2pdf()
         .set({
           margin: 10,
           filename: `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`,
-          html2canvas: { scale: 2, useCORS: true },
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#ffffff" },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
         } as any)
         .from(container)
         .save();
+    } catch (e) {
+      console.error("PDF generation failed", e);
     } finally {
       document.body.removeChild(container);
     }

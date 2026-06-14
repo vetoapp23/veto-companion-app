@@ -19,13 +19,15 @@ interface NewFarmInterventionModalSupabaseProps {
   onOpenChange: (open: boolean) => void;
   farmId?: string;
   farmName?: string;
+  intervention?: any | null;
 }
 
 const PROTOCOL_TYPES = ["Curatif", "Préventif", "Diagnostic", "Prophylaxie", "Reproduction", "Autre"];
 
-const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName }: NewFarmInterventionModalSupabaseProps) => {
+const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName, intervention }: NewFarmInterventionModalSupabaseProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isEdit = !!intervention?.id;
 
   const [farms, setFarms] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -54,8 +56,27 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
   const config = getFarmTypeConfig(selectedFarm?.farm_type);
 
   useEffect(() => {
-    if (open && user) {
-      fetchFarms();
+    if (!open || !user) return;
+    fetchFarms();
+    if (intervention) {
+      setFormData({
+        farm_id: intervention.farm_id || farmId || "",
+        batch_id: intervention.batch_id || "",
+        intervention_date: (intervention.intervention_date || "").slice(0, 10) || new Date().toISOString().split("T")[0],
+        intervention_type: intervention.intervention_type || "",
+        protocol_type: intervention.protocol_type || "",
+        affected_count: intervention.affected_count != null ? String(intervention.affected_count) : "",
+        animal_count: intervention.animal_count != null ? String(intervention.animal_count) : "",
+        description: intervention.description || "",
+        diagnosis: intervention.diagnosis || "",
+        treatment: intervention.treatment || "",
+        medications_used: intervention.medications_used || [],
+        cost: intervention.cost != null ? String(intervention.cost) : "",
+        follow_up_date: intervention.follow_up_date || "",
+        next_visit_date: intervention.next_visit_date || "",
+        notes: intervention.notes || "",
+      });
+    } else {
       setFormData((p) => ({
         ...p,
         farm_id: farmId || p.farm_id || "",
@@ -65,9 +86,9 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
         description: "", diagnosis: "", treatment: "", medications_used: [],
         cost: "", follow_up_date: "", next_visit_date: "", notes: "",
       }));
-      setMedicationInput("");
     }
-  }, [open, user, farmId]);
+    setMedicationInput("");
+  }, [open, user, farmId, intervention]);
 
   const fetchFarms = async () => {
     if (!user) return;
@@ -117,11 +138,20 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
         next_visit_date: formData.next_visit_date || null,
       };
 
-      const { data: created, error } = await supabase.from("farm_interventions").insert([insertData]).select("id").single();
-      if (error) throw error;
+      let createdId = intervention?.id as string | undefined;
+      if (isEdit && intervention?.id) {
+        const { error } = await supabase.from("farm_interventions")
+          .update({ ...insertData, updated_at: new Date().toISOString() })
+          .eq("id", intervention.id);
+        if (error) throw error;
+      } else {
+        const { data: created, error } = await supabase.from("farm_interventions").insert([insertData]).select("id").single();
+        if (error) throw error;
+        createdId = created?.id;
+      }
 
-      // Auto-create health event for the batch when relevant
-      if (formData.batch_id && (formData.protocol_type || formData.intervention_type)) {
+      // Auto-create health event for the batch when relevant (only on create)
+      if (!isEdit && formData.batch_id && (formData.protocol_type || formData.intervention_type)) {
         const eventType = /vacc/i.test(formData.intervention_type) ? "vaccination"
           : /trait/i.test(formData.intervention_type) || /curatif/i.test(formData.protocol_type) ? "treatment"
           : "other";
@@ -129,7 +159,7 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
           await createHealthEvent.mutateAsync({
             farm_id: formData.farm_id,
             batch_id: formData.batch_id,
-            intervention_id: created?.id,
+            intervention_id: createdId,
             event_type: eventType,
             event_date: formData.intervention_date,
             product: formData.medications_used[0] || formData.intervention_type,
@@ -140,7 +170,7 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
         } catch (err) { console.warn("health event auto-create failed", err); }
       }
 
-      toast({ title: "✓ Intervention créée" });
+      toast({ title: isEdit ? "✓ Intervention mise à jour" : "✓ Intervention créée" });
       onOpenChange(false);
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message || "Échec", variant: "destructive" });
@@ -151,7 +181,7 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvelle intervention</DialogTitle>
+          <DialogTitle>{isEdit ? "Modifier l'intervention" : "Nouvelle intervention"}</DialogTitle>
           <DialogDescription>
             Intervention vétérinaire {farmName && `· ${farmName}`}
           </DialogDescription>
@@ -265,7 +295,7 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Annuler</Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Créer l'intervention
+              {isEdit ? "Enregistrer" : "Créer l'intervention"}
             </Button>
           </div>
         </form>

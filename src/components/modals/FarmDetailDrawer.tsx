@@ -1,19 +1,23 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Activity, Stethoscope, Users2, MapPin, Phone, Mail, Tractor, Calendar, Building2, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Activity, Stethoscope, Users2, MapPin, Phone, Mail, Tractor, Calendar, Building2, Printer, Download } from "lucide-react";
 import { useFarmBatches, useDeleteFarmBatch, useFarmHealthEvents, useDeleteFarmHealthEvent } from "@/hooks/useFarmBatches";
 import { useFarmInfrastructures, useDeleteFarmInfrastructure } from "@/hooks/useFarmInfrastructures";
-import { useFarmInterventionsByFarm } from "@/hooks/useDatabase";
+import { useFarmInterventionsByFarm, useDeleteFarmIntervention, useClients } from "@/hooks/useDatabase";
 import BatchEditorDialog from "@/components/forms/BatchEditorDialog";
 import FarmInfrastructureDialog from "@/components/forms/FarmInfrastructureDialog";
 import NewFarmInterventionModalSupabase from "@/components/forms/NewFarmInterventionModalSupabase";
 import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
 import { formatDate } from "@/lib/utils";
+import { useSettings } from "@/contexts/SettingsContext";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
+import { buildFarmReportHtml, printHtml, downloadHtmlAsPdf } from "@/lib/farmReport";
+import { useToast } from "@/hooks/use-toast";
 
 interface FarmDetailDrawerProps {
   open: boolean;
@@ -23,9 +27,13 @@ interface FarmDetailDrawerProps {
 }
 
 const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawerProps) => {
+  const { toast } = useToast();
+  const { settings } = useSettings();
+  const { isFree } = usePlanLimits();
   const [batchOpen, setBatchOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any>(null);
   const [interventionOpen, setInterventionOpen] = useState(false);
+  const [editingIntervention, setEditingIntervention] = useState<any>(null);
   const [infraOpen, setInfraOpen] = useState(false);
   const [editingInfra, setEditingInfra] = useState<any>(null);
 
@@ -33,16 +41,50 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
   const { data: events = [] } = useFarmHealthEvents(farm?.id);
   const { data: interventions = [] } = useFarmInterventionsByFarm(farm?.id || "");
   const { data: infrastructures = [] } = useFarmInfrastructures(farm?.id);
+  const { data: clients = [] } = useClients();
   const delBatch = useDeleteFarmBatch();
   const delEvent = useDeleteFarmHealthEvent();
   const delInfra = useDeleteFarmInfrastructure();
+  const delIntervention = useDeleteFarmIntervention();
+
+  const activeBatches = useMemo(() => batches.filter((b: any) => (b.status || "active") === "active"), [batches]);
+  const totalActiveAnimals = activeBatches.reduce((s, b) => s + (b.animal_count || 0), 0);
+  const byCategory = useMemo(() => {
+    const m: Record<string, number> = {};
+    activeBatches.forEach((b: any) => {
+      const k = b.category || b.species || "Non catégorisé";
+      m[k] = (m[k] || 0) + (b.animal_count || 0);
+    });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  }, [activeBatches]);
 
   if (!farm) return null;
   const farmTypes: string[] = (farm.farm_types && farm.farm_types.length > 0)
     ? farm.farm_types
     : (farm.farm_type ? [farm.farm_type] : []);
   const config = getFarmTypeConfig(farm.farm_type || farmTypes[0]);
-  const totalBatchAnimals = batches.reduce((s, b) => s + (b.animal_count || 0), 0);
+
+  const owner = clients.find((c: any) => c.id === farm.client_id);
+  const ownerName = owner ? `${owner.first_name} ${owner.last_name}` : undefined;
+
+  const buildReport = () => buildFarmReportHtml({
+    farm, ownerName, batches, infrastructures, interventions, events,
+    clinic: {
+      clinicName: settings.clinicName, address: settings.address,
+      phone: settings.phone, email: settings.email, logo: settings.logo,
+    },
+    isFree,
+  });
+
+  const handlePrintReport = async () => { await printHtml(buildReport()); };
+  const handleDownloadReport = async () => {
+    try {
+      await downloadHtmlAsPdf(buildReport(), `Rapport-${farm.farm_name}-${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (e: any) {
+      toast({ title: "Erreur PDF", description: e.message, variant: "destructive" });
+    }
+  };
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -59,19 +101,25 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-4 flex-wrap">
           <Button size="sm" onClick={() => onEdit?.(farm)} variant="outline">
             <Pencil className="h-4 w-4 mr-2" /> Modifier
           </Button>
-          <Button size="sm" onClick={() => setInterventionOpen(true)}>
+          <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
             <Stethoscope className="h-4 w-4 mr-2" /> Nouvelle intervention
+          </Button>
+          <Button size="sm" variant="outline" onClick={handlePrintReport}>
+            <Printer className="h-4 w-4 mr-2" /> Imprimer rapport
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDownloadReport}>
+            <Download className="h-4 w-4 mr-2" /> PDF
           </Button>
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="overview">Vue</TabsTrigger>
-            <TabsTrigger value="batches">Lots ({batches.length})</TabsTrigger>
+            <TabsTrigger value="batches">Lots ({activeBatches.length}/{batches.length})</TabsTrigger>
             <TabsTrigger value="infra">Infra ({infrastructures.length})</TabsTrigger>
             <TabsTrigger value="interventions">Inter. ({interventions.length})</TabsTrigger>
             <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
@@ -80,12 +128,34 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <KpiBlock label={config.herdLabel} value={farm.herd_size ?? totalBatchAnimals ?? "—"} />
-              <KpiBlock label="Cheptel en lots" value={totalBatchAnimals} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KpiBlock label="Cheptel actif" value={totalActiveAnimals} />
+              <KpiBlock label="Lots actifs" value={activeBatches.length} />
               <KpiBlock label="Interventions" value={interventions.length} />
               <KpiBlock label="Surface (ha)" value={farm.surface_hectares ?? "—"} />
             </div>
+
+            {byCategory.length > 0 && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-xs text-muted-foreground mb-2">Répartition par catégorie (lots actifs)</div>
+                  <div className="space-y-1.5">
+                    {byCategory.map(([k, v]) => {
+                      const pct = totalActiveAnimals ? Math.round((v / totalActiveAnimals) * 100) : 0;
+                      return (
+                        <div key={k} className="flex items-center gap-3">
+                          <div className="text-sm w-40 truncate">{k}</div>
+                          <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="text-xs text-muted-foreground w-20 text-right">{v} ({pct}%)</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardContent className="pt-4 space-y-2 text-sm">
@@ -146,7 +216,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           {/* INTERVENTIONS */}
           <TabsContent value="interventions" className="space-y-3">
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => setInterventionOpen(true)}>
+              <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
                 <Plus className="h-4 w-4 mr-2" /> Nouvelle intervention
               </Button>
             </div>
@@ -155,16 +225,24 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
               <Card key={i.id}>
                 <CardContent className="pt-4 space-y-1">
                   <div className="flex justify-between items-start gap-3">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium flex items-center gap-2">
                         <Stethoscope className="h-4 w-4 text-primary" /> {i.intervention_type}
                         {i.protocol_type && <Badge variant="outline">{i.protocol_type}</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground flex gap-3">
                         <Calendar className="h-3 w-3 inline" /> {formatDate(i.intervention_date)}
-                        {i.animal_count && <span>· {i.animal_count} animaux</span>}
+                        {(i.affected_count ?? i.animal_count) && <span>· {i.affected_count ?? i.animal_count} animaux</span>}
                         {i.cost && <span>· {i.cost} MAD</span>}
                       </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingIntervention(i); setInterventionOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer cette intervention ?") && delIntervention.mutate(i.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                   {i.description && <p className="text-sm">{i.description}</p>}
@@ -280,9 +358,10 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
         />
         <NewFarmInterventionModalSupabase
           open={interventionOpen}
-          onOpenChange={setInterventionOpen}
+          onOpenChange={(o) => { setInterventionOpen(o); if (!o) setEditingIntervention(null); }}
           farmId={farm.id}
           farmName={farm.farm_name}
+          intervention={editingIntervention}
         />
       </SheetContent>
     </Sheet>
