@@ -1685,6 +1685,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_all_orgs_storage: {
+        Args: never
+        Returns: {
+          bytes_used: number
+          files_count: number
+          organization_id: string
+        }[]
+      }
       get_organization_quota: { Args: never; Returns: Json }
       get_user_org: { Args: { _user_id: string }; Returns: string }
       has_role: {
