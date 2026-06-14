@@ -168,7 +168,8 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
         diagnosis: formData.diagnosis.trim() || undefined,
         treatment: formData.treatment.trim() || undefined,
         follow_up_notes: formData.followUp.trim() || undefined,
-        notes: formData.notes.trim() || undefined
+        notes: formData.notes.trim() || undefined,
+        photos: formData.photos && formData.photos.length > 0 ? formData.photos : undefined,
       };
 
       await createConsultationMutation.mutateAsync(consultationData);
