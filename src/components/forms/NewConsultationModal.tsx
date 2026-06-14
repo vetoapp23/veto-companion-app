@@ -550,11 +550,12 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
                   !formData.clientId || 
                   !formData.animalId || 
                   createConsultationMutation.isPending ||
+                  uploadingPhotos ||
                   clientsLoading ||
                   animalsLoading
                 }
               >
-                {createConsultationMutation.isPending ? "Enregistrement..." : "Enregistrer Consultation"}
+                {createConsultationMutation.isPending ? "Enregistrement..." : uploadingPhotos ? "Photos en cours..." : "Enregistrer Consultation"}
               </Button>
             </div>
           </form>
