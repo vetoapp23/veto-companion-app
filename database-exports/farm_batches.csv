@@ -1,0 +1,2 @@
+id,organization_id,farm_id,name,species,category,animal_count,birth_period,location,status,notes,metadata,created_at,updated_at,farm_type
+34211c97-107c-4688-9383-7cbe3d353af8,cc988c61-3d98-4e51-a0fe-9f8f725d8a07,5a05f6e3-597c-47d4-823b-742feb4bea4c,Vaches,Belge,Lot mixte,7,Printemps 2024,,closed,,{},2026-06-14 13:40:12.856982+00,2026-06-14 13:59:06.499528+00,Viande

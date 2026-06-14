@@ -1,0 +1,7 @@
+id,organization_id,species,vaccine_name,vaccine_type,age_recommendation,frequency,duration_days,notes,active,created_at,updated_at,booster_schedule
+56b4c9ab-d7c4-4555-9929-08b59a8da822,d0d0d0d0-0000-0000-0000-0000000000aa,Chien,CHPPI+L,polyvalent,Dès 8 semaines,Annuel,365,"Carré, hépatite, parvo, parainfluenza, lepto",t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+8d001910-1304-4521-bd20-3988bf6fc0a2,d0d0d0d0-0000-0000-0000-0000000000aa,Chien,Rage,rage,Dès 12 semaines,Annuel,365,Obligatoire pour voyage,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+4599bbc2-44a6-4617-b830-3cbec7b8be58,d0d0d0d0-0000-0000-0000-0000000000aa,Chat,Typhus-Coryza,polyvalent,Dès 8 semaines,Annuel,365,,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+c187563e-0832-486d-8ec4-e01eb0e91380,d0d0d0d0-0000-0000-0000-0000000000aa,Chat,Leucose,leucose,Dès 9 semaines,Annuel,365,Recommandé chats sortants,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+6f63f11f-4d39-48c1-aefb-cb02866c7ff3,d0d0d0d0-0000-0000-0000-0000000000aa,Lapin,Myxomatose-VHD,polyvalent,Dès 5 semaines,Annuel,365,,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+4027f1b3-286b-43f2-b53d-38fd78af3844,26491e2b-2ae5-47af-b474-6a0add18d31a,Chien,Rage,TPAH,4 Semaines,Tous les 3 Ans,90,RAS,t,2026-06-07 20:47:14.790237+00,2026-06-07 20:47:14.790237+00,"[{""label"": ""1ère dose"", ""offset_days"": 30}, {""label"": ""Rappel 1"", ""offset_days"": 90}]"

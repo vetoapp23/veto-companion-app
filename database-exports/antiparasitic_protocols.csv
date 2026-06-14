@@ -1,0 +1,4 @@
+id,user_id,organization_id,species,parasite_type,product_name,active_ingredient,administration_route,dosage_per_kg,frequency,age_restriction,notes,active,created_at,updated_at,booster_schedule
+b7eaa069-8bb8-4c8d-b167-e5b52d5ae66a,d0d0d0d0-0000-0000-0000-000000000001,d0d0d0d0-0000-0000-0000-0000000000aa,Chien,Externes,Bravecto,Fluralaner,orale,25-56 mg/kg,Tous les 3 mois,,,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+3349c04c-fa65-4072-85fb-f256399600f8,d0d0d0d0-0000-0000-0000-000000000001,d0d0d0d0-0000-0000-0000-0000000000aa,Chat,Externes,Stronghold,Sélamectine,spot-on,6 mg/kg,Mensuel,,,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
+e7b0fbc8-c3d0-4edb-beb4-ffb33c24d2b9,d0d0d0d0-0000-0000-0000-000000000001,d0d0d0d0-0000-0000-0000-0000000000aa,Chien,Internes,Milbemax,Milbémycine + Praziquantel,orale,0.5-1 mg/kg,Trimestriel,,,t,2026-06-04 21:26:20.089833+00,2026-06-04 21:26:20.089833+00,[]
