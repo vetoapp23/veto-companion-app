@@ -1693,15 +1693,6 @@ export type Database = {
           organization_id: string
         }[]
       }
-      get_all_orgs_usage_stats: {
-        Args: never
-        Returns: {
-          organization_id: string
-          clients_count: number
-          animals_count: number
-          users_count: number
-        }[]
-      }
       get_organization_quota: { Args: never; Returns: Json }
       get_user_org: { Args: { _user_id: string }; Returns: string }
       has_role: {
