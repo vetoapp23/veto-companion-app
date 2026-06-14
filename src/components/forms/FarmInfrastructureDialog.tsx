@@ -12,7 +12,7 @@ import {
   INFRA_TYPE_DEFAULTS, useCreateFarmInfrastructure, useUpdateFarmInfrastructure,
   type FarmInfrastructure,
 } from "@/hooks/useFarmInfrastructures";
-import { compressPhoto } from "@/lib/photoCompression";
+import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 
 interface Props {
   open: boolean;
