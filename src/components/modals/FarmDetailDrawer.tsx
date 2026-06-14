@@ -216,7 +216,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           {/* INTERVENTIONS */}
           <TabsContent value="interventions" className="space-y-3">
             <div className="flex justify-end">
-              <Button size="sm" onClick={() => setInterventionOpen(true)}>
+              <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
                 <Plus className="h-4 w-4 mr-2" /> Nouvelle intervention
               </Button>
             </div>
@@ -225,16 +225,24 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
               <Card key={i.id}>
                 <CardContent className="pt-4 space-y-1">
                   <div className="flex justify-between items-start gap-3">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium flex items-center gap-2">
                         <Stethoscope className="h-4 w-4 text-primary" /> {i.intervention_type}
                         {i.protocol_type && <Badge variant="outline">{i.protocol_type}</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground flex gap-3">
                         <Calendar className="h-3 w-3 inline" /> {formatDate(i.intervention_date)}
-                        {i.animal_count && <span>· {i.animal_count} animaux</span>}
+                        {(i.affected_count ?? i.animal_count) && <span>· {i.affected_count ?? i.animal_count} animaux</span>}
                         {i.cost && <span>· {i.cost} MAD</span>}
                       </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingIntervention(i); setInterventionOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer cette intervention ?") && delIntervention.mutate(i.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                   {i.description && <p className="text-sm">{i.description}</p>}
