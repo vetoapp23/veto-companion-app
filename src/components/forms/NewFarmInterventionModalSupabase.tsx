@@ -181,7 +181,7 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvelle intervention</DialogTitle>
+          <DialogTitle>{isEdit ? "Modifier l'intervention" : "Nouvelle intervention"}</DialogTitle>
           <DialogDescription>
             Intervention vétérinaire {farmName && `· ${farmName}`}
           </DialogDescription>
