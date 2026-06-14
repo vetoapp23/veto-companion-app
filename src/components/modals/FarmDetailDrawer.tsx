@@ -101,19 +101,25 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-4 flex-wrap">
           <Button size="sm" onClick={() => onEdit?.(farm)} variant="outline">
             <Pencil className="h-4 w-4 mr-2" /> Modifier
           </Button>
-          <Button size="sm" onClick={() => setInterventionOpen(true)}>
+          <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
             <Stethoscope className="h-4 w-4 mr-2" /> Nouvelle intervention
+          </Button>
+          <Button size="sm" variant="outline" onClick={handlePrintReport}>
+            <Printer className="h-4 w-4 mr-2" /> Imprimer rapport
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDownloadReport}>
+            <Download className="h-4 w-4 mr-2" /> PDF
           </Button>
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="grid grid-cols-6 w-full">
             <TabsTrigger value="overview">Vue</TabsTrigger>
-            <TabsTrigger value="batches">Lots ({batches.length})</TabsTrigger>
+            <TabsTrigger value="batches">Lots ({activeBatches.length}/{batches.length})</TabsTrigger>
             <TabsTrigger value="infra">Infra ({infrastructures.length})</TabsTrigger>
             <TabsTrigger value="interventions">Inter. ({interventions.length})</TabsTrigger>
             <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
@@ -122,12 +128,34 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <KpiBlock label={config.herdLabel} value={farm.herd_size ?? totalBatchAnimals ?? "—"} />
-              <KpiBlock label="Cheptel en lots" value={totalBatchAnimals} />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KpiBlock label="Cheptel actif" value={totalActiveAnimals} />
+              <KpiBlock label="Lots actifs" value={activeBatches.length} />
               <KpiBlock label="Interventions" value={interventions.length} />
               <KpiBlock label="Surface (ha)" value={farm.surface_hectares ?? "—"} />
             </div>
+
+            {byCategory.length > 0 && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-xs text-muted-foreground mb-2">Répartition par catégorie (lots actifs)</div>
+                  <div className="space-y-1.5">
+                    {byCategory.map(([k, v]) => {
+                      const pct = totalActiveAnimals ? Math.round((v / totalActiveAnimals) * 100) : 0;
+                      return (
+                        <div key={k} className="flex items-center gap-3">
+                          <div className="text-sm w-40 truncate">{k}</div>
+                          <div className="flex-1 h-2 bg-muted rounded overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="text-xs text-muted-foreground w-20 text-right">{v} ({pct}%)</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardContent className="pt-4 space-y-2 text-sm">
