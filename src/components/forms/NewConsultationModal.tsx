@@ -13,6 +13,8 @@ import { NewPetModal } from "./NewPetModal";
 import { Plus, User, Heart } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext"; // Added for dynamic currency
 import type { Animal, Client, CreateConsultationData } from "@/lib/database";
+import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
+import { Loader2 } from "lucide-react";
 
 interface NewConsultationModalProps {
   open: boolean;
@@ -28,6 +30,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
   const { settings } = useSettings(); // Destructure currency for cost label
   const [showClientModal, setShowClientModal] = useState(false);
   const [showPetModal, setShowPetModal] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   
   const [formData, setFormData] = useState({
@@ -172,6 +175,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
         photos: formData.photos && formData.photos.length > 0 ? formData.photos : undefined,
       };
 
+      console.log("[consultation] submitting with photos:", formData.photos?.length || 0);
       await createConsultationMutation.mutateAsync(consultationData);
       
       toast({
@@ -473,20 +477,47 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
                 type="file"
                 accept="image/*"
                 multiple
+                disabled={uploadingPhotos}
                 onChange={async (e) => {
                   const files = Array.from(e.target.files || []);
-                  const urls = await Promise.all(files.map(file => {
-                    return new Promise<string>((res, rej) => {
-                      const reader = new FileReader();
-                      reader.onload = () => res(reader.result as string);
-                      reader.onerror = () => rej();
-                      reader.readAsDataURL(file);
-                    });
-                  }));
-                  setFormData(prev => ({ ...prev, photos: [...prev.photos, ...urls] }));
+                  if (files.length === 0) return;
+                  setUploadingPhotos(true);
+                  try {
+                    const results = await Promise.all(
+                      files.map(async (file) => {
+                        try {
+                          const c = await compressPhoto(file);
+                          return c.dataUrl;
+                        } catch (err) {
+                          console.error("[consultation] compress failed, fallback raw", err);
+                          return await new Promise<string>((res, rej) => {
+                            const reader = new FileReader();
+                            reader.onload = () => res(reader.result as string);
+                            reader.onerror = rej;
+                            reader.readAsDataURL(file);
+                          });
+                        }
+                      })
+                    );
+                    const totalBytes = results.reduce((s, u) => s + estimateDataUrlBytes(u), 0);
+                    setFormData(prev => ({ ...prev, photos: [...prev.photos, ...results] }));
+                    recordStorageChange("consultation", totalBytes, results.length).catch(() => {});
+                    toast({ title: "✓ Photos ajoutées", description: `${results.length} photo(s) prête(s) à enregistrer.` });
+                  } catch (err: any) {
+                    console.error("[consultation] photo upload error", err);
+                    toast({ title: "Erreur photos", description: err?.message || "Impossible de traiter les images", variant: "destructive" });
+                  } finally {
+                    setUploadingPhotos(false);
+                    e.target.value = "";
+                  }
                 }}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 disabled:opacity-50"
               />
+              {uploadingPhotos && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Compression des photos…
+                </div>
+              )}
               {formData.photos.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto pt-2">
                   {formData.photos.map((src, idx) => (
@@ -520,11 +551,12 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
                   !formData.clientId || 
                   !formData.animalId || 
                   createConsultationMutation.isPending ||
+                  uploadingPhotos ||
                   clientsLoading ||
                   animalsLoading
                 }
               >
-                {createConsultationMutation.isPending ? "Enregistrement..." : "Enregistrer Consultation"}
+                {createConsultationMutation.isPending ? "Enregistrement..." : uploadingPhotos ? "Photos en cours..." : "Enregistrer Consultation"}
               </Button>
             </div>
           </form>
