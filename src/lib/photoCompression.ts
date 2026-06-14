@@ -63,9 +63,21 @@ export async function recordStorageChange(
     p_bytes_delta: bytesDelta,
     p_files_delta: filesDelta,
   });
-  if (error) {
-    console.warn("[storage] record_storage_change failed", error);
-  }
+  if (error) console.warn("[storage] record_storage_change failed", error);
+}
+
+export async function recomputeStorageUsage(): Promise<void> {
+  const { error } = await supabase.rpc("recompute_storage_usage" as any);
+  if (error) console.warn("[storage] recompute_storage_usage failed", error);
+}
+
+/** Estimate the decoded size in bytes of a base64 data URL. */
+export function estimateDataUrlBytes(dataUrl: string): number {
+  if (!dataUrl) return 0;
+  const i = dataUrl.indexOf(",");
+  const b64 = i >= 0 ? dataUrl.slice(i + 1) : dataUrl;
+  const padding = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((b64.length * 3) / 4) - padding);
 }
 
 export function formatBytes(bytes: number): string {
