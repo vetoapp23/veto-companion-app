@@ -358,9 +358,10 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
         />
         <NewFarmInterventionModalSupabase
           open={interventionOpen}
-          onOpenChange={setInterventionOpen}
+          onOpenChange={(o) => { setInterventionOpen(o); if (!o) setEditingIntervention(null); }}
           farmId={farm.id}
           farmName={farm.farm_name}
+          intervention={editingIntervention}
         />
       </SheetContent>
     </Sheet>
