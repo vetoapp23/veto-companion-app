@@ -32,8 +32,6 @@ import Stock from "./pages/Stock";
 import AccountingNew from "./pages/AccountingNew";
 import StockManagement from "./pages/StockManagement";
 import TeamManagement from "./pages/TeamManagement";
-import TestStats from "./pages/TestStats";
-import SimpleTest from "./pages/SimpleTest";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
@@ -54,7 +52,7 @@ const App = () => (
             <SettingsProvider>
               <ThemeProvider>
                 <BrowserRouter>
-                  <div className="min-h-screen bg-background w-full text-foreground overflow-x-hidden">
+                  <div className="min-h-screen bg-background w-full text-foreground overflow-x-hidden app-shell">
                     <Routes>
                       <Route path="/" element={<Landing />} />
                       <Route
@@ -182,24 +180,6 @@ const App = () => (
                             <VetNavigation />
                             <TeamManagement />
                           </AdminRoute>
-                        }
-                      />
-                      <Route
-                        path="/test-stats"
-                        element={
-                          <ProtectedRoute>
-                            <VetNavigation />
-                            <TestStats />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/simple-test"
-                        element={
-                          <ProtectedRoute>
-                            <VetNavigation />
-                            <SimpleTest />
-                          </ProtectedRoute>
                         }
                       />
                       <Route

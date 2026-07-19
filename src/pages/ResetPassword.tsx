@@ -179,7 +179,7 @@ export function ResetPassword() {
               <Heart className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">VetoCrm.com</CardTitle>
+          <CardTitle className="text-2xl font-bold">VetoCrm</CardTitle>
           <CardDescription>
             Définir un nouveau mot de passe
           </CardDescription>

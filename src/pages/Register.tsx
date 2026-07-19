@@ -82,12 +82,23 @@ const Register = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("subscription_plans" as any)
         .select("*")
         .eq("is_active", true)
         .order("display_order");
-      setPlans((data as unknown as Plan[]) ?? []);
+      if (error) {
+        console.error("Failed to load subscription plans:", error);
+        setPlans([]);
+        return;
+      }
+      setPlans(
+        ((data as unknown as Plan[]) ?? []).map((p) => ({
+          ...p,
+          features: Array.isArray(p.features) ? p.features : [],
+          prices: p.prices && typeof p.prices === "object" ? p.prices : {},
+        }))
+      );
     })();
   }, []);
 
@@ -164,11 +175,14 @@ const Register = () => {
   // ------- STEP 1 : choix du pack -------
   if (step === "plan" && !isJoiningOrganization) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 px-4 py-10">
+      <div className="marketing-shell min-h-screen px-4 py-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Choisissez votre pack</h1>
-            <p className="text-muted-foreground">
+            <Link to="/" className="mk-brand inline-block mb-4 text-2xl">
+              Veto<span>Crm</span>
+            </Link>
+            <h1 className="mk-display text-3xl md:text-4xl font-bold mb-2">Choisissez votre pack</h1>
+            <p style={{ color: "var(--mk-muted)" }}>
               Démarrez gratuitement, évoluez quand vous voulez. Annulation à tout moment.
             </p>
             <div className="flex justify-center gap-2 mt-4">
@@ -277,8 +291,8 @@ const Register = () => {
 
   // ------- STEP 2 : compte -------
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30 px-4 py-8">
-      <Card className="w-full max-w-2xl">
+    <div className="marketing-shell min-h-screen flex items-center justify-center px-4 py-8">
+      <Card className="w-full max-w-2xl rounded-2xl border shadow-[var(--shadow-card)]">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
             {isJoiningOrganization ? (
@@ -291,7 +305,10 @@ const Register = () => {
               </div>
             )}
           </div>
-          <CardTitle className="text-3xl font-bold">
+          <Link to="/" className="mk-brand text-lg mb-2 inline-block">
+            Veto<span>Crm</span>
+          </Link>
+          <CardTitle className="mk-display text-3xl font-bold">
             {isJoiningOrganization ? "Rejoindre une clinique" : "Créez votre compte"}
           </CardTitle>
           <CardDescription className="text-base">

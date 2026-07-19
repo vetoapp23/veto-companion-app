@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Phone, Mail, MapPin, Eye, Edit, Heart, Grid, List, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Phone, Mail, MapPin, Eye, Edit, Heart, Grid, List, Loader2, Trash2, Users } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
 import { NewClientModal } from "@/components/forms/NewClientModal";
 import { useClients, useAnimals, useUpdateClient, useDeleteClient } from "@/hooks/useDatabase";
 import {
@@ -258,39 +259,37 @@ const ClientsContent = () => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Gestion des Clients</h1>
-        <p className="text-muted-foreground mt-2">
-        Gérez tous vos clients et leurs informations
-        </p>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button 
-        size="sm" 
-        variant={viewMode === 'cards' ? 'default' : 'outline'} 
-        onClick={() => setViewMode('cards')}
-        className="gap-2 w-full sm:w-auto"
-        >
-        <Grid className="h-4 w-4" />
-        Cartes
-        </Button>
-        <Button 
-        size="sm" 
-        variant={viewMode === 'table' ? 'default' : 'outline'} 
-        onClick={() => setViewMode('table')}
-        className="gap-2 w-full sm:w-auto"
-        >
-        <List className="h-4 w-4" />
-        Tableau
-        </Button>
-        <Button className="gap-2 medical-glow w-full sm:w-auto" onClick={() => setShowClientModal(true)}>
-        <Plus className="h-4 w-4" />
-        Nouveau Client
-        </Button>
-      </div>
-      </div>
+      <AppPageHeader
+        icon={Users}
+        title="Clients"
+        description="Gérez tous vos clients et leurs informations"
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant={viewMode === "cards" ? "default" : "outline"}
+              onClick={() => setViewMode("cards")}
+              className="gap-2 rounded-full"
+            >
+              <Grid className="h-4 w-4" />
+              Cartes
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "table" ? "default" : "outline"}
+              onClick={() => setViewMode("table")}
+              className="gap-2 rounded-full"
+            >
+              <List className="h-4 w-4" />
+              Tableau
+            </Button>
+            <Button className="gap-2 rounded-full" onClick={() => setShowClientModal(true)}>
+              <Plus className="h-4 w-4" />
+              Nouveau Client
+            </Button>
+          </>
+        }
+      />
 
       <Card>
       <CardHeader>

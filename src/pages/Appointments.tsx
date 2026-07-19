@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, User, Heart, Plus, Search, Filter, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Grid, List } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
 import { SimpleAppointmentModal } from "../components/forms/SimpleAppointmentModal";
 import { useAppointments, useUpdateAppointment, useDeleteAppointment, type Appointment } from "@/hooks/useDatabase";
 import { useToast } from "@/hooks/use-toast";
@@ -289,20 +290,18 @@ export default function Appointments() {
 
   return (
     <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Gestion des Rendez-vous</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
-        Planifiez et gérez tous vos rendez-vous vétérinaires
-        </p>
-      </div>
-      <Button onClick={() => setShowNewAppointment(true)} className="gap-2 w-full sm:w-auto">
-        <Plus className="h-4 w-4" />
-        <span className="hidden sm:inline">Nouveau Rendez-vous</span>
-        <span className="sm:hidden">Nouveau RDV</span>
-      </Button>
-      </div>
+      <AppPageHeader
+        icon={Calendar}
+        title="Rendez-vous"
+        description="Planifiez et gérez tous vos rendez-vous vétérinaires"
+        actions={
+          <Button onClick={() => setShowNewAppointment(true)} className="gap-2 rounded-full">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Nouveau Rendez-vous</span>
+            <span className="sm:hidden">Nouveau RDV</span>
+          </Button>
+        }
+      />
 
       {/* Toggle List / Calendrier */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -363,11 +362,11 @@ export default function Appointments() {
         icon={<Calendar className="h-5 w-5" />}
       />
       ) : (
-      <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="app-kpi-grid grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card>
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+          <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           <div>
             <p className="text-xs sm:text-sm text-muted-foreground">Aujourd'hui</p>
             <p className="text-lg sm:text-2xl font-bold">{todayAppointments.length}</p>

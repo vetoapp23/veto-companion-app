@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Plus, Search, Tractor, Users2, Stethoscope, MapPin, Phone, Eye, Pencil, Trash2,
 } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
 import { useToast } from "@/hooks/use-toast";
 import { useFarms, useDeleteFarm, useFarmInterventions, useClients } from "@/hooks/useDatabase";
 import { useFarmManagementSettings } from "@/hooks/useAppSettings";
@@ -78,26 +79,30 @@ const FarmPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestion de fermes</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Pilotez exploitations, lots, interventions et suivi sanitaire collectif.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setInterventionOpen(true)}>
-            <Stethoscope className="h-4 w-4 mr-2" /> Intervention
-          </Button>
-          <Button onClick={() => { setEditingFarm(null); setNewFarmOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" /> Nouvelle exploitation
-          </Button>
-        </div>
-      </div>
+      <AppPageHeader
+        icon={Tractor}
+        title="Fermes"
+        description="Pilotez exploitations, lots, interventions et suivi sanitaire collectif."
+        actions={
+          <>
+            <Button variant="outline" className="rounded-full" onClick={() => setInterventionOpen(true)}>
+              <Stethoscope className="h-4 w-4 mr-2" /> Intervention
+            </Button>
+            <Button
+              className="rounded-full"
+              onClick={() => {
+                setEditingFarm(null);
+                setNewFarmOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Nouvelle exploitation
+            </Button>
+          </>
+        }
+      />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="app-kpi-grid grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi icon={<Tractor className="h-5 w-5" />} label="Exploitations" value={kpis.totalFarms} />
         <Kpi icon={<Users2 className="h-5 w-5" />} label="Cheptel total" value={kpis.totalHerd} />
         <Kpi icon={<Stethoscope className="h-5 w-5" />} label="Interventions ce mois" value={kpis.monthlyInterventions} />

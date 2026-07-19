@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Heart, Calendar, TrendingUp, Stethoscope, Clock, DollarSign, Activity, Syringe, Shield, Package, AlertTriangle } from "lucide-react";
-import { useClients, useAnimals, useConsultations, useAppointments, usePrescriptions, useVaccinations, useAntiparasitics, useStockItems, useFarms } from "@/hooks/useDatabase";
+﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Heart, Calendar, Stethoscope, DollarSign, Activity, Syringe, Shield, Package, AlertTriangle } from "lucide-react";
+import { useClients, useAnimals, useConsultations, useAppointments, useVaccinations, useAntiparasitics, useStockItems, useFarms } from "@/hooks/useDatabase";
+import { useAccounting } from "@/hooks/useAccounting";
 import { useSettings } from "@/contexts/SettingsContext";
 
 export function DashboardStats() {
@@ -8,210 +9,86 @@ export function DashboardStats() {
   const { data: pets = [] } = useAnimals();
   const { data: consultations = [] } = useConsultations();
   const { data: appointments = [] } = useAppointments();
-  const { data: prescriptions = [] } = usePrescriptions();
   const { data: vaccinations = [] } = useVaccinations();
   const { data: antiparasitics = [] } = useAntiparasitics();
   const { data: stockItems = [] } = useStockItems();
   const { data: farms = [] } = useFarms();
+  const { revenues, expenses } = useAccounting();
   const { settings } = useSettings();
 
-  // Calculer les statistiques en temps réel
   const totalClients = clients.length;
   const totalPets = pets.length;
-  const totalConsultations = consultations.length;
-  const totalAppointments = appointments.length;
-  const totalPrescriptions = prescriptions.length;
   const totalFarms = farms.length;
   const totalVaccinations = vaccinations.length;
   const totalAntiparasitics = antiparasitics.length;
   const totalStockItems = stockItems.length;
 
-  // Calculer les consultations de ce mois
   const thisMonth = new Date().getMonth();
   const thisYear = new Date().getFullYear();
-    // Consultations ce mois
-  const consultationsThisMonth = consultations.filter(c => {
-    const consultationDate = new Date(c.consultation_date);
-    return consultationDate.getMonth() === thisMonth && consultationDate.getFullYear() === thisYear;
-  }).length;
+  const previousMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+  const previousYear = thisMonth === 0 ? thisYear - 1 : thisYear;
 
-    // Vaccinations ce mois
-  const vaccinationsThisMonth = vaccinations.filter(v => {
-    const vaccinationDate = new Date(v.vaccination_date);
-    return vaccinationDate.getMonth() === thisMonth && vaccinationDate.getFullYear() === thisYear;
-  }).length;
-
-  // Antiparasitaires ce mois
-  const antiparasiticsThisMonth = antiparasitics.filter(a => {
-    const antiparasiticDate = new Date(a.treatment_date);
-    return antiparasiticDate.getMonth() === thisMonth && antiparasiticDate.getFullYear() === thisYear;
-  }).length;
-
-  // Calculer les consultations d'aujourd'hui
-  const today = new Date().toISOString().split('T')[0];
-  const consultationsToday = consultations.filter(c => {
-    const consultationDate = c.consultation_date.split('T')[0]; // Extract date part only
-    return consultationDate === today;
-  }).length;
-
-  // Calculer les rendez-vous d'aujourd'hui
-  const appointmentsToday = appointments.filter(a => {
-    const appointmentDate = a.appointment_date.split('T')[0]; // Extract date part only
-    return appointmentDate === today && a.status !== 'cancelled' && a.status !== 'completed';
-  }).length;
-
-  // Rendez-vous à venir et en retard
-  // TODO: Implement upcoming/overdue appointments logic
-  const upcomingAppointments = [];
-  const overdueAppointments = [];
-
-  // Calculer les statistiques du stock
-  const lowStockItems = stockItems.filter(item => item.current_quantity <= item.minimum_quantity).length;
-  const outOfStockItems = stockItems.filter(item => item.current_quantity === 0).length;
-  const totalStockValue = stockItems.reduce((sum, item) => sum + (item.current_quantity * (item.unit_cost || 0)), 0);
-
-  // Calculer les revenus réels basés sur les données comptables
-  const thisMonthStart = new Date(thisYear, thisMonth, 1).toISOString().split('T')[0];
-  const thisMonthEnd = new Date(thisYear, thisMonth + 1, 0).toISOString().split('T')[0];
-  
-  // TODO: Implement proper accounting summary with database data
-  const accountingSummary = {
-    totalRevenue: 0,
-    totalExpenses: 0,
-    netIncome: 0,
-    revenueBreakdown: { consultations: 0, vaccinations: 0, antiparasitics: 0, prescriptions: 0, manualEntries: 0 },
-    expenseBreakdown: { stockPurchases: 0, salaries: 0, rent: 0, taxes: 0, other: 0 }
+  const inMonth = (dateStr: string | undefined, m: number, y: number) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return d.getMonth() === m && d.getFullYear() === y;
   };
-  
-  const realRevenue = accountingSummary.totalRevenue;
-  const realExpenses = accountingSummary.totalExpenses;
-  const netIncome = accountingSummary.netIncome;
 
-  // Calculer les pourcentages de changement (basés sur les données réelles)
+  const consultationsThisMonth = consultations.filter(c => inMonth(c.consultation_date, thisMonth, thisYear)).length;
+  const consultationsPreviousMonth = consultations.filter(c => inMonth(c.consultation_date, previousMonth, previousYear)).length;
+  const vaccinationsThisMonth = vaccinations.filter(v => inMonth(v.vaccination_date, thisMonth, thisYear)).length;
+  const vaccinationsPreviousMonth = vaccinations.filter(v => inMonth(v.vaccination_date, previousMonth, previousYear)).length;
+  const antiparasiticsThisMonth = antiparasitics.filter(a => inMonth(a.treatment_date, thisMonth, thisYear)).length;
+  const antiparasiticsPreviousMonth = antiparasitics.filter(a => inMonth(a.treatment_date, previousMonth, previousYear)).length;
+
+  const today = new Date().toISOString().split("T")[0];
+  const consultationsToday = consultations.filter(c => (c.consultation_date || "").split("T")[0] === today).length;
+  const appointmentsToday = appointments.filter(a => {
+    const date = (a.appointment_date || "").split("T")[0];
+    return date === today && a.status !== "cancelled" && a.status !== "completed";
+  }).length;
+
+  const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const upcomingAppointments = appointments.filter(a => {
+    if (!a.appointment_date || a.status === "cancelled" || a.status === "completed") return false;
+    const d = new Date(a.appointment_date);
+    return d >= new Date(today) && d <= weekFromNow;
+  });
+
+  const appointmentsThisMonth = appointments.filter(a => inMonth(a.appointment_date, thisMonth, thisYear)).length;
+  const appointmentsPreviousMonth = appointments.filter(a => inMonth(a.appointment_date, previousMonth, previousYear)).length;
+
+  const lowStockItems = stockItems.filter(item => (item.current_quantity ?? 0) <= (item.minimum_quantity ?? 0)).length;
+  const outOfStockItems = stockItems.filter(item => (item.current_quantity ?? 0) === 0).length;
+
+  const sumAmount = (rows: { amount?: number }[]) => rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const realRevenue = sumAmount(revenues.filter(r => inMonth(r.revenue_date, thisMonth, thisYear)));
+  const previousRevenue = sumAmount(revenues.filter(r => inMonth(r.revenue_date, previousMonth, previousYear)));
+  const realExpenses = sumAmount(expenses.filter(e => inMonth(e.expense_date, thisMonth, thisYear)));
+  const netIncome = realRevenue - realExpenses;
+
   const getChangePercentage = (current: number, previous: number) => {
     if (previous === 0) return current > 0 ? "+100%" : "0%";
     const change = ((current - previous) / previous) * 100;
     return change >= 0 ? `+${Math.round(change)}%` : `${Math.round(change)}%`;
   };
 
-  // Simuler des données du mois précédent pour la comparaison
-  const previousMonth = thisMonth === 0 ? 11 : thisMonth - 1;
-  const previousYear = thisMonth === 0 ? thisYear - 1 : thisYear;
-  
-  const consultationsPreviousMonth = consultations.filter(c => {
-    const consultationDate = new Date(c.consultation_date);
-    return consultationDate.getMonth() === previousMonth && consultationDate.getFullYear() === previousYear;
-  }).length;
-
-  // Calculate clients and pets from previous month for comparison
-  const clientsPreviousMonth = clients.filter(c => {
-    const clientDate = new Date(c.created_at);
-    return clientDate.getMonth() === previousMonth && clientDate.getFullYear() === previousYear;
-  }).length;
-
-  const petsPreviousMonth = pets.filter(p => {
-    const petDate = new Date(p.created_at);
-    return petDate.getMonth() === previousMonth && petDate.getFullYear() === previousYear;
-  }).length;
-
-  // TODO: Implement proper client/pet activity tracking
-  const newClientsThisMonth = clients.filter(c => {
-    const clientDate = new Date(c.created_at);
-    return clientDate.getMonth() === thisMonth && clientDate.getFullYear() === thisYear;
-  }).length;
-
-  const newPetsThisMonth = pets.filter(p => {
-    const petDate = new Date(p.created_at);
-    return petDate.getMonth() === thisMonth && petDate.getFullYear() === thisYear;
-  }).length;
-
-  const appointmentsPreviousMonth = appointments.filter(a => {
-    const appointmentDate = new Date(a.appointment_date);
-    return appointmentDate.getMonth() === previousMonth && appointmentDate.getFullYear() === previousYear;
-  }).length;
+  const newClientsThisMonth = clients.filter(c => inMonth(c.created_at, thisMonth, thisYear)).length;
+  const newClientsPreviousMonth = clients.filter(c => inMonth(c.created_at, previousMonth, previousYear)).length;
+  const newPetsThisMonth = pets.filter(p => inMonth(p.created_at, thisMonth, thisYear)).length;
+  const newPetsPreviousMonth = pets.filter(p => inMonth(p.created_at, previousMonth, previousYear)).length;
+  const currency = settings.currency || "MAD";
 
   const stats = [
-    {
-      title: "Clients Total",
-      value: totalClients.toString(),
-      change: getChangePercentage(totalClients, clientsPreviousMonth),
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      description: `${newClientsThisMonth} nouveaux ce mois`
-    },
-    {
-      title: "Animaux Suivis",
-      value: totalPets.toString(),
-      change: getChangePercentage(totalPets, petsPreviousMonth),
-      icon: Heart,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      description: `${newPetsThisMonth} nouveaux ce mois`
-    },
-    {
-      title: "RDV Aujourd'hui",
-      value: appointmentsToday.toString(),
-      change: appointmentsToday > 0 ? "+" + Math.min(20, Math.floor(appointmentsToday * 0.3)) + "%" : "0%",
-      icon: Calendar,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      description: `${upcomingAppointments.length} à venir cette semaine`
-    },
-    {
-      title: "Consultations",
-      value: consultationsThisMonth.toString(),
-      change: getChangePercentage(consultationsThisMonth, consultationsPreviousMonth),
-      icon: Stethoscope,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      description: `${consultationsToday} aujourd'hui`
-    },
-    {
-      title: "Revenus Réels",
-      value: `${realRevenue.toFixed(0)} ${settings.currency || '€'}`,
-      change: realRevenue > 0 ? "+" + Math.round((realRevenue / 1000) * 10) + "%" : "0%",
-      icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50",
-      description: `Bénéfice: ${netIncome.toFixed(0)} ${settings.currency || '€'}`
-    },
-    {
-      title: "Activité Ferme",
-      value: totalFarms.toString(),
-      change: totalFarms > 0 ? "+" + Math.min(15, Math.floor(totalFarms * 0.2)) + "%" : "0%",
-      icon: Activity,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      description: `${totalFarms} exploitations actives`
-    },
-    {
-      title: "Vaccinations",
-      value: vaccinationsThisMonth.toString(),
-      change: vaccinationsThisMonth > 0 ? "+" + Math.min(25, Math.floor(vaccinationsThisMonth * 0.3)) + "%" : "0%",
-      icon: Syringe,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      description: `${totalVaccinations} total ce mois`
-    },
-    {
-      title: "Antiparasitaires",
-      value: antiparasiticsThisMonth.toString(),
-      change: antiparasiticsThisMonth > 0 ? "+" + Math.min(20, Math.floor(antiparasiticsThisMonth * 0.25)) + "%" : "0%",
-      icon: Shield,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      description: `${totalAntiparasitics} total ce mois`
-    },
-    {
-      title: "Stock",
-      value: totalStockItems.toString(),
-      change: lowStockItems > 0 ? "-" + Math.min(15, Math.floor(lowStockItems * 0.2)) + "%" : "0%",
-      icon: lowStockItems > 0 ? AlertTriangle : Package,
-      color: lowStockItems > 0 ? "text-red-600" : "text-green-600",
-      bgColor: lowStockItems > 0 ? "bg-red-50" : "bg-green-50",
-      description: `${lowStockItems} en rupture, ${outOfStockItems} épuisés`
-    }
+    { title: "Clients Total", value: totalClients.toString(), change: getChangePercentage(newClientsThisMonth, newClientsPreviousMonth), icon: Users, color: "text-blue-600", bgColor: "bg-blue-50", description: `${newClientsThisMonth} nouveaux ce mois` },
+    { title: "Animaux Suivis", value: totalPets.toString(), change: getChangePercentage(newPetsThisMonth, newPetsPreviousMonth), icon: Heart, color: "text-red-600", bgColor: "bg-red-50", description: `${newPetsThisMonth} nouveaux ce mois` },
+    { title: "RDV Aujourd'hui", value: appointmentsToday.toString(), change: getChangePercentage(appointmentsThisMonth, appointmentsPreviousMonth), icon: Calendar, color: "text-purple-600", bgColor: "bg-purple-50", description: `${upcomingAppointments.length} a venir cette semaine` },
+    { title: "Consultations", value: consultationsThisMonth.toString(), change: getChangePercentage(consultationsThisMonth, consultationsPreviousMonth), icon: Stethoscope, color: "text-green-600", bgColor: "bg-green-50", description: `${consultationsToday} aujourd'hui` },
+    { title: "Revenus Reels", value: `${realRevenue.toFixed(0)} ${currency}`, change: getChangePercentage(realRevenue, previousRevenue), icon: DollarSign, color: "text-emerald-600", bgColor: "bg-emerald-50", description: `Benefice: ${netIncome.toFixed(0)} ${currency}` },
+    { title: "Activite Ferme", value: totalFarms.toString(), change: "—", icon: Activity, color: "text-orange-600", bgColor: "bg-orange-50", description: `${totalFarms} exploitations actives` },
+    { title: "Vaccinations", value: vaccinationsThisMonth.toString(), change: getChangePercentage(vaccinationsThisMonth, vaccinationsPreviousMonth), icon: Syringe, color: "text-blue-600", bgColor: "bg-blue-50", description: `${totalVaccinations} au total` },
+    { title: "Antiparasitaires", value: antiparasiticsThisMonth.toString(), change: getChangePercentage(antiparasiticsThisMonth, antiparasiticsPreviousMonth), icon: Shield, color: "text-purple-600", bgColor: "bg-purple-50", description: `${totalAntiparasitics} au total` },
+    { title: "Stock", value: totalStockItems.toString(), change: lowStockItems > 0 ? `${lowStockItems} alertes` : "OK", icon: lowStockItems > 0 ? AlertTriangle : Package, color: lowStockItems > 0 ? "text-red-600" : "text-green-600", bgColor: lowStockItems > 0 ? "bg-red-50" : "bg-green-50", description: `${lowStockItems} bas, ${outOfStockItems} epuises` },
   ];
 
   return (
@@ -219,9 +96,7 @@ export function DashboardStats() {
       {stats.map((stat) => (
         <Card key={stat.title} className="card-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {stat.title}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
             <div className={`p-2 rounded-lg ${stat.bgColor}`}>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </div>
@@ -231,9 +106,7 @@ export function DashboardStats() {
             <p className="text-xs text-muted-foreground mt-1">
               <span className="text-secondary font-medium">{stat.change}</span> vs mois dernier
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stat.description}
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
           </CardContent>
         </Card>
       ))}

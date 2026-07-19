@@ -19,8 +19,8 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
   const { data: clients } = useClients();
   const { data: vaccinations } = useVaccinations();
 
-  // Charger la liste des vétérinaires depuis localStorage
-  const vets = JSON.parse(localStorage.getItem('vetpro-veterinarians') || '[]');
+  // Vétérinaires depuis les paramètres (Supabase / settings)
+  const vets = (settings.veterinarians || []).filter((v: any) => v.isActive !== false);
 
   const animal = animals?.find(a => a.id === animalId);
   const client = animal ? clients?.find(c => c.id === animal.client_id) : null;
@@ -366,7 +366,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
 
             <div class="footer">
               <p>Certificat généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })}</p>
-              <p>VetoCrm.com - Système de Gestion Vétérinaire</p>
+              <p>VetoCrm - Système de Gestion Vétérinaire</p>
             </div>
 
             <script>

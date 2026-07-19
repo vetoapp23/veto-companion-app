@@ -3,22 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Heart, User, Calendar, Edit, FileText, Camera, Trash2 } from "lucide-react";
-import { Pet } from "@/contexts/ClientContext";
 import { calculateAge, formatDate } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
-import { useClients } from "@/contexts/ClientContext";
+import { useUpdateAnimal } from "@/hooks/useDatabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface PetViewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  pet: Pet | null;
+  pet: any | null;
   onEdit: () => void;
   onShowDossier: () => void;
   onDelete?: () => void;
 }
 
 export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, onDelete }: PetViewModalProps) {
-  const { updatePet } = useClients();
+  const updateAnimalMutation = useUpdateAnimal();
+  const { toast } = useToast();
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   // Initialize preview with existing photo on open
   useEffect(() => {
@@ -28,17 +29,33 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
   }, [open, pet]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setPhotoPreview(dataUrl);
-        updatePet(pet.id, { photo: dataUrl }); // Persist in context
-      };
-      reader.readAsDataURL(file);
+    if (!file || !pet) return;
+    const animalId = pet.dbId || (typeof pet.id === "string" ? pet.id : null);
+    if (!animalId) {
+      toast({ title: "Erreur", description: "Identifiant animal introuvable", variant: "destructive" });
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string;
+      setPhotoPreview(dataUrl);
+      try {
+        await updateAnimalMutation.mutateAsync({
+          id: animalId,
+          data: { photo_url: dataUrl },
+        });
+        toast({ title: "Photo enregistrée" });
+      } catch (err) {
+        toast({
+          title: "Erreur",
+          description: err instanceof Error ? err.message : "Impossible d'enregistrer la photo",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   if (!pet) return null;

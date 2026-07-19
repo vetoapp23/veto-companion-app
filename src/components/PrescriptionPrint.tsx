@@ -4,8 +4,6 @@ import { Prescription } from "@/contexts/ClientContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
-// Clé localStorage pour vétérinaires
-const VETS_KEY = 'vetpro-veterinarians';
 
 interface PrescriptionPrintProps {
   prescription: Prescription;
@@ -14,7 +12,7 @@ interface PrescriptionPrintProps {
 export function PrescriptionPrint({ prescription }: PrescriptionPrintProps) {
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
-  const vets = JSON.parse(localStorage.getItem(VETS_KEY) || '[]');
+  const vets = (settings.veterinarians || []).filter((v: any) => v.isActive !== false);
   const prescriber = prescription.prescribedBy;
   const handlePrint = () => {
     if (!prescription) {

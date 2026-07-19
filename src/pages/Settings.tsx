@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X } from "lucide-react";
-import { useClients } from "@/contexts/ClientContext";
+import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X, Cog } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
+import { useAnimals } from "@/hooks/useDatabase";
 import { useSettings, ClinicSettings, DisplayPreferences } from '@/contexts/SettingsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Switch } from "@/components/ui/switch";
@@ -77,45 +78,20 @@ export default function Settings() {
   // Computed vets for display
   const vets = dbVeterinarians.length > 0 ? dbVeterinarians : settings.veterinarians;
 
-  const DEFAULT_VETS: VeterinarianSetting[] = [
-    { 
-      id: 'vet_001', 
-      name: 'Dr. Jean Dupont',
-      title: 'Dr.',
-      specialty: 'Médecine générale',
-      phone: '+212 6 00 00 00 01',
-      email: 'j.dupont@clinique.ma',
-      is_active: true
-    },
-    { 
-      id: 'vet_002', 
-      name: 'Dr. Marie Martin',
-      title: 'Dr.',
-      specialty: 'Chirurgie',
-      phone: '+212 6 00 00 00 02',
-      email: 'm.martin@clinique.ma',
-      is_active: true
-    },
-    { 
-      id: 'vet_003', 
-      name: 'Pr. Ahmed El Alaoui',
-      title: 'Pr.',
-      specialty: 'Cardiologie vétérinaire',
-      phone: '+212 6 00 00 00 03',
-      email: 'a.elalaoui@clinique.ma',
-      is_active: true
-    }
-  ];
-
-  // Sync species with dynamic lists
-  const { pets } = useClients();
+  // Sync species with animals from Supabase
+  const { data: animals = [] } = useAnimals();
   useEffect(() => {
-    const dynamic = Array.from(new Set([
-      ...pets.map(p => p.type)
+    const dynamic = Array.from(new Set(animals.map((a: any) => a.species).filter(Boolean)));
+    if (dynamic.length === 0) return;
+    const merged = Array.from(new Set([
+      ...settings.species.split(',').map((s: string) => s.trim()).filter(Boolean),
+      ...dynamic,
     ]));
-    const merged = Array.from(new Set([...settings.species.split(',').map(s => s.trim()), ...dynamic]));
-    updateSettings({ ...settings, species: merged.join(', ') } as ClinicSettings);
-  }, [pets]);
+    const next = merged.join(', ');
+    if (next !== settings.species) {
+      updateSettings({ ...settings, species: next } as ClinicSettings);
+    }
+  }, [animals]);
 
   // Handlers for clinic settings
   const handleSettingsChange = (field: keyof ClinicSettings, value: string | boolean | number | any) => {
@@ -332,6 +308,12 @@ export default function Settings() {
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8">
+      <AppPageHeader
+        icon={Cog}
+        title="Paramètres"
+        description="Configurez votre clinique, l’équipe et les préférences d’affichage"
+      />
+
       {/* Tab Navigation */}
       <Card>
         <CardHeader>

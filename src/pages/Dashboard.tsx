@@ -1,13 +1,10 @@
 // @ts-nocheck
-import React, { useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ClientsOverview } from "@/components/ClientsOverview";
 import { PetsOverview } from "@/components/PetsOverview";
 import { ConsultationsOverview } from "@/components/ConsultationsOverview";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
-import { SyncStatus } from "@/components/SyncStatus";
-import { DataManager } from "@/components/DataManager";
 import { RealTimeKPIs } from "@/components/charts/RealTimeKPIs";
 import { RevenueChart } from "@/components/charts/RevenueChart";
 import { ActivityChart } from "@/components/charts/ActivityChart";
@@ -18,27 +15,24 @@ import { ConsultationTrendsChart } from "@/components/charts/ConsultationTrendsC
 import { PetSpeciesChart } from "@/components/charts/PetSpeciesChart";
 import { AdminOnly } from "@/components/RoleGuard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, 
-  TrendingUp, 
-  Users, 
-  Heart, 
-  Calendar, 
-  Stethoscope, 
+import {
+  LayoutDashboard,
+  TrendingUp,
+  Users,
+  Heart,
+  Stethoscope,
   BarChart3,
   Shield,
   Activity,
+  PieChart,
   AlertTriangle,
-  Settings,
-  PieChart
 } from "lucide-react";
 
 const Dashboard = () => {
   return (
     <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6 max-w-7xl">
       <HeroSection />
-      
+
       <div className="mt-6 sm:mt-8">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-6 h-auto p-1">
@@ -68,7 +62,6 @@ const Dashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Vue d'ensemble Tab */}
           <TabsContent value="overview" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <Tabs defaultValue="kpis" className="w-full">
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 h-auto p-1">
@@ -84,13 +77,12 @@ const Dashboard = () => {
                   <PieChart className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span>Statistiques</span>
                 </TabsTrigger>
-                <TabsTrigger value="system" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
-                  <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Système</span>
+                <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span>Alertes</span>
                 </TabsTrigger>
               </TabsList>
 
-              {/* KPIs Sub-tab */}
               <TabsContent value="kpis" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
                   <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Indicateurs Clés de Performance</h2>
@@ -98,25 +90,17 @@ const Dashboard = () => {
                 </section>
               </TabsContent>
 
-              {/* Activities Sub-tab */}
               <TabsContent value="activities" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
                   <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Activités Récentes</h2>
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
-                    <div className="w-full">
-                      <ClientsOverview />
-                    </div>
-                    <div className="w-full">
-                      <PetsOverview />
-                    </div>
-                    <div className="w-full">
-                      <ConsultationsOverview />
-                    </div>
+                    <div className="w-full"><ClientsOverview /></div>
+                    <div className="w-full"><PetsOverview /></div>
+                    <div className="w-full"><ConsultationsOverview /></div>
                   </div>
                 </section>
               </TabsContent>
 
-              {/* Statistics Sub-tab */}
               <TabsContent value="statistics" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
                   <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Statistiques Détaillées</h2>
@@ -124,21 +108,15 @@ const Dashboard = () => {
                 </section>
               </TabsContent>
 
-              {/* System Sub-tab */}
-              <TabsContent value="system" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
+              <TabsContent value="alerts" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
-                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">État du Système</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                    <SyncStatus />
-                    <DataManager />
-                    <DashboardAlerts />
-                  </div>
+                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Alertes</h2>
+                  <DashboardAlerts />
                 </section>
               </TabsContent>
             </Tabs>
           </TabsContent>
 
-          {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
               <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Analyses et Tendances</h2>
@@ -151,7 +129,6 @@ const Dashboard = () => {
             </section>
           </TabsContent>
 
-          {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
               <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Gestion des Clients</h2>
@@ -162,7 +139,6 @@ const Dashboard = () => {
             </section>
           </TabsContent>
 
-          {/* Animals Tab */}
           <TabsContent value="animals" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
               <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Gestion des Animaux</h2>
@@ -173,20 +149,17 @@ const Dashboard = () => {
             </section>
           </TabsContent>
 
-          {/* Consultations Tab */}
           <TabsContent value="consultations" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
               <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Activité Récente</h2>
               <ConsultationsOverview />
             </section>
-            
             <section>
               <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Rendez-vous</h2>
               <AppointmentStatusChart />
             </section>
           </TabsContent>
 
-          {/* Charts Tab */}
           <TabsContent value="charts" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
               <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Graphiques Détaillés</h2>
@@ -194,7 +167,6 @@ const Dashboard = () => {
                 <ConsultationTrendsChart />
                 <AppointmentStatusChart />
               </div>
-              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 <PetSpeciesChart />
                 <StockChart />
@@ -204,7 +176,6 @@ const Dashboard = () => {
         </Tabs>
       </div>
 
-      {/* Admin Only Section */}
       <AdminOnly>
         <div className="mt-6 sm:mt-8 p-4 sm:p-6 border rounded-lg bg-muted/50">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">

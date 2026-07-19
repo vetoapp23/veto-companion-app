@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Stethoscope, Plus, Eye, Edit, FileText, Calendar, User, Heart, TrendingUp, Clock, Activity, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
-import { ConsultationEditModal } from "@/components/modals/ConsultationEditModal";
+import { ConsultationEditModalNew } from "@/components/modals/ConsultationEditModalNew";
 import { ConsultationPrint } from "@/components/ConsultationPrint";
 import { useConsultations, useClients, useAnimals } from "@/hooks/useDatabase";
 import { Consultation } from "@/lib/database";
@@ -206,7 +206,7 @@ export function ConsultationsOverview() {
         onOpenChange={setShowConsultationModal} 
       />
       
-      <ConsultationEditModal
+      <ConsultationEditModalNew
         open={showEditModal}
         onOpenChange={setShowEditModal}
         consultation={selectedConsultation}

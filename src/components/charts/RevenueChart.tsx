@@ -1,44 +1,46 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { TrendingUp, DollarSign } from 'lucide-react';
-import { useConsultations } from '@/hooks/useDatabase';
+import { useAccounting } from '@/hooks/useAccounting';
 import { useSettings } from '@/contexts/SettingsContext';
 
 export function RevenueChart() {
-  const { data: consultations = [] } = useConsultations();
+  const { revenues, expenses } = useAccounting();
   const { settings } = useSettings();
+  const currency = settings.currency || 'MAD';
 
-  // Générer les données des 6 derniers mois
   const generateRevenueData = () => {
     const data = [];
     const currentDate = new Date();
-    
+
     for (let i = 5; i >= 0; i--) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
-      
-      // Calculer les revenus basés sur les consultations pour ce mois
-      const monthConsultations = consultations.filter(consultation => {
-        const consultationDate = new Date(consultation.consultation_date);
-        return consultationDate >= new Date(monthStart) && consultationDate <= new Date(monthEnd);
-      });
-      
-      // Estimation des revenus: 50€ par consultation en moyenne
-      const revenue = monthConsultations.length * 50;
-      // Estimation des dépenses: 30% des revenus
-      const expenses = Math.round(revenue * 0.3);
-      
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
+
+      const monthRevenue = revenues
+        .filter((r) => {
+          const d = new Date(r.revenue_date);
+          return d >= monthStart && d <= monthEnd;
+        })
+        .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+
+      const monthExpenses = expenses
+        .filter((e) => {
+          const d = new Date(e.expense_date);
+          return d >= monthStart && d <= monthEnd;
+        })
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
       data.push({
         month: date.toLocaleDateString('fr-FR', { month: 'short' }),
-        revenue: Math.round(revenue),
-        expenses: Math.round(expenses),
-        profit: Math.round(revenue - expenses)
+        revenue: Math.round(monthRevenue),
+        expenses: Math.round(monthExpenses),
+        profit: Math.round(monthRevenue - monthExpenses),
       });
     }
-    
+
     return data;
   };
 
@@ -58,59 +60,28 @@ export function RevenueChart() {
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="month" 
+              <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-xs" />
+              <YAxis
                 axisLine={false}
                 tickLine={false}
                 className="text-xs"
+                tickFormatter={(value) => `${value}${currency}`}
               />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                className="text-xs"
-                tickFormatter={(value) => `${value}${settings.currency || '€'}`}
-              />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                 }}
                 formatter={(value: number, name: string) => [
-                  `${value} ${settings.currency || '€'}`,
-                  name === 'revenue' ? 'Revenus' : name === 'expenses' ? 'Dépenses' : 'Bénéfice'
+                  `${value} ${currency}`,
+                  name === 'revenue' ? 'Revenus' : name === 'expenses' ? 'Dépenses' : 'Bénéfice',
                 ]}
               />
-              <Area
-                type="monotone"
-                dataKey="revenue"
-                stackId="1"
-                stroke="#10b981"
-                fill="#10b981"
-                fillOpacity={0.6}
-                strokeWidth={2}
-              />
-              <Area
-                type="monotone"
-                dataKey="expenses"
-                stackId="2"
-                stroke="#ef4444"
-                fill="#ef4444"
-                fillOpacity={0.6}
-                strokeWidth={2}
-              />
+              <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} />
+              <Area type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.1} />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-        <div className="flex items-center justify-between mt-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-muted-foreground">Revenus</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-            <span className="text-muted-foreground">Dépenses</span>
-          </div>
         </div>
       </CardContent>
     </Card>

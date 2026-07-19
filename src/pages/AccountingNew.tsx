@@ -27,6 +27,7 @@ import {
   Lightbulb,
   X
 } from 'lucide-react';
+import { AppPageHeader } from '@/components/AppPageHeader';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -411,21 +412,20 @@ const Accounting: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4">
-      {/* En-tête */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Calculator className="h-8 w-8" />
-            Gestion Comptable
-          </h1>
-          <p className="text-muted-foreground">
-            Suivi des recettes et charges de votre clinique vétérinaire
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+        <AppPageHeader
+          className="flex-1"
+          icon={Calculator}
+          title="Comptabilité"
+          description="Suivi des recettes et charges de votre clinique vétérinaire"
+        />
+        <div className="flex gap-2 lg:pt-4">
           <Dialog open={isAddEntryModalOpen} onOpenChange={setIsAddEntryModalOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditingEntry(null); setFormData({ type: 'revenue', frequency: 'occasional', description: '', amount: '', date: '', source: 'other', notes: '' }); }}>
+              <Button
+                className="rounded-full"
+                onClick={() => { setEditingEntry(null); setFormData({ type: 'revenue', frequency: 'occasional', description: '', amount: '', date: '', source: 'other', notes: '' }); }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter une entrée
               </Button>

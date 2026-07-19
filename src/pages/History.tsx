@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Heart, Grid, List, Eye, Edit, Plus, Search, Clock, Users, FileText, Shield, Syringe } from 'lucide-react';
+import { AppPageHeader } from '@/components/AppPageHeader';
 import { useConsultations, usePrescriptions, useClients, useAnimals, type Prescription } from '@/hooks/useDatabase';
 import ConsultationViewModal from '@/components/modals/ConsultationViewModal';
 import { NewPrescriptionModal } from '@/components/forms/NewPrescriptionModal';
@@ -160,35 +161,33 @@ const History = () => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-7xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Historique Médical</h1>
-        <p className="text-muted-foreground mt-2">
-        Consultez l'historique complet des soins et traitements
-        </p>
-      </div>
-      
-      <div className="flex gap-2 w-full sm:w-auto">
-        <Button 
-        size="sm" 
-        variant={viewMode === 'cards' ? 'default' : 'outline'} 
-        onClick={() => setViewMode('cards')}
-        className="gap-2 flex-1 sm:flex-none"
-        >
-        <Grid className="h-4 w-4" />
-        Cartes
-        </Button>
-        <Button 
-        size="sm" 
-        variant={viewMode === 'table' ? 'default' : 'outline'} 
-        onClick={() => setViewMode('table')}
-        className="gap-2 flex-1 sm:flex-none"
-        >
-        <List className="h-4 w-4" />
-        Tableau
-        </Button>
-      </div>
-      </div>
+      <AppPageHeader
+        icon={FileText}
+        title="Historique médical"
+        description="Consultez l'historique complet des soins et traitements"
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant={viewMode === "cards" ? "default" : "outline"}
+              onClick={() => setViewMode("cards")}
+              className="gap-2 rounded-full"
+            >
+              <Grid className="h-4 w-4" />
+              Cartes
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "table" ? "default" : "outline"}
+              onClick={() => setViewMode("table")}
+              className="gap-2 rounded-full"
+            >
+              <List className="h-4 w-4" />
+              Tableau
+            </Button>
+          </>
+        }
+      />
 
       <Card>
       <CardHeader>

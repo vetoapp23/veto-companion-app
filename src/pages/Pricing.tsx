@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Heart, Sparkles, ArrowRight, HardDrive, Users } from "lucide-react";
+import { Check, Sparkles, ArrowRight, HardDrive, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Currency = "MAD" | "EUR" | "USD";
@@ -63,7 +63,17 @@ export default function Pricing() {
         .select("*")
         .eq("is_active", true)
         .order("display_order");
-      if (!error && data) setPlans(data as unknown as Plan[]);
+      if (error) {
+        console.error("Failed to load subscription plans:", error);
+      } else if (data) {
+        setPlans(
+          (data as unknown as Plan[]).map((p) => ({
+            ...p,
+            features: Array.isArray(p.features) ? p.features : [],
+            prices: p.prices && typeof p.prices === "object" ? p.prices : {},
+          }))
+        );
+      }
       setLoading(false);
     })();
   }, []);
@@ -71,35 +81,31 @@ export default function Pricing() {
   const yearlyDiscount = useMemo(() => "20%", []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold">VetoCrm.com</span>
+    <div className="marketing-shell min-h-screen">
+      <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 30, background: "var(--mk-mist)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--mk-line)" }}>
+        <Link to="/" className="mk-brand">
+          Veto<span>Crm</span>
+        </Link>
+        <nav className="mk-nav-links">
+          <Link to="/login" className="mk-link">
+            Se connecter
           </Link>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Se connecter</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/register">Commencer</Link>
-            </Button>
-          </div>
-        </div>
+          <Link to="/register" className="mk-btn mk-btn-primary">
+            Commencer
+          </Link>
+        </nav>
       </header>
 
       {/* Hero */}
       <section className="py-12 md:py-16 text-center">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl space-y-4">
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 rounded-full">
             <Sparkles className="h-3 w-3" /> Tarifs simples et transparents
           </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold">
+          <h1 className="mk-display text-3xl md:text-5xl font-bold tracking-tight">
             Choisissez la formule adaptée à votre pratique
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground">
+          <p className="text-base md:text-lg" style={{ color: "var(--mk-muted)" }}>
             Du vétérinaire indépendant à la clinique multi-praticiens. Commencez gratuitement,
             évoluez quand vous le souhaitez.
           </p>
@@ -135,6 +141,10 @@ export default function Pricing() {
         <div className="container mx-auto px-4 md:px-6">
           {loading ? (
             <div className="text-center text-muted-foreground py-12">Chargement des formules…</div>
+          ) : plans.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12">
+              Aucune formule disponible pour le moment. Réessayez plus tard.
+            </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 max-w-7xl mx-auto">
               {plans.map((plan) => {
@@ -187,7 +197,7 @@ export default function Pricing() {
                         </span>
                       </div>
                       <ul className="space-y-2 text-sm flex-1">
-                        {plan.features.map((feat, i) => (
+                        {(plan.features ?? []).map((feat, i) => (
                           <li key={i} className="flex gap-2">
                             <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                             <span>{feat}</span>
@@ -253,8 +263,8 @@ export default function Pricing() {
         </div>
       </section>
 
-      <footer className="border-t py-6">
-        <div className="container mx-auto px-4 md:px-6 text-center text-sm text-muted-foreground">
+      <footer className="border-t py-6" style={{ borderColor: "var(--mk-line)" }}>
+        <div className="container mx-auto px-4 md:px-6 text-center text-sm" style={{ color: "var(--mk-muted)" }}>
           Tous les prix sont indiqués hors taxes. Annulation possible à tout moment.
         </div>
       </footer>

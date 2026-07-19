@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { OrganizationInviteCode } from '@/components/OrganizationInviteCode';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, UserCircle, Crown, Shield } from 'lucide-react';
+import { Loader2, UserCircle, Crown, Shield, Users } from 'lucide-react';
+import { AppPageHeader } from '@/components/AppPageHeader';
 
 export default function TeamManagement() {
   const { user } = useAuth();
@@ -52,21 +53,17 @@ export default function TeamManagement() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Gestion de l'Équipe</h1>
-          <p className="text-muted-foreground mt-1">
-            Gérez les membres de votre clinique vétérinaire
-          </p>
-        </div>
-      </div>
+      <AppPageHeader
+        icon={Users}
+        title="Équipe"
+        description="Gérez les membres de votre clinique vétérinaire"
+      />
 
       {/* Organization Invite Code */}
       <OrganizationInviteCode />
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="app-kpi-grid grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Total Membres</CardTitle>

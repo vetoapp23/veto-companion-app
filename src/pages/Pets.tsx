@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Search, Heart, User, Calendar, Stethoscope, Eye, Edit, Activity, Grid, List, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, Settings, FileText } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
 import { useToast } from "@/hooks/use-toast";
 import { NewPetModal } from "@/components/forms/NewPetModal";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
@@ -414,42 +415,40 @@ const PetsContent = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8 sm:px-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Gestion des Animaux</h1>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-        Suivez tous les animaux et leurs informations médicales
-        </p>
-      </div>
-      
-      <div className="flex gap-2 flex-wrap">
-        <Button 
-        size="sm" 
-        variant={viewMode === 'cards' ? 'default' : 'outline'} 
-        onClick={() => setViewMode('cards')}
-        className="gap-2 flex-1 sm:flex-none"
-        >
-        <Grid className="h-4 w-4" />
-        Cartes
-        </Button>
-        <Button 
-        size="sm" 
-        variant={viewMode === 'table' ? 'default' : 'outline'} 
-        onClick={() => setViewMode('table')}
-        className="gap-2 flex-1 sm:flex-none"
-        >
-        <List className="h-4 w-4" />
-        Tableau
-        </Button>
-        <Button className="gap-2 medical-glow flex-1 sm:flex-none" onClick={() => setShowPetModal(true)}>
-        <Plus className="h-4 w-4" />
-        Nouvel Animal
-        </Button>
-      </div>
-      </div>
+      <AppPageHeader
+        icon={Heart}
+        title="Animaux"
+        description="Suivez tous les animaux et leurs informations médicales"
+        actions={
+          <>
+            <Button
+              size="sm"
+              variant={viewMode === "cards" ? "default" : "outline"}
+              onClick={() => setViewMode("cards")}
+              className="gap-2 rounded-full"
+            >
+              <Grid className="h-4 w-4" />
+              Cartes
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === "table" ? "default" : "outline"}
+              onClick={() => setViewMode("table")}
+              className="gap-2 rounded-full"
+            >
+              <List className="h-4 w-4" />
+              Tableau
+            </Button>
+            <Button className="gap-2 rounded-full" onClick={() => setShowPetModal(true)}>
+              <Plus className="h-4 w-4" />
+              Nouvel Animal
+            </Button>
+          </>
+        }
+      />
 
       {/* Statistiques médicales globales */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="app-kpi-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardContent className="p-4">
         <div className="flex items-center gap-2">

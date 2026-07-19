@@ -118,11 +118,7 @@ const defaultScheduleSettings: ScheduleSettings = {
   workingDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 };
 
-const defaultVeterinarians: Veterinarian[] = [
-  { id: 1, name: 'Dr. Jean Dupont', isActive: true },
-  { id: 2, name: 'Dr. Marie Martin', isActive: true },
-  { id: 3, name: 'Pr. Ahmed El Alaoui', isActive: true }
-];
+const defaultVeterinarians: Veterinarian[] = [];
 
 const defaultSettings: ClinicSettings = {
   clinicName: '',
@@ -131,7 +127,7 @@ const defaultSettings: ClinicSettings = {
   email: '',
   website: '',
   footerText: '',
-  logo: '/placeholder.svg',
+  logo: '',
   currency: 'MAD',
   species: '',
   showClinicInfo: true,
@@ -139,7 +135,7 @@ const defaultSettings: ClinicSettings = {
   veterinarians: defaultVeterinarians,
   farmManagement: defaultFarmManagementSettings,
   displayPreferences: defaultDisplayPreferences,
-  defaultConsultationPrice: 150,
+  defaultConsultationPrice: 0,
   scheduleSettings: defaultScheduleSettings
 };
 
@@ -157,11 +153,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const mergedSettings = {
           ...defaultSettings,
           ...parsedSettings,
-          // Migration des vétérinaires : utiliser les nouveaux par défaut si les anciens sont détectés
-          veterinarians: parsedSettings.veterinarians && 
-            parsedSettings.veterinarians.some((vet: any) => vet.name === 'Dr. Martin' || vet.name === 'Dr. Dupont')
-            ? defaultVeterinarians // Utiliser les nouveaux vétérinaires par défaut
-            : parsedSettings.veterinarians || defaultVeterinarians,
+          // Prefer DB vets; strip known mock names from legacy local settings
+          veterinarians: (() => {
+            const list = parsedSettings.veterinarians || [];
+            const mockNames = ['Dr. Jean Dupont', 'Dr. Marie Martin', 'Pr. Ahmed El Alaoui', 'Dr. Martin', 'Dr. Dupont'];
+            const cleaned = list.filter((vet: any) => !mockNames.includes(vet.name));
+            return cleaned;
+          })(),
           farmManagement: {
             ...defaultFarmManagementSettings,
             ...parsedSettings.farmManagement

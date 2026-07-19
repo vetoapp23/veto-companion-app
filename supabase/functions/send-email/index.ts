@@ -25,7 +25,7 @@ function buildRaw(opts: SendEmailBody): string {
   const toList = Array.isArray(opts.to) ? opts.to.join(', ') : opts.to
   const ccList = opts.cc ? (Array.isArray(opts.cc) ? opts.cc.join(', ') : opts.cc) : ''
   const bccList = opts.bcc ? (Array.isArray(opts.bcc) ? opts.bcc.join(', ') : opts.bcc) : ''
-  const fromName = opts.from_name || 'VetoCrm.com'
+  const fromName = opts.from_name || 'VetoCrm'
   const from = `${fromName} <vetoapp23@gmail.com>`
 
   const headers = [

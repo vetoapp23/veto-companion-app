@@ -23,6 +23,7 @@ import {
   Globe,
   Loader2
 } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useUpdateUserProfile } from '@/hooks/useDatabase';
 
@@ -191,41 +192,37 @@ export default function Profile() {
 
   return (
     <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Mon Profil</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
-        Gérez vos informations personnelles et préférences
-        </p>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-2">
-        {isEditing ? (
-        <>
-          <Button variant="outline" onClick={() => setIsEditing(false)} className="w-full sm:w-auto">
-          Annuler
-          </Button>
-          <Button 
-          onClick={handleSaveProfile} 
-          className="gap-2 w-full sm:w-auto" 
-          disabled={updateProfileMutation.isPending}
-          >
-          {updateProfileMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+      <AppPageHeader
+        icon={User}
+        title="Mon profil"
+        description="Gérez vos informations personnelles et préférences"
+        actions={
+          isEditing ? (
+            <>
+              <Button variant="outline" onClick={() => setIsEditing(false)} className="rounded-full">
+                Annuler
+              </Button>
+              <Button
+                onClick={handleSaveProfile}
+                className="gap-2 rounded-full"
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {updateProfileMutation.isPending ? "Sauvegarde..." : "Sauvegarder"}
+              </Button>
+            </>
           ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {updateProfileMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
-          </Button>
-        </>
-        ) : (
-        <Button onClick={() => setIsEditing(true)} className="gap-2 w-full sm:w-auto">
-          <Edit className="h-4 w-4" />
-          Modifier
-        </Button>
-        )}
-      </div>
-      </div>
+            <Button onClick={() => setIsEditing(true)} className="gap-2 rounded-full">
+              <Edit className="h-4 w-4" />
+              Modifier
+            </Button>
+          )
+        }
+      />
 
       {/* Informations Personnelles */}
       <Card>

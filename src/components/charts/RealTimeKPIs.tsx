@@ -1,19 +1,20 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Users, 
-  Heart, 
-  Calendar, 
-  Stethoscope, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Users,
+  Heart,
+  Calendar,
+  Stethoscope,
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   Activity,
   Clock,
   AlertTriangle
 } from 'lucide-react';
-import { useClients, useAnimals, useConsultations, useAppointments, useVaccinations, useAntiparasitics, useStockItems, useFarms } from "@/hooks/useDatabase";
+import { useClients, useAnimals, useConsultations, useAppointments, useVaccinations, useAntiparasitics, useStockItems } from "@/hooks/useDatabase";
+import { useAccounting } from "@/hooks/useAccounting";
 import { useSettings } from '@/contexts/SettingsContext';
 
 export function RealTimeKPIs() {
@@ -24,63 +25,56 @@ export function RealTimeKPIs() {
   const { data: vaccinations = [] } = useVaccinations();
   const { data: antiparasitics = [] } = useAntiparasitics();
   const { data: stockItems = [] } = useStockItems();
-  const { data: farms = [] } = useFarms();
+  const { revenues, expenses } = useAccounting();
   const { settings } = useSettings();
 
-  // Calculer les KPI en temps réel
-  const today = new Date().toISOString().split('T')[0];
-  const thisMonth = new Date().getMonth();
-  const thisYear = new Date().getFullYear();
-  
-  // Consultations d'aujourd'hui
-  const consultationsToday = consultations.filter(c => {
-    const consultationDate = c.consultation_date.split('T')[0]; // Extract date part only
-    return consultationDate === today;
-  }).length;
-  
-  // Rendez-vous d'aujourd'hui
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const thisMonth = today.getMonth();
+  const thisYear = today.getFullYear();
+  const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const consultationsToday = consultations.filter(c => (c.consultation_date || '').split('T')[0] === todayStr).length;
+
   const appointmentsToday = appointments.filter(a => {
-    const appointmentDate = a.appointment_date.split('T')[0]; // Extract date part only
-    return appointmentDate === today && a.status !== 'cancelled';
+    const date = (a.appointment_date || '').split('T')[0];
+    return date === todayStr && a.status !== 'cancelled';
   }).length;
-  
-  // Rendez-vous à venir (7 prochains jours)
-  // TODO: Implement upcoming appointments logic
-  const upcomingAppointments = [];
-  const upcomingThisWeek = 0; // upcomingAppointments.filter(a => {
-  //   const appointmentDate = new Date(a.appointment_date);
-  //   const todayDate = new Date();
-  //   const weekFromNow = new Date(todayDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-  //   return appointmentDate <= weekFromNow;
-  // }).length;
-  
-  // Rendez-vous en retard
-  // TODO: Implement overdue appointments logic
-  const overdueAppointments = [];
-  
-  // Stock critique
-  const lowStockItems = stockItems.filter(item => item.current_quantity <= item.minimum_quantity).length;
-  const outOfStockItems = stockItems.filter(item => item.current_quantity === 0).length;
-  
-  // TODO: Implement proper accounting summary with database data
-  const accountingSummary = {
-    totalRevenue: 0,
-    totalExpenses: 0,
-    netIncome: 0,
-    revenueBreakdown: { consultations: 0, vaccinations: 0, antiparasitics: 0, prescriptions: 0, manualEntries: 0 },
-    expenseBreakdown: { stockPurchases: 0, salaries: 0, rent: 0, taxes: 0, other: 0 }
-  };
-  
-  // Nouveaux clients ce mois
+
+  const upcomingThisWeek = appointments.filter(a => {
+    if (!a.appointment_date || a.status === 'cancelled' || a.status === 'completed') return false;
+    const d = new Date(a.appointment_date);
+    return d >= today && d <= weekFromNow;
+  }).length;
+
+  const overdueAppointments = appointments.filter(a => {
+    if (!a.appointment_date || a.status === 'cancelled' || a.status === 'completed') return false;
+    return new Date(a.appointment_date) < new Date(todayStr);
+  });
+
+  const lowStockItems = stockItems.filter(item => (item.current_quantity ?? 0) <= (item.minimum_quantity ?? 0)).length;
+  const outOfStockItems = stockItems.filter(item => (item.current_quantity ?? 0) === 0).length;
+
+  const monthRevenues = revenues.filter(r => {
+    const d = new Date(r.revenue_date);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  });
+  const monthExpenses = expenses.filter(e => {
+    const d = new Date(e.expense_date);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  });
+  const totalRevenue = monthRevenues.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+  const totalExpenses = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const netIncome = totalRevenue - totalExpenses;
+
   const newClientsThisMonth = clients.filter(c => {
-    const clientDate = new Date(c.created_at);
-    return clientDate.getMonth() === thisMonth && clientDate.getFullYear() === thisYear;
+    const d = new Date(c.created_at);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
   }).length;
-  
-  // Nouveaux animaux ce mois
+
   const newPetsThisMonth = pets.filter(p => {
-    const petDate = new Date(p.created_at);
-    return petDate.getMonth() === thisMonth && petDate.getFullYear() === thisYear;
+    const d = new Date(p.created_at);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
   }).length;
 
   const kpis = [
@@ -140,12 +134,12 @@ export function RealTimeKPIs() {
     },
     {
       title: "Revenus du Mois",
-      value: `${accountingSummary.totalRevenue.toFixed(0)} ${settings.currency || '€'}`,
+      value: `${totalRevenue.toFixed(0)} ${settings.currency || 'MAD'}`,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50",
-      trend: accountingSummary.totalRevenue > 0 ? "up" : "neutral",
-      description: `Bénéfice: ${accountingSummary.netIncome.toFixed(0)} ${settings.currency || '€'}`
+      trend: totalRevenue > 0 ? "up" : "neutral",
+      description: `Bénéfice: ${netIncome.toFixed(0)} ${settings.currency || 'MAD'}`
     },
     {
       title: "Stock Critique",
@@ -174,26 +168,10 @@ export function RealTimeKPIs() {
             <div className="flex items-center justify-between">
               <div className="text-2xl font-bold">{kpi.value}</div>
               <div className="flex items-center gap-1">
-                {kpi.trend === "up" && (
-                  <>
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                      +{Math.floor(Math.random() * 20) + 5}%
-                    </Badge>
-                  </>
-                )}
-                {kpi.trend === "down" && (
-                  <>
-                    <TrendingDown className="h-4 w-4 text-red-600" />
-                    <Badge variant="secondary" className="text-xs bg-red-100 text-red-800">
-                      -{Math.floor(Math.random() * 15) + 3}%
-                    </Badge>
-                  </>
-                )}
+                {kpi.trend === "up" && <TrendingUp className="h-4 w-4 text-green-600" />}
+                {kpi.trend === "down" && <TrendingDown className="h-4 w-4 text-red-600" />}
                 {kpi.trend === "neutral" && (
-                  <Badge variant="outline" className="text-xs">
-                    0%
-                  </Badge>
+                  <Badge variant="outline" className="text-xs">—</Badge>
                 )}
               </div>
             </div>

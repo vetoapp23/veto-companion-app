@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, FileText, Heart, User, Calendar, Pill, Thermometer, Edit, Trash2, Grid, List, Eye } from "lucide-react";
+import { AppPageHeader } from "@/components/AppPageHeader";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import { ConsultationEditModalNew } from "@/components/modals/ConsultationEditModalNew";
 import { ConsultationPrintNew } from "@/components/ConsultationPrintNew";
@@ -173,42 +174,40 @@ const Consultations = () => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Consultations</h1>
-        <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-        Gérez et consultez tous les dossiers médicaux
-        </p>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <div className="flex border rounded-lg p-1">
-        <Button
-          variant={viewMode === 'cards' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setViewMode('cards')}
-          className="px-3"
-        >
-          <Grid className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={viewMode === 'table' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setViewMode('table')}
-          className="px-3"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-        </div>
-        <Button 
-        className="gap-2 medical-glow text-sm sm:text-base"
-        onClick={() => setShowNewConsultation(true)}
-        >
-        <Plus className="h-4 w-4" />
-        Nouvelle Consultation
-        </Button>
-      </div>
-      </div>
+      <AppPageHeader
+        icon={FileText}
+        title="Consultations"
+        description="Gérez et consultez tous les dossiers médicaux"
+        actions={
+          <>
+            <div className="flex border rounded-full p-1 bg-muted/50">
+              <Button
+                variant={viewMode === "cards" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("cards")}
+                className="rounded-full px-3"
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "table" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("table")}
+                className="rounded-full px-3"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button
+              className="gap-2 rounded-full text-sm sm:text-base"
+              onClick={() => setShowNewConsultation(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Nouvelle Consultation
+            </Button>
+          </>
+        }
+      />
 
       <Card>
       <CardHeader>

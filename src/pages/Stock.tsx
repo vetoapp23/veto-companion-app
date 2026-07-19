@@ -36,6 +36,7 @@ import {
   AlertCircle,
   MoreHorizontal
 } from 'lucide-react';
+import { AppPageHeader } from '@/components/AppPageHeader';
 import { format, isWithinInterval, startOfDay, endOfDay, addDays, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { NewStockItemModal } from '@/components/forms/NewStockItemModal';
@@ -66,13 +67,40 @@ interface StockItem {
   isActive: boolean;
 }
 
-// Catégories de stock avec leurs couleurs
-const categoryConfig = {
+// Catégories de stock avec leurs couleurs (clés EN + alias FR issus des seeds / DB)
+const categoryConfig: Record<string, { label: string; color: string; icon: string }> = {
   medication: { label: 'Médicaments', color: 'bg-blue-100 text-blue-800', icon: '💊' },
+  medicament: { label: 'Médicaments', color: 'bg-blue-100 text-blue-800', icon: '💊' },
   vaccine: { label: 'Vaccins', color: 'bg-green-100 text-green-800', icon: '💉' },
+  vaccin: { label: 'Vaccins', color: 'bg-green-100 text-green-800', icon: '💉' },
   consumable: { label: 'Consommables', color: 'bg-orange-100 text-orange-800', icon: '🩹' },
+  consommable: { label: 'Consommables', color: 'bg-orange-100 text-orange-800', icon: '🩹' },
   equipment: { label: 'Équipement', color: 'bg-purple-100 text-purple-800', icon: '🔧' },
-  supplement: { label: 'Suppléments', color: 'bg-yellow-100 text-yellow-800', icon: '🧪' }
+  equipement: { label: 'Équipement', color: 'bg-purple-100 text-purple-800', icon: '🔧' },
+  supplement: { label: 'Suppléments', color: 'bg-yellow-100 text-yellow-800', icon: '🧪' },
+  supplementaire: { label: 'Suppléments', color: 'bg-yellow-100 text-yellow-800', icon: '🧪' },
+  antiparasitaire: { label: 'Antiparasitaires', color: 'bg-teal-100 text-teal-800', icon: '🐛' },
+};
+
+const defaultCategoryConfig = { label: 'Autre', color: 'bg-gray-100 text-gray-800', icon: '📦' };
+
+/** Clés canoniques affichées dans les filtres / formulaires */
+const canonicalCategories = ['medication', 'vaccine', 'consumable', 'equipment', 'supplement', 'antiparasitaire'] as const;
+
+const getCategoryConfig = (category?: string | null) =>
+  (category && categoryConfig[category]) || defaultCategoryConfig;
+
+/** Normalise les alias FR/EN vers une clé canonique pour le filtre */
+const normalizeCategory = (category?: string | null): string => {
+  if (!category) return '';
+  const map: Record<string, string> = {
+    medicament: 'medication',
+    vaccin: 'vaccine',
+    consommable: 'consumable',
+    equipement: 'equipment',
+    supplementaire: 'supplement',
+  };
+  return map[category] || category;
 };
 
 // Unités disponibles
@@ -94,7 +122,8 @@ export default function Stock() {
     loading,
     addStockItem,
     updateStockItem,
-    deleteStockItem
+    deleteStockItem,
+    compatibleStockMovements,
   } = useStock();
   const { toast } = useToast();
   
@@ -130,8 +159,8 @@ export default function Stock() {
     }));
   }, [rawStockItems, refreshKey]);
 
-  // Mock stock movements for old UI (since we don't have them populated)
-  const stockMovements: any[] = [];
+  // Mouvements de stock depuis Supabase
+  const stockMovements = compatibleStockMovements || [];
   
   // États pour les modales
   const [showNewItemModal, setShowNewItemModal] = useState(false);
@@ -186,7 +215,9 @@ export default function Stock() {
                            item.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.batchNumber?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCategory = filterCategory === "all" || item.category === filterCategory;
+      const matchesCategory = filterCategory === "all" ||
+        normalizeCategory(item.category) === filterCategory ||
+        item.category === filterCategory;
       
       let matchesStatus = true;
       if (filterStatus === "low_stock") {
@@ -315,42 +346,73 @@ export default function Stock() {
     setShowMovementModal(true);
   };
 
-  // Fonction pour exporter en Excel
-  const exportToExcel = () => {
-    const csvContent = [
-      // En-têtes
-      ['Nom', 'Catégorie', 'Sous-catégorie', 'Fabricant', 'Numéro de lot', 'Dosage', 'Unité', 'Stock actuel', 'Stock minimum', 'Prix d\'achat', 'Prix de vente', 'Date d\'expiration', 'Fournisseur', 'Emplacement', 'Notes', 'Code-barres', 'SKU'].join(','),
-      // Données
-      ...stockItems.map(item => [
-        `"${item.name}"`,
-        `"${item.category}"`,
-        `"${item.subcategory || ''}"`,
-        `"${item.manufacturer || ''}"`,
-        `"${item.batchNumber || ''}"`,
-        `"${item.dosage || ''}"`,
-        `"${item.unit}"`,
-        item.currentStock,
-        item.minimumStock,
-        item.purchasePrice,
-        item.sellingPrice,
-        `"${item.expirationDate || ''}"`,
-        `"${item.supplier || ''}"`,
-        `"${item.location || ''}"`,
-        `"${item.notes || ''}"`,
-        `"${item.barcode || ''}"`,
-        `"${item.sku || ''}"`
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Export / import CSV (UTF-8 + BOM pour Excel Windows)
+  const downloadCsvFile = (filename: string, content: string) => {
+    const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `stock_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const csvEscape = (value: string | number) => {
+    const str = String(value ?? '');
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
+  const STOCK_CSV_HEADERS = [
+    'Nom',
+    'Catégorie',
+    'Sous-catégorie',
+    'Fabricant',
+    'Numéro de lot',
+    'Dosage',
+    'Unité',
+    'Stock actuel',
+    'Stock minimum',
+    "Prix d'achat",
+    'Prix de vente',
+    "Date d'expiration",
+    'Fournisseur',
+    'Emplacement',
+    'Notes',
+    'Code-barres',
+    'SKU',
+  ];
+
+  // Fonction pour exporter en Excel
+  const exportToExcel = () => {
+    const csvContent = [
+      STOCK_CSV_HEADERS.map(csvEscape).join(','),
+      ...stockItems.map(item =>
+        [
+          item.name,
+          item.category,
+          item.subcategory || '',
+          item.manufacturer || '',
+          item.batchNumber || '',
+          item.dosage || '',
+          item.unit,
+          item.currentStock,
+          item.minimumStock,
+          item.purchasePrice,
+          item.sellingPrice,
+          item.expirationDate || '',
+          item.supplier || '',
+          item.location || '',
+          item.notes || '',
+          item.barcode || '',
+          item.sku || '',
+        ].map(csvEscape).join(',')
+      ),
+    ].join('\n');
+
+    downloadCsvFile(`stock_${new Date().toISOString().split('T')[0]}.csv`, csvContent);
     
     toast({
       title: "Export réussi",
@@ -366,12 +428,12 @@ export default function Stock() {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
-        const csv = e.target?.result as string;
-        const lines = csv.split('\n');
-        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        const csv = (e.target?.result as string).replace(/^\uFEFF/, '');
+        const lines = csv.split(/\r?\n/);
+        const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
         
         // Vérifier les en-têtes requis
-        const requiredHeaders = ['Nom', 'Catégorie', 'Unité', 'Stock actuel', 'Stock minimum', 'Prix d\'achat', 'Prix de vente'];
+        const requiredHeaders = ['Nom', 'Catégorie', 'Unité', 'Stock actuel', 'Stock minimum', "Prix d'achat", 'Prix de vente'];
         const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
         
         if (missingHeaders.length > 0) {
@@ -458,27 +520,29 @@ export default function Stock() {
   // Fonction pour télécharger le gabarit
   const downloadTemplate = () => {
     const templateContent = [
-      // En-têtes
-      ['Nom', 'Catégorie', 'Sous-catégorie', 'Fabricant', 'Numéro de lot', 'Dosage', 'Unité', 'Stock actuel', 'Stock minimum', 'Prix d\'achat', 'Prix de vente', 'Date d\'expiration', 'Fournisseur', 'Emplacement', 'Notes', 'Code-barres', 'SKU'].join(','),
-      // Exemples
-      ['Amoxicilline 500mg', 'medication', 'Antibiotique', 'Boehringer Ingelheim', 'AMX2024001', '500mg', 'box', '15', '5', '20.00', '25.50', '2025-12-31', 'Pharmacie Vétérinaire Centrale', 'Armoire A - Étagère 1', 'Stockage à température ambiante', '1234567890123', 'MED-AMX-500'].join(','),
-      ['Vaccin DHPP', 'vaccine', 'Vaccin combiné', 'Merial', 'VAC2024001', '1ml', 'vial', '25', '10', '45.00', '55.00', '2025-06-30', 'VetoPharma', 'Réfrigérateur - Étagère 1', 'Conservation entre 2-8°C', '9876543210987', 'VAC-DHPP-001'].join(','),
-      ['Seringues 5ml', 'consumable', 'Matériel médical', 'BD', 'SYR2024001', '5ml', 'unit', '100', '20', '0.50', '0.75', '', 'MedSupply', 'Armoire B - Étagère 2', 'Usage unique', '5556667778889', 'CON-SYR-5ML'].join(',')
+      STOCK_CSV_HEADERS.map(csvEscape).join(','),
+      [
+        'Amoxicilline 500mg', 'medication', 'Antibiotique', 'Boehringer Ingelheim', 'AMX2024001', '500mg', 'box',
+        '15', '5', '20.00', '25.50', '2025-12-31', 'Pharmacie Vétérinaire Centrale', 'Armoire A - Étagère 1',
+        'Stockage à température ambiante', '1234567890123', 'MED-AMX-500',
+      ].map(csvEscape).join(','),
+      [
+        'Vaccin DHPP', 'vaccine', 'Vaccin combiné', 'Merial', 'VAC2024001', '1ml', 'vial',
+        '25', '10', '45.00', '55.00', '2025-06-30', 'VetoPharma', 'Réfrigérateur - Étagère 1',
+        'Conservation entre 2-8°C', '9876543210987', 'VAC-DHPP-001',
+      ].map(csvEscape).join(','),
+      [
+        'Seringues 5ml', 'consumable', 'Matériel médical', 'BD', 'SYR2024001', '5ml', 'unit',
+        '100', '20', '0.50', '0.75', '', 'MedSupply', 'Armoire B - Étagère 2',
+        'Usage unique', '5556667778889', 'CON-SYR-5ML',
+      ].map(csvEscape).join(','),
     ].join('\n');
 
-    const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'gabarit_import_stock.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsvFile('gabarit_import_stock.csv', templateContent);
     
     toast({
       title: "Gabarit téléchargé",
-      description: "Le fichier gabarit a été téléchargé avec succès.",
+      description: "Le fichier gabarit a été téléchargé avec succès (UTF-8 pour Excel).",
     });
   };
 
@@ -497,70 +561,59 @@ export default function Stock() {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
-      {/* En-tête */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
-            <Package className="h-6 sm:h-8 w-6 sm:w-8 text-primary" />
-            Gestion de Stock
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Gérez votre inventaire de médicaments, vaccins et consommables
-          </p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Button 
-            variant="outline" 
-            onClick={exportToExcel}
-            className="gap-2 text-xs sm:text-sm"
-            size="sm"
-          >
-            <Download className="h-3 sm:h-4 w-3 sm:w-4" />
-            Exporter CSV
-          </Button>
-          <div className="relative">
-            <input
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={importFromExcel}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              id="import-file"
-            />
-            <Button 
-              variant="outline" 
-              className="gap-2 text-xs sm:text-sm"
+      <AppPageHeader
+        icon={Package}
+        title="Stock"
+        description="Gérez votre inventaire de médicaments, vaccins et consommables"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={exportToExcel}
+              className="gap-2 text-xs sm:text-sm rounded-full"
               size="sm"
-              asChild
             >
-              <label htmlFor="import-file" className="cursor-pointer">
-                <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
-                Importer CSV
-              </label>
+              <Download className="h-3 sm:h-4 w-3 sm:w-4" />
+              Exporter CSV
             </Button>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={downloadTemplate}
-            className="gap-2 text-xs sm:text-sm"
-            size="sm"
-          >
-            <FileSpreadsheet className="h-3 sm:h-4 w-3 sm:w-4" />
-            Gabarit
-          </Button>
-          <Button 
-            className="gap-2 medical-glow text-xs sm:text-sm"
-            size="sm"
-            onClick={() => setShowNewItemModal(true)}
-          >
-            <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
-            Nouvel Élément
-          </Button>
-        </div>
-      </div>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={importFromExcel}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                id="import-file"
+              />
+              <Button variant="outline" className="gap-2 text-xs sm:text-sm rounded-full" size="sm" asChild>
+                <label htmlFor="import-file" className="cursor-pointer">
+                  <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
+                  Importer CSV
+                </label>
+              </Button>
+            </div>
+            <Button
+              variant="outline"
+              onClick={downloadTemplate}
+              className="gap-2 text-xs sm:text-sm rounded-full"
+              size="sm"
+            >
+              <FileSpreadsheet className="h-3 sm:h-4 w-3 sm:w-4" />
+              Gabarit
+            </Button>
+            <Button
+              className="gap-2 text-xs sm:text-sm rounded-full"
+              size="sm"
+              onClick={() => setShowNewItemModal(true)}
+            >
+              <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
+              Nouvel Élément
+            </Button>
+          </>
+        }
+      />
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="app-kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
@@ -647,11 +700,14 @@ export default function Stock() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les catégories</SelectItem>
-                {Object.entries(categoryConfig).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.icon} {config.label}
-                  </SelectItem>
-                ))}
+                {canonicalCategories.map((key) => {
+                  const config = categoryConfig[key];
+                  return (
+                    <SelectItem key={key} value={key}>
+                      {config.icon} {config.label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             
@@ -723,6 +779,7 @@ export default function Stock() {
                   const isExpiringSoon = item.expirationDate && 
                     new Date(item.expirationDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
                     new Date(item.expirationDate) > new Date();
+                  const cat = getCategoryConfig(item.category);
                   
                   return (
                     <TableRow key={item.id} className={!item.isActive ? "opacity-50" : ""}>
@@ -743,8 +800,8 @@ export default function Stock() {
                       </TableCell>
                       
                       <TableCell>
-                        <Badge className={`${categoryConfig[item.category].color} text-xs sm:text-sm`}>
-                          {categoryConfig[item.category].icon} {categoryConfig[item.category].label}
+                        <Badge className={`${cat.color} text-xs sm:text-sm`}>
+                          {cat.icon} {cat.label}
                         </Badge>
                         {item.subcategory && (
                           <div className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -983,7 +1040,8 @@ export default function Stock() {
                     transfer: { label: 'Transfert', color: 'text-purple-600', icon: '↔️' }
                   };
                   
-                  const config = movementTypeConfig[movement.type as keyof typeof movementTypeConfig];
+                  const config = movementTypeConfig[movement.type as keyof typeof movementTypeConfig]
+                    ?? { label: movement.type || 'Mouvement', color: 'text-gray-600', icon: '📦' };
                   
                   return (
                     <div key={movement.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/50 gap-2 sm:gap-4">

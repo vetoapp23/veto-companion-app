@@ -64,7 +64,7 @@ export function MobileBottomNav() {
   return (
     <>
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-card/95 backdrop-blur border-t shadow-lg"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 app-bottom-nav"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="grid grid-cols-5 h-16">
@@ -75,14 +75,14 @@ export function MobileBottomNav() {
                 key={tab.path}
                 to={tab.path}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 text-xs transition-colors",
+                  "flex flex-col items-center justify-center gap-1 text-xs transition-colors font-display",
                   active
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <tab.icon className={cn("h-5 w-5", active && "scale-110")} />
-                <span className="text-[10px] font-medium">{tab.label}</span>
+                <span className="text-[10px] font-semibold tracking-tight">{tab.label}</span>
               </Link>
             );
           })}
@@ -90,17 +90,17 @@ export function MobileBottomNav() {
             <SheetTrigger asChild>
               <button
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 text-xs transition-colors",
+                  "flex flex-col items-center justify-center gap-1 text-xs transition-colors font-display",
                   "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <MoreHorizontal className="h-5 w-5" />
-                <span className="text-[10px] font-medium">Plus</span>
+                <span className="text-[10px] font-semibold tracking-tight">Plus</span>
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto">
+            <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto border-t border-border">
               <SheetHeader>
-                <SheetTitle>Toutes les sections</SheetTitle>
+                <SheetTitle className="font-display">Toutes les sections</SheetTitle>
               </SheetHeader>
               <div className="grid grid-cols-3 gap-3 mt-4 pb-6">
                 {visibleMore.map((item) => {
@@ -111,14 +111,14 @@ export function MobileBottomNav() {
                       to={item.path}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                        "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all",
                         active
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-muted/40 hover:bg-muted border-transparent"
                       )}
                     >
                       <item.icon className="h-6 w-6" />
-                      <span className="text-xs font-medium text-center leading-tight">
+                      <span className="text-xs font-semibold text-center leading-tight font-display">
                         {item.label}
                       </span>
                     </Link>

@@ -43,6 +43,7 @@ import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AppPageHeader } from '@/components/AppPageHeader';
 import NewVaccinationModal from '@/components/forms/NewVaccinationModalDynamic';
 import VaccinationProtocolModal from '@/components/forms/VaccinationProtocolModalDynamic';
 import CertificateVaccinationPrintDynamic from '@/components/CertificateVaccinationPrintDynamic';
@@ -203,37 +204,32 @@ export default function Vaccinations() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3 dark:text-white">
-        <Syringe className="h-6 sm:h-8 w-6 sm:w-8 text-blue-600" />
-        Gestion Vaccinale
-        </h1>
-        <p className="text-gray-600 mt-1 text-sm sm:text-base">
-        Suivi et planification des vaccinations
-        </p>
-      </div>
-      <div className="flex items-center gap-2 w-full sm:w-auto">
-        <Button onClick={exportVaccinationData} variant="outline" className="gap-2 flex-1 sm:flex-none">
-        <Download className="h-4 w-4" />
-        Exporter
-        </Button>
-        <NewVaccinationModal />
-      </div>
-      </div>
+      <AppPageHeader
+        icon={Syringe}
+        title="Vaccinations"
+        description="Suivi et planification des vaccinations"
+        actions={
+          <>
+            <Button onClick={exportVaccinationData} variant="outline" className="gap-2 rounded-full">
+              <Download className="h-4 w-4" />
+              Exporter
+            </Button>
+            <NewVaccinationModal />
+          </>
+        }
+      />
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="app-kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <Card>
         <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-4">
-          <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
-          <Syringe className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600" />
+          <div className="p-2 sm:p-3 bg-primary/10 rounded-full">
+          <Syringe className="h-5 sm:h-6 w-5 sm:w-6 text-primary" />
           </div>
           <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+          <p className="text-sm font-medium text-muted-foreground">Total</p>
+          <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
           </div>
         </div>
         </CardContent>
