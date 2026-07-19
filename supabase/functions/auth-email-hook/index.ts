@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
     if (!HOOK_SECRET) throw new Error('SEND_EMAIL_HOOK_SECRET missing')
 
     const payload = await req.text()
-    const headers = Object.fromEntries(req.headers)
+    const headers = Object.fromEntries(req.headers as unknown as Iterable<[string, string]>)
 
     // Vérification de la signature du webhook Supabase
     const secret = HOOK_SECRET.replace(/^v1,whsec_/, '')

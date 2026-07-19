@@ -30,7 +30,10 @@ export default function SuperAdminOrganizations() {
     return orgs.filter((o) => {
       const s = search.toLowerCase();
       const matchesSearch =
-        !s || o.name.toLowerCase().includes(s) || o.code?.toLowerCase().includes(s);
+        !s ||
+        o.name.toLowerCase().includes(s) ||
+        o.clinic_name?.toLowerCase().includes(s) ||
+        o.invitation_code?.toLowerCase().includes(s);
       const plan = o.subscription?.plan_code ?? "free";
       const stat = o.subscription?.status ?? "active";
       return (
@@ -149,7 +152,9 @@ export default function SuperAdminOrganizations() {
                   <tr key={o.id} className="border-b hover:bg-muted/20">
                     <td className="p-3">
                       <div className="font-medium">{o.name}</div>
-                      <div className="text-xs text-muted-foreground">{o.code}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {o.invitation_code || o.clinic_name || "—"}
+                      </div>
                     </td>
                     <td className="p-3">{planBadge(o.subscription?.plan_code ?? "free")}</td>
                     <td className="p-3">{statusBadge(o.subscription?.status ?? "active")}</td>

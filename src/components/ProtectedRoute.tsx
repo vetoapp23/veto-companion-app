@@ -2,23 +2,23 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AccessProvider, AccessGate, ReadOnlyBanner } from "@/contexts/AccessContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { useSeo } from "@/components/SeoHead";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
+function PrivateSeo() {
+  useSeo({
+    title: "VetoCrm",
+    description: "Espace clinique privé",
+    noIndex: true,
+  });
+  return null;
+}
+
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
-
-  if (isAuthenticated && user) {
-    return (
-      <AccessProvider>
-        <ImpersonationBanner />
-        <ReadOnlyBanner />
-        <AccessGate>{children}</AccessGate>
-      </AccessProvider>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -37,6 +37,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   return (
     <AccessProvider>
+      <PrivateSeo />
+      <ImpersonationBanner />
+      <ReadOnlyBanner />
       <AccessGate>{children}</AccessGate>
     </AccessProvider>
   );

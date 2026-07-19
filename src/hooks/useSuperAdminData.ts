@@ -6,9 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 export interface OrgRow {
   id: string;
   name: string;
-  code: string;
+  clinic_name?: string | null;
+  invitation_code?: string | null;
   phone: string | null;
-  address: string | null;
+  clinic_address?: string | null;
   created_at: string;
   subscription?: {
     id: string;
@@ -163,7 +164,7 @@ export function useAllUsers() {
     queryFn: async () => {
       const [profilesRes, orgsRes] = await Promise.all([
         supabase.from("user_profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("organizations").select("id,name,code"),
+        supabase.from("organizations").select("id,name,clinic_name,invitation_code"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
       const orgsMap = new Map<string, any>();

@@ -1,14 +1,25 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Allow: /pricing
+Allow: /login
+Allow: /register
+Disallow: /dashboard
+Disallow: /clients
+Disallow: /pets
+Disallow: /appointments
+Disallow: /consultations
+Disallow: /history
+Disallow: /farm
+Disallow: /farms
+Disallow: /vaccinations
+Disallow: /antiparasites
+Disallow: /stock
+Disallow: /accounting
+Disallow: /settings
+Disallow: /profile
+Disallow: /admin/
+Disallow: /super-admin
+Disallow: /auth-settings
+Disallow: /reset-password
+
+Sitemap: https://cuddle-care-cloud.lovable.app/sitemap.xml

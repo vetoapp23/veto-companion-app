@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useGoogleLogin, useResetPassword, useLogin } from "@/hooks/useAuth";
 import { DemoLoginPanel } from "@/components/DemoLoginPanel";
 import heroImage from "@/assets/vet-hero.jpg";
+import { SeoHead } from "@/components/SeoHead";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -95,11 +96,21 @@ export function LoginForm() {
 
   return (
     <div className="marketing-shell mk-login">
+      <SeoHead
+        title="Connexion — VetoCrm"
+        description="Connectez-vous à votre espace clinique VetoCrm pour gérer rendez-vous, dossiers et équipe."
+        path="/login"
+      />
       <aside className="mk-login-visual">
-        <div className="mk-hero-media" aria-hidden>
-          <img src={heroImage} alt="" />
-          <div className="mk-hero-veil" />
-          <div className="mk-hero-mesh" />
+        <div className="mk-hero-media">
+          <img
+            src={heroImage}
+            alt="Connexion à l'espace clinique VetoCrm"
+            width={1200}
+            height={1600}
+          />
+          <div className="mk-hero-veil" aria-hidden />
+          <div className="mk-hero-mesh" aria-hidden />
         </div>
         <div className="mk-login-visual-content">
           <Link to="/" className="mk-brand" style={{ display: "inline-block", marginBottom: "1.5rem" }}>

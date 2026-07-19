@@ -120,7 +120,8 @@ export default function SuperAdminOrgDetail() {
           <div>
             <h2 className="text-xl font-bold font-display">{org.name}</h2>
             <p className="text-xs text-muted-foreground">
-              {org.code} · {org.phone || "—"} · {org.address || "—"}
+              {org.invitation_code || org.clinic_name || "—"} · {org.phone || "—"} ·{" "}
+              {org.clinic_address || "—"}
             </p>
           </div>
         </div>
@@ -136,7 +137,7 @@ export default function SuperAdminOrgDetail() {
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              a.download = `vetocrm-org-export-${org.code || org.id}.json`;
+              a.download = `vetocrm-org-export-${org.invitation_code || org.id}.json`;
               a.click();
               URL.revokeObjectURL(url);
             }}

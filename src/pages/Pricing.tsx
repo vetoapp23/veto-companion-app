@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, Sparkles, ArrowRight, HardDrive, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SeoHead, siteUrl } from "@/components/SeoHead";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -82,6 +83,19 @@ export default function Pricing() {
 
   return (
     <div className="marketing-shell min-h-screen">
+      <SeoHead
+        title="Tarifs VetoCrm — Formules CRM vétérinaire"
+        description="Comparez les packs VetoCrm : gratuit, Pro, Duo, Clinique. Stockage, utilisateurs et modules pour votre cabinet ou clinique vétérinaire."
+        path="/pricing"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Accueil", item: siteUrl("/") },
+            { "@type": "ListItem", position: 2, name: "Tarifs", item: siteUrl("/pricing") },
+          ],
+        }}
+      />
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 30, background: "var(--mk-mist)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--mk-line)" }}>
         <Link to="/" className="mk-brand">
           Veto<span>Crm</span>

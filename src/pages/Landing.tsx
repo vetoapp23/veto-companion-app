@@ -1,22 +1,72 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Users, Calendar, FileText, BarChart3, Shield, PawPrint } from "lucide-react";
 import heroImage from "@/assets/vet-hero.jpg";
+import { SeoHead, siteUrl } from "@/components/SeoHead";
+
+const faq = [
+  {
+    q: "Qu’est-ce que VetoCrm ?",
+    a: "VetoCrm est un CRM / logiciel de gestion pour cliniques et cabinets vétérinaires : clients, animaux, rendez-vous, consultations, vaccins, antiparasites, stock et fermes.",
+  },
+  {
+    q: "VetoCrm convient-il à un cabinet solo ?",
+    a: "Oui. Une formule découverte gratuite permet de démarrer seul, puis d’évoluer vers des packs multi-utilisateurs quand l’équipe grandit.",
+  },
+  {
+    q: "Les données de chaque clinique sont-elles isolées ?",
+    a: "Oui. L’architecture multi-organisation isole les données par clinique, avec rôles admin et assistant.",
+  },
+  {
+    q: "Puis-je gérer vaccins et antiparasites ?",
+    a: "Oui. Protocoles, échéances, certificats et historique sont intégrés au dossier animal.",
+  },
+];
 
 export default function Landing() {
   return (
     <div className="marketing-shell">
+      <SeoHead
+        title="VetoCrm — CRM vétérinaire pour cliniques et cabinets"
+        description="Logiciel CRM vétérinaire : clients, animaux, RDV, consultations, vaccins, stock et fermes. Essai gratuit pour cabinets et cliniques."
+        path="/"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faq.map((item) => ({
+              "@type": "Question",
+              name: item.q,
+              acceptedAnswer: { "@type": "Answer", text: item.a },
+            })),
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Accueil", item: siteUrl("/") },
+            ],
+          },
+        ]}
+      />
+
       <section className="mk-hero">
-        <div className="mk-hero-media" aria-hidden>
-          <img src={heroImage} alt="" />
-          <div className="mk-hero-veil" />
-          <div className="mk-hero-mesh" />
+        <div className="mk-hero-media">
+          <img
+            src={heroImage}
+            alt="Clinique vétérinaire moderne — logiciel VetoCrm pour la gestion du cabinet"
+            width={1920}
+            height={1080}
+            fetchPriority="high"
+          />
+          <div className="mk-hero-veil" aria-hidden />
+          <div className="mk-hero-mesh" aria-hidden />
         </div>
 
         <header className="mk-nav">
-          <Link to="/" className="mk-brand">
+          <Link to="/" className="mk-brand" aria-label="VetoCrm — Accueil">
             Veto<span>Crm</span>
           </Link>
-          <nav className="mk-nav-links">
+          <nav className="mk-nav-links" aria-label="Navigation principale">
             <Link to="/pricing" className="mk-link hidden sm:inline-flex">
               Tarifs
             </Link>
@@ -53,7 +103,7 @@ export default function Landing() {
           <div className="mk-hero-ctas">
             <Link to="/register" className="mk-btn mk-btn-primary">
               Essayer gratuitement
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link to="/login" className="mk-btn mk-btn-ghost">
               Accéder à mon espace
@@ -64,9 +114,11 @@ export default function Landing() {
         <div className="mk-scroll-hint" aria-hidden />
       </section>
 
-      <section className="mk-section">
+      <section className="mk-section" aria-labelledby="parcours-title">
         <p className="mk-section-label">Parcours</p>
-        <h2 className="mk-section-title">En trois gestes, votre clinique est prête</h2>
+        <h2 id="parcours-title" className="mk-section-title">
+          En trois gestes, votre clinique est prête
+        </h2>
         <p className="mk-section-copy">
           Un flux simple : créer l’espace, inviter l’équipe, soigner. Sans friction, sans tableurs.
         </p>
@@ -101,71 +153,104 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="mk-section" style={{ paddingTop: 0 }}>
+      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="capacites-title">
         <p className="mk-section-label">Capacités</p>
-        <h2 className="mk-section-title">Tout le métier, une seule interface</h2>
+        <h2 id="capacites-title" className="mk-section-title">
+          Logiciel vétérinaire complet, une seule interface
+        </h2>
         <p className="mk-section-copy">
           Conçu pour la réalité du terrain : compagnons, élevages, et le rythme d’une vraie clinique.
         </p>
 
         <div className="mk-capabilities">
-          <div className="mk-cap">
+          <article className="mk-cap">
             <h3>
-              <Users className="h-5 w-5" /> Clients & animaux
+              <Users className="h-5 w-5" aria-hidden /> Clients & animaux
             </h3>
             <p>Fiches complètes, historique médical, photos et suivi familial.</p>
-          </div>
-          <div className="mk-cap">
+          </article>
+          <article className="mk-cap">
             <h3>
-              <Calendar className="h-5 w-5" /> Agenda intelligent
+              <Calendar className="h-5 w-5" aria-hidden /> Agenda intelligent
             </h3>
             <p>Rendez-vous, rappels et vue claire de la journée de la clinique.</p>
-          </div>
-          <div className="mk-cap">
+          </article>
+          <article className="mk-cap">
             <h3>
-              <FileText className="h-5 w-5" /> Consultations & ordonnances
+              <FileText className="h-5 w-5" aria-hidden /> Consultations & ordonnances
             </h3>
             <p>Comptes-rendus structurés, prescriptions et documents imprimables.</p>
-          </div>
-          <div className="mk-cap">
+          </article>
+          <article className="mk-cap">
             <h3>
-              <PawPrint className="h-5 w-5" /> Vaccins & antiparasites
+              <PawPrint className="h-5 w-5" aria-hidden /> Vaccins & antiparasites
             </h3>
             <p>Protocoles, échéances et certificats sans perdre le fil.</p>
-          </div>
-          <div className="mk-cap">
+          </article>
+          <article className="mk-cap">
             <h3>
-              <BarChart3 className="h-5 w-5" /> Stock & comptabilité
+              <BarChart3 className="h-5 w-5" aria-hidden /> Stock & comptabilité
             </h3>
             <p>Inventaire, alertes et suivi financier selon votre pack.</p>
-          </div>
-          <div className="mk-cap">
+          </article>
+          <article className="mk-cap">
             <h3>
-              <Shield className="h-5 w-5" /> Sécurité multi-clinique
+              <Shield className="h-5 w-5" aria-hidden /> Sécurité multi-clinique
             </h3>
             <p>Données isolées par organisation, rôles et accès maîtrisés.</p>
-          </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="faq-title">
+        <p className="mk-section-label">FAQ</p>
+        <h2 id="faq-title" className="mk-section-title">
+          Questions fréquentes sur le CRM vétérinaire
+        </h2>
+        <div className="mk-faq" style={{ maxWidth: "42rem", margin: "1.5rem auto 0", textAlign: "left" }}>
+          {faq.map((item) => (
+            <details
+              key={item.q}
+              style={{
+                borderBottom: "1px solid var(--mk-line)",
+                padding: "1rem 0",
+              }}
+            >
+              <summary
+                className="mk-display"
+                style={{ cursor: "pointer", fontWeight: 600, fontSize: "1.05rem" }}
+              >
+                {item.q}
+              </summary>
+              <p style={{ marginTop: "0.65rem", color: "var(--mk-muted)", lineHeight: 1.55 }}>{item.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
       <div className="mk-cta-band">
-        <h2>Prêt à moderniser votre pratique ?</h2>
+        <h2>Prêt à moderniser votre pratique vétérinaire ?</h2>
         <p>
           Démarrez gratuitement, évoluez quand vous voulez. Annulation simple, sans engagement opaque.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", justifyContent: "center" }}>
           <Link to="/register" className="mk-btn mk-btn-primary">
             Créer mon compte
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
           <Link to="/pricing" className="mk-btn mk-btn-ghost">
-            Voir les tarifs
+            Voir les tarifs CRM
           </Link>
         </div>
       </div>
 
       <footer className="mk-footer">
-        © {new Date().getFullYear()} VetoCrm — CRM vétérinaire
+        <nav aria-label="Pied de page" style={{ display: "flex", flexWrap: "wrap", gap: "1rem", justifyContent: "center", marginBottom: "0.75rem" }}>
+          <Link to="/pricing" className="mk-link">Tarifs</Link>
+          <Link to="/register" className="mk-link">Inscription</Link>
+          <Link to="/login" className="mk-link">Connexion</Link>
+        </nav>
+        <p>© {new Date().getFullYear()} VetoCrm — CRM et logiciel de gestion pour cliniques vétérinaires</p>
       </footer>
     </div>
   );

@@ -1,5 +1,5 @@
 // Bootstraps a super_admin account. Requires header x-bootstrap-secret matching env BOOTSTRAP_SECRET.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -65,10 +65,16 @@ Deno.serve(async (req) => {
 
     let orgId = profile?.organization_id;
     if (!orgId) {
-      const code = "SADM" + Math.random().toString(36).slice(2, 6).toUpperCase();
+      const invitationCode = "SADM" + Math.random().toString(36).slice(2, 6).toUpperCase();
       const { data: org, error: oErr } = await admin
         .from("organizations")
-        .insert({ name: "Super Admin HQ", code, address: "—", phone: "—" })
+        .insert({
+          name: "Super Admin HQ",
+          clinic_name: "Super Admin HQ",
+          clinic_address: "-",
+          phone: "-",
+          invitation_code: invitationCode,
+        })
         .select("id")
         .single();
       if (oErr) throw oErr;

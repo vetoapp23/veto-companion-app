@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { SeoHead } from "@/components/SeoHead";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -185,6 +186,11 @@ const Register = () => {
   if (step === "plan" && !isJoiningOrganization) {
     return (
       <div className="marketing-shell min-h-screen px-4 py-10">
+        <SeoHead
+          title="Inscription — Choisir un pack VetoCrm"
+          description="Créez votre clinique sur VetoCrm. Choisissez un pack gratuit ou payant et démarrez votre CRM vétérinaire en quelques minutes."
+          path="/register"
+        />
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <Link to="/" className="mk-brand inline-block mb-4 text-2xl">
@@ -301,6 +307,11 @@ const Register = () => {
   // ------- STEP 2 : compte -------
   return (
     <div className="marketing-shell min-h-screen flex items-center justify-center px-4 py-8">
+      <SeoHead
+        title="Créer un compte — VetoCrm"
+        description="Inscrivez votre clinique ou rejoignez une équipe sur VetoCrm, le CRM des vétérinaires."
+        path="/register"
+      />
       <Card className="w-full max-w-2xl rounded-2xl border shadow-[var(--shadow-card)]">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">

@@ -1,6 +1,6 @@
 // Seed demo users for each subscription plan (idempotent).
 // Public endpoint used only during the testing phase.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -200,7 +200,14 @@ Deno.serve(async (req) => {
         const code = "DEMO" + d.plan.toUpperCase().slice(0, 4);
         const { data: org, error: oErr } = await admin
           .from("organizations")
-          .insert({ name: d.clinic, code, address: "Demo", phone: "+212600000000" })
+          .insert({
+            name: d.clinic,
+            clinic_name: d.clinic,
+            clinic_address: "Demo",
+            phone: "+212600000000",
+            invitation_code: code,
+            owner_id: userId,
+          })
           .select("id")
           .single();
         if (oErr) throw oErr;
