@@ -140,6 +140,20 @@ export const useLogin = () => {
       const profile = await fetchAuthSession()
       
       console.log('✅ User profile fetched:', profile);
+
+      // Enforce account / subscription access at login
+      const { data: access } = await supabase.rpc("get_access_status" as any);
+      const a = access as { access?: string; reason?: string; is_super_admin?: boolean } | null;
+      if (a && a.access === "denied" && !a.is_super_admin) {
+        await supabase.auth.signOut();
+        const messages: Record<string, string> = {
+          account_suspended: "Votre compte est suspendu.",
+          account_rejected: "Votre compte a été refusé.",
+          subscription_suspended: "L'abonnement de votre clinique est suspendu.",
+          subscription_canceled: "L'abonnement de votre clinique est annulé.",
+        };
+        throw new Error(messages[a.reason || ""] || "Accès refusé.");
+      }
       
       return { user: data.user, profile }
     },

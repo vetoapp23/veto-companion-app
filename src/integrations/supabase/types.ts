@@ -14,6 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_templates: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          frequency: string
+          id: string
+          is_active: boolean
+          source: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          frequency: string
+          id?: string
+          is_active?: boolean
+          source: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          source?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          organization_id: string | null
+          resource_id: string | null
+          resource_type: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          organization_id?: string | null
+          resource_id?: string | null
+          resource_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_impersonation_sessions: {
+        Row: {
+          actor_id: string
+          ended_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          reason: string | null
+          started_at: string
+          target_organization_id: string
+        }
+        Insert: {
+          actor_id: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          started_at?: string
+          target_organization_id: string
+        }
+        Update: {
+          actor_id?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          reason?: string | null
+          started_at?: string
+          target_organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_impersonation_sessions_target_organization_id_fkey"
+            columns: ["target_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       animal_pedigree: {
         Row: {
           animal_id: string
@@ -96,14 +229,62 @@ export type Database = {
           titles?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "animal_pedigree_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: true
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
+          {
+            foreignKeyName: "animal_pedigree_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: true
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_pedigree_father_animal_id_fkey"
+            columns: ["father_animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
+          {
+            foreignKeyName: "animal_pedigree_father_animal_id_fkey"
+            columns: ["father_animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_pedigree_mother_animal_id_fkey"
+            columns: ["mother_animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
+          {
+            foreignKeyName: "animal_pedigree_mother_animal_id_fkey"
+            columns: ["mother_animal_id"]
+            isOneToOne: false
+            referencedRelation: "animals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_pedigree_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       animals: {
         Row: {
-          allergies: string[] | null
           birth_date: string | null
           breed: string | null
-          chronic_conditions: string[] | null
           client_id: string
           color: string | null
           created_at: string
@@ -111,7 +292,6 @@ export type Database = {
           death_date: string | null
           height: number | null
           id: string
-          medical_history: string | null
           microchip_number: string | null
           name: string
           notes: string | null
@@ -128,10 +308,8 @@ export type Database = {
           weight: number | null
         }
         Insert: {
-          allergies?: string[] | null
           birth_date?: string | null
           breed?: string | null
-          chronic_conditions?: string[] | null
           client_id: string
           color?: string | null
           created_at?: string
@@ -139,7 +317,6 @@ export type Database = {
           death_date?: string | null
           height?: number | null
           id?: string
-          medical_history?: string | null
           microchip_number?: string | null
           name: string
           notes?: string | null
@@ -156,10 +333,8 @@ export type Database = {
           weight?: number | null
         }
         Update: {
-          allergies?: string[] | null
           birth_date?: string | null
           breed?: string | null
-          chronic_conditions?: string[] | null
           client_id?: string
           color?: string | null
           created_at?: string
@@ -167,7 +342,6 @@ export type Database = {
           death_date?: string | null
           height?: number | null
           id?: string
-          medical_history?: string | null
           microchip_number?: string | null
           name?: string
           notes?: string | null
@@ -206,54 +380,51 @@ export type Database = {
           active_ingredient: string | null
           administration_route: string | null
           age_restriction: string | null
-          booster_schedule: Json
           created_at: string
           dosage_per_kg: string | null
           frequency: string | null
           id: string
           notes: string | null
-          organization_id: string
+          organization_id: string | null
           parasite_type: string
           product_name: string
           species: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
           active_ingredient?: string | null
           administration_route?: string | null
           age_restriction?: string | null
-          booster_schedule?: Json
           created_at?: string
           dosage_per_kg?: string | null
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string | null
           parasite_type: string
           product_name: string
           species: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
           active_ingredient?: string | null
           administration_route?: string | null
           age_restriction?: string | null
-          booster_schedule?: Json
           created_at?: string
           dosage_per_kg?: string | null
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string
+          organization_id?: string | null
           parasite_type?: string
           product_name?: string
           species?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -299,7 +470,7 @@ export type Database = {
           organization_id: string
           parasite_type?: string | null
           product_name: string
-          treatment_date?: string
+          treatment_date: string
           updated_at?: string
         }
         Update: {
@@ -321,6 +492,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "antiparasitics_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
           {
             foreignKeyName: "antiparasitics_animal_id_fkey"
             columns: ["animal_id"]
@@ -350,6 +528,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          organization_id: string | null
           setting_category: string
           setting_key: string
           setting_value: Json
@@ -361,6 +540,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          organization_id?: string | null
           setting_category: string
           setting_key: string
           setting_value?: Json
@@ -372,13 +552,22 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          organization_id?: string | null
           setting_category?: string
           setting_key?: string
           setting_value?: Json
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       appointments: {
         Row: {
@@ -399,7 +588,7 @@ export type Database = {
         Insert: {
           animal_id?: string | null
           appointment_date: string
-          appointment_type?: string
+          appointment_type: string
           client_id: string
           created_at?: string
           duration_minutes?: number
@@ -427,6 +616,13 @@ export type Database = {
           veterinarian_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
           {
             foreignKeyName: "appointments_animal_id_fkey"
             columns: ["animal_id"]
@@ -524,6 +720,7 @@ export type Database = {
           client_id: string
           consultation_date: string
           consultation_type: string
+          cost: number | null
           created_at: string
           diagnosis: string | null
           follow_up_date: string | null
@@ -546,7 +743,8 @@ export type Database = {
           animal_id: string
           client_id: string
           consultation_date?: string
-          consultation_type?: string
+          consultation_type: string
+          cost?: number | null
           created_at?: string
           diagnosis?: string | null
           follow_up_date?: string | null
@@ -570,6 +768,7 @@ export type Database = {
           client_id?: string
           consultation_date?: string
           consultation_type?: string
+          cost?: number | null
           created_at?: string
           diagnosis?: string | null
           follow_up_date?: string | null
@@ -589,6 +788,13 @@ export type Database = {
           weight?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "consultations_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
           {
             foreignKeyName: "consultations_animal_id_fkey"
             columns: ["animal_id"]
@@ -614,9 +820,8 @@ export type Database = {
       }
       custom_dropdown_values: {
         Row: {
-          category: string
           created_at: string
-          created_by: string | null
+          field_key: string
           id: string
           organization_id: string
           updated_at: string
@@ -624,9 +829,8 @@ export type Database = {
           value: string
         }
         Insert: {
-          category: string
           created_at?: string
-          created_by?: string | null
+          field_key: string
           id?: string
           organization_id: string
           updated_at?: string
@@ -634,16 +838,94 @@ export type Database = {
           value: string
         }
         Update: {
-          category?: string
           created_at?: string
-          created_by?: string | null
+          field_key?: string
           id?: string
           organization_id?: string
           updated_at?: string
           usage_count?: number
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "custom_dropdown_values_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          attachment_url: string | null
+          category: string
+          created_at: string
+          description: string
+          expense_date: string
+          id: string
+          is_deductible: boolean
+          notes: string | null
+          organization_id: string | null
+          payment_method: string | null
+          receipt_number: string | null
+          status: string
+          subcategory: string | null
+          supplier_name: string | null
+          tax_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          attachment_url?: string | null
+          category: string
+          created_at?: string
+          description: string
+          expense_date: string
+          id?: string
+          is_deductible?: boolean
+          notes?: string | null
+          organization_id?: string | null
+          payment_method?: string | null
+          receipt_number?: string | null
+          status?: string
+          subcategory?: string | null
+          supplier_name?: string | null
+          tax_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          attachment_url?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          is_deductible?: boolean
+          notes?: string | null
+          organization_id?: string | null
+          payment_method?: string | null
+          receipt_number?: string | null
+          status?: string
+          subcategory?: string | null
+          supplier_name?: string | null
+          tax_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       farm_batch_health_events: {
         Row: {
@@ -669,7 +951,7 @@ export type Database = {
           cost?: number | null
           created_at?: string
           dose?: string | null
-          event_date?: string
+          event_date: string
           event_type: string
           farm_id: string
           id?: string
@@ -697,7 +979,36 @@ export type Database = {
           product?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "farm_batch_health_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "farm_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_batch_health_events_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_batch_health_events_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "farm_interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_batch_health_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       farm_batches: {
         Row: {
@@ -751,7 +1062,22 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "farm_batches_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_batches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       farm_infrastructures: {
         Row: {
@@ -799,13 +1125,26 @@ export type Database = {
           surface_sqm?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "farm_infrastructures_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_infrastructures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       farm_interventions: {
         Row: {
-          affected_count: number | null
           animal_count: number | null
-          batch_id: string | null
           cost: number | null
           created_at: string
           description: string | null
@@ -816,18 +1155,14 @@ export type Database = {
           intervention_date: string
           intervention_type: string
           medications_used: string[] | null
-          next_visit_date: string | null
           notes: string | null
-          organization_id: string
-          protocol_type: string | null
+          organization_id: string | null
           treatment: string | null
           updated_at: string
           veterinarian_id: string | null
         }
         Insert: {
-          affected_count?: number | null
           animal_count?: number | null
-          batch_id?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -835,21 +1170,17 @@ export type Database = {
           farm_id: string
           follow_up_date?: string | null
           id?: string
-          intervention_date?: string
+          intervention_date: string
           intervention_type: string
           medications_used?: string[] | null
-          next_visit_date?: string | null
           notes?: string | null
-          organization_id: string
-          protocol_type?: string | null
+          organization_id?: string | null
           treatment?: string | null
           updated_at?: string
           veterinarian_id?: string | null
         }
         Update: {
-          affected_count?: number | null
           animal_count?: number | null
-          batch_id?: string | null
           cost?: number | null
           created_at?: string
           description?: string | null
@@ -860,10 +1191,8 @@ export type Database = {
           intervention_date?: string
           intervention_type?: string
           medications_used?: string[] | null
-          next_visit_date?: string | null
           notes?: string | null
-          organization_id?: string
-          protocol_type?: string | null
+          organization_id?: string | null
           treatment?: string | null
           updated_at?: string
           veterinarian_id?: string | null
@@ -891,72 +1220,54 @@ export type Database = {
           address: string | null
           certifications: string[] | null
           client_id: string
-          coordinates: string | null
           created_at: string
           email: string | null
           farm_name: string
           farm_type: string | null
-          farm_types: string[] | null
           herd_size: number | null
-          housing_type: string | null
           id: string
-          metadata: Json
           notes: string | null
           organization_id: string
           phone: string | null
-          photos: string[] | null
-          production_type: string | null
           registration_number: string | null
-          surface_hectares: number | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
           address?: string | null
           certifications?: string[] | null
           client_id: string
-          coordinates?: string | null
           created_at?: string
           email?: string | null
           farm_name: string
           farm_type?: string | null
-          farm_types?: string[] | null
           herd_size?: number | null
-          housing_type?: string | null
           id?: string
-          metadata?: Json
           notes?: string | null
           organization_id: string
           phone?: string | null
-          photos?: string[] | null
-          production_type?: string | null
           registration_number?: string | null
-          surface_hectares?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
           address?: string | null
           certifications?: string[] | null
           client_id?: string
-          coordinates?: string | null
           created_at?: string
           email?: string | null
           farm_name?: string
           farm_type?: string | null
-          farm_types?: string[] | null
           herd_size?: number | null
-          housing_type?: string | null
           id?: string
-          metadata?: Json
           notes?: string | null
           organization_id?: string
           phone?: string | null
-          photos?: string[] | null
-          production_type?: string | null
           registration_number?: string | null
-          surface_hectares?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -968,6 +1279,113 @@ export type Database = {
           },
           {
             foreignKeyName: "farms_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          client_id: string
+          created_at: string
+          discount_amount: number | null
+          due_date: string | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          notes: string | null
+          organization_id: string | null
+          payment_date: string | null
+          payment_method: string | null
+          status: string
+          tax_amount: number | null
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          discount_amount?: number | null
+          due_date?: string | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          notes?: string | null
+          organization_id?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          tax_amount?: number | null
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          discount_amount?: number | null
+          due_date?: string | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          notes?: string | null
+          organization_id?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          status?: string
+          tax_amount?: number | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_support_notes: {
+        Row: {
+          author_email: string | null
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          author_email?: string | null
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          author_email?: string | null
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_support_notes_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -997,7 +1415,15 @@ export type Database = {
           pedigree_depth?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organization_subscriptions: {
         Row: {
@@ -1029,7 +1455,7 @@ export type Database = {
           extra_users?: number
           id?: string
           organization_id: string
-          plan_code?: string
+          plan_code: string
           status?: string
           storage_addon_mb?: number
           storage_quota_mb?: number
@@ -1059,6 +1485,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "organization_subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "organization_subscriptions_plan_code_fkey"
             columns: ["plan_code"]
             isOneToOne: false
@@ -1069,31 +1502,117 @@ export type Database = {
       }
       organizations: {
         Row: {
-          address: string | null
-          code: string
+          active: boolean
+          business_hours: Json | null
+          clinic_address: string | null
+          clinic_name: string
           created_at: string
+          email: string | null
           id: string
+          invitation_code: string | null
+          logo_url: string | null
           name: string
+          owner_id: string | null
           phone: string | null
+          settings: Json | null
           updated_at: string
         }
         Insert: {
-          address?: string | null
-          code: string
+          active?: boolean
+          business_hours?: Json | null
+          clinic_address?: string | null
+          clinic_name: string
           created_at?: string
+          email?: string | null
           id?: string
+          invitation_code?: string | null
+          logo_url?: string | null
           name: string
+          owner_id?: string | null
           phone?: string | null
+          settings?: Json | null
           updated_at?: string
         }
         Update: {
-          address?: string | null
-          code?: string
+          active?: boolean
+          business_hours?: Json | null
+          clinic_address?: string | null
+          clinic_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          invitation_code?: string | null
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          reference_number: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
           created_at?: string
           id?: string
-          name?: string
-          phone?: string | null
+          invoice_id: string
+          notes?: string | null
+          payment_date: string
+          payment_method: string
+          reference_number?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          reference_number?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
           updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -1163,7 +1682,7 @@ export type Database = {
           diagnosis: string | null
           id: string
           notes: string | null
-          organization_id: string
+          organization_id: string | null
           prescription_date: string
           refill_count: number
           status: string
@@ -1179,7 +1698,7 @@ export type Database = {
           diagnosis?: string | null
           id?: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string | null
           prescription_date?: string
           refill_count?: number
           status?: string
@@ -1195,7 +1714,7 @@ export type Database = {
           diagnosis?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string
+          organization_id?: string | null
           prescription_date?: string
           refill_count?: number
           status?: string
@@ -1204,6 +1723,13 @@ export type Database = {
           veterinarian_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "prescriptions_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
           {
             foreignKeyName: "prescriptions_animal_id_fkey"
             columns: ["animal_id"]
@@ -1234,6 +1760,122 @@ export type Database = {
           },
         ]
       }
+      revenue: {
+        Row: {
+          amount: number
+          category: string | null
+          client_id: string | null
+          created_at: string
+          description: string
+          id: string
+          notes: string | null
+          organization_id: string | null
+          payment_method: string | null
+          reference_id: string | null
+          reference_type: string | null
+          revenue_date: string
+          source: string
+          tax_amount: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          payment_method?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          revenue_date: string
+          source: string
+          tax_amount?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          payment_method?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          revenue_date?: string
+          source?: string
+          tax_amount?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "revenue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          is_read: boolean
+          item_id: string
+          item_name: string
+          message: string
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          item_id: string
+          item_name: string
+          message: string
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          item_id?: string
+          item_name?: string
+          message?: string
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_alerts_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_items: {
         Row: {
           active: boolean
@@ -1252,9 +1894,11 @@ export type Database = {
           requires_prescription: boolean
           selling_price: number | null
           supplier: string | null
+          supplier_id: string | null
           unit: string
           unit_cost: number | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           active?: boolean
@@ -1273,9 +1917,11 @@ export type Database = {
           requires_prescription?: boolean
           selling_price?: number | null
           supplier?: string | null
+          supplier_id?: string | null
           unit?: string
           unit_cost?: number | null
           updated_at?: string
+          user_id: string
         }
         Update: {
           active?: boolean
@@ -1294,9 +1940,11 @@ export type Database = {
           requires_prescription?: boolean
           selling_price?: number | null
           supplier?: string | null
+          supplier_id?: string | null
           unit?: string
           unit_cost?: number | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -1306,59 +1954,56 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       stock_movements: {
         Row: {
           created_at: string
           id: string
+          item_name: string | null
           movement_date: string
           movement_type: string
           notes: string | null
-          organization_id: string
           performed_by: string | null
           quantity: number
           reason: string | null
-          reference_id: string | null
-          reference_type: string | null
+          reference: string | null
           stock_item_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          item_name?: string | null
           movement_date?: string
           movement_type: string
           notes?: string | null
-          organization_id: string
           performed_by?: string | null
           quantity: number
           reason?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
+          reference?: string | null
           stock_item_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          item_name?: string | null
           movement_date?: string
           movement_type?: string
           notes?: string | null
-          organization_id?: string
           performed_by?: string | null
           quantity?: number
           reason?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
+          reference?: string | null
           stock_item_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "stock_movements_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "stock_movements_stock_item_id_fkey"
             columns: ["stock_item_id"]
@@ -1396,7 +2041,15 @@ export type Database = {
           organization_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "storage_usage_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_plans: {
         Row: {
@@ -1458,6 +2111,156 @@ export type Database = {
         }
         Relationships: []
       }
+      suppliers: {
+        Row: {
+          active: boolean
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          organization_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          organization_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          organization_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invitation_token: string
+          invited_by: string | null
+          organization_id: string | null
+          permissions: Json | null
+          role: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invitation_token: string
+          invited_by?: string | null
+          organization_id?: string | null
+          permissions?: Json | null
+          role: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          invited_by?: string | null
+          organization_id?: string | null
+          permissions?: Json | null
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           address: string | null
@@ -1475,11 +2278,11 @@ export type Database = {
           permissions: Json | null
           phone: string | null
           rejection_reason: string | null
-          role: Database["public"]["Enums"]["app_role"]
+          role: string
           specialty: string | null
-          status: Database["public"]["Enums"]["user_status"]
+          status: string
           updated_at: string
-          username: string
+          username: string | null
         }
         Insert: {
           address?: string | null
@@ -1497,11 +2300,11 @@ export type Database = {
           permissions?: Json | null
           phone?: string | null
           rejection_reason?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
+          role: string
           specialty?: string | null
-          status?: Database["public"]["Enums"]["user_status"]
+          status?: string
           updated_at?: string
-          username: string
+          username?: string | null
         }
         Update: {
           address?: string | null
@@ -1519,11 +2322,11 @@ export type Database = {
           permissions?: Json | null
           phone?: string | null
           rejection_reason?: string | null
-          role?: Database["public"]["Enums"]["app_role"]
+          role?: string
           specialty?: string | null
-          status?: Database["public"]["Enums"]["user_status"]
+          status?: string
           updated_at?: string
-          username?: string
+          username?: string | null
         }
         Relationships: [
           {
@@ -1539,13 +2342,11 @@ export type Database = {
         Row: {
           active: boolean
           age_recommendation: string | null
-          booster_schedule: Json
           created_at: string
           duration_days: number | null
           frequency: string | null
           id: string
           notes: string | null
-          organization_id: string
           species: string
           updated_at: string
           vaccine_name: string
@@ -1554,13 +2355,11 @@ export type Database = {
         Insert: {
           active?: boolean
           age_recommendation?: string | null
-          booster_schedule?: Json
           created_at?: string
           duration_days?: number | null
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id: string
           species: string
           updated_at?: string
           vaccine_name: string
@@ -1569,27 +2368,17 @@ export type Database = {
         Update: {
           active?: boolean
           age_recommendation?: string | null
-          booster_schedule?: Json
           created_at?: string
           duration_days?: number | null
           frequency?: string | null
           id?: string
           notes?: string | null
-          organization_id?: string
           species?: string
           updated_at?: string
           vaccine_name?: string
           vaccine_type?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "vaccination_protocols_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       vaccinations: {
         Row: {
@@ -1602,7 +2391,7 @@ export type Database = {
           manufacturer: string | null
           next_due_date: string | null
           notes: string | null
-          organization_id: string
+          organization_id: string | null
           reminder_sent: boolean
           updated_at: string
           vaccination_date: string
@@ -1619,10 +2408,10 @@ export type Database = {
           manufacturer?: string | null
           next_due_date?: string | null
           notes?: string | null
-          organization_id: string
+          organization_id?: string | null
           reminder_sent?: boolean
           updated_at?: string
-          vaccination_date?: string
+          vaccination_date: string
           vaccine_name: string
           vaccine_type?: string | null
         }
@@ -1636,7 +2425,7 @@ export type Database = {
           manufacturer?: string | null
           next_due_date?: string | null
           notes?: string | null
-          organization_id?: string
+          organization_id?: string | null
           reminder_sent?: boolean
           updated_at?: string
           vaccination_date?: string
@@ -1644,6 +2433,13 @@ export type Database = {
           vaccine_type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vaccinations_animal_id_fkey"
+            columns: ["animal_id"]
+            isOneToOne: false
+            referencedRelation: "animal_medical_summary"
+            referencedColumns: ["animal_id"]
+          },
           {
             foreignKeyName: "vaccinations_animal_id_fkey"
             columns: ["animal_id"]
@@ -1669,9 +2465,67 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_dashboard_stats: {
+        Row: {
+          pending_users: number | null
+          total_animals: number | null
+          total_clients: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
+      animal_medical_summary: {
+        Row: {
+          active_prescriptions: number | null
+          animal_id: string | null
+          animal_name: string | null
+          breed: string | null
+          last_consultation: string | null
+          last_vaccination: string | null
+          owner_name: string | null
+          species: string | null
+          total_consultations: number | null
+          total_vaccinations: number | null
+          upcoming_appointments: number | null
+        }
+        Relationships: []
+      }
+      financial_dashboard: {
+        Row: {
+          net_income: number | null
+          total_expenses: number | null
+          total_revenue: number | null
+        }
+        Relationships: []
+      }
+      vaccination_reminders: {
+        Row: {
+          animal_name: string | null
+          email: string | null
+          id: string | null
+          next_due_date: string | null
+          owner_name: string | null
+          phone: string | null
+          reminder_status: string | null
+          vaccine_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_update_user_profile: {
+        Args: { p_patch: Json; p_user_id: string }
+        Returns: Json
+      }
+      admin_upsert_subscription: {
+        Args: { p_organization_id: string; p_payload: Json }
+        Returns: Json
+      }
+      approve_user: {
+        Args: { approved_by_param: string; user_id_param: string }
+        Returns: undefined
+      }
+      check_quota_limit: { Args: { p_kind: string }; Returns: Json }
       create_user_profile: {
         Args: {
           p_clinic_address?: string
@@ -1680,11 +2534,16 @@ export type Database = {
           p_full_name: string
           p_organization_code?: string
           p_phone?: string
-          p_role: string
+          p_role?: string
           p_user_id: string
         }
         Returns: Json
       }
+      current_organization_id: { Args: never; Returns: string }
+      end_impersonation: { Args: never; Returns: Json }
+      generate_stock_alerts: { Args: never; Returns: undefined }
+      get_access_status: { Args: never; Returns: Json }
+      get_active_impersonation: { Args: never; Returns: Json }
       get_all_orgs_storage: {
         Args: never
         Returns: {
@@ -1693,16 +2552,47 @@ export type Database = {
           organization_id: string
         }[]
       }
-      get_organization_quota: { Args: never; Returns: Json }
-      get_user_org: { Args: { _user_id: string }; Returns: string }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
+      get_all_orgs_usage_stats: {
+        Args: never
+        Returns: {
+          animals_count: number
+          clients_count: number
+          organization_id: string
+          users_count: number
+        }[]
       }
+      get_effective_plan_for_org: {
+        Args: { p_org_id: string }
+        Returns: {
+          features: Json
+          limits: Json
+          max_animals: number
+          max_clients: number
+          max_users: number
+          plan_code: string
+          plan_name: string
+          storage_total_mb: number
+        }[]
+      }
+      get_org_admin_detail: { Args: { p_org_id: string }; Returns: Json }
+      get_organization_quota: { Args: never; Returns: Json }
+      get_super_admin_billing_overview: { Args: never; Returns: Json }
+      get_user_org: { Args: { _user_id: string }; Returns: string }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      is_org_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_after?: Json
+          p_before?: Json
+          p_metadata?: Json
+          p_organization_id?: string
+          p_resource_id?: string
+          p_resource_type: string
+        }
+        Returns: string
+      }
       recompute_storage_usage: { Args: never; Returns: Json }
       record_storage_change: {
         Args: {
@@ -1712,10 +2602,30 @@ export type Database = {
         }
         Returns: Json
       }
+      reject_user: {
+        Args: {
+          reason_param: string
+          rejected_by_param: string
+          user_id_param: string
+        }
+        Returns: undefined
+      }
+      start_impersonation: {
+        Args: { p_org_id: string; p_reason?: string }
+        Returns: Json
+      }
+      update_user_permissions: {
+        Args: {
+          permissions_param: Json
+          updated_by_param: string
+          user_id_param: string
+        }
+        Returns: undefined
+      }
+      user_belongs_to_org: { Args: { org_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "assistant" | "super_admin"
-      user_status: "pending" | "approved" | "rejected" | "suspended"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1842,9 +2752,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "assistant", "super_admin"],
-      user_status: ["pending", "approved", "rejected", "suspended"],
-    },
+    Enums: {},
   },
 } as const

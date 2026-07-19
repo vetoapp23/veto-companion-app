@@ -14,7 +14,15 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/AdminRoute";
 import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
 import { SuperAdminRoute } from "@/components/SuperAdminRoute";
-import SuperAdmin from "@/pages/SuperAdmin";
+import SuperAdminLayout from "@/pages/super-admin/SuperAdminLayout";
+import SuperAdminOverview from "@/pages/super-admin/Overview";
+import SuperAdminOrganizations from "@/pages/super-admin/Organizations";
+import SuperAdminOrgDetail from "@/pages/super-admin/OrgDetail";
+import SuperAdminUsers from "@/pages/super-admin/Users";
+import SuperAdminPlans from "@/pages/super-admin/Plans";
+import SuperAdminBilling from "@/pages/super-admin/Billing";
+import SuperAdminAudit from "@/pages/super-admin/Audit";
+import SuperAdminSystem from "@/pages/super-admin/System";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
@@ -215,10 +223,19 @@ const App = () => (
                         element={
                           <SuperAdminRoute>
                             <VetNavigation />
-                            <SuperAdmin />
+                            <SuperAdminLayout />
                           </SuperAdminRoute>
                         }
-                      />
+                      >
+                        <Route index element={<SuperAdminOverview />} />
+                        <Route path="organizations" element={<SuperAdminOrganizations />} />
+                        <Route path="organizations/:orgId" element={<SuperAdminOrgDetail />} />
+                        <Route path="users" element={<SuperAdminUsers />} />
+                        <Route path="plans" element={<SuperAdminPlans />} />
+                        <Route path="billing" element={<SuperAdminBilling />} />
+                        <Route path="audit" element={<SuperAdminAudit />} />
+                        <Route path="system" element={<SuperAdminSystem />} />
+                      </Route>
                       <Route path="/reset-password" element={<ResetPassword />} />
 
                       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

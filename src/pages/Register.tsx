@@ -123,6 +123,15 @@ const Register = () => {
       if (!isJoiningOrganization && !formData.clinicName)
         throw new Error("Veuillez entrer le nom de votre clinique");
 
+      const { data: flagRow } = await supabase
+        .from("platform_settings" as any)
+        .select("value")
+        .eq("key", "feature_flags")
+        .maybeSingle();
+      if ((flagRow as any)?.value?.block_registrations) {
+        throw new Error("Les inscriptions sont temporairement fermées. Réessayez plus tard.");
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,

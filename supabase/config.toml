@@ -1,7 +1,13 @@
-project_id = "pkcsgysdwnpisumshlwy"
+project_id = "yoskgnuoyjczxsdrgjwv"
 
 [functions.auth-email-hook]
 verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false
+
+[functions.seed-demo-users]
+verify_jwt = false
+
+[functions.seed-super-admin]
+verify_jwt = true

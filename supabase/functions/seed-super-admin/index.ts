@@ -1,40 +1,55 @@
-// One-shot: ensure vetoapp23@gmail.com exists as super_admin with known password.
+// Bootstraps a super_admin account. Requires header x-bootstrap-secret matching env BOOTSTRAP_SECRET.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bootstrap-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const EMAIL = "vetoapp23@gmail.com";
-const PASSWORD = "V3t0App!Adm1n#2026$Sec";
+const EMAIL = Deno.env.get("SUPER_ADMIN_EMAIL") ?? "vetoapp23@gmail.com";
 const FULL_NAME = "Super Admin";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
+  const expected = Deno.env.get("BOOTSTRAP_SECRET");
+  const provided = req.headers.get("x-bootstrap-secret");
+  if (!expected || provided !== expected) {
+    return new Response(JSON.stringify({ ok: false, error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const password = Deno.env.get("SUPER_ADMIN_PASSWORD");
+  if (!password) {
+    return new Response(JSON.stringify({ ok: false, error: "SUPER_ADMIN_PASSWORD not configured" }), {
+      status: 500,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
   const admin = createClient(url, key, { auth: { persistSession: false } });
 
   try {
-    // Find or create auth user
     const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    let existing = list?.users?.find((u) => u.email?.toLowerCase() === EMAIL);
+    let existing = list?.users?.find((u) => u.email?.toLowerCase() === EMAIL.toLowerCase());
     let userId: string;
 
     if (existing) {
       userId = existing.id;
       const { error: updErr } = await admin.auth.admin.updateUserById(userId, {
-        password: PASSWORD,
+        password,
         email_confirm: true,
       });
       if (updErr) throw new Error("updateUserById: " + updErr.message);
     } else {
       const { data: created, error } = await admin.auth.admin.createUser({
         email: EMAIL,
-        password: PASSWORD,
+        password,
         email_confirm: true,
         user_metadata: { full_name: FULL_NAME },
       });
@@ -42,7 +57,6 @@ Deno.serve(async (req) => {
       userId = created.user!.id;
     }
 
-    // Ensure organization
     const { data: profile } = await admin
       .from("user_profiles")
       .select("organization_id")
@@ -61,7 +75,6 @@ Deno.serve(async (req) => {
       orgId = org.id;
     }
 
-    // Upsert profile as super_admin / approved
     const payload = {
       id: userId,
       email: EMAIL,
@@ -79,7 +92,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, userId, email: EMAIL, password: PASSWORD }),
+      JSON.stringify({ ok: true, userId, email: EMAIL, passwordSet: true }),
       { headers: { ...cors, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
