@@ -19,10 +19,11 @@ import { Loader2 } from "lucide-react";
 interface NewConsultationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  prefillData?: Partial<CreateConsultationData & { clientId: string; animalId: string }>;
+  prefillData?: Partial<CreateConsultationData & { clientId: string; animalId: string; visit_id?: string }>;
+  onCreated?: (consultation: { id: string }) => void;
 }
 
-export function NewConsultationModal({ open, onOpenChange, prefillData }: NewConsultationModalProps) {
+export function NewConsultationModal({ open, onOpenChange, prefillData, onCreated }: NewConsultationModalProps) {
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: animals = [], isLoading: animalsLoading } = useAnimals();
   const createConsultationMutation = useCreateConsultation();
@@ -160,10 +161,10 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
     
     try {
       // Create consultation data for database
-      const consultationData: CreateConsultationData & { consultation_date: string } = {
+      const consultationData: CreateConsultationData & { consultation_date: string; visit_id?: string } = {
         client_id: formData.clientId,
         animal_id: formData.animalId,
-        consultation_type: 'routine',
+        consultation_type: prefillData?.consultation_type || "routine",
         consultation_date: formData.date || today,
         weight: formData.weight ? Math.min(parseFloat(formData.weight), 999.9) : undefined,
         temperature: formData.temperature ? Math.min(parseFloat(formData.temperature), 99.9) : undefined,
@@ -173,10 +174,12 @@ export function NewConsultationModal({ open, onOpenChange, prefillData }: NewCon
         follow_up_notes: formData.followUp.trim() || undefined,
         notes: formData.notes.trim() || undefined,
         photos: formData.photos && formData.photos.length > 0 ? formData.photos : undefined,
+        visit_id: prefillData?.visit_id,
       };
 
       console.log("[consultation] submitting with photos:", formData.photos?.length || 0);
-      await createConsultationMutation.mutateAsync(consultationData);
+      const created = await createConsultationMutation.mutateAsync(consultationData);
+      onCreated?.(created);
       
       toast({
         title: "✓ Consultation enregistrée",

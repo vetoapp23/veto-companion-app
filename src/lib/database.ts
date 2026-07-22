@@ -334,6 +334,7 @@ export interface BoosterScheduleEntry {
 
 export interface VaccinationProtocol {
   id: string
+  organization_id?: string
   species: string
   vaccine_name: string
   vaccine_type: string
@@ -350,6 +351,7 @@ export interface VaccinationProtocol {
 export interface AntiparasiticProtocol {
   id: string
   user_id: string
+  organization_id?: string
   species: string
   parasite_type: string
   product_name: string
@@ -542,6 +544,7 @@ export interface CreateConsultationData {
   follow_up_date?: string
   follow_up_notes?: string
   status?: string
+  visit_id?: string
   cost?: number
 }
 
@@ -574,7 +577,8 @@ export interface CreateAntiparasiticData {
 }
 
 export interface CreatePrescriptionData {
-  consultation_id: string
+  consultation_id?: string | null
+  visit_id?: string | null
   animal_id: string
   client_id: string
   veterinarian_id?: string
@@ -1904,6 +1908,7 @@ export const createAppointment = async (appointmentData: CreateAppointmentData):
     .from('appointments')
     .insert({
       ...appointmentData,
+      animal_id: appointmentData.animal_id || null,
       veterinarian_id: appointmentData.veterinarian_id || user.id,
       duration_minutes: appointmentData.duration_minutes || 30,
       organization_id: profile.organization_id
@@ -1939,6 +1944,18 @@ export const updateAppointment = async (id: string, appointmentData: UpdateAppoi
 
   if (error) {
     throw new Error(`Error updating appointment: ${error.message}`)
+  }
+
+  // Keep linked in-progress visits on the same datetime as the RDV
+  if (appointmentData.appointment_date) {
+    await supabase
+      .from('visits')
+      .update({
+        visit_date: appointmentData.appointment_date,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('appointment_id', id)
+      .eq('status', 'in_progress')
   }
 
   return data

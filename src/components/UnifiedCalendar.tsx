@@ -1,24 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, Heart, AlertTriangle, CheckCircle } from "lucide-react";
-import { format, isSameDay } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { useSettings } from '@/contexts/SettingsContext';
-import { generateTimeSlots, isSlotAvailable, isWorkingDay } from '@/utils/scheduleUtils';
+import { Calendar, Clock, User, Heart, AlertTriangle, CheckCircle, ClipboardList } from "lucide-react";
+import { format, isSameDay } from "date-fns";
+import { fr } from "date-fns/locale";
+import { useSettings } from "@/contexts/SettingsContext";
+import { generateTimeSlots } from "@/utils/scheduleUtils";
+import { parseLocalDateKey, toLocalDateKey } from "@/lib/dateLocal";
+import type { ClinicCalendarEvent } from "@/lib/clinicCalendar";
 
-interface CalendarEvent {
-  id: number;
-  type: 'appointment' | 'vaccination' | 'antiparasitic';
-  title: string;
-  time?: string;
-  status: string;
-  clientName?: string;
-  petName?: string;
-  date: string;
-  color?: string;
-}
+export type CalendarEvent = ClinicCalendarEvent;
 
 interface UnifiedCalendarProps {
   events: CalendarEvent[];
@@ -28,43 +20,53 @@ interface UnifiedCalendarProps {
   showTimeSlots?: boolean;
   title?: string;
   icon?: React.ReactNode;
+  occupiedSlots?: { date: string; time: string }[];
 }
 
 const getEventColor = (type: string, status: string) => {
   switch (type) {
-    case 'appointment':
+    case "appointment":
       switch (status) {
-        case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
-        case 'completed': return 'bg-gray-100 text-gray-800 border-gray-200';
-        case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-        default: return 'bg-blue-100 text-blue-800 border-blue-200';
+        case "confirmed":
+          return "bg-green-100 text-green-800 border-green-200";
+        case "completed":
+          return "bg-gray-100 text-gray-800 border-gray-200";
+        case "cancelled":
+          return "bg-red-100 text-red-800 border-red-200";
+        default:
+          return "bg-blue-100 text-blue-800 border-blue-200";
       }
-    case 'vaccination':
+    case "visit":
       switch (status) {
-        case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-        case 'overdue': return 'bg-red-100 text-red-800 border-red-200';
-        case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
-        default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case "completed":
+          return "bg-gray-100 text-gray-800 border-gray-200";
+        case "in_progress":
+          return "bg-teal-100 text-teal-900 border-teal-200";
+        default:
+          return "bg-cyan-100 text-cyan-800 border-cyan-200";
       }
-    case 'antiparasitic':
-      switch (status) {
-        case 'completed': return 'bg-green-100 text-green-800 border-green-200';
-        case 'overdue': return 'bg-red-100 text-red-800 border-red-200';
-        case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
-        default: return 'bg-purple-100 text-purple-800 border-purple-200';
-      }
+    case "vaccination":
+      return status === "overdue"
+        ? "bg-red-100 text-red-800 border-red-200"
+        : "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "antiparasitic":
+      return status === "overdue"
+        ? "bg-red-100 text-red-800 border-red-200"
+        : "bg-purple-100 text-purple-800 border-purple-200";
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
-const getEventIcon = (type: string, status: string) => {
+const getEventIcon = (type: string) => {
   switch (type) {
-    case 'appointment':
+    case "appointment":
       return <Clock className="h-3 w-3" />;
-    case 'vaccination':
+    case "visit":
+      return <ClipboardList className="h-3 w-3" />;
+    case "vaccination":
       return <CheckCircle className="h-3 w-3" />;
-    case 'antiparasitic':
+    case "antiparasitic":
       return <AlertTriangle className="h-3 w-3" />;
     default:
       return <Calendar className="h-3 w-3" />;
@@ -78,222 +80,221 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
   onTimeSlotClick,
   showTimeSlots = false,
   title = "Calendrier",
-  icon = <Calendar className="h-5 w-5" />
+  icon = <Calendar className="h-5 w-5" />,
+  occupiedSlots = [],
 }) => {
   const { settings } = useSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  
-  // Générer les jours du mois
+  const [selectedDate, setSelectedDate] = useState<string>(toLocalDateKey(new Date()));
+
   const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
   const startDate = new Date(monthStart);
   startDate.setDate(startDate.getDate() - monthStart.getDay());
-  
-  const days = [];
+
+  const days: Date[] = [];
   const current = new Date(startDate);
-  
   while (current <= monthEnd || days.length < 42) {
     days.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
 
-  // Grouper les événements par date
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, CalendarEvent[]> = {};
-    events.forEach(event => {
-      const dateKey = event.date;
-      if (!grouped[dateKey]) grouped[dateKey] = [];
-      grouped[dateKey].push(event);
+    events.forEach((event) => {
+      if (!event.date) return;
+      if (!grouped[event.date]) grouped[event.date] = [];
+      grouped[event.date].push(event);
     });
     return grouped;
   }, [events]);
 
-  // Générer les créneaux pour la date sélectionnée
+  const busyForSelected = useMemo(
+    () => occupiedSlots.filter((s) => s.date === selectedDate).map((s) => s.time),
+    [occupiedSlots, selectedDate]
+  );
+
   const timeSlots = useMemo(() => {
     if (!selectedDate || !showTimeSlots) return [];
-    return generateTimeSlots(selectedDate, settings.scheduleSettings, []);
-  }, [selectedDate, showTimeSlots, settings.scheduleSettings]);
+    const slots = generateTimeSlots(selectedDate, settings.scheduleSettings, []);
+    return slots.map((slot: any) => ({
+      ...slot,
+      available: !!slot.isAvailable && !busyForSelected.includes(slot.time),
+    }));
+  }, [selectedDate, showTimeSlots, settings.scheduleSettings, busyForSelected]);
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const navigateMonth = (direction: "prev" | "next") => {
     const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
+    newDate.setMonth(currentDate.getMonth() + (direction === "next" ? 1 : -1));
     setCurrentDate(newDate);
   };
 
   const handleDateClick = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
+    const dateStr = toLocalDateKey(date);
     setSelectedDate(dateStr);
     onDateClick?.(dateStr);
   };
 
-  const handleTimeSlotClick = (time: string) => {
-    if (onTimeSlotClick && selectedDate) {
-      onTimeSlotClick(selectedDate, time);
-    }
-  };
+  const selectedDateObj = selectedDate ? parseLocalDateKey(selectedDate) : null;
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader className="pb-3 sm:pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               {icon}
               {title}
             </CardTitle>
             <div className="flex items-center justify-between sm:gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigateMonth('prev')} className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
                 ←
               </Button>
-              <span className="font-medium text-sm sm:text-base px-2 sm:min-w-[140px] text-center">
-                {format(currentDate, 'MMMM yyyy', { locale: fr })}
+              <span className="font-medium text-sm sm:text-base px-2 sm:min-w-[140px] text-center capitalize">
+                {format(currentDate, "MMMM yyyy", { locale: fr })}
               </span>
-              <Button variant="outline" size="sm" onClick={() => navigateMonth('next')} className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
                 →
               </Button>
             </div>
           </div>
+          <div className="flex flex-wrap gap-3 text-[10px] sm:text-xs text-muted-foreground pt-2">
+            <span className="inline-flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-blue-500" /> RDV
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-teal-500" /> Visite
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-yellow-500" /> Vaccin
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-purple-500" /> Antiparasitaire
+            </span>
+          </div>
         </CardHeader>
-        <CardContent className="p-2 sm:p-6">
-          <div className="grid grid-cols-7 gap-1 mb-2 sm:mb-4">
-            {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(day => (
-              <div key={day} className="p-1 sm:p-2 text-center text-xs sm:text-sm font-medium text-gray-500">
+        <CardContent>
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"].map((day) => (
+              <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1">
                 {day}
               </div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-1">
             {days.map((day, index) => {
-              const dayKey = format(day, 'yyyy-MM-dd');
-              const dayEvents = eventsByDate[dayKey] || [];
+              const dateStr = toLocalDateKey(day);
+              const dayEvents = eventsByDate[dateStr] || [];
               const isCurrentMonth = day.getMonth() === currentDate.getMonth();
               const isToday = isSameDay(day, new Date());
-              const isSelected = dayKey === selectedDate;
-              const isWorking = isWorkingDay(dayKey, settings.scheduleSettings);
-              
+              const isSelected = selectedDate === dateStr;
+
               return (
-                <div
+                <button
                   key={index}
-                  className={`
-                    min-h-[60px] sm:min-h-[80px] p-1 border rounded-lg relative cursor-pointer hover:bg-muted/50
-                    ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                    ${isToday ? 'ring-2 ring-blue-500' : ''}
-                    ${isSelected ? 'bg-blue-100 border-blue-300' : ''}
-                    ${!isWorking ? 'opacity-50' : ''}
-                  `}
+                  type="button"
                   onClick={() => handleDateClick(day)}
+                  className={`min-h-[72px] sm:min-h-[90px] p-1 rounded-md border text-left transition-colors ${
+                    isCurrentMonth ? "bg-background" : "bg-muted/30 text-muted-foreground"
+                  } ${isToday ? "ring-2 ring-primary/40" : ""} ${
+                    isSelected ? "border-primary bg-primary/5" : "border-transparent hover:border-border"
+                  }`}
                 >
-                  <div className={`text-xs sm:text-sm font-medium ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}`}>
-                    {day.getDate()}
-                  </div>
-                  <div className="space-y-0.5 sm:space-y-1 mt-0.5 sm:mt-1">
-                    {dayEvents.slice(0, 2).map((event, eIndex) => (
+                  <div className="text-xs font-medium mb-1">{day.getDate()}</div>
+                  <div className="space-y-0.5">
+                    {dayEvents.slice(0, 3).map((event) => (
                       <div
-                        key={eIndex}
-                        className={`
-                          text-xs p-0.5 sm:p-1 rounded text-center truncate border cursor-pointer
-                          ${getEventColor(event.type, event.status)}
-                        `}
-                        title={`${event.title}${event.time ? ` - ${event.time}` : ''}${event.clientName ? ` (${event.clientName})` : ''}`}
+                        key={event.id}
+                        className={`text-[9px] sm:text-[10px] px-1 py-0.5 rounded border truncate ${getEventColor(
+                          event.type,
+                          event.status
+                        )}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventClick?.(event);
                         }}
+                        title={event.title}
                       >
-                        <div className="flex items-center gap-0.5 sm:gap-1 justify-center">
-                          {getEventIcon(event.type, event.status)}
-                          <span className="truncate text-xs">{event.title}</span>
-                        </div>
+                        <span className="inline-flex items-center gap-0.5">
+                          {getEventIcon(event.type)}
+                          <span className="truncate">
+                            {event.time ? `${event.time} ` : ""}
+                            {event.title}
+                          </span>
+                        </span>
                       </div>
                     ))}
-                    {dayEvents.length > 2 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        +{dayEvents.length - 2}
-                      </div>
+                    {dayEvents.length > 3 && (
+                      <div className="text-[9px] text-muted-foreground px-1">+{dayEvents.length - 3}</div>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </CardContent>
       </Card>
 
-      {/* Détails du jour sélectionné */}
       {selectedDate && (
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg">
-              {format(new Date(selectedDate), 'EEEE d MMMM yyyy', { locale: fr })}
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base capitalize">
+              {selectedDateObj
+                ? format(selectedDateObj, "EEEE d MMMM yyyy", { locale: fr })
+                : selectedDate}
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6">
-            {eventsByDate[selectedDate]?.length > 0 ? (
-              <div className="space-y-3">
-                {eventsByDate[selectedDate].map((event) => (
-                  <div
-                    key={event.id}
-                    className={`
-                      p-3 rounded-lg border cursor-pointer hover:shadow-sm
-                      ${getEventColor(event.type, event.status)}
-                    `}
-                    onClick={() => onEventClick?.(event)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {getEventIcon(event.type, event.status)}
-                        <span className="font-medium">{event.title}</span>
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {event.status}
-                      </Badge>
-                    </div>
-                    {event.time && (
-                      <div className="flex items-center gap-1 text-sm mt-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{event.time}</span>
-                      </div>
-                    )}
-                    {event.clientName && (
-                      <div className="flex items-center gap-1 text-sm mt-1">
-                        <User className="h-3 w-3" />
-                        <span>{event.clientName}</span>
-                      </div>
-                    )}
-                    {event.petName && (
-                      <div className="flex items-center gap-1 text-sm mt-1">
-                        <Heart className="h-3 w-3" />
-                        <span>{event.petName}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+          <CardContent className="space-y-3">
+            {(eventsByDate[selectedDate] || []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun événement ce jour.</p>
             ) : (
-              <p className="text-muted-foreground text-center py-4">
-                Aucun événement prévu pour cette date
-              </p>
+              (eventsByDate[selectedDate] || []).map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  onClick={() => onEventClick?.(event)}
+                  className={`w-full text-left rounded-lg border p-3 ${getEventColor(event.type, event.status)}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 font-medium">
+                      {getEventIcon(event.type)}
+                      {event.title}
+                    </div>
+                    {event.time && <Badge variant="outline">{event.time}</Badge>}
+                  </div>
+                  {(event.clientName || event.petName) && (
+                    <div className="text-xs mt-1 opacity-80 flex gap-3">
+                      {event.clientName && (
+                        <span className="inline-flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          {event.clientName}
+                        </span>
+                      )}
+                      {event.petName && (
+                        <span className="inline-flex items-center gap-1">
+                          <Heart className="h-3 w-3" />
+                          {event.petName}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))
             )}
 
-            {/* Créneaux horaires disponibles */}
-            {showTimeSlots && timeSlots.length > 0 && (
-              <div className="mt-4 sm:mt-6">
-                <h4 className="font-medium mb-2 sm:mb-3 text-sm sm:text-base">Créneaux disponibles</h4>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 sm:gap-2">
-                  {timeSlots.map((slot) => (
+            {showTimeSlots && (
+              <div className="pt-2 border-t space-y-2">
+                <p className="text-sm font-medium">Créneaux</p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {timeSlots.map((slot: any) => (
                     <Button
                       key={slot.time}
-                      variant={slot.isAvailable ? "outline" : "ghost"}
                       size="sm"
-                      disabled={!slot.isAvailable}
-                      onClick={() => handleTimeSlotClick(slot.time)}
-                      className="text-xs p-1 sm:p-2"
+                      variant={slot.available ? "outline" : "ghost"}
+                      disabled={!slot.available}
+                      onClick={() => onTimeSlotClick?.(selectedDate, slot.time)}
                     >
                       {slot.time}
-                      {slot.isLunchBreak && (
-                        <Badge variant="secondary" className="ml-1 text-xs hidden sm:inline">Pause</Badge>
-                      )}
                     </Button>
                   ))}
                 </div>
@@ -305,3 +306,5 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
     </div>
   );
 };
+
+export default UnifiedCalendar;

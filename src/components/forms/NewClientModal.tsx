@@ -11,14 +11,16 @@ import { useClientTypes } from '@/hooks/useAppSettings';
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { CreateClientData } from "@/lib/database";
+import type { Client, CreateClientData } from "@/lib/database";
 
 interface NewClientModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after a client is successfully created (e.g. to select it in a parent form). */
+  onCreated?: (client: Client) => void;
 }
 
-export function NewClientModal({ open, onOpenChange }: NewClientModalProps) {
+export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModalProps) {
   const createClientMutation = useCreateClient();
   const { toast } = useToast();
   const { enforce } = useQuotaCheck();
@@ -128,7 +130,7 @@ export function NewClientModal({ open, onOpenChange }: NewClientModalProps) {
     }
     
     try {
-      await createClientMutation.mutateAsync(formData);
+      const created = await createClientMutation.mutateAsync(formData);
       
       toast({
         title: "✓ Client ajouté avec succès",
@@ -150,6 +152,7 @@ export function NewClientModal({ open, onOpenChange }: NewClientModalProps) {
         client_type: clientTypes.length > 0 ? clientTypes[0].toLowerCase() : "particulier"
       });
       
+      onCreated?.(created);
       onOpenChange(false);
     } catch (error: any) {
       console.error("Client creation error:", error);

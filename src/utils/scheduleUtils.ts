@@ -1,5 +1,6 @@
 import { ScheduleSettings } from '@/contexts/SettingsContext';
 import { Appointment } from '@/contexts/ClientContext';
+import { toLocalDateKey } from '@/lib/dateLocal';
 
 export interface TimeSlot {
   time: string;
@@ -64,7 +65,7 @@ export function generateDateRangeSlots(
   const end = new Date(endDate);
   
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = toLocalDateKey(date);
     const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' }).toLowerCase();
     
     // Vérifier si c'est un jour de travail

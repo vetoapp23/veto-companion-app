@@ -20,11 +20,25 @@ interface NewFarmInterventionModalSupabaseProps {
   farmId?: string;
   farmName?: string;
   intervention?: any | null;
+  /** Prefill cost from visit service line */
+  defaultCost?: number | string;
+  /** Prefill animal / head count */
+  defaultAnimalCount?: number | string;
+  onCreated?: (record: { id: string; cost?: number | null }) => void;
 }
 
 const PROTOCOL_TYPES = ["Curatif", "Préventif", "Diagnostic", "Prophylaxie", "Reproduction", "Autre"];
 
-const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName, intervention }: NewFarmInterventionModalSupabaseProps) => {
+const NewFarmInterventionModalSupabase = ({
+  open,
+  onOpenChange,
+  farmId,
+  farmName,
+  intervention,
+  defaultCost,
+  defaultAnimalCount,
+  onCreated,
+}: NewFarmInterventionModalSupabaseProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isEdit = !!intervention?.id;
@@ -82,13 +96,15 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
         farm_id: farmId || p.farm_id || "",
         batch_id: "",
         intervention_date: new Date().toISOString().split("T")[0],
-        intervention_type: "", protocol_type: "", affected_count: "", animal_count: "",
+        intervention_type: "", protocol_type: "", affected_count: "",
+        animal_count: defaultAnimalCount != null ? String(defaultAnimalCount) : "",
         description: "", diagnosis: "", treatment: "", medications_used: [],
-        cost: "", follow_up_date: "", next_visit_date: "", notes: "",
+        cost: defaultCost != null && defaultCost !== "" ? String(defaultCost) : "",
+        follow_up_date: "", next_visit_date: "", notes: "",
       }));
     }
     setMedicationInput("");
-  }, [open, user, farmId, intervention]);
+  }, [open, user, farmId, intervention, defaultCost, defaultAnimalCount]);
 
   const fetchFarms = async () => {
     if (!user) return;
@@ -171,6 +187,12 @@ const NewFarmInterventionModalSupabase = ({ open, onOpenChange, farmId, farmName
       }
 
       toast({ title: isEdit ? "✓ Intervention mise à jour" : "✓ Intervention créée" });
+      if (!isEdit && createdId) {
+        onCreated?.({
+          id: createdId,
+          cost: formData.cost ? parseFloat(formData.cost) : null,
+        });
+      }
       onOpenChange(false);
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message || "Échec", variant: "destructive" });

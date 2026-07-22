@@ -18,6 +18,7 @@ import {
   Euro,
   Cog,
   Users as UsersIcon,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
@@ -31,6 +32,7 @@ const mainTabs = [
 ];
 
 const moreItems = [
+  { icon: ClipboardList, label: "Visites", path: "/visites" },
   { icon: FileText, label: "Consultations", path: "/consultations" },
   { icon: Syringe, label: "Vaccinations", path: "/vaccinations" },
   { icon: Bug, label: "Antiparasites", path: "/antiparasites" },

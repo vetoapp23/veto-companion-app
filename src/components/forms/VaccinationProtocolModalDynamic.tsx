@@ -116,11 +116,14 @@ export default function VaccinationProtocolModal({
       }
 
       setModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Protocol save error:", error);
       toast({
         title: "Erreur",
-        description: `Impossible de ${mode === 'create' ? 'créer' : 'modifier'} le protocole`,
-        variant: "destructive"
+        description:
+          error?.message ||
+          `Impossible de ${mode === "create" ? "créer" : "modifier"} le protocole`,
+        variant: "destructive",
       });
     }
   };

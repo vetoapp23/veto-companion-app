@@ -7,13 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useAnimals, useClients, useCreateAntiparasitic, useAntiparasiticProtocolsBySpecies } from '@/hooks/useDatabase';
+import { useAnimals, useClients, useCreateAntiparasitic, useAntiparasiticProtocolsBySpecies, appointmentKeys } from '@/hooks/useDatabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useParasiteTypes } from '@/hooks/useAppSettings';
 import { format, addDays } from 'date-fns';
 import { Plus, Package, CheckCircle, Search, AlertTriangle, Loader2, X, CalendarClock, Trash2 } from 'lucide-react';
 import type { CreateAntiparasiticData, BoosterScheduleEntry } from '@/lib/database';
 import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
+import {
+  createReminderAppointments,
+  resolveMaintenanceDueDate,
+} from '@/lib/reminderAppointments';
 
 const DEFAULT_ROUTES_ANTIPARASITIC = ['spot_on', 'oral', 'injection', 'spray', 'collier', 'shampoing'];
 
@@ -27,7 +32,8 @@ interface NewAntiparasiticModalDynamicProps {
   onOpenChange: (open: boolean) => void;
   selectedAnimalId?: string;
   selectedClientId?: string;
-  editingAntiparasitic?: any; // For future edit functionality
+  editingAntiparasitic?: any;
+  onCreated?: (record: { id: string }) => void;
 }
 
 export default function NewAntiparasiticModalDynamic({ 
@@ -35,12 +41,14 @@ export default function NewAntiparasiticModalDynamic({
   onOpenChange, 
   selectedAnimalId, 
   selectedClientId,
-  editingAntiparasitic 
+  editingAntiparasitic,
+  onCreated,
 }: NewAntiparasiticModalDynamicProps) {
   const { data: animals } = useAnimals();
   const { data: clients } = useClients();
   const createAntiparasitic = useCreateAntiparasitic();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Dynamic settings
   const { data: parasiteTypes = [], isLoading: typesLoading } = useParasiteTypes();
@@ -224,57 +232,72 @@ export default function NewAntiparasiticModalDynamic({
 
     try {
       const base = buildBasePayload();
+      const administeredDate = formData.treatmentDate;
+      const protocol = appliedProtocolId
+        ? protocols?.find((p: any) => p.id === appliedProtocolId)
+        : undefined;
 
-      if (plannedDoses.length > 1) {
-        const sorted = [...plannedDoses].sort((a, b) => a.date.localeCompare(b.date));
-        for (let i = 0; i < sorted.length; i++) {
-          const dose = sorted[i];
-          const next = sorted[i + 1];
-          await createAntiparasitic.mutateAsync({
-            ...base,
-            treatment_date: dose.date,
-            next_treatment_date: next ? next.date : undefined,
-            notes: [dose.label, formData.notes?.trim()].filter(Boolean).join(' — ') || undefined,
-          } as CreateAntiparasiticData);
+      const nextFromPlan = plannedDoses
+        .filter((d) => d.date > administeredDate)
+        .sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
+
+      const nextDue =
+        nextFromPlan ||
+        formData.nextTreatmentDate?.trim() ||
+        resolveMaintenanceDueDate(
+          administeredDate,
+          plannedDoses,
+          protocol?.duration_days
+        );
+
+      const todayLabel =
+        plannedDoses.find((d) => d.date === administeredDate)?.label ||
+        plannedDoses[0]?.label ||
+        "Traitement";
+
+      const created = await createAntiparasitic.mutateAsync({
+        ...base,
+        treatment_date: administeredDate,
+        next_treatment_date: nextDue || undefined,
+        notes:
+          [todayLabel, formData.notes?.trim()].filter(Boolean).join(" — ") || undefined,
+      } as CreateAntiparasiticData);
+
+      const clientId = formData.clientId || selectedClientId;
+      let reminderCount = 0;
+      if (clientId) {
+        const { created: n } = await createReminderAppointments({
+          clientId,
+          animalId: formData.animalId,
+          administeredDate,
+          plannedDoses,
+          nextDueDate: nextDue,
+          appointmentType: "follow-up",
+          titlePrefix: "Rappel antiparasitaire",
+          productName: formData.productName,
+        });
+        reminderCount = n;
+        if (n > 0) {
+          queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
         }
-        toast({
-          title: '✓ Calendrier enregistré',
-          description: `${sorted.length} traitements planifiés.`,
-        });
-      } else {
-        const singleDate = plannedDoses[0]?.date || formData.treatmentDate;
-        await createAntiparasitic.mutateAsync({
-          ...base,
-          treatment_date: singleDate,
-          next_treatment_date: formData.nextTreatmentDate?.trim() || undefined,
-          notes: formData.notes?.trim() || undefined,
-        } as CreateAntiparasiticData);
-        toast({
-          title: 'Succès',
-          description: 'Le traitement antiparasitaire a été enregistré avec succès.',
-        });
       }
 
+      toast({
+        title: "Succès",
+        description:
+          reminderCount > 0
+            ? `Traitement du jour + ${reminderCount} RDV de rappel créé(s).`
+            : "Le traitement antiparasitaire a été enregistré avec succès.",
+      });
+
+      onCreated?.({ id: created.id });
       resetForm();
       onOpenChange(false);
-
     } catch (error: any) {
-      console.error('Erreur lors de la création du traitement antiparasitaire:', error);
-      
-      let errorMessage = "Une erreur s'est produite lors de l'enregistrement.";
-      
-      // Handle specific error types
-      if (error?.code === '23514') {
-        errorMessage = "Les données saisies ne respectent pas les contraintes de validation. Vérifiez que l'évaluation d'efficacité est entre 1 et 10.";
-      } else if (error?.code === '42501') {
-        errorMessage = "Vous n'avez pas les permissions nécessaires pour effectuer cette action.";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-      
+      console.error(error);
       toast({
         title: "Erreur",
-        description: errorMessage,
+        description: error?.message || "Impossible d'enregistrer le traitement.",
         variant: "destructive",
       });
     }

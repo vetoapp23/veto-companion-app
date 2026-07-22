@@ -7,6 +7,7 @@ Disallow: /dashboard
 Disallow: /clients
 Disallow: /pets
 Disallow: /appointments
+Disallow: /visites
 Disallow: /consultations
 Disallow: /history
 Disallow: /farm
@@ -22,4 +23,4 @@ Disallow: /super-admin
 Disallow: /auth-settings
 Disallow: /reset-password
 
-Sitemap: https://cuddle-care-cloud.lovable.app/sitemap.xml
+Sitemap: https://vetocrm.com/sitemap.xml

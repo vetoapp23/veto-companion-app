@@ -24,10 +24,20 @@ interface NewPrescriptionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   petId: string;
-  consultationId: string;
+  /** Optional — prescriptions can be linked to a visit without a consultation */
+  consultationId?: string | null;
+  visitId?: string | null;
+  onCreated?: (prescription: { id: string; estimatedAmount?: number }) => void;
 }
 
-export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId }: NewPrescriptionModalProps) {
+export function NewPrescriptionModal({
+  open,
+  onOpenChange,
+  petId,
+  consultationId,
+  visitId,
+  onCreated,
+}: NewPrescriptionModalProps) {
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
   const { data: stockItems = [] } = useStockItems();
@@ -123,6 +133,7 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
           ...med,
           medication_name: med.medication_name.trim(),
           stock_item_id: stockMatch?.id,
+          _unitPrice: stockMatch ? Number((stockMatch as any).selling_price || (stockMatch as any).unit_cost || 0) : 0,
         };
       });
     
@@ -135,24 +146,40 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
       return;
     }
 
+    // Prefer stock-linked meds when available in inventory
+    const withoutStock = validMedications.filter((m) => !m.stock_item_id);
+    if (withoutStock.length > 0 && availableMedications.length > 0) {
+      toast({
+        title: "Hors stock",
+        description: `${withoutStock.map((m) => m.medication_name).join(", ")} non trouvé(s) en inventaire — prescrits sans décrément stock.`,
+      });
+    }
+
+    const estimatedAmount = validMedications.reduce(
+      (sum, m) => sum + (m._unitPrice || 0) * (m.quantity || 1),
+      0
+    );
+
     const prescriptionData: CreatePrescriptionData = {
-      consultation_id: consultationId,
+      consultation_id: consultationId || null,
+      visit_id: visitId || null,
       animal_id: animal.id,
       client_id: client.id,
       diagnosis: formData.diagnosis,
       notes: formData.notes,
       valid_until: formData.validUntil || undefined,
-      medications: validMedications
+      medications: validMedications.map(({ _unitPrice, ...med }) => med),
     };
 
     try {
-      await createPrescriptionMutation.mutateAsync(prescriptionData);
+      const created = await createPrescriptionMutation.mutateAsync(prescriptionData);
 
       toast({
         title: "Prescription créée",
         description: `Prescription créée avec succès pour ${animal.name}.`,
       });
 
+      onCreated?.({ id: created.id, estimatedAmount });
       onOpenChange(false);
       
       // Reset form
@@ -171,11 +198,11 @@ export function NewPrescriptionModal({ open, onOpenChange, petId, consultationId
         quantity: 1,
         route: "oral"
       }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating prescription:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la création de la prescription.",
+        description: error?.message || "Une erreur est survenue lors de la création de la prescription.",
         variant: "destructive",
       });
     }

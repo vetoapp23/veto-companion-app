@@ -220,7 +220,7 @@ export function LoginForm() {
                 <p
                   className="text-sm mb-4 rounded-xl px-3 py-2"
                   style={{
-                    background: "rgba(15, 118, 110, 0.08)",
+                    background: "color-mix(in srgb, var(--mk-teal) 14%, transparent)",
                     color: "var(--mk-deep)",
                   }}
                 >
@@ -319,7 +319,7 @@ export function LoginForm() {
                     <div className="relative flex justify-center text-xs uppercase">
                       <span
                         className="px-2"
-                        style={{ background: "rgba(255,255,255,0.9)", color: "var(--mk-muted)" }}
+                        style={{ background: "var(--mk-surface)", color: "var(--mk-muted)" }}
                       >
                         ou
                       </span>

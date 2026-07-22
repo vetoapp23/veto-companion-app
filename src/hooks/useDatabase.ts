@@ -525,7 +525,7 @@ export const useCreateConsultation = () => {
         }
 
         // Dynamic data preparation that adapts to the actual schema
-        const consultationData = {
+        const consultationData: Record<string, unknown> = {
           animal_id: data.animal_id,
           client_id: data.client_id,
           veterinarian_id: user.id,
@@ -543,8 +543,11 @@ export const useCreateConsultation = () => {
           photos: data.photos || null,
           follow_up_date: data.follow_up_date || null,
           follow_up_notes: data.follow_up_notes || null,
-          status: data.status || 'completed'
+          status: data.status || 'completed',
         };
+        if ((data as any).visit_id) {
+          consultationData.visit_id = (data as any).visit_id;
+        }
 
         const { data: consultation, error } = await supabase
           .from('consultations')
@@ -763,6 +766,7 @@ export const useCreateVaccination = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vaccinations'] });
       queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
     },
   });
 };
@@ -1209,8 +1213,8 @@ export const useCreatePrescription = () => {
         const { medications, ...prescriptionDataWithoutMedications } = prescriptionData;
 
         // Prepare prescription data dynamically
-        const dynamicPrescriptionData = {
-          consultation_id: prescriptionDataWithoutMedications.consultation_id,
+        const dynamicPrescriptionData: Record<string, unknown> = {
+          consultation_id: prescriptionDataWithoutMedications.consultation_id || null,
           animal_id: prescriptionDataWithoutMedications.animal_id,
           client_id: prescriptionDataWithoutMedications.client_id,
           veterinarian_id: prescriptionDataWithoutMedications.veterinarian_id || user.id,
@@ -1222,12 +1226,19 @@ export const useCreatePrescription = () => {
           refill_count: prescriptionDataWithoutMedications.refill_count || 0,
           valid_until: prescriptionDataWithoutMedications.valid_until || null,
         };
+        // visit_id only if column exists / provided — ignore insert errors by stripping if needed
+        if ((prescriptionDataWithoutMedications as any).visit_id) {
+          dynamicPrescriptionData.visit_id = (prescriptionDataWithoutMedications as any).visit_id;
+        }
 
         // Create the prescription first
-        const { data: prescriptionResult, error: prescriptionError } = await supabase
-          .from('prescriptions')
-          .insert(dynamicPrescriptionData)
-          .select(`
+        let prescriptionResult: any = null;
+        let prescriptionError: any = null;
+        {
+          const first = await supabase
+            .from('prescriptions')
+            .insert(dynamicPrescriptionData)
+            .select(`
             id,
             consultation_id,
             animal_id,
@@ -1265,7 +1276,42 @@ export const useCreatePrescription = () => {
               client_type
             )
           `)
-          .single();
+            .single();
+          prescriptionResult = first.data;
+          prescriptionError = first.error;
+
+          // Retry without visit_id if column not migrated yet
+          if (
+            prescriptionError &&
+            dynamicPrescriptionData.visit_id &&
+            /visit_id|schema cache|column/i.test(prescriptionError.message || "")
+          ) {
+            const { visit_id: _drop, ...withoutVisit } = dynamicPrescriptionData;
+            const retry = await supabase
+              .from('prescriptions')
+              .insert(withoutVisit)
+              .select(`
+            id,
+            consultation_id,
+            animal_id,
+            client_id,
+            veterinarian_id,
+            prescription_date,
+            diagnosis,
+            notes,
+            status,
+            refill_count,
+            valid_until,
+            created_at,
+            updated_at,
+            animal:animals(id, name, species, breed),
+            client:clients(id, first_name, last_name, email, phone)
+          `)
+              .single();
+            prescriptionResult = retry.data;
+            prescriptionError = retry.error;
+          }
+        }
 
         if (prescriptionError) {
           console.error('Error creating prescription:', prescriptionError);
@@ -1301,34 +1347,40 @@ export const useCreatePrescription = () => {
           // Stock decrement: for each medication linked to a stock item, record an "out" movement and decrement
           for (const med of medications) {
             if (!med.stock_item_id || !med.quantity || med.quantity <= 0) continue;
-            try {
-              const { data: stockItem } = await supabase
-                .from('stock_items')
-                .select('id, current_quantity, organization_id')
-                .eq('id', med.stock_item_id)
-                .single();
-              if (!stockItem) continue;
-
-              const newQty = Math.max(0, Number(stockItem.current_quantity || 0) - Number(med.quantity));
-              await supabase
-                .from('stock_items')
-                .update({ current_quantity: newQty, updated_at: new Date().toISOString() })
-                .eq('id', stockItem.id);
-
-              await supabase.from('stock_movements').insert({
-                stock_item_id: stockItem.id,
-                organization_id: stockItem.organization_id,
-                movement_type: 'out',
-                quantity: med.quantity,
-                reason: 'Prescription',
-                reference_id: prescriptionResult.id,
-                reference_type: 'prescription',
-                performed_by: user.id,
-                notes: `Médicament: ${med.medication_name}`,
-              });
-            } catch (e) {
-              console.warn('Stock decrement failed for med', med.medication_name, e);
+            const { data: stockItem, error: stockErr } = await supabase
+              .from('stock_items')
+              .select('id, current_quantity, organization_id, name')
+              .eq('id', med.stock_item_id)
+              .single();
+            if (stockErr || !stockItem) {
+              throw new Error(`Stock introuvable pour ${med.medication_name}`);
             }
+            const available = Number(stockItem.current_quantity || 0);
+            if (available < Number(med.quantity)) {
+              throw new Error(
+                `Stock insuffisant pour ${med.medication_name} (disponible: ${available}, demandé: ${med.quantity})`
+              );
+            }
+
+            const newQty = available - Number(med.quantity);
+            const { error: updErr } = await supabase
+              .from('stock_items')
+              .update({ current_quantity: newQty, updated_at: new Date().toISOString() })
+              .eq('id', stockItem.id);
+            if (updErr) throw new Error(`Impossible de décrémenter le stock: ${updErr.message}`);
+
+            const { error: movErr } = await supabase.from('stock_movements').insert({
+              stock_item_id: stockItem.id,
+              organization_id: stockItem.organization_id,
+              movement_type: 'out',
+              quantity: med.quantity,
+              reason: 'Prescription',
+              reference_id: prescriptionResult.id,
+              reference_type: 'prescription',
+              performed_by: user.id,
+              notes: `Médicament: ${med.medication_name}`,
+            });
+            if (movErr) console.warn('Stock movement log failed', movErr);
           }
           // Successfully created prescription medications
         }
@@ -1500,6 +1552,8 @@ export const useUpdateAppointment = () => {
     onSuccess: (updatedAppointment) => {
       // Invalidate and refetch appointments list
       queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() })
+      // Linked visits may have had visit_date synced
+      queryClient.invalidateQueries({ queryKey: ["visits"] })
       
       // Update the specific appointment in cache
       queryClient.setQueryData(appointmentKeys.lists(), (old: Appointment[] | undefined) => {

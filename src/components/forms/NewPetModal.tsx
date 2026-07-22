@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +13,17 @@ import { useAnimalSpecies, useAnimalBreeds, useAnimalColors } from "@/hooks/useA
 import { useClients, useCreateAnimal, useAnimals } from "@/hooks/useDatabase";
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import type { CreateAnimalData } from "@/lib/database";
+import type { Animal, CreateAnimalData } from "@/lib/database";
 
 interface NewPetModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Prefill owner when opened from a client/visit context */
+  defaultClientId?: string;
+  onCreated?: (animal: Animal) => void;
 }
 
-export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
+export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: NewPetModalProps) {
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
   const createAnimalMutation = useCreateAnimal();
@@ -43,7 +46,7 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
     birthDate: "",
     weight: "",
     color: "",
-    ownerId: "",
+    ownerId: defaultClientId || "",
     microchip: "",
     medicalNotes: "",
     photo: "", // added official photo
@@ -63,6 +66,13 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
     motherTitles: "",
     pedigreePhoto: ""
   });
+
+  // Keep owner in sync when opening with a client context
+  useEffect(() => {
+    if (open && defaultClientId) {
+      setFormData((prev) => ({ ...prev, ownerId: defaultClientId }));
+    }
+  }, [open, defaultClientId]);
 
   // Filter breeds based on selected type
   const availableBreeds = formData.type && allAnimalBreeds[formData.type] 
@@ -229,7 +239,7 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
         status: formData.status === 'healthy' ? 'vivant' : (formData.status === 'urgent' ? 'décédé' : 'perdu')
       };
 
-      await createAnimalMutation.mutateAsync(animalData);
+      const created = await createAnimalMutation.mutateAsync(animalData);
     
       toast({
         title: "✓ Animal ajouté avec succès",
@@ -245,7 +255,7 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
         birthDate: "",
         weight: "",
         color: "",
-        ownerId: "",
+        ownerId: defaultClientId || "",
         microchip: "",
         medicalNotes: "",
         photo: "",
@@ -268,6 +278,7 @@ export function NewPetModal({ open, onOpenChange }: NewPetModalProps) {
       // Clear any form errors
       setFormErrors({});
       
+      onCreated?.(created);
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating animal:', error);

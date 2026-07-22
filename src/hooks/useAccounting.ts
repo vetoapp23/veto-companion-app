@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface DatabaseRevenue {
   id: string;
   user_id: string;
+  organization_id?: string;
   revenue_date: string;
   source: string;
   category?: string;
@@ -26,6 +27,7 @@ export interface DatabaseRevenue {
 export interface DatabaseExpense {
   id: string;
   user_id: string;
+  organization_id?: string;
   expense_date: string;
   category: string;
   subcategory?: string;
@@ -89,11 +91,14 @@ export const useAccounting = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('revenue')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('revenue_date', { ascending: false });
+      const organizationId = user.organization_id || user.profile?.organization_id;
+      let query = supabase.from('revenue').select('*').order('revenue_date', { ascending: false });
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+      const { data, error } = await query;
 
       if (error) throw error;
       setRevenues(data || []);
@@ -127,11 +132,14 @@ export const useAccounting = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('invoice_date', { ascending: false });
+      const organizationId = user.organization_id || user.profile?.organization_id;
+      let query = supabase.from('invoices').select('*').order('invoice_date', { ascending: false });
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+      const { data, error } = await query;
 
       if (error) throw error;
       setInvoices(data || []);
@@ -177,10 +185,21 @@ export const useAccounting = () => {
   const addRevenue = async (revenueData: Omit<DatabaseRevenue, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
+    const organizationId = user.organization_id || user.profile?.organization_id;
+    if (!organizationId) {
+      toast({
+        title: "Erreur",
+        description: "Organisation introuvable — reconnectez-vous.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     try {
       const newRevenue = {
         ...revenueData,
         user_id: user.id,
+        organization_id: organizationId,
       };
 
       const { data, error } = await supabase
@@ -203,7 +222,7 @@ export const useAccounting = () => {
       console.error('Error adding revenue:', err);
       toast({
         title: "Erreur",
-        description: "Impossible d'ajouter la recette",
+        description: err?.message || "Impossible d'ajouter la recette",
         variant: "destructive",
       });
       return null;
@@ -214,10 +233,21 @@ export const useAccounting = () => {
   const addExpense = async (expenseData: Omit<DatabaseExpense, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
+    const organizationId = user.organization_id || user.profile?.organization_id;
+    if (!organizationId) {
+      toast({
+        title: "Erreur",
+        description: "Organisation introuvable — reconnectez-vous.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     try {
       const newExpense = {
         ...expenseData,
         user_id: user.id,
+        organization_id: organizationId,
       };
 
       const { data, error } = await supabase
@@ -240,7 +270,7 @@ export const useAccounting = () => {
       console.error('Error adding expense:', err);
       toast({
         title: "Erreur",
-        description: "Impossible d'ajouter la charge",
+        description: err?.message || "Impossible d'ajouter la charge",
         variant: "destructive",
       });
       return null;
@@ -364,11 +394,15 @@ export const useAccounting = () => {
     updateExpense,
     deleteRevenue,
     deleteExpense,
+    fetchRevenues,
+    fetchExpenses,
+    fetchInvoices,
+    fetchPayments,
     refreshAll: () => {
       fetchRevenues();
       fetchExpenses();
       fetchInvoices();
       fetchPayments();
-    }
+    },
   };
 };

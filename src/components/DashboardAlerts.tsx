@@ -2,18 +2,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package, Calendar, Clock, TrendingUp } from "lucide-react";
 import { useAppointments, useStockItems } from "@/hooks/useDatabase";
+import { toLocalDateKey, todayLocalKey } from "@/lib/dateLocal";
 
 export function DashboardAlerts() {
   const { data: appointments = [] } = useAppointments();
   const { data: stockItems = [] } = useStockItems();
 
-  const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
-  const startOfToday = new Date(todayStr);
+  const todayStr = todayLocalKey();
+  const startOfToday = new Date(todayStr + "T00:00:00");
 
   const appointmentsToday = appointments.filter((a) => {
-    const date = (a.appointment_date || "").split("T")[0];
-    return date === todayStr && a.status !== "cancelled" && a.status !== "completed";
+    return toLocalDateKey(a.appointment_date) === todayStr && a.status !== "cancelled" && a.status !== "completed";
   });
 
   const overdueAppointments = appointments.filter((a) => {

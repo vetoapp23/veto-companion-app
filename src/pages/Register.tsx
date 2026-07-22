@@ -206,6 +206,7 @@ const Register = () => {
                   key={c}
                   variant={currency === c ? "default" : "outline"}
                   size="sm"
+                  className={currency === c ? undefined : "mk-currency-btn"}
                   onClick={() => setCurrency(c)}
                 >
                   {c}

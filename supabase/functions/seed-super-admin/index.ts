@@ -1,5 +1,5 @@
 // Bootstraps a super_admin account. Requires header x-bootstrap-secret matching env BOOTSTRAP_SECRET.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",

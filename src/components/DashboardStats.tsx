@@ -3,6 +3,7 @@ import { Users, Heart, Calendar, Stethoscope, DollarSign, Activity, Syringe, Shi
 import { useClients, useAnimals, useConsultations, useAppointments, useVaccinations, useAntiparasitics, useStockItems, useFarms } from "@/hooks/useDatabase";
 import { useAccounting } from "@/hooks/useAccounting";
 import { useSettings } from "@/contexts/SettingsContext";
+import { toLocalDateKey, todayLocalKey } from "@/lib/dateLocal";
 
 export function DashboardStats() {
   const { data: clients = [] } = useClients();
@@ -41,18 +42,17 @@ export function DashboardStats() {
   const antiparasiticsThisMonth = antiparasitics.filter(a => inMonth(a.treatment_date, thisMonth, thisYear)).length;
   const antiparasiticsPreviousMonth = antiparasitics.filter(a => inMonth(a.treatment_date, previousMonth, previousYear)).length;
 
-  const today = new Date().toISOString().split("T")[0];
-  const consultationsToday = consultations.filter(c => (c.consultation_date || "").split("T")[0] === today).length;
+  const today = todayLocalKey();
+  const consultationsToday = consultations.filter(c => toLocalDateKey(c.consultation_date) === today).length;
   const appointmentsToday = appointments.filter(a => {
-    const date = (a.appointment_date || "").split("T")[0];
-    return date === today && a.status !== "cancelled" && a.status !== "completed";
+    return toLocalDateKey(a.appointment_date) === today && a.status !== "cancelled" && a.status !== "completed";
   }).length;
 
   const weekFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const upcomingAppointments = appointments.filter(a => {
     if (!a.appointment_date || a.status === "cancelled" || a.status === "completed") return false;
     const d = new Date(a.appointment_date);
-    return d >= new Date(today) && d <= weekFromNow;
+    return d >= new Date(today + "T00:00:00") && d <= weekFromNow;
   });
 
   const appointmentsThisMonth = appointments.filter(a => inMonth(a.appointment_date, thisMonth, thisYear)).length;

@@ -78,7 +78,7 @@ export function DemoLoginPanel() {
             key={a.plan}
             size="sm"
             variant="outline"
-            className="border-[var(--mk-line)] text-[var(--mk-ink)] hover:bg-[rgba(15,118,110,0.08)] hover:text-[var(--mk-ink)]"
+            className="mk-demo-btn"
             disabled={busy !== null}
             onClick={() => loginAs(a.email, a.plan)}
           >

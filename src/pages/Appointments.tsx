@@ -1,20 +1,26 @@
 // @ts-nocheck
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, User, Heart, Plus, Search, Filter, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Grid, List } from "lucide-react";
+import { Calendar, Clock, User, Heart, Plus, Search, Filter, Edit, Trash2, CheckCircle, XCircle, AlertCircle, Grid, List, Stethoscope } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { SimpleAppointmentModal } from "../components/forms/SimpleAppointmentModal";
-import { useAppointments, useUpdateAppointment, useDeleteAppointment, type Appointment } from "@/hooks/useDatabase";
+import { useAppointments, useUpdateAppointment, useDeleteAppointment, useVaccinations, useAntiparasitics, type Appointment } from "@/hooks/useDatabase";
 import { useToast } from "@/hooks/use-toast";
 import { useDisplayPreference } from "@/hooks/use-display-preference";
 import { useAnimalSpecies, useAppointmentTypes } from '@/hooks/useAppSettings';
 import { UnifiedCalendar } from '@/components/UnifiedCalendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useCreateVisit, useVisits } from "@/hooks/useVisits";
+import { getServiceDef, suggestServiceFromAppointmentType } from "@/lib/visitCatalog";
+import { buildClinicCalendarEvents } from "@/lib/clinicCalendar";
+import { toLocalDateKey, toLocalTimeKey, todayLocalKey, localDateTimeToISO } from "@/lib/dateLocal";
+import type { UpdateAppointmentData } from "@/lib/database";
 
 const statusStyles = {
   scheduled: "bg-blue-100 text-blue-800",
@@ -44,8 +50,13 @@ const typeLabels = {
 
 export default function Appointments() {
   const { data: appointments = [], isLoading, error } = useAppointments();
+  const { data: visits = [] } = useVisits();
+  const { data: vaccinations = [] } = useVaccinations();
+  const { data: antiparasitics = [] } = useAntiparasitics();
   const updateAppointmentMutation = useUpdateAppointment();
   const deleteAppointmentMutation = useDeleteAppointment();
+  const createVisit = useCreateVisit();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { currentView } = useDisplayPreference('appointments');
   
@@ -54,12 +65,14 @@ export default function Appointments() {
   const { data: appointmentTypes = [], isLoading: typesLoading } = useAppointmentTypes();
   
   const [showNewAppointment, setShowNewAppointment] = useState(false);
+  const [prefillDate, setPrefillDate] = useState<string | undefined>();
+  const [prefillTime, setPrefillTime] = useState<string | undefined>();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterSpecies, setFilterSpecies] = useState("all");
   const [filterDate, setFilterDate] = useState("all");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(todayLocalKey());
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [displayMode, setDisplayMode] = useState<'cards' | 'table'>(currentView);
   
@@ -83,14 +96,9 @@ export default function Appointments() {
     });
   };
 
-  const getAppointmentDate = (appointment: Appointment) => {
-    return new Date(appointment.appointment_date).toISOString().split('T')[0];
-  };
+  const getAppointmentDate = (appointment: Appointment) => toLocalDateKey(appointment.appointment_date);
 
-  const getAppointmentTime = (appointment: Appointment) => {
-    const date = new Date(appointment.appointment_date);
-    return date.toTimeString().slice(0, 5); // HH:MM format
-  };
+  const getAppointmentTime = (appointment: Appointment) => toLocalTimeKey(appointment.appointment_date);
   
   // Date affichée pour la vue calendrier
   const [currentDate, setCurrentDate] = useState(() => {
@@ -109,11 +117,11 @@ export default function Appointments() {
   };
 
   const getAnimalName = (appointment: Appointment) => {
-    return appointment.animal?.name || 'Unknown Animal';
+    return appointment.animal?.name || "Sans animal";
   };
 
   const getAnimalSpecies = (appointment: Appointment) => {
-    return appointment.animal?.species || 'Unknown Species';
+    return appointment.animal?.species || "—";
   };
 
   // Calculate stats from appointments data
@@ -148,10 +156,10 @@ export default function Appointments() {
     
     let matchesDate = true;
     const appointmentDate = new Date(appointment.appointment_date);
-    const appointmentDateStr = appointmentDate.toISOString().split('T')[0];
+    const appointmentDateStr = toLocalDateKey(appointment.appointment_date);
     
     if (filterDate === "today") {
-      matchesDate = appointmentDateStr === new Date().toISOString().split('T')[0];
+      matchesDate = appointmentDateStr === todayLocalKey();
     } else if (filterDate === "week") {
       const today = new Date();
       const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -187,20 +195,68 @@ export default function Appointments() {
     }
   };
 
+  const startVisitFromAppointment = async (appointment: Appointment) => {
+    if (appointment.status === "cancelled" || appointment.status === "completed") {
+      toast({
+        title: "RDV non démarrable",
+        description: "Ce rendez-vous est déjà terminé ou annulé.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const code = suggestServiceFromAppointmentType(appointment.appointment_type);
+      const def = getServiceDef(code)!;
+      const visit = await createVisit.mutateAsync({
+        client_id: appointment.client_id,
+        animal_id: appointment.animal_id || null,
+        appointment_id: appointment.id,
+        reason: appointment.notes || def.label,
+        visit_date: appointment.appointment_date,
+        initial_service: {
+          service_code: def.code,
+          service_label: def.label,
+          amount: def.defaultAmount,
+        },
+      });
+      navigate(`/visites/${visit.id}`);
+    } catch (e: any) {
+      toast({
+        title: "Impossible de démarrer la visite",
+        description: e?.message || "Erreur inattendue",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleFieldSave = async () => {
     if (!editingField) return;
     const { id, field } = editingField;
     const appointment = appointments.find(a => a.id === id);
-    if (appointment) {
-      try {
-        await updateAppointmentMutation.mutateAsync({
-          id: id,
-          data: { [field]: fieldValue }
-        });
-        toast({ title: 'Modifié', description: `${field} mis à jour`, });
-      } catch (error) {
-        toast({ title: 'Erreur', description: 'Impossible de mettre à jour', variant: 'destructive' });
+    if (!appointment) {
+      setEditingField(null);
+      return;
+    }
+    try {
+      let data: UpdateAppointmentData = {};
+      if (field === "date" || field === "time") {
+        const dateKey = field === "date" ? fieldValue : getAppointmentDate(appointment);
+        const timeKey = field === "time" ? fieldValue : getAppointmentTime(appointment);
+        if (!dateKey || !timeKey) {
+          toast({ title: "Erreur", description: "Date ou heure invalide", variant: "destructive" });
+          setEditingField(null);
+          return;
+        }
+        data = { appointment_date: localDateTimeToISO(dateKey, timeKey) };
+      } else if (field === "reason") {
+        data = { notes: fieldValue };
+      } else if (field === "status") {
+        data = { status: fieldValue as Appointment["status"] };
       }
+      await updateAppointmentMutation.mutateAsync({ id, data });
+      toast({ title: "Modifié", description: "Rendez-vous mis à jour" });
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour", variant: "destructive" });
     }
     setEditingField(null);
   };
@@ -232,18 +288,40 @@ export default function Appointments() {
   };
 
   const getAppointmentsForDate = (date: string) => {
-    return appointments.filter(a => {
-      const appointmentDate = new Date(a.appointment_date);
-      return appointmentDate.toISOString().split('T')[0] === date;
-    });
+    return appointments.filter((a) => toLocalDateKey(a.appointment_date) === date);
   };
 
-  const getTodayAppointments = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return getAppointmentsForDate(today);
-  };
+  const getTodayAppointments = () => getAppointmentsForDate(todayLocalKey());
 
   const todayAppointments = getTodayAppointments();
+
+  const clinicEvents = useMemo(
+    () =>
+      buildClinicCalendarEvents({
+        appointments,
+        visits,
+        vaccinations,
+        antiparasitics,
+      }),
+    [appointments, visits, vaccinations, antiparasitics]
+  );
+
+  const occupiedSlots = useMemo(
+    () =>
+      appointments
+        .filter((a) => a.status !== "cancelled")
+        .map((a) => ({
+          date: toLocalDateKey(a.appointment_date),
+          time: toLocalTimeKey(a.appointment_date),
+        })),
+    [appointments]
+  );
+
+  const openNewAppointment = (date?: string, time?: string) => {
+    setPrefillDate(date);
+    setPrefillTime(time);
+    setShowNewAppointment(true);
+  };
 
   // Calendar data based on currentDate
   const year = currentDate.getFullYear();
@@ -295,7 +373,7 @@ export default function Appointments() {
         title="Rendez-vous"
         description="Planifiez et gérez tous vos rendez-vous vétérinaires"
         actions={
-          <Button onClick={() => setShowNewAppointment(true)} className="gap-2 rounded-full">
+          <Button onClick={() => openNewAppointment()} className="gap-2 rounded-full">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Nouveau Rendez-vous</span>
             <span className="sm:hidden">Nouveau RDV</span>
@@ -335,30 +413,32 @@ export default function Appointments() {
       </div>
       {viewMode==='calendar' ? (
       <UnifiedCalendar
-        events={appointments.map(appointment => ({
-        id: parseInt(appointment.id),
-        type: 'appointment' as const,
-        title: `${getClientName(appointment)} - ${getAnimalName(appointment)}`,
-        time: getAppointmentTime(appointment),
-        date: getAppointmentDate(appointment),
-        status: appointment.status,
-        clientName: getClientName(appointment),
-        petName: getAnimalName(appointment),
-        }))}
+        events={clinicEvents}
         onEventClick={(event) => {
-        // Gérer le clic sur un rendez-vous
-        // Appointment clicked
+          if (event.type === "visit" && event.sourceId) {
+            navigate(`/visites/${event.sourceId}`);
+            return;
+          }
+          if (event.type === "vaccination") {
+            navigate("/vaccinations");
+            return;
+          }
+          if (event.type === "antiparasitic") {
+            navigate("/antiparasites");
+            return;
+          }
+          // RDV: stay on appointments, optionally filter by date
+          if (event.date) setSelectedDate(event.date);
         }}
         onDateClick={(date) => {
-        setSelectedDate(date);
+          setSelectedDate(date);
         }}
         onTimeSlotClick={(date, time) => {
-        // Ouvrir le modal de création de rendez-vous avec la date et l'heure pré-remplies
-        setShowNewAppointment(true);
-        // Vous pouvez ajouter une logique pour pré-remplir le formulaire
+          openNewAppointment(date, time);
         }}
+        occupiedSlots={occupiedSlots}
         showTimeSlots={true}
-        title="Calendrier des Rendez-vous"
+        title="Calendrier clinique"
         icon={<Calendar className="h-5 w-5" />}
       />
       ) : (
@@ -591,6 +671,17 @@ export default function Appointments() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
+              {(appointment.status === "scheduled" || appointment.status === "confirmed") && (
+                <Button
+                  size="sm"
+                  onClick={() => startVisitFromAppointment(appointment)}
+                  disabled={createVisit.isPending}
+                  className="gap-1 w-full sm:w-auto"
+                >
+                  <Stethoscope className="h-3 w-3" />
+                  Démarrer visite
+                </Button>
+              )}
               {appointment.status === 'scheduled' && (
                 <>
                 <Button 
@@ -778,6 +869,16 @@ export default function Appointments() {
                 </td>
                 <td className="p-2 sm:p-4">
                 <div className="flex gap-1">
+                  {(appointment.status === "scheduled" || appointment.status === "confirmed") && (
+                    <Button
+                      size="sm"
+                      onClick={() => startVisitFromAppointment(appointment)}
+                      disabled={createVisit.isPending}
+                      title="Démarrer visite"
+                    >
+                      <Stethoscope className="h-3 w-3" />
+                    </Button>
+                  )}
                   {appointment.status === 'scheduled' && (
                   <>
                     <Button 
@@ -829,8 +930,16 @@ export default function Appointments() {
       </div>
 
       <SimpleAppointmentModal
-      open={showNewAppointment}
-      onOpenChange={setShowNewAppointment}
+        open={showNewAppointment}
+        onOpenChange={(open) => {
+          setShowNewAppointment(open);
+          if (!open) {
+            setPrefillDate(undefined);
+            setPrefillTime(undefined);
+          }
+        }}
+        prefillDate={prefillDate}
+        prefillTime={prefillTime}
       />
 
       {/* Delete Confirmation Modal */}

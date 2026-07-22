@@ -149,11 +149,11 @@ export default function AntiparasiticProtocolModalDynamic({
       
       resetForm();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la sauvegarde du protocole:', error);
       toast({
         title: "Erreur",
-        description: "Une erreur s'est produite lors de la sauvegarde.",
+        description: error?.message || "Une erreur s'est produite lors de la sauvegarde.",
         variant: "destructive",
       });
     }

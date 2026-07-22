@@ -17,6 +17,7 @@ import {
   Home,
   Syringe,
   Bug,
+  ClipboardList,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
@@ -29,6 +30,7 @@ const primaryNavItems = [
   { icon: Users, label: "Clients", path: "/clients", permission: null },
   { icon: Heart, label: "Animaux", path: "/pets", permission: null },
   { icon: Calendar, label: "RDV", path: "/appointments", permission: null },
+  { icon: ClipboardList, label: "Visites", path: "/visites", permission: null },
   { icon: FileText, label: "Consultations", path: "/consultations", permission: null },
   { icon: Syringe, label: "Vaccinations", path: "/vaccinations", permission: null },
   { icon: Bug, label: "Antiparasites", path: "/antiparasites", permission: null },

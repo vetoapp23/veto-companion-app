@@ -31,6 +31,8 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Pets from "./pages/Pets";
 import Appointments from "./pages/Appointments";
+import Visits from "./pages/Visits";
+import VisitWorkspace from "./pages/VisitWorkspace";
 import Consultations from "./pages/Consultations";
 import History from "./pages/History";
 import Farm from "./pages/Farm";
@@ -106,6 +108,24 @@ const App = () => (
                           <ProtectedRoute>
                             <VetNavigation />
                             <Appointments />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/visites"
+                        element={
+                          <ProtectedRoute>
+                            <VetNavigation />
+                            <Visits />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/visites/:id"
+                        element={
+                          <ProtectedRoute>
+                            <VetNavigation />
+                            <VisitWorkspace />
                           </ProtectedRoute>
                         }
                       />

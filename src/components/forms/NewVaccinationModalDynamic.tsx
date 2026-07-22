@@ -17,14 +17,22 @@ import {
   useCreateVaccination,
   useVaccinationProtocolsBySpecies,
 } from '@/hooks/useDatabase';
+import { useQueryClient } from '@tanstack/react-query';
+import { appointmentKeys } from '@/hooks/useDatabase';
 import type { BoosterScheduleEntry, VaccinationProtocol } from '@/lib/database';
 import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
+import {
+  createReminderAppointments,
+  resolveMaintenanceDueDate,
+} from '@/lib/reminderAppointments';
 
 interface NewVaccinationModalProps {
   children?: React.ReactNode;
   selectedAnimalId?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Called after successful save with the administered vaccination id */
+  onCreated?: (vaccination: { id: string }) => void;
 }
 
 interface PlannedDose {
@@ -37,11 +45,13 @@ export default function NewVaccinationModal({
   selectedAnimalId,
   open,
   onOpenChange,
+  onCreated,
 }: NewVaccinationModalProps) {
   const { data: animals = [] } = useAnimals();
   const { data: clients = [] } = useClients();
   const createVaccinationMutation = useCreateVaccination();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: vaccinationTypes = [] } = useVaccinationTypes();
 
@@ -207,37 +217,65 @@ export default function NewVaccinationModal({
         administered_by: formData.administeredBy?.trim() || undefined,
       };
 
-      if (plannedDoses.length >= 1) {
-        // Multi-dose mode: create one row per planned dose, chaining next_due_date.
-        const sorted = [...plannedDoses].sort((a, b) => a.date.localeCompare(b.date));
-        for (let i = 0; i < sorted.length; i++) {
-          const dose = sorted[i];
-          const next = sorted[i + 1];
-          await createVaccinationMutation.mutateAsync({
-            ...basePayload,
-            vaccination_date: dose.date,
-            next_due_date: next ? next.date : undefined,
-            notes: [dose.label, formData.notes?.trim()].filter(Boolean).join(' — ') || undefined,
-          });
+      const administeredDate = formData.vaccinationDate;
+      const protocol = appliedProtocolId
+        ? protocols.find((p) => p.id === appliedProtocolId)
+        : undefined;
+
+      // Only record today's administered dose — future doses become appointments
+      const nextFromPlan = plannedDoses
+        .filter((d) => d.date > administeredDate)
+        .sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
+
+      const nextDue =
+        nextFromPlan ||
+        formData.nextDueDate ||
+        resolveMaintenanceDueDate(
+          administeredDate,
+          plannedDoses,
+          protocol?.duration_days
+        );
+
+      const todayLabel =
+        plannedDoses.find((d) => d.date === administeredDate)?.label ||
+        plannedDoses[0]?.label ||
+        "1ère dose";
+
+      const created = await createVaccinationMutation.mutateAsync({
+        ...basePayload,
+        vaccination_date: administeredDate,
+        next_due_date: nextDue || undefined,
+        notes:
+          [todayLabel, formData.notes?.trim()].filter(Boolean).join(" — ") || undefined,
+      });
+
+      let reminderCount = 0;
+      if (animalClient?.id) {
+        const { created: n } = await createReminderAppointments({
+          clientId: animalClient.id,
+          animalId: formData.animalId,
+          administeredDate,
+          plannedDoses,
+          nextDueDate: nextDue,
+          appointmentType: "vaccination",
+          titlePrefix: "Rappel vaccin",
+          productName: formData.vaccineName.trim(),
+        });
+        reminderCount = n;
+        if (n > 0) {
+          queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
         }
-        toast({
-          title: '✓ Calendrier enregistré',
-          description: `${sorted.length} doses planifiées pour ${selectedAnimal?.name || "l'animal"}.`,
-        });
-      } else {
-        const singleDate = plannedDoses[0]?.date || formData.vaccinationDate;
-        await createVaccinationMutation.mutateAsync({
-          ...basePayload,
-          vaccination_date: singleDate,
-          next_due_date: formData.nextDueDate || undefined,
-          notes: formData.notes?.trim() || undefined,
-        });
-        toast({
-          title: '✓ Vaccination enregistrée',
-          description: `Vaccination de ${selectedAnimal?.name || "l'animal"} ajoutée.`,
-        });
       }
 
+      toast({
+        title: "✓ Vaccination enregistrée",
+        description:
+          reminderCount > 0
+            ? `Dose du jour + ${reminderCount} RDV de rappel créé(s).`
+            : `Vaccination de ${selectedAnimal?.name || "l'animal"} ajoutée.`,
+      });
+
+      onCreated?.({ id: created.id });
       resetForm();
       setModalOpen(false);
     } catch (error: any) {

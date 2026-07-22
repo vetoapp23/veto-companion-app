@@ -191,7 +191,7 @@ const Accounting: React.FC = () => {
 
     // Calculate revenue breakdown
     const revenueBreakdown = {
-      consultations: revenues.filter(e => e.source === 'consultation').reduce((sum, e) => sum + e.amount, 0),
+      consultations: revenues.filter(e => e.source === 'consultation' || e.source === 'visit').reduce((sum, e) => sum + e.amount, 0),
       vaccinations: revenues.filter(e => e.source === 'vaccination').reduce((sum, e) => sum + e.amount, 0),
       antiparasitics: revenues.filter(e => e.source === 'antiparasitic').reduce((sum, e) => sum + e.amount, 0),
       prescriptions: revenues.filter(e => e.source === 'prescription').reduce((sum, e) => sum + e.amount, 0),
