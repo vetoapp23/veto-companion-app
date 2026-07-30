@@ -8,16 +8,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, FileText, Heart, User, Calendar, Pill, Thermometer, Edit, Trash2, Grid, List, Eye } from "lucide-react";
+import { formatTemperature } from "@/lib/utils";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import { ConsultationEditModalNew } from "@/components/modals/ConsultationEditModalNew";
 import { ConsultationPrintNew } from "@/components/ConsultationPrintNew";
 import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
+import { PrescriptionEditModal } from "@/components/modals/PrescriptionEditModal";
+import { PrescriptionPrint } from "@/components/PrescriptionPrint";
+import { transformDbPrescriptionForPrint } from "@/lib/prescriptionPrint";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
 import { useDisplayPreference } from "@/hooks/use-display-preference";
-import { useConsultations, useCreateConsultation, useUpdateConsultation, useDeleteConsultation, usePrescriptions, type Consultation } from "@/hooks/useDatabase";
-import type { CreateConsultationData } from "@/lib/database";
+import { useConsultations, useCreateConsultation, useUpdateConsultation, useDeleteConsultation, usePrescriptions } from "@/hooks/useDatabase";
+import type { Consultation, CreateConsultationData, Prescription } from "@/lib/database";
 import { deleteConsultationDirect } from "@/lib/consultationUtils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -43,6 +47,8 @@ const Consultations = () => {
   const [showPrescriptionDetails, setShowPrescriptionDetails] = useState(false);
   const [selectedConsultationPrescriptions, setSelectedConsultationPrescriptions] = useState<any[]>([]);
   const [selectedAnimalName, setSelectedAnimalName] = useState<string>('');
+  const [showEditPrescription, setShowEditPrescription] = useState(false);
+  const [prescriptionToEdit, setPrescriptionToEdit] = useState<Prescription | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [consultationToDelete, setConsultationToDelete] = useState<Consultation | null>(null);
 
@@ -263,6 +269,9 @@ const Consultations = () => {
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <h4 className="text-base sm:text-lg font-semibold">{consultation.animal?.name || 'Animal inconnu'}</h4>
               <Badge variant="secondary" className="w-fit">Consultation</Badge>
+              {(consultation.visit_id) && (
+                <Badge variant="outline" className="w-fit">Visite liée</Badge>
+              )}
               <span className="text-xs sm:text-sm text-muted-foreground">
                 {new Date(consultation.consultation_date).toLocaleDateString('fr-FR')}
               </span>
@@ -284,7 +293,7 @@ const Consultations = () => {
               {consultation.temperature && (
               <div className="flex items-center gap-1">
                 <Thermometer className="h-3 sm:h-4 w-3 sm:w-4 text-primary" />
-                {consultation.temperature}°C
+                {formatTemperature(consultation.temperature, '-')}
               </div>
               )}
               {consultation.weight && (
@@ -329,6 +338,8 @@ const Consultations = () => {
                 <div className="space-y-1">
                   {consultationPrescriptions.map((prescription: any) => (
                   <div key={prescription.id} className="text-xs sm:text-sm bg-blue-50 p-2 rounded border-l-2 border-blue-200">
+                    <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
                     <div className="font-medium text-blue-800">
                     Prescription #{prescription.id.slice(-8)}
                     </div>
@@ -346,6 +357,12 @@ const Consultations = () => {
                       ))}
                     </div>
                     )}
+                    </div>
+                    <PrescriptionPrint
+                      prescription={transformDbPrescriptionForPrint(prescription) as any}
+                      compact
+                    />
+                    </div>
                   </div>
                   ))}
                 </div>
@@ -449,7 +466,7 @@ const Consultations = () => {
                 </div>
               </TableCell>
               <TableCell className="text-xs sm:text-sm">
-                {consultation.temperature ? `${consultation.temperature}°C` : '-'}
+                {consultation.temperature ? formatTemperature(consultation.temperature) : '-'}
               </TableCell>
               <TableCell className="text-xs sm:text-sm">
                 {(() => {
@@ -539,6 +556,20 @@ const Consultations = () => {
       />
       )}
 
+      <PrescriptionEditModal
+        open={showEditPrescription}
+        onOpenChange={(open) => {
+          setShowEditPrescription(open);
+          if (!open) setPrescriptionToEdit(null);
+        }}
+        prescription={prescriptionToEdit}
+        onUpdated={(updated) => {
+          setSelectedConsultationPrescriptions((prev) =>
+            prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
+          );
+        }}
+      />
+
       {/* Prescription Details Modal */}
       <Dialog open={showPrescriptionDetails} onOpenChange={setShowPrescriptionDetails}>
       <DialogContent className="max-w-full sm:max-w-4xl max-h-[80vh] overflow-y-auto mx-4">
@@ -560,12 +591,31 @@ const Consultations = () => {
         <CardTitle className="text-base sm:text-lg">
           Prescription #{prescription.id.slice(-8)}
         </CardTitle>
+        <div className="flex flex-wrap items-center gap-2">
         <Badge
           variant={prescription.status === 'active' ? 'default' : prescription.status === 'completed' ? 'secondary' : 'destructive'}
           className="text-xs w-fit"
         >
           {prescription.status}
         </Badge>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          onClick={() => {
+            setPrescriptionToEdit(prescription);
+            setShowEditPrescription(true);
+          }}
+        >
+          <Edit className="h-4 w-4 mr-1" />
+          Modifier
+        </Button>
+        <PrescriptionPrint
+          prescription={transformDbPrescriptionForPrint(prescription) as any}
+          compact
+        />
+        </div>
         </div>
         <div className="text-xs sm:text-sm text-muted-foreground">
         Date: {new Date(prescription.prescription_date).toLocaleDateString('fr-FR')} à {new Date(prescription.prescription_date).toLocaleTimeString('fr-FR')}
@@ -620,12 +670,17 @@ const Consultations = () => {
         )}
 
         {/* Additional Info */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-muted-foreground pt-2 border-t">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 text-xs text-muted-foreground pt-2 border-t">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <span>Renouvellements: {prescription.refill_count || 0}</span>
         <span>Créée le: {new Date(prescription.created_at).toLocaleDateString('fr-FR')}</span>
         {prescription.updated_at !== prescription.created_at && (
           <span>Modifiée le: {new Date(prescription.updated_at).toLocaleDateString('fr-FR')}</span>
         )}
+        </div>
+        <PrescriptionPrint
+          prescription={transformDbPrescriptionForPrint(prescription) as any}
+        />
         </div>
         </CardContent>
         </Card>

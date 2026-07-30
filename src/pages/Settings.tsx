@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X, Cog } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X, Cog, Banknote, RotateCcw } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useAnimals } from "@/hooks/useDatabase";
 import { useSettings, ClinicSettings, DisplayPreferences } from '@/contexts/SettingsContext';
@@ -18,6 +18,10 @@ import { UserProfile } from "@/components/UserProfile";
 import { User } from "lucide-react";
 import { SettingsManagement } from "@/components/SettingsManagement";
 import { StorageUsageCard } from "@/components/StorageUsageCard";
+import {
+  VISIT_SERVICE_CATALOG,
+  getCatalogDefaultPrices,
+} from "@/lib/visitCatalog";
 import { 
   useVeterinarianSettings,
   useUpdateVeterinarianSettings,
@@ -382,20 +386,115 @@ export default function Settings() {
                         <Label htmlFor="currency">Devise</Label>
                         <Input id="currency" value={settings.currency} onChange={e => handleSettingsChange('currency', e.target.value)} />
                       </div>
-                      <div>
-                        <Label htmlFor="defaultConsultationPrice">Prix de consultation par défaut ({settings.currency})</Label>
-                        <Input 
-                          id="defaultConsultationPrice" 
-                          type="number" 
-                          step="0.01" 
-                          min="0" 
-                          value={settings.defaultConsultationPrice} 
-                          onChange={e => handleSettingsChange('defaultConsultationPrice', parseFloat(e.target.value) || 0)} 
-                        />
-                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={saveSettings}>Enregistrer</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Service default prices */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Banknote className="h-5 w-5" />
+                      Prix des prestations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Montants proposés par défaut lors de l&apos;ajout d&apos;une prestation
+                      à une visite (modifiables ensuite ligne par ligne).
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {VISIT_SERVICE_CATALOG.map((def) => {
+                        const Icon = def.icon;
+                        const value =
+                          settings.servicePrices?.[def.code] ?? def.defaultAmount;
+                        return (
+                          <div
+                            key={def.code}
+                            className="flex items-center gap-3 rounded-lg border p-3"
+                          >
+                            <div className="rounded-md bg-muted p-2 text-muted-foreground">
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <Label
+                                htmlFor={`price-${def.code}`}
+                                className="text-sm font-medium"
+                              >
+                                {def.label}
+                              </Label>
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {def.description}
+                              </p>
+                            </div>
+                            <div className="w-28 shrink-0">
+                              <Input
+                                id={`price-${def.code}`}
+                                type="number"
+                                step="1"
+                                min="0"
+                                className="text-right tabular-nums"
+                                value={value}
+                                onChange={(e) => {
+                                  const amount = Math.max(
+                                    0,
+                                    parseFloat(e.target.value) || 0
+                                  );
+                                  const nextPrices = {
+                                    ...(settings.servicePrices || getCatalogDefaultPrices()),
+                                    [def.code]: amount,
+                                  };
+                                  updateSettings({
+                                    ...settings,
+                                    servicePrices: nextPrices,
+                                    ...(def.code === "consultation"
+                                      ? { defaultConsultationPrice: amount }
+                                      : {}),
+                                  });
+                                }}
+                              />
+                              <p className="text-[10px] text-muted-foreground text-right mt-0.5">
+                                {settings.currency}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={() => {
+                          const defaults = getCatalogDefaultPrices();
+                          updateSettings({
+                            ...settings,
+                            servicePrices: defaults,
+                            defaultConsultationPrice: defaults.consultation ?? 150,
+                          });
+                          toast({
+                            title: "Prix réinitialisés",
+                            description: "Valeurs catalogue du logiciel restaurées.",
+                          });
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Réinitialiser
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          toast({
+                            title: "Prix enregistrés",
+                            description: "Les nouveaux montants s'appliquent aux prochaines prestations.",
+                          })
+                        }
+                      >
+                        Enregistrer
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

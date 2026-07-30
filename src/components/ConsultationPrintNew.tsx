@@ -5,6 +5,7 @@ import { Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
+import { formatTemperature } from "@/lib/utils";
 
 interface ConsultationPrintProps {
   consultation: Consultation;
@@ -176,7 +177,7 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
             ${consultation.temperature ? `
             <div class="vital-item">
               <div class="vital-label">Température</div>
-              <div class="vital-value">${consultation.temperature}°C</div>
+              <div class="vital-value">${formatTemperature(consultation.temperature)}</div>
             </div>
             ` : ''}
             ${consultation.heart_rate ? `

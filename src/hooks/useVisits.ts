@@ -60,6 +60,7 @@ export function useUpdateVisit() {
     onSuccess: (visit) => {
       qc.invalidateQueries({ queryKey: visitKeys.lists() });
       qc.setQueryData(visitKeys.detail(visit.id), visit);
+      qc.invalidateQueries({ queryKey: ["accounting"] });
     },
   });
 }
@@ -108,6 +109,7 @@ export function useUpdateVisitService() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: visitKeys.detail(vars.visitId) });
       qc.invalidateQueries({ queryKey: visitKeys.lists() });
+      qc.invalidateQueries({ queryKey: ["accounting"] });
     },
   });
 }
@@ -120,6 +122,7 @@ export function useRemoveVisitService() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: visitKeys.detail(vars.visitId) });
       qc.invalidateQueries({ queryKey: visitKeys.lists() });
+      qc.invalidateQueries({ queryKey: ["accounting"] });
     },
   });
 }

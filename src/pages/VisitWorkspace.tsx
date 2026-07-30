@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   Check,
@@ -18,6 +19,9 @@ import {
   Tractor,
   Printer,
   Banknote,
+  AlertTriangle,
+  Pencil,
+  RotateCcw,
 } from "lucide-react";
 import {
   useVisit,
@@ -29,10 +33,11 @@ import {
   visitKeys,
 } from "@/hooks/useVisits";
 import {
-  VISIT_SERVICE_CATALOG,
   VISIT_STATUS_LABELS,
   VISIT_SERVICE_STATUS_LABELS,
   getServiceDef,
+  resolveServiceAmount,
+  getCatalogWithPrices,
 } from "@/lib/visitCatalog";
 import type { VisitService } from "@/lib/visits";
 import { useToast } from "@/hooks/use-toast";
@@ -53,7 +58,16 @@ import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
 import NewFarmInterventionModalSupabase from "@/components/forms/NewFarmInterventionModalSupabase";
 import { NewPetModal } from "@/components/forms/NewPetModal";
 import { VisitServiceDetailPanel } from "@/components/visits/VisitServiceDetailPanel";
-import { useAnimals } from "@/hooks/useDatabase";
+import {
+  useAnimals,
+  useCreateVaccination,
+  useCreateAntiparasitic,
+  useUpdateAppointment,
+  useAppointmentsByAnimal,
+  useVaccinationsByAnimal,
+  useAntiparasiticsByAnimal,
+  appointmentKeys,
+} from "@/hooks/useDatabase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
@@ -63,6 +77,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { format } from "date-fns";
+import {
+  buildVaccinationNotes,
+  buildAntiparasiticNotes,
+  resolveVisitVaccinationReminder,
+  resolveVisitAntiparasiticReminder,
+  toDayKey,
+} from "@/lib/vaccinationCertificate";
+import { syncRemindersAfterAdministered } from "@/lib/medicalDoseSync";
+import {
+  shouldSyncServiceToMedicalRecord,
+  syncVisitExamToMedicalRecord,
+} from "@/lib/medicalActSync";
 
 export default function VisitWorkspace() {
   const { id } = useParams<{ id: string }>();
@@ -78,6 +115,18 @@ export default function VisitWorkspace() {
   const removeService = useRemoveVisitService();
   const completeVisit = useCompleteVisit();
   const updateVisit = useUpdateVisit();
+  const createVaccination = useCreateVaccination();
+  const createAntiparasitic = useCreateAntiparasitic();
+  const updateAppointment = useUpdateAppointment();
+  const { data: animalAppointments = [] } = useAppointmentsByAnimal(
+    visit?.animal_id || ""
+  );
+  const { data: animalVaccinations = [] } = useVaccinationsByAnimal(
+    visit?.animal_id || ""
+  );
+  const { data: animalAntiparasitics = [] } = useAntiparasiticsByAnimal(
+    visit?.animal_id || ""
+  );
 
   const [activeServiceId, setActiveServiceId] = useState<string | null>(null);
   const [showCatalog, setShowCatalog] = useState(false);
@@ -92,6 +141,12 @@ export default function VisitWorkspace() {
   const [lastInvoice, setLastInvoice] = useState<VisitInvoice | null>(null);
   const [showPetModal, setShowPetModal] = useState(false);
   const [showAnimalPicker, setShowAnimalPicker] = useState(false);
+  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
+  const [editVisitOpen, setEditVisitOpen] = useState(false);
+  const [editReason, setEditReason] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editVisitDate, setEditVisitDate] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const { data: animals = [] } = useAnimals();
   const clientAnimals = useMemo(
@@ -145,8 +200,9 @@ export default function VisitWorkspace() {
   }, [visit, services]);
 
   const catalogForContext = useMemo(() => {
+    const priced = getCatalogWithPrices(settings.servicePrices);
     if (visit?.context === "farm") {
-      return VISIT_SERVICE_CATALOG.filter(
+      return priced.filter(
         (s) =>
           s.action === "farm_intervention" ||
           s.action === "notes" ||
@@ -154,8 +210,8 @@ export default function VisitWorkspace() {
           s.code === "prescription"
       );
     }
-    return VISIT_SERVICE_CATALOG.filter((s) => s.action !== "farm_intervention");
-  }, [visit?.context]);
+    return priced.filter((s) => s.action !== "farm_intervention");
+  }, [visit?.context, settings.servicePrices]);
 
   const openActionFor = async (service: VisitService) => {
     setActiveServiceId(service.id);
@@ -211,18 +267,279 @@ export default function VisitWorkspace() {
     }
   };
 
+  const isVaccinationService = (service: VisitService) => {
+    const def = getServiceDef(service.service_code);
+    return def?.action === "vaccination" || service.service_code === "vaccination";
+  };
+
+  const isAntiparasiticService = (service: VisitService) => {
+    const def = getServiceDef(service.service_code);
+    return (
+      def?.action === "antiparasitic" ||
+      service.service_code === "antiparasitic" ||
+      service.service_code === "deworming"
+    );
+  };
+
+  const pendingServices = useMemo(
+    () => services.filter((s) => s.status === "planned" || s.status === "in_progress"),
+    [services]
+  );
+
+  const vaccinationWithoutDose = useMemo(
+    () =>
+      services.filter(
+        (s) =>
+          (isVaccinationService(s) || isAntiparasiticService(s)) &&
+          s.status !== "skipped" &&
+          (s.status !== "done" || !s.reference_id)
+      ),
+    [services]
+  );
+
   const markDone = async (service: VisitService, reference?: { type: string; id: string }) => {
+    if (!visit) return;
+
+    let ref = reference;
+
+    // Vaccination: « Marquer fait » enregistre la dose sur le certificat
+    if (!ref && !service.reference_id && isVaccinationService(service)) {
+      if (!visit.animal_id) {
+        toast({
+          title: "Animal requis",
+          description: "Associez un animal avant d'enregistrer la vaccination.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reminder = resolveVisitVaccinationReminder({
+        reason: visit.reason,
+        appointmentNotes: visit.appointment?.notes,
+      });
+
+      if (!reminder) {
+        toast({
+          title: "Saisie du vaccin requise",
+          description:
+            "Cliquez sur « Enregistrer vaccin » pour saisir le produit et la dose avant de marquer fait.",
+          variant: "destructive",
+        });
+        setVaccOpen(true);
+        return;
+      }
+
+      try {
+        const administeredDate = format(new Date(), "yyyy-MM-dd");
+        const existingVax = animalVaccinations.find(
+          (v) =>
+            toDayKey(v.vaccination_date || "") === administeredDate &&
+            (v.vaccine_name || "")
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/\p{M}/gu, "")
+              .trim() ===
+              reminder.productName
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/\p{M}/gu, "")
+                .trim()
+        );
+
+        if (existingVax) {
+          ref = { type: "vaccination", id: existingVax.id };
+        } else {
+          const created = await createVaccination.mutateAsync({
+            animal_id: visit.animal_id,
+            vaccine_name: reminder.productName,
+            vaccine_type: reminder.productName,
+            vaccination_date: administeredDate,
+            notes: buildVaccinationNotes({
+              doseLabel: reminder.doseLabel,
+              plannedReminders: [],
+              userNotes: `Visite · ${reminder.doseLabel}`,
+            }),
+          });
+          ref = { type: "vaccination", id: created.id };
+        }
+
+        await syncRemindersAfterAdministered({
+          appointments: animalAppointments,
+          animalId: visit.animal_id,
+          productName: reminder.productName,
+          date: administeredDate,
+          kind: "vaccination",
+          primaryAppointmentId: visit.appointment_id,
+          updateFn: (id, data) =>
+            updateAppointment.mutateAsync({ id, data }),
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["vaccinations"] });
+        if (visit.animal_id) {
+          queryClient.invalidateQueries({
+            queryKey: appointmentKeys.byAnimal(visit.animal_id),
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+      } catch (e: any) {
+        toast({
+          title: "Impossible d'enregistrer la dose",
+          description: e?.message || "Erreur lors de la création de la vaccination.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Antiparasitaire: « Marquer fait » enregistre le traitement
+    if (!ref && !service.reference_id && isAntiparasiticService(service)) {
+      if (!visit.animal_id) {
+        toast({
+          title: "Animal requis",
+          description: "Associez un animal avant d'enregistrer le traitement.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reminder = resolveVisitAntiparasiticReminder({
+        reason: visit.reason,
+        appointmentNotes: visit.appointment?.notes,
+      });
+
+      if (!reminder) {
+        toast({
+          title: "Saisie du traitement requise",
+          description:
+            "Cliquez sur « Enregistrer traitement » pour saisir le produit avant de marquer fait.",
+          variant: "destructive",
+        });
+        setAntiOpen(true);
+        return;
+      }
+
+      try {
+        const administeredDate = format(new Date(), "yyyy-MM-dd");
+        const existing = animalAntiparasitics.find(
+          (t) =>
+            toDayKey(t.treatment_date || "") === administeredDate &&
+            (t.product_name || "")
+              .toLowerCase()
+              .normalize("NFD")
+              .replace(/\p{M}/gu, "")
+              .trim() ===
+              reminder.productName
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/\p{M}/gu, "")
+                .trim()
+        );
+
+        if (existing) {
+          ref = { type: "antiparasitic", id: existing.id };
+        } else {
+          const created = await createAntiparasitic.mutateAsync({
+            animal_id: visit.animal_id,
+            product_name: reminder.productName,
+            treatment_date: administeredDate,
+            notes: buildAntiparasiticNotes({
+              doseLabel: reminder.doseLabel,
+              plannedReminders: [],
+              userNotes: `Visite · ${reminder.doseLabel}`,
+            }),
+          });
+          ref = { type: "antiparasitic", id: created.id };
+        }
+
+        await syncRemindersAfterAdministered({
+          appointments: animalAppointments,
+          animalId: visit.animal_id,
+          productName: reminder.productName,
+          date: administeredDate,
+          kind: "antiparasitic",
+          primaryAppointmentId: visit.appointment_id,
+          updateFn: (id, data) =>
+            updateAppointment.mutateAsync({ id, data }),
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["antiparasitics"] });
+        if (visit.animal_id) {
+          queryClient.invalidateQueries({
+            queryKey: appointmentKeys.byAnimal(visit.animal_id),
+          });
+        }
+        queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+      } catch (e: any) {
+        toast({
+          title: "Impossible d'enregistrer le traitement",
+          description: e?.message || "Erreur lors de la création du traitement.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Consultation clinique : « Marquer fait » crée aussi le dossier (page Consultations)
+    if (
+      !ref &&
+      !service.reference_id &&
+      getServiceDef(service.service_code)?.action === "consultation"
+    ) {
+      if (!visit.animal_id) {
+        toast({
+          title: "Animal requis",
+          description: "Associez un animal avant d'enregistrer la consultation.",
+          variant: "destructive",
+        });
+        return;
+      }
+      try {
+        const { createConsultation } = await import("@/lib/database");
+        const created = await createConsultation({
+          animal_id: visit.animal_id,
+          client_id: visit.client_id,
+          visit_id: visit.id,
+          consultation_date: visit.visit_date || new Date().toISOString(),
+          consultation_type: service.service_code || "consultation",
+          notes: service.notes || `Visite · ${service.service_label}`,
+          status: "completed",
+          cost: Number(service.amount) || undefined,
+        });
+        ref = { type: "consultation", id: created.id };
+        queryClient.invalidateQueries({ queryKey: ["consultations"] });
+      } catch (e: any) {
+        toast({
+          title: "Impossible d'enregistrer la consultation",
+          description: e?.message || "Erreur lors de la création du dossier.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     await updateService.mutateAsync({
       serviceId: service.id,
-      visitId: visit!.id,
+      visitId: visit.id,
       patch: {
         status: "done",
-        ...(reference
-          ? { reference_type: reference.type, reference_id: reference.id }
-          : {}),
+        ...(ref
+          ? { reference_type: ref.type, reference_id: ref.id }
+          : service.reference_id
+            ? {}
+            : {}),
       },
     });
-    toast({ title: "Prestation terminée", description: service.service_label });
+    toast({
+      title: "Prestation terminée",
+      description:
+        ref?.type === "vaccination"
+          ? `${service.service_label} — dose ajoutée au certificat`
+          : ref?.type === "antiparasitic"
+            ? `${service.service_label} — traitement ajouté au certificat`
+            : ref?.type === "consultation"
+              ? `${service.service_label} — dossier consultation créé`
+              : service.service_label,
+    });
   };
 
   const markSkipped = async (service: VisitService) => {
@@ -242,7 +559,7 @@ export default function VisitWorkspace() {
         service: {
           service_code: def.code,
           service_label: def.label,
-          amount: def.defaultAmount,
+          amount: resolveServiceAmount(def.code, settings.servicePrices),
         },
       });
       setShowCatalog(false);
@@ -269,13 +586,54 @@ export default function VisitWorkspace() {
       markDone?: boolean;
     }
   ) => {
+    if (!visit) return;
+
+    const notes = payload.notes ?? service.notes;
+    const details = payload.details ?? service.details;
+    const attachments = payload.attachments ?? service.attachments;
+
+    let referencePatch: { reference_type?: string; reference_id?: string } = {};
+
+    // Radio / écho / analyses → consultation dans le dossier médical
+    if (
+      visit.animal_id &&
+      shouldSyncServiceToMedicalRecord(service.service_code) &&
+      (payload.markDone || service.status === "done" || !!service.reference_id)
+    ) {
+      try {
+        const consultation = await syncVisitExamToMedicalRecord({
+          service,
+          visit,
+          notes,
+          details,
+          attachments,
+        });
+        if (consultation) {
+          referencePatch = {
+            reference_type: "consultation",
+            reference_id: consultation.id,
+          };
+          queryClient.invalidateQueries({ queryKey: ["consultations"] });
+        }
+      } catch (e: any) {
+        toast({
+          title: "Dossier médical",
+          description:
+            e?.message ||
+            "L'acte a été sauvé sur la visite, mais pas synchronisé au dossier.",
+          variant: "destructive",
+        });
+      }
+    }
+
     await updateService.mutateAsync({
       serviceId: service.id,
-      visitId: visit!.id,
+      visitId: visit.id,
       patch: {
-        notes: payload.notes ?? service.notes,
-        details: payload.details ?? service.details,
-        attachments: payload.attachments ?? service.attachments,
+        notes,
+        details,
+        attachments,
+        ...referencePatch,
         ...(payload.markDone ? { status: "done" as const } : {}),
       },
     });
@@ -372,15 +730,31 @@ export default function VisitWorkspace() {
     }
   };
 
-  const handleComplete = async () => {
+  const doCompleteVisit = async () => {
     if (!visit) return;
     try {
       await completeVisit.mutateAsync(visit.id);
+      if (visit.animal_id) {
+        queryClient.invalidateQueries({
+          queryKey: appointmentKeys.byAnimal(visit.animal_id),
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ["vaccinations"] });
       toast({ title: "Visite terminée" });
       navigate("/visites");
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
+  };
+
+  const handleComplete = async () => {
+    if (!visit) return;
+    if (pendingServices.length > 0 || vaccinationWithoutDose.length > 0) {
+      setCompleteConfirmOpen(true);
+      return;
+    }
+    await doCompleteVisit();
   };
 
   const assignAnimal = async (animalId: string | null) => {
@@ -397,6 +771,57 @@ export default function VisitWorkspace() {
           : "La visite n'a plus d'animal associé.",
       });
       setShowAnimalPicker(false);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const openEditVisit = () => {
+    if (!visit) return;
+    setEditReason(visit.reason || "");
+    setEditNotes(visit.notes || "");
+    setEditVisitDate(
+      visit.visit_date ? format(new Date(visit.visit_date), "yyyy-MM-dd'T'HH:mm") : ""
+    );
+    setEditVisitOpen(true);
+  };
+
+  const saveVisitEdits = async () => {
+    if (!visit) return;
+    setEditSaving(true);
+    try {
+      const patch: {
+        reason: string | null;
+        notes: string | null;
+        visit_date?: string;
+      } = {
+        reason: editReason.trim() || null,
+        notes: editNotes.trim() || null,
+      };
+      if (editVisitDate) {
+        patch.visit_date = new Date(editVisitDate).toISOString();
+      }
+      await updateVisit.mutateAsync({ id: visit.id, patch });
+      toast({ title: "Visite mise à jour" });
+      setEditVisitOpen(false);
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const reopenVisit = async () => {
+    if (!visit) return;
+    try {
+      await updateVisit.mutateAsync({
+        id: visit.id,
+        patch: { status: "in_progress" },
+      });
+      toast({
+        title: "Visite réouverte",
+        description: "Vous pouvez à nouveau modifier les prestations.",
+      });
     } catch (e: any) {
       toast({ title: "Erreur", description: e.message, variant: "destructive" });
     }
@@ -485,6 +910,18 @@ export default function VisitWorkspace() {
                 {visit.animal_id ? "Changer l'animal" : "Ajouter un animal"}
               </Button>
             )}
+            {visit.status === "completed" && visit.context !== "farm" && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1"
+                onClick={() => setShowAnimalPicker(true)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Animal
+              </Button>
+            )}
             <span>{new Date(visit.visit_date).toLocaleString("fr-FR")}</span>
             {visit.appointment && (
               <Link to="/appointments" className="text-primary hover:underline">
@@ -504,10 +941,32 @@ export default function VisitWorkspace() {
               intervention ferme.
             </div>
           )}
-          {visit.reason && <p className="text-sm text-muted-foreground">{visit.reason}</p>}
+          {(visit.reason || visit.notes) && (
+            <div className="text-sm space-y-1">
+              {visit.reason && (
+                <p>
+                  <span className="text-muted-foreground">Motif : </span>
+                  {visit.reason}
+                </p>
+              )}
+              {visit.notes && (
+                <p className="text-muted-foreground">{visit.notes}</p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="gap-2" onClick={openEditVisit}>
+            <Pencil className="h-4 w-4" />
+            Modifier
+          </Button>
+          {visit.status === "completed" && (
+            <Button variant="outline" className="gap-2" onClick={reopenVisit}>
+              <RotateCcw className="h-4 w-4" />
+              Réouvrir
+            </Button>
+          )}
           <Button variant="outline" className="gap-2" onClick={() => setShowCatalog(true)}>
             <Plus className="h-4 w-4" />
             Prestation
@@ -544,8 +1003,17 @@ export default function VisitWorkspace() {
           )}
           {visit.status === "in_progress" && (
             <Button className="gap-2" onClick={handleComplete} disabled={completeVisit.isPending}>
-              <Check className="h-4 w-4" />
+              {pendingServices.length > 0 || vaccinationWithoutDose.length > 0 ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
               Terminer la visite
+              {(pendingServices.length > 0 || vaccinationWithoutDose.length > 0) && (
+                <Badge variant="destructive" className="ml-1 h-5 px-1.5">
+                  !
+                </Badge>
+              )}
             </Button>
           )}
         </div>
@@ -700,8 +1168,8 @@ export default function VisitWorkspace() {
                     <div className="font-medium">{item.label}</div>
                     <div className="text-xs text-muted-foreground">{item.description}</div>
                     <div className="text-xs mt-1 tabular-nums">
-                      {item.defaultAmount > 0
-                        ? `~ ${item.defaultAmount} ${currency}`
+                      {item.amount > 0
+                        ? `~ ${item.amount} ${currency}`
                         : "Montant libre"}
                     </div>
                   </div>
@@ -734,10 +1202,33 @@ export default function VisitWorkspace() {
         open={vaccOpen}
         onOpenChange={setVaccOpen}
         selectedAnimalId={visit.animal_id || undefined}
-        onCreated={(v) => {
+        onCreated={async (v) => {
           if (activeService) {
-            markDone(activeService, { type: "vaccination", id: v.id });
+            await markDone(activeService, { type: "vaccination", id: v.id });
           }
+          if (visit.animal_id) {
+            try {
+              await syncRemindersAfterAdministered({
+                appointments: animalAppointments,
+                animalId: visit.animal_id,
+                productName: v.vaccine_name || "",
+                date: (v.vaccination_date || "").slice(0, 10) || format(new Date(), "yyyy-MM-dd"),
+                kind: "vaccination",
+                primaryAppointmentId: visit.appointment_id,
+                updateFn: (id, data) =>
+                  updateAppointment.mutateAsync({ id, data }),
+              });
+            } catch {
+              /* non-blocking */
+            }
+          }
+          queryClient.invalidateQueries({ queryKey: ["vaccinations"] });
+          if (visit.animal_id) {
+            queryClient.invalidateQueries({
+              queryKey: appointmentKeys.byAnimal(visit.animal_id),
+            });
+          }
+          queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
         }}
       />
 
@@ -746,10 +1237,33 @@ export default function VisitWorkspace() {
         onOpenChange={setAntiOpen}
         selectedAnimalId={visit.animal_id || undefined}
         selectedClientId={visit.client_id}
-        onCreated={(a) => {
+        onCreated={async (a) => {
           if (activeService) {
-            markDone(activeService, { type: "antiparasitic", id: a.id });
+            await markDone(activeService, { type: "antiparasitic", id: a.id });
           }
+          if (visit.animal_id) {
+            try {
+              await syncRemindersAfterAdministered({
+                appointments: animalAppointments,
+                animalId: visit.animal_id,
+                productName: a.product_name || "",
+                date: (a.treatment_date || "").slice(0, 10) || format(new Date(), "yyyy-MM-dd"),
+                kind: "antiparasitic",
+                primaryAppointmentId: visit.appointment_id,
+                updateFn: (id, data) =>
+                  updateAppointment.mutateAsync({ id, data }),
+              });
+            } catch {
+              /* non-blocking */
+            }
+          }
+          queryClient.invalidateQueries({ queryKey: ["antiparasitics"] });
+          if (visit.animal_id) {
+            queryClient.invalidateQueries({
+              queryKey: appointmentKeys.byAnimal(visit.animal_id),
+            });
+          }
+          queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
         }}
       />
 
@@ -876,6 +1390,108 @@ export default function VisitWorkspace() {
           assignAnimal(animal.id);
         }}
       />
+
+      <AlertDialog open={completeConfirmOpen} onOpenChange={setCompleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Prestations non terminées
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Des prestations ne sont pas encore marquées comme faites. Les doses / rappels
+                  non enregistrés n&apos;apparaîtront pas sur le certificat de vaccination.
+                </p>
+                {pendingServices.length > 0 && (
+                  <ul className="list-disc pl-5 space-y-1">
+                    {pendingServices.map((s) => (
+                      <li key={s.id}>
+                        <span className="text-foreground font-medium">{s.service_label}</span>
+                        {" — "}
+                        {VISIT_SERVICE_STATUS_LABELS[s.status] || s.status}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {vaccinationWithoutDose.some(
+                  (s) => s.status === "done" && !s.reference_id
+                ) && (
+                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-amber-200">
+                    Au moins une vaccination ou un antiparasitaire est « fait » sans
+                    enregistrement lié au certificat. Utilisez « Enregistrer » ou « Marquer
+                    fait » sur le rappel.
+                  </p>
+                )}
+                <p>Terminez ou ignorez les prestations concernées, ou forcez la clôture.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Retour</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setCompleteConfirmOpen(false);
+                void doCompleteVisit();
+              }}
+            >
+              Terminer quand même
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={editVisitOpen} onOpenChange={setEditVisitOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifier la visite</DialogTitle>
+            <DialogDescription>
+              Motif, notes et date. Les prestations se gèrent dans le panneau de gauche.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-visit-date">Date / heure</Label>
+              <Input
+                id="edit-visit-date"
+                type="datetime-local"
+                value={editVisitDate}
+                onChange={(e) => setEditVisitDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-reason">Motif</Label>
+              <Input
+                id="edit-reason"
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                placeholder="ex. Rappel vaccin — Rappel 2 · rage"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <textarea
+                id="edit-notes"
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Notes internes…"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditVisitOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="button" onClick={saveVisitEdits} disabled={editSaving}>
+                {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

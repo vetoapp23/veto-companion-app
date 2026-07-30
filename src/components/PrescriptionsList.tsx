@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
 import { PrescriptionEditModal } from "@/components/modals/PrescriptionEditModal";
 import { PrescriptionPrint } from "@/components/PrescriptionPrint";
+import { transformDbPrescriptionForPrint } from "@/lib/prescriptionPrint";
 
 interface PrescriptionsListProps {
   petId: string;
@@ -77,36 +78,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
     }
   };
 
-  const transformPrescriptionForPrint = (dbPrescription: any) => {
-    return {
-      id: dbPrescription.id,
-      consultationId: dbPrescription.consultation_id,
-      clientId: dbPrescription.client_id,
-      clientName: `${dbPrescription.client?.first_name || ''} ${dbPrescription.client?.last_name || ''}`.trim(),
-      petId: dbPrescription.animal_id,
-      petName: dbPrescription.animal?.name || '',
-      date: dbPrescription.prescription_date,
-      prescribedBy: 'Non spécifié',
-      diagnosis: dbPrescription.diagnosis || '',
-      medications: dbPrescription.medications?.map((med: any) => ({
-        id: med.id,
-        name: med.medication_name,
-        dosage: med.dosage || '',
-        frequency: med.frequency || '',
-        duration: med.duration || '',
-        instructions: med.instructions || '',
-        quantity: med.quantity || 1,
-        unit: 'unit',
-        cost: 0
-      })) || [],
-      instructions: dbPrescription.notes || '',
-      duration: dbPrescription.valid_until || '',
-      followUpDate: undefined,
-      status: dbPrescription.status || 'active',
-      notes: dbPrescription.notes || '',
-      createdAt: dbPrescription.created_at
-    };
-  };
+  const transformPrescriptionForPrint = transformDbPrescriptionForPrint;
 
   const calculateTotalCost = (medications: any[]) => {
     return medications?.reduce((total, med) => total + (med.cost || 0), 0) || 0;
@@ -160,7 +132,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <PrescriptionPrint prescription={transformPrescriptionForPrint(prescription)} />
+                        <PrescriptionPrint prescription={transformPrescriptionForPrint(prescription)} compact />
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -282,7 +254,10 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
       )}
       <PrescriptionEditModal
         open={showEditPrescription}
-        onOpenChange={setShowEditPrescription}
+        onOpenChange={(open) => {
+          setShowEditPrescription(open);
+          if (!open) setSelectedPrescription(null);
+        }}
         prescription={selectedPrescription}
       />
     </>

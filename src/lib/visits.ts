@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { VisitServiceCode } from "@/lib/visitCatalog";
+import {
+  deleteRevenueByReference,
+  syncVisitServiceToAccounting,
+} from "@/lib/accountingLedger";
 
 export type VisitStatus = "in_progress" | "completed" | "cancelled";
 export type VisitServiceStatus = "planned" | "in_progress" | "done" | "skipped";
@@ -71,6 +75,7 @@ export interface Visit {
     appointment_date: string;
     appointment_type: string;
     status: string;
+    notes?: string | null;
   } | null;
   services?: VisitService[];
 }
@@ -118,7 +123,7 @@ const VISIT_SELECT = `
   client:clients(id, first_name, last_name, phone, email, client_type),
   animal:animals(id, name, species, breed),
   farm:farms(id, farm_name, farm_type, herd_size),
-  appointment:appointments(id, appointment_date, appointment_type, status),
+  appointment:appointments(id, appointment_date, appointment_type, status, notes),
   services:visit_services(*)
 `;
 
@@ -226,6 +231,7 @@ export async function updateVisit(
       | "reason"
       | "notes"
       | "animal_id"
+      | "visit_date"
       | "invoiced"
       | "total_amount"
       | "farm_id"
@@ -256,6 +262,16 @@ export async function updateVisit(
         .update({ animal_id: patch.animal_id || null })
         .eq("id", visitRow.appointment_id);
     }
+  }
+
+  // Recalcule le CA des prestations faites si mode / effectif change
+  if (
+    patch.billing_mode !== undefined ||
+    patch.head_count !== undefined ||
+    patch.visit_date !== undefined
+  ) {
+    await recalculateVisitTotal(id);
+    await syncDoneServicesAccounting(id);
   }
 
   return getVisit(id);
@@ -314,14 +330,34 @@ export async function updateVisitService(
     .from("visit_services")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", serviceId)
-    .select("visit_id")
+    .select("*")
     .single();
 
   if (error) throw new Error(error.message);
-  if (data?.visit_id) await recalculateVisitTotal(data.visit_id);
+  if (!data?.visit_id) return;
+
+  await recalculateVisitTotal(data.visit_id);
+
+  // CA journal : dès qu'une prestation est « fait » (ou montant modifié alors qu'elle l'est)
+  const shouldSyncAccounting =
+    patch.status !== undefined ||
+    patch.amount !== undefined ||
+    patch.service_label !== undefined ||
+    patch.notes !== undefined;
+
+  if (shouldSyncAccounting) {
+    const visit = await getVisit(data.visit_id);
+    await syncVisitServiceToAccounting(data as VisitService, visit);
+  }
 }
 
 export async function removeVisitService(serviceId: string): Promise<void> {
+  try {
+    await deleteRevenueByReference(serviceId, "visit_service");
+  } catch (err) {
+    console.warn("Could not remove visit_service revenue", serviceId, err);
+  }
+
   const { data, error } = await supabase
     .from("visit_services")
     .delete()
@@ -331,6 +367,15 @@ export async function removeVisitService(serviceId: string): Promise<void> {
 
   if (error) throw new Error(error.message);
   if (data?.visit_id) await recalculateVisitTotal(data.visit_id);
+}
+
+async function syncDoneServicesAccounting(visitId: string) {
+  const visit = await getVisit(visitId);
+  for (const service of visit.services || []) {
+    if (service.status === "done") {
+      await syncVisitServiceToAccounting(service, visit);
+    }
+  }
 }
 
 async function recalculateVisitTotal(visitId: string) {

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useClients, useAnimals, useUpdateConsultation, type Consultation } from "@/hooks/useDatabase";
 import type { CreateConsultationData } from "@/lib/database";
 import { useSettings } from "@/contexts/SettingsContext";
+import { roundTemperature, temperatureInputValue } from "@/lib/utils";
 
 interface ConsultationEditModalProps {
   open: boolean;
@@ -50,7 +51,7 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
         consultation_date: consultation.consultation_date ? consultation.consultation_date.split('T')[0] : "",
         consultation_type: consultation.consultation_type || "routine",
         weight: consultation.weight?.toString() || "",
-        temperature: consultation.temperature?.toString() || "",
+        temperature: temperatureInputValue(consultation.temperature) || "",
         symptoms: consultation.symptoms || "",
         diagnosis: consultation.diagnosis || "",
         treatment: consultation.treatment || "",
@@ -175,7 +176,9 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
         treatment: formData.treatment?.trim() || undefined,
         notes: formData.notes?.trim() || undefined,
         weight: formData.weight ? parseFloat(formData.weight) : undefined,
-        temperature: formData.temperature ? parseFloat(formData.temperature) : undefined,
+        temperature: formData.temperature
+          ? roundTemperature(parseFloat(formData.temperature)) ?? undefined
+          : undefined,
         follow_up_date: formData.follow_up_date || null,
         follow_up_notes: formData.follow_up_notes?.trim() || undefined,
         status: formData.status as "scheduled" | "in-progress" | "completed" | "cancelled"
@@ -310,10 +313,10 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
               <Input
                 id="temperature"
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="30"
                 max="50"
-                placeholder="Ex: 38.5"
+                placeholder="Ex: 38.50"
                 value={formData.temperature}
                 onChange={handleChange}
                 title="Température corporelle (30°C à 50°C)"

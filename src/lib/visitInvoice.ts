@@ -2,6 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Visit, VisitService } from "@/lib/visits";
 import { printHtml } from "@/lib/htmlToPdf";
 import { todayLocalKey } from "@/lib/dateLocal";
+import {
+  postInvoicePayment,
+  syncVisitServiceToAccounting,
+} from "@/lib/accountingLedger";
 
 export type InvoiceStatus = "draft" | "issued" | "paid" | "cancelled";
 
@@ -191,27 +195,25 @@ export async function createVisitInvoice(opts: {
   const { error: linesError } = await supabase.from("invoice_lines").insert(lineRows);
   if (linesError) throw new Error(linesError.message);
 
-  const farmLabel = visit.farm?.farm_name ? ` / ${visit.farm.farm_name}` : "";
-  const animalLabel = visit.animal?.name ? ` / ${visit.animal.name}` : "";
+  // CA déjà posté prestation par prestation au statut « fait ».
+  // On resynchronise ici (idempotent) pour rattraper d'anciennes lignes, sans bulk visit.
+  const doneBillable = opts.services.filter(
+    (s) => s.status === "done" && Number(s.amount) > 0
+  );
+  for (const service of doneBillable) {
+    await syncVisitServiceToAccounting(service, visit);
+  }
 
-  const { error: revError } = await supabase.from("revenue").insert({
-    user_id: user.id,
-    organization_id: organizationId,
-    revenue_date: invoiceDate,
-    source: "visit",
-    category: visit.context === "farm" ? "elevage" : "visite",
-    description: `Visite — ${visit.client?.first_name || ""} ${visit.client?.last_name || ""}${farmLabel}${animalLabel}`.trim(),
-    amount: total,
-    notes: descLines,
-    client_id: visit.client_id,
-    reference_id: visit.id,
-    reference_type: "visit",
-  });
-
-  if (revError) {
-    // Roll back invoice if revenue fails (best-effort)
-    await supabase.from("invoices").delete().eq("id", invoice.id);
-    throw new Error(revError.message || "La recette n'a pas pu être enregistrée");
+  // Ancienne recette globale visit (avant sync par prestation) → retirer pour éviter double CA
+  const { data: legacyVisitRev } = await supabase
+    .from("revenue")
+    .select("id")
+    .eq("organization_id", organizationId)
+    .eq("reference_id", visit.id)
+    .eq("reference_type", "visit")
+    .maybeSingle();
+  if (legacyVisitRev?.id) {
+    await supabase.from("revenue").delete().eq("id", legacyVisitRev.id);
   }
 
   const { error: visitError } = await supabase
@@ -253,6 +255,8 @@ export async function markInvoicePaid(
   invoiceId: string,
   paymentMethod?: string
 ): Promise<VisitInvoice> {
+  const invoice = await getVisitInvoice(invoiceId);
+
   const { error } = await supabase
     .from("invoices")
     .update({
@@ -264,6 +268,19 @@ export async function markInvoicePaid(
     .eq("id", invoiceId);
 
   if (error) throw new Error(error.message);
+
+  try {
+    await postInvoicePayment({
+      invoiceId,
+      amount: Number(invoice.total_amount) || 0,
+      paymentMethod: paymentMethod || "cash",
+      paymentDate: todayLocalKey(),
+      notes: `Paiement facture ${invoice.invoice_number}`,
+    });
+  } catch (payErr) {
+    console.warn("Payment row insert failed", payErr);
+  }
+
   return getVisitInvoice(invoiceId);
 }
 

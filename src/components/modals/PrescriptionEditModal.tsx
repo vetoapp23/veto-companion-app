@@ -1,394 +1,347 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Pill, Plus, Trash2, Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useClients, Prescription, PrescriptionMedication } from "@/contexts/ClientContext";
+import {
+  useStockItems,
+  useUpdatePrescription,
+  type Prescription,
+  type StockItem,
+} from "@/hooks/useDatabase";
+import {
+  PrescriptionMedicationsFields,
+  emptyPrescriptionMed,
+  catalogUnitPrice,
+  type PrescriptionMedDraft,
+} from "@/components/forms/PrescriptionMedicationsFields";
+import { findStockItemByName, isPrescriptionStockCategory } from "@/lib/prescriptionStock";
+import { supabase } from "@/lib/supabase";
+import { Save } from "lucide-react";
 
 interface PrescriptionEditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prescription: Prescription | null;
+  onUpdated?: (prescription: Prescription) => void;
 }
 
-export function PrescriptionEditModal({ open, onOpenChange, prescription }: PrescriptionEditModalProps) {
-  const { updatePrescription } = useClients();
-  const { toast } = useToast();
-  
-  const [formData, setFormData] = useState({
-    date: "",
-    prescribedBy: "",
-    diagnosis: "",
-    instructions: "",
-    duration: "",
-    followUpDate: "",
-    status: "" as Prescription['status'],
-    notes: ""
-  });
+type SaleInfo = {
+  sold: boolean;
+  unitPrice?: number;
+  quantity?: number;
+};
 
-  const [medications, setMedications] = useState<PrescriptionMedication[]>([]);
+function parseUnitPriceFromNotes(notes?: string | null): number | undefined {
+  if (!notes) return undefined;
+  const m = notes.match(/PU\s*([0-9]+(?:[.,][0-9]+)?)\s*MAD/i);
+  if (!m) return undefined;
+  const n = Number(String(m[1]).replace(",", "."));
+  return Number.isFinite(n) ? n : undefined;
+}
 
-  // Réinitialiser le formulaire quand le modal s'ouvre
-  useEffect(() => {
-    if (open && prescription) {
-      setFormData({
-        date: prescription.date,
-        prescribedBy: prescription.prescribedBy,
-        diagnosis: prescription.diagnosis,
-        instructions: prescription.instructions,
-        duration: prescription.duration,
-        followUpDate: prescription.followUpDate || "",
-        status: prescription.status,
-        notes: prescription.notes || ""
-      });
-      setMedications([...prescription.medications]);
-    }
-  }, [open, prescription]);
+async function loadSaleInfoByPrescription(
+  prescriptionId: string
+): Promise<Map<string, SaleInfo>> {
+  const map = new Map<string, SaleInfo>();
+  const { data, error } = await supabase
+    .from("stock_movements")
+    .select("item_name, quantity, notes, stock_item_id")
+    .eq("reference", prescriptionId)
+    .eq("movement_type", "out");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.id]: e.target.value
-    }));
-  };
+  if (error || !data) return map;
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleMedicationChange = (index: number, field: string, value: string | number) => {
-    const updatedMedications = [...medications];
-    updatedMedications[index] = {
-      ...updatedMedications[index],
-      [field]: field === 'quantity' || field === 'refills' || field === 'cost' ? Number(value) : value
+  for (const row of data) {
+    const key = String(row.item_name || "")
+      .trim()
+      .toLowerCase();
+    if (!key) continue;
+    const fromNotes = parseUnitPriceFromNotes(row.notes);
+    const info: SaleInfo = {
+      sold: true,
+      unitPrice: fromNotes,
+      quantity: Number(row.quantity) || undefined,
     };
-    setMedications(updatedMedications);
-  };
+    map.set(key, info);
+    if (row.stock_item_id) map.set(`id:${row.stock_item_id}`, info);
+  }
+  return map;
+}
 
-  const addMedication = () => {
-    const newId = Math.max(...medications.map(m => m.id), 0) + 1;
-    setMedications([...medications, {
-      id: newId,
-      name: "",
-      dosage: "",
-      frequency: "",
-      duration: "",
-      instructions: "",
-      quantity: 1,
-      unit: "comprimés",
-      refills: 0,
-      cost: 0
-    }]);
-  };
+function medsToDraft(
+  prescription: Prescription | null,
+  stockItems: StockItem[],
+  sales: Map<string, SaleInfo>
+): PrescriptionMedDraft[] {
+  const meds = prescription?.medications || [];
+  if (meds.length === 0) return [emptyPrescriptionMed()];
 
-  const removeMedication = (index: number) => {
-    if (medications.length > 1) {
-      setMedications(medications.filter((_, i) => i !== index));
-    }
-  };
+  const available = stockItems.filter(
+    (item) => isPrescriptionStockCategory(item.category) && item.active
+  );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  return meds.map((m) => {
+    const name = m.medication_name || "";
+    const stockMatch =
+      (m.stock_item_id && available.find((s) => s.id === m.stock_item_id)) ||
+      findStockItemByName(available, name);
+    const sale =
+      (m.stock_item_id && sales.get(`id:${m.stock_item_id}`)) ||
+      sales.get(name.trim().toLowerCase());
+    const catalogPrice = catalogUnitPrice(stockMatch);
+
+    // Priorité : prix persisté sur la prescription → mouvement → catalogue
+    const dbPrice =
+      m.unit_price != null && Number.isFinite(Number(m.unit_price))
+        ? Number(m.unit_price)
+        : undefined;
+    const sold = Boolean(m.sold_by_clinic) || Boolean(sale?.sold);
+    const unitPrice =
+      dbPrice ??
+      (sale?.unitPrice != null && Number.isFinite(sale.unitPrice)
+        ? sale.unitPrice
+        : sold
+          ? catalogPrice
+          : undefined);
+
+    return {
+      medication_name: name,
+      dosage: m.dosage || "",
+      frequency: m.frequency || "",
+      duration: m.duration || "",
+      quantity: m.quantity || sale?.quantity || 1,
+      instructions: m.instructions || "",
+      route: m.route || "oral",
+      sold_by_clinic: sold,
+      unit_price: unitPrice,
+    };
+  });
+}
+
+export function PrescriptionEditModal({
+  open,
+  onOpenChange,
+  prescription,
+  onUpdated,
+}: PrescriptionEditModalProps) {
+  const { toast } = useToast();
+  const { data: stockItems = [] } = useStockItems();
+  const updateMutation = useUpdatePrescription();
+
+  const [formData, setFormData] = useState({
+    diagnosis: "",
+    notes: "",
+    validUntil: "",
+    status: "active" as string,
+  });
+  const [medications, setMedications] = useState<PrescriptionMedDraft[]>([emptyPrescriptionMed()]);
+  const [loadingMeds, setLoadingMeds] = useState(false);
+
+  useEffect(() => {
+    if (!open || !prescription) return;
+
+    setFormData({
+      diagnosis: prescription.diagnosis || "",
+      notes: prescription.notes || "",
+      validUntil: prescription.valid_until
+        ? String(prescription.valid_until).slice(0, 10)
+        : "",
+      status: prescription.status || "active",
+    });
+
+    let cancelled = false;
+    (async () => {
+      setLoadingMeds(true);
+      try {
+        const sales = await loadSaleInfoByPrescription(prescription.id);
+        if (cancelled) return;
+        setMedications(medsToDraft(prescription, stockItems, sales));
+      } catch {
+        if (!cancelled) {
+          setMedications(medsToDraft(prescription, stockItems, new Map()));
+        }
+      } finally {
+        if (!cancelled) setLoadingMeds(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, prescription, stockItems]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!prescription) return;
+    if (!prescription?.id) return;
 
-    // Valider que tous les médicaments ont un nom
-    const validMedications = medications.filter(med => med.name.trim() !== "");
-    if (validMedications.length === 0) {
+    const available = stockItems.filter(
+      (item) => isPrescriptionStockCategory(item.category) && item.active
+    );
+    const medPayload = medications
+      .filter((m) => m.medication_name.trim())
+      .map((m) => {
+        const stockMatch = findStockItemByName(available, m.medication_name);
+        const unitPrice =
+          m.unit_price != null && Number.isFinite(m.unit_price)
+            ? Number(m.unit_price)
+            : catalogUnitPrice(stockMatch);
+        return {
+          medication_name: m.medication_name.trim(),
+          dosage: m.dosage || undefined,
+          frequency: m.frequency || undefined,
+          duration: m.duration || undefined,
+          quantity: m.quantity || 1,
+          instructions: m.instructions || undefined,
+          route: m.route || undefined,
+          stock_item_id: stockMatch?.id,
+          sold_by_clinic: Boolean(m.sold_by_clinic),
+          unit_price: m.sold_by_clinic ? unitPrice : undefined,
+        };
+      });
+
+    if (medPayload.length === 0) {
       toast({
         title: "Erreur",
-        description: "Au moins un médicament doit être spécifié.",
-        variant: "destructive"
+        description: "Ajoutez au moins un médicament.",
+        variant: "destructive",
       });
       return;
     }
 
-    updatePrescription(prescription.id, {
-      date: formData.date,
-      prescribedBy: formData.prescribedBy,
-      diagnosis: formData.diagnosis,
-      medications: validMedications,
-      instructions: formData.instructions,
-      duration: formData.duration,
-      followUpDate: formData.followUpDate || undefined,
-      status: formData.status,
-      notes: formData.notes
-    });
-    
-    toast({
-      title: "Prescription mise à jour",
-      description: "La prescription a été modifiée avec succès.",
-    });
-    
-    onOpenChange(false);
-  };
+    try {
+      const updated = await updateMutation.mutateAsync({
+        id: prescription.id,
+        data: {
+          diagnosis: formData.diagnosis,
+          notes: formData.notes,
+          status: formData.status,
+          valid_until: formData.validUntil || null,
+          medications: medPayload,
+        },
+      });
 
-  const calculateTotalCost = () => {
-    return medications.reduce((total, med) => total + (med.cost || 0), 0);
+      toast({
+        title: "Prescription modifiée",
+        description: "Ordonnance et comptabilité synchronisées avec le dernier prix.",
+      });
+      onUpdated?.(updated as Prescription);
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error?.message || "Impossible de modifier la prescription.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!prescription) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Pill className="h-5 w-5" />
-            Modifier la Prescription
-          </DialogTitle>
+          <DialogTitle>Modifier la prescription</DialogTitle>
           <DialogDescription>
-            Modifiez la prescription pour {prescription.petName} ({prescription.clientName}).
+            Prescription #{prescription.id.slice(-8)} — le prix unitaire est
+            enregistré sur l&apos;ordonnance et synchronisé en compta.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informations générales */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date de prescription *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={handleChange}
-                required
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-diagnosis">Diagnostic</Label>
+              <Textarea
+                id="edit-diagnosis"
+                value={formData.diagnosis}
+                onChange={(e) => setFormData((p) => ({ ...p, diagnosis: e.target.value }))}
+                placeholder="Diagnostic..."
+                className="h-20"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="prescribedBy">Prescrit par *</Label>
-              <Input
-                id="prescribedBy"
-                value={formData.prescribedBy}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="diagnosis">Diagnostic *</Label>
-            <Input
-              id="diagnosis"
-              value={formData.diagnosis}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="duration">Durée du traitement</Label>
-              <Input
-                id="duration"
-                value={formData.duration}
-                onChange={handleChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="followUpDate">Date de suivi</Label>
-              <Input
-                id="followUpDate"
-                type="date"
-                value={formData.followUpDate}
-                onChange={handleChange}
-                min={formData.date}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Statut</Label>
-              <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Terminée</SelectItem>
-                  <SelectItem value="discontinued">Arrêtée</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Médicaments */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-medium">Médicaments prescrits</Label>
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="sm"
-                onClick={addMedication}
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Ajouter médicament
-              </Button>
-            </div>
-
             <div className="space-y-4">
-              {medications.map((medication, index) => (
-                <div key={medication.id} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Médicament {index + 1}</h4>
-                    {medications.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeMedication(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nom du médicament *</Label>
-                      <Input
-                        value={medication.name}
-                        onChange={(e) => handleMedicationChange(index, 'name', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Dosage *</Label>
-                      <Input
-                        value={medication.dosage}
-                        onChange={(e) => handleMedicationChange(index, 'dosage', e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Fréquence *</Label>
-                      <Input
-                        value={medication.frequency}
-                        onChange={(e) => handleMedicationChange(index, 'frequency', e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Durée</Label>
-                      <Input
-                        value={medication.duration}
-                        onChange={(e) => handleMedicationChange(index, 'duration', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Quantité</Label>
-                      <Input
-                        type="number"
-                        value={medication.quantity}
-                        onChange={(e) => handleMedicationChange(index, 'quantity', parseInt(e.target.value))}
-                        min="1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Unité</Label>
-                      <Select 
-                        value={medication.unit} 
-                        onValueChange={(value) => handleMedicationChange(index, 'unit', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="comprimés">Comprimés</SelectItem>
-                          <SelectItem value="ml">ml</SelectItem>
-                          <SelectItem value="g">g</SelectItem>
-                          <SelectItem value="mg">mg</SelectItem>
-                          <SelectItem value="ampoules">Ampoules</SelectItem>
-                          <SelectItem value="flacons">Flacons</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Coût (€)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={medication.cost}
-                        onChange={(e) => handleMedicationChange(index, 'cost', parseFloat(e.target.value))}
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Instructions spécifiques</Label>
-                      <Input
-                        value={medication.instructions}
-                        onChange={(e) => handleMedicationChange(index, 'instructions', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Renouvellements</Label>
-                      <Input
-                        type="number"
-                        value={medication.refills}
-                        onChange={(e) => handleMedicationChange(index, 'refills', parseInt(e.target.value))}
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Coût total */}
-            <div className="flex justify-end">
-              <Badge variant="outline" className="text-lg px-4 py-2">
-                Coût total: {calculateTotalCost().toFixed(2)}€
-              </Badge>
+              <div>
+                <Label htmlFor="edit-validUntil">Valide jusqu&apos;au</Label>
+                <Input
+                  id="edit-validUntil"
+                  type="date"
+                  value={formData.validUntil}
+                  onChange={(e) => setFormData((p) => ({ ...p, validUntil: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Statut</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => setFormData((p) => ({ ...p, status: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Terminée</SelectItem>
+                    <SelectItem value="cancelled">Annulée</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {/* Instructions générales */}
-          <div className="space-y-2">
-            <Label htmlFor="instructions">Instructions générales</Label>
-            <Textarea
-              id="instructions"
-              value={formData.instructions}
-              onChange={handleChange}
-              rows={3}
-            />
+          <div className="space-y-3 pt-2 border-t">
+            <Label className="text-base font-semibold">Médicaments</Label>
+            {loadingMeds ? (
+              <p className="text-sm text-muted-foreground">Chargement des informations de vente…</p>
+            ) : (
+              <PrescriptionMedicationsFields
+                medications={medications}
+                onChange={setMedications}
+                stockItems={stockItems}
+                editMode
+              />
+            )}
           </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+          <div>
+            <Label htmlFor="edit-notes">Notes</Label>
             <Textarea
-              id="notes"
+              id="edit-notes"
               value={formData.notes}
-              onChange={handleChange}
-              rows={2}
+              onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
+              placeholder="Notes..."
+              className="h-20"
             />
           </div>
-          
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={updateMutation.isPending}
+            >
               Annuler
             </Button>
-            <Button type="submit" className="gap-2">
-              <Save className="h-4 w-4" />
-              Sauvegarder
+            <Button type="submit" disabled={updateMutation.isPending || loadingMeds}>
+              <Save className="h-4 w-4 mr-2" />
+              {updateMutation.isPending ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </div>
         </form>

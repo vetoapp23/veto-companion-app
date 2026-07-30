@@ -15,24 +15,40 @@ import {
   useAnimals,
   useClients,
   useCreateVaccination,
+  useUpdateVaccination,
+  useDeleteVaccination,
+  useAppointments,
+  useUpdateAppointment,
   useVaccinationProtocolsBySpecies,
 } from '@/hooks/useDatabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { appointmentKeys } from '@/hooks/useDatabase';
-import type { BoosterScheduleEntry, VaccinationProtocol } from '@/lib/database';
+import type { Vaccination, VaccinationProtocol } from '@/lib/database';
 import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   createReminderAppointments,
   resolveMaintenanceDueDate,
+  ensureFutureReminders,
+  buildPlanFromSchedule,
 } from '@/lib/reminderAppointments';
+import {
+  buildVaccinationNotes,
+  parseVaccinationNotes,
+  findMatchingReminderAppointment,
+} from '@/lib/vaccinationCertificate';
+import { localDateTimeToISO } from '@/lib/dateLocal';
 
 interface NewVaccinationModalProps {
   children?: React.ReactNode;
   selectedAnimalId?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** When set, modal opens in edit mode */
+  editingVaccination?: Vaccination | null;
   /** Called after successful save with the administered vaccination id */
   onCreated?: (vaccination: { id: string }) => void;
+  onUpdated?: (vaccination: { id: string }) => void;
 }
 
 interface PlannedDose {
@@ -45,13 +61,20 @@ export default function NewVaccinationModal({
   selectedAnimalId,
   open,
   onOpenChange,
+  editingVaccination,
   onCreated,
+  onUpdated,
 }: NewVaccinationModalProps) {
   const { data: animals = [] } = useAnimals();
   const { data: clients = [] } = useClients();
   const createVaccinationMutation = useCreateVaccination();
+  const updateVaccinationMutation = useUpdateVaccination();
+  const deleteVaccinationMutation = useDeleteVaccination();
+  const updateAppointmentMutation = useUpdateAppointment();
+  const { data: appointments = [] } = useAppointments();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isEditing = !!editingVaccination?.id;
 
   const { data: vaccinationTypes = [] } = useVaccinationTypes();
 
@@ -69,31 +92,60 @@ export default function NewVaccinationModal({
     nextDueDate: '',
     administeredBy: '',
     notes: '',
+    doseLabel: '1ère dose',
   });
 
   const [plannedDoses, setPlannedDoses] = useState<PlannedDose[]>([]);
   const [appliedProtocolId, setAppliedProtocolId] = useState<string | null>(null);
+  /** Create only: must confirm before writing an administered vaccination row. */
+  const [doseConfirmed, setDoseConfirmed] = useState(false);
+  /** Edit only: Administré ↔ Planifié */
+  const [editStatus, setEditStatus] = useState<'administered' | 'planned'>('administered');
 
   const selectedAnimal = animals.find(a => a.id === formData.animalId);
   const animalClient = selectedAnimal ? clients.find(c => c.id === selectedAnimal.client_id) : null;
-  const { data: protocols = [] } = useVaccinationProtocolsBySpecies(selectedAnimal?.species || '');
+  const { data: protocols = [], isLoading: protocolsLoading } = useVaccinationProtocolsBySpecies(
+    selectedAnimal?.species || ''
+  );
+  const speciesMatched = useMemo(() => {
+    if (!selectedAnimal?.species) return false;
+    const key = selectedAnimal.species.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+    return protocols.some((p) => {
+      const pk = (p.species || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+      return pk === key || pk.includes(key) || key.includes(pk);
+    });
+  }, [protocols, selectedAnimal?.species]);
 
   useEffect(() => {
-    if (selectedAnimalId) {
+    if (selectedAnimalId && !editingVaccination) {
       setFormData(prev => ({ ...prev, animalId: selectedAnimalId }));
     }
-  }, [selectedAnimalId]);
+  }, [selectedAnimalId, editingVaccination]);
 
-  const buildPlanFromSchedule = (
-    baseDate: string,
-    schedule: BoosterScheduleEntry[],
-  ): PlannedDose[] => {
-    const sorted = [...schedule].sort((a, b) => a.offset_days - b.offset_days);
-    return sorted.map(entry => ({
-      label: entry.label,
-      date: format(addDays(new Date(baseDate), entry.offset_days), 'yyyy-MM-dd'),
-    }));
-  };
+  // Prefill when editing
+  useEffect(() => {
+    if (!modalOpen) return;
+    if (editingVaccination) {
+      const parsed = parseVaccinationNotes(editingVaccination.notes);
+      setFormData({
+        animalId: editingVaccination.animal_id,
+        vaccineName: editingVaccination.vaccine_name || '',
+        vaccineType: editingVaccination.vaccine_type || '',
+        manufacturer: editingVaccination.manufacturer || '',
+        batchNumber: editingVaccination.batch_number || '',
+        vaccinationDate: (editingVaccination.vaccination_date || '').slice(0, 10),
+        nextDueDate: editingVaccination.next_due_date
+          ? editingVaccination.next_due_date.slice(0, 10)
+          : '',
+        administeredBy: editingVaccination.administered_by || '',
+        notes: parsed.freeNotes || '',
+        doseLabel: parsed.doseLabel || 'Dose',
+      });
+      setPlannedDoses([]);
+      setAppliedProtocolId(null);
+      setEditStatus('administered');
+    }
+  }, [modalOpen, editingVaccination]);
 
   const applyProtocol = (protocol: VaccinationProtocol) => {
     const schedule = protocol.booster_schedule || [];
@@ -103,28 +155,35 @@ export default function NewVaccinationModal({
       vaccineType: protocol.vaccine_type,
     }));
     setAppliedProtocolId(protocol.id);
-    if (schedule.length > 0) {
-      const plan = buildPlanFromSchedule(formData.vaccinationDate, schedule);
-      setPlannedDoses(plan);
-      toast({
-        title: 'Protocole appliqué',
-        description: `${plan.length} dose(s) planifiée(s). Vous pouvez modifier les dates.`,
-      });
-    } else {
-      setPlannedDoses([]);
-      toast({
-        title: 'Protocole appliqué',
-        description: `Le protocole ${protocol.vaccine_name} a été appliqué.`,
-      });
-    }
+    const base = formData.vaccinationDate;
+    const fromSchedule =
+      schedule.length > 0 ? buildPlanFromSchedule(base, schedule) : [{ label: '1ère dose', date: base }];
+    const plan = ensureFutureReminders(base, fromSchedule, protocol.duration_days);
+    setPlannedDoses(plan);
+    setDoseConfirmed(false);
+    const futureCount = plan.filter((d) => d.date > base).length;
+    toast({
+      title: 'Protocole appliqué',
+      description:
+        futureCount > 0
+          ? `Calendrier prêt (${futureCount} rappel(s)). Confirmez si la dose du jour a été faite.`
+          : `Le protocole ${protocol.vaccine_name} a été appliqué. Confirmez l’administration.`,
+    });
   };
 
   // If user changes the base vaccination date, shift planned doses proportionally.
   useEffect(() => {
     if (plannedDoses.length === 0 || !appliedProtocolId) return;
     const protocol = protocols.find(p => p.id === appliedProtocolId);
-    if (!protocol?.booster_schedule || protocol.booster_schedule.length === 0) return;
-    setPlannedDoses(buildPlanFromSchedule(formData.vaccinationDate, protocol.booster_schedule));
+    if (!protocol) return;
+    const schedule = protocol.booster_schedule || [];
+    const fromSchedule =
+      schedule.length > 0
+        ? buildPlanFromSchedule(formData.vaccinationDate, schedule)
+        : [{ label: '1ère dose', date: formData.vaccinationDate }];
+    setPlannedDoses(
+      ensureFutureReminders(formData.vaccinationDate, fromSchedule, protocol.duration_days)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.vaccinationDate]);
 
@@ -186,9 +245,11 @@ export default function NewVaccinationModal({
       nextDueDate: '',
       administeredBy: '',
       notes: '',
+      doseLabel: '1ère dose',
     });
     setPlannedDoses([]);
     setAppliedProtocolId(null);
+    setDoseConfirmed(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,7 +283,6 @@ export default function NewVaccinationModal({
         ? protocols.find((p) => p.id === appliedProtocolId)
         : undefined;
 
-      // Only record today's administered dose — future doses become appointments
       const nextFromPlan = plannedDoses
         .filter((d) => d.date > administeredDate)
         .sort((a, b) => a.date.localeCompare(b.date))[0]?.date;
@@ -236,17 +296,177 @@ export default function NewVaccinationModal({
           protocol?.duration_days
         );
 
-      const todayLabel =
-        plannedDoses.find((d) => d.date === administeredDate)?.label ||
-        plannedDoses[0]?.label ||
-        "1ère dose";
+      // En édition: garder le libellé saisi (prérempli depuis l'existant).
+      // En création: le protocole peut proposer un libellé pour la date du jour.
+      const todayLabel = (
+        isEditing
+          ? formData.doseLabel
+          : plannedDoses.find((d) => d.date === administeredDate)?.label ||
+            plannedDoses[0]?.label ||
+            formData.doseLabel
+      )?.trim() || "1ère dose";
+
+      const futurePlan = plannedDoses
+        .filter((d) => d.date > administeredDate)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // --- Edit path ---
+      if (isEditing && editingVaccination) {
+        const notes = buildVaccinationNotes({
+          doseLabel: todayLabel,
+          plannedReminders: [],
+          userNotes: formData.notes?.trim(),
+        });
+
+        // Convert administered → planned: reuse existing RDV if any, else create one
+        if (editStatus === 'planned') {
+          if (!animalClient?.id) {
+            toast({
+              title: 'Client introuvable',
+              description: 'Impossible de convertir en RDV sans propriétaire.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          const productName = formData.vaccineName.trim();
+          const existingApt = findMatchingReminderAppointment(appointments, {
+            animalId: formData.animalId,
+            productName,
+            date: administeredDate,
+            kind: 'vaccination',
+          });
+
+          await deleteVaccinationMutation.mutateAsync(editingVaccination.id);
+
+          if (existingApt) {
+            await updateAppointmentMutation.mutateAsync({
+              id: existingApt.id,
+              data: {
+                status: 'scheduled',
+                appointment_date: localDateTimeToISO(administeredDate, '09:00'),
+                // Conserve le libellé du formulaire (celui de la vaccination), pas celui du protocole
+                notes: `Rappel vaccin — ${todayLabel} · ${productName}`,
+              },
+            });
+          } else {
+            await createReminderAppointments({
+              clientId: animalClient.id,
+              animalId: formData.animalId,
+              administeredDate,
+              plannedDoses: [{ label: todayLabel, date: administeredDate }],
+              appointmentType: 'vaccination',
+              titlePrefix: 'Rappel vaccin',
+              productName,
+              includeBaseDate: true,
+            });
+          }
+
+          queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+          queryClient.invalidateQueries({
+            queryKey: appointmentKeys.byAnimal(formData.animalId),
+          });
+          toast({
+            title: 'Statut → Planifié',
+            description: `${productName} : la même ligne est maintenant planifiée.`,
+          });
+          onUpdated?.({ id: editingVaccination.id });
+          setModalOpen(false);
+          return;
+        }
+
+        await updateVaccinationMutation.mutateAsync({
+          id: editingVaccination.id,
+          data: {
+            ...basePayload,
+            vaccination_date: administeredDate,
+            next_due_date: nextDue || undefined,
+            notes,
+          },
+        });
+        toast({
+          title: "✓ Vaccination mise à jour",
+          description: `${formData.vaccineName.trim()} a été modifié.`,
+        });
+        onUpdated?.({ id: editingVaccination.id });
+        setModalOpen(false);
+        return;
+      }
+
+      // --- Create: plan-only (no dose confirmed) ---
+      if (!doseConfirmed) {
+        const planForAppointments =
+          plannedDoses.length > 0
+            ? plannedDoses
+            : nextDue
+              ? [
+                  { label: todayLabel, date: administeredDate },
+                  { label: 'Rappel', date: nextDue },
+                ]
+              : [];
+
+        if (planForAppointments.filter((d) => d.date >= administeredDate).length === 0) {
+          toast({
+            title: 'Confirmation requise',
+            description:
+              'Cochez « dose administrée » pour enregistrer une vaccination, ou planifiez au moins un rappel.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        if (!animalClient?.id) {
+          toast({
+            title: 'Client introuvable',
+            description: 'Impossible de créer des RDV de rappel sans propriétaire.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const { created: n } = await createReminderAppointments({
+          clientId: animalClient.id,
+          animalId: formData.animalId,
+          administeredDate,
+          plannedDoses: planForAppointments,
+          nextDueDate: nextDue,
+          appointmentType: 'vaccination',
+          titlePrefix: 'Rappel vaccin',
+          productName: formData.vaccineName.trim(),
+          includeBaseDate: true,
+        });
+
+        if (n > 0) {
+          queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+          queryClient.invalidateQueries({
+            queryKey: appointmentKeys.byAnimal(formData.animalId),
+          });
+        }
+
+        toast({
+          title: 'Calendrier planifié',
+          description:
+            n > 0
+              ? `${n} RDV créé(s) — aucune dose enregistrée comme administrée.`
+              : 'Aucun RDV créé.',
+        });
+        resetForm();
+        setModalOpen(false);
+        return;
+      }
+
+      // --- Create: dose confirmed (administered) ---
+      const notes = buildVaccinationNotes({
+        doseLabel: todayLabel,
+        plannedReminders: futurePlan,
+        userNotes: formData.notes?.trim(),
+      });
 
       const created = await createVaccinationMutation.mutateAsync({
         ...basePayload,
         vaccination_date: administeredDate,
         next_due_date: nextDue || undefined,
-        notes:
-          [todayLabel, formData.notes?.trim()].filter(Boolean).join(" — ") || undefined,
+        notes,
       });
 
       let reminderCount = 0;
@@ -264,6 +484,9 @@ export default function NewVaccinationModal({
         reminderCount = n;
         if (n > 0) {
           queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+          queryClient.invalidateQueries({
+            queryKey: appointmentKeys.byAnimal(formData.animalId),
+          });
         }
       }
 
@@ -271,7 +494,7 @@ export default function NewVaccinationModal({
         title: "✓ Vaccination enregistrée",
         description:
           reminderCount > 0
-            ? `Dose du jour + ${reminderCount} RDV de rappel créé(s).`
+            ? `Dose administrée + ${reminderCount} RDV de rappel créé(s).`
             : `Vaccination de ${selectedAnimal?.name || "l'animal"} ajoutée.`,
       });
 
@@ -279,7 +502,7 @@ export default function NewVaccinationModal({
       resetForm();
       setModalOpen(false);
     } catch (error: any) {
-      console.error('Error creating vaccination:', error);
+      console.error('Error saving vaccination:', error);
       toast({
         title: "⚠ Impossible d'enregistrer",
         description: error?.message?.length < 200 ? error.message : "Une erreur s'est produite. Veuillez réessayer.",
@@ -288,23 +511,25 @@ export default function NewVaccinationModal({
     }
   };
 
-  const hasMultiPlan = plannedDoses.length >= 1;
+  const futureReminders = plannedDoses.filter((d) => d.date > formData.vaccinationDate);
 
   return (
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nouvelle Vaccination
-          </Button>
-        )}
-      </DialogTrigger>
+      {(children || open === undefined) && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nouvelle Vaccination
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Syringe className="h-5 w-5" />
-            Nouvelle Vaccination
+            {isEditing ? 'Modifier la vaccination' : 'Nouvelle Vaccination'}
           </DialogTitle>
         </DialogHeader>
 
@@ -338,47 +563,67 @@ export default function NewVaccinationModal({
             )}
           </div>
 
-          {/* Protocol suggestions */}
-          {selectedAnimal && protocols.length > 0 && (
+          {/* Protocol suggestions — create only */}
+          {!isEditing && selectedAnimal && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Sparkles className="h-4 w-4" />
-                  Protocoles recommandés pour {selectedAnimal.species}
+                  Protocoles vaccinaux
+                  {selectedAnimal.species ? ` · ${selectedAnimal.species}` : ''}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {protocols.map((protocol) => {
-                  const doses = protocol.booster_schedule?.length || 0;
-                  const isApplied = appliedProtocolId === protocol.id;
-                  return (
-                    <div
-                      key={protocol.id}
-                      className="flex items-center justify-between gap-2 p-2 border rounded"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{protocol.vaccine_name}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          <span>{protocol.vaccine_type}</span>
-                          {doses > 0 && (
-                            <Badge variant="secondary" className="h-5">
-                              {doses} dose{doses > 1 ? 's' : ''}
-                            </Badge>
-                          )}
-                          {protocol.frequency && <span>· {protocol.frequency}</span>}
+                {protocolsLoading ? (
+                  <p className="text-sm text-muted-foreground">Chargement des protocoles…</p>
+                ) : protocols.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun protocole enregistré. Créez-en un dans la page Vaccinations → Protocoles.
+                  </p>
+                ) : (
+                  <>
+                    {!speciesMatched && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5">
+                        Aucun protocole exact pour « {selectedAnimal.species} ». Voici vos
+                        protocoles (autres espèces) — appliquez celui qui convient.
+                      </p>
+                    )}
+                    {protocols.map((protocol) => {
+                      const doses = protocol.booster_schedule?.length || 0;
+                      const isApplied = appliedProtocolId === protocol.id;
+                      return (
+                        <div
+                          key={protocol.id}
+                          className="flex items-center justify-between gap-2 p-2 border rounded"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-medium truncate">{protocol.vaccine_name}</div>
+                            <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+                              <Badge variant="outline" className="h-5 font-normal">
+                                {protocol.species}
+                              </Badge>
+                              <span>{protocol.vaccine_type}</span>
+                              {doses > 0 && (
+                                <Badge variant="secondary" className="h-5">
+                                  {doses} dose{doses > 1 ? 's' : ''}
+                                </Badge>
+                              )}
+                              {protocol.frequency && <span>· {protocol.frequency}</span>}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant={isApplied ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => applyProtocol(protocol)}
+                          >
+                            {isApplied ? 'Appliqué' : 'Appliquer'}
+                          </Button>
                         </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant={isApplied ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => applyProtocol(protocol)}
-                      >
-                        {isApplied ? 'Appliqué' : 'Appliquer'}
-                      </Button>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
@@ -430,8 +675,41 @@ export default function NewVaccinationModal({
           </div>
 
           {/* Dates: simple mode vs multi-dose plan */}
-          {plannedDoses.length === 0 ? (
+          {plannedDoses.length === 0 || isEditing ? (
             <>
+              {isEditing && (
+                <div className="space-y-2">
+                  <Label htmlFor="editStatus">Statut</Label>
+                  <Select
+                    value={editStatus}
+                    onValueChange={(v) => setEditStatus(v as 'administered' | 'planned')}
+                  >
+                    <SelectTrigger id="editStatus">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="administered">Administré</SelectItem>
+                      <SelectItem value="planned">Planifié</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {editStatus === 'planned' && (
+                    <p className="text-xs text-muted-foreground">
+                      La dose sera retirée de l’historique et convertie en RDV planifié.
+                    </p>
+                  )}
+                </div>
+              )}
+              {isEditing && (
+                <div className="space-y-2">
+                  <Label htmlFor="doseLabel">Libellé de dose</Label>
+                  <Input
+                    id="doseLabel"
+                    value={formData.doseLabel}
+                    onChange={(e) => setFormData({ ...formData, doseLabel: e.target.value })}
+                    placeholder="ex: 1ère dose, Rappel 1…"
+                  />
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vaccinationDate">Date de vaccination *</Label>
@@ -454,12 +732,14 @@ export default function NewVaccinationModal({
                   />
                 </div>
               </div>
-              <div className="flex justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={addManualDose}>
-                  <CalendarClock className="h-4 w-4 mr-1" />
-                  Planifier plusieurs rappels
-                </Button>
-              </div>
+              {!isEditing && (
+                <div className="flex justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={addManualDose}>
+                    <CalendarClock className="h-4 w-4 mr-1" />
+                    Planifier plusieurs rappels
+                  </Button>
+                </div>
+              )}
             </>
           ) : (
             <Card className="border-primary/40 bg-primary/5">
@@ -467,7 +747,10 @@ export default function NewVaccinationModal({
                 <CardTitle className="text-sm flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
                     <CalendarClock className="h-4 w-4" />
-                    Calendrier prévisionnel ({plannedDoses.length} dose{plannedDoses.length > 1 ? 's' : ''})
+                    Dose du jour + rappels
+                    {futureReminders.length > 0
+                      ? ` (${futureReminders.length} RDV)`
+                      : ''}
                   </span>
                   <div className="flex items-center gap-1">
                     <Button type="button" variant="outline" size="sm" onClick={addManualDose}>
@@ -490,36 +773,74 @@ export default function NewVaccinationModal({
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  {appliedProtocolId
-                    ? 'Dates idéales calculées selon le protocole. Modifiez librement, ajoutez ou supprimez des rappels.'
-                    : 'Définissez chaque dose et sa date. Une vaccination sera enregistrée pour chaque ligne.'}
+                  Calendrier du protocole. Confirmez ci-dessous si la dose du jour a été
+                  administrée ; sinon seuls les RDV de rappel seront créés.
                 </p>
-                {plannedDoses.map((dose, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_160px_40px] gap-2 items-center">
-                    <Input
-                      value={dose.label}
-                      onChange={(e) =>
-                        setPlannedDoses((prev) =>
-                          prev.map((d, idx) => (idx === i ? { ...d, label: e.target.value } : d)),
-                        )
-                      }
-                    />
-                    <Input
-                      type="date"
-                      value={dose.date}
-                      onChange={(e) => updateDoseDate(i, e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeDose(i)}
-                      aria-label="Supprimer cette dose"
+                <div className="space-y-1">
+                  <Label className="text-xs">Date de la dose du jour *</Label>
+                  <Input
+                    type="date"
+                    value={formData.vaccinationDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, vaccinationDate: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+                {plannedDoses.map((dose, i) => {
+                  const isToday = dose.date === formData.vaccinationDate;
+                  return (
+                    <div
+                      key={i}
+                      className={`grid grid-cols-[1fr_160px_40px] gap-2 items-center rounded-md px-1 py-0.5 ${
+                        isToday ? 'bg-background/80' : ''
+                      }`}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isToday ? (
+                          <Badge variant="secondary" className="shrink-0 h-5 font-normal">
+                            Aujourd’hui
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="shrink-0 h-5 font-normal">
+                            Rappel
+                          </Badge>
+                        )}
+                        <Input
+                          value={dose.label}
+                          onChange={(e) =>
+                            setPlannedDoses((prev) =>
+                              prev.map((d, idx) =>
+                                idx === i ? { ...d, label: e.target.value } : d,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                      <Input
+                        type="date"
+                        value={dose.date}
+                        onChange={(e) => updateDoseDate(i, e.target.value)}
+                        min={isToday ? undefined : formData.vaccinationDate}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeDose(i)}
+                        aria-label="Supprimer cette dose"
+                        disabled={isToday && plannedDoses.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  );
+                })}
+                {futureReminders.length === 0 && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Aucun rappel futur. Cliquez sur « Ajouter un rappel » pour planifier la suite.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -536,16 +857,62 @@ export default function NewVaccinationModal({
             />
           </div>
 
+          {!isEditing && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={doseConfirmed}
+                  onCheckedChange={(v) => setDoseConfirmed(v === true)}
+                  className="mt-0.5"
+                />
+                <span className="text-sm leading-snug">
+                  <strong>Je confirme</strong> que la dose «{' '}
+                  {plannedDoses.find((d) => d.date === formData.vaccinationDate)?.label ||
+                    formData.doseLabel ||
+                    '1ère dose'}{' '}
+                  » a été <strong>administrée</strong> le{' '}
+                  {formData.vaccinationDate
+                    ? format(new Date(formData.vaccinationDate + 'T12:00:00'), 'dd/MM/yyyy')
+                    : '—'}
+                  .
+                </span>
+              </label>
+              {!doseConfirmed && (
+                <p className="text-xs text-muted-foreground pl-7">
+                  Non coché = planifier uniquement des RDV (aucune dose « faite » en
+                  historique).
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Annuler
             </Button>
-            <Button type="submit" disabled={createVaccinationMutation.isPending}>
-              {createVaccinationMutation.isPending
+            <Button
+              type="submit"
+              disabled={
+                createVaccinationMutation.isPending ||
+                updateVaccinationMutation.isPending ||
+                deleteVaccinationMutation.isPending
+              }
+            >
+              {createVaccinationMutation.isPending ||
+              updateVaccinationMutation.isPending ||
+              deleteVaccinationMutation.isPending
                 ? 'Enregistrement...'
-                : hasMultiPlan
-                ? `Enregistrer ${plannedDoses.length} doses`
-                : 'Ajouter la vaccination'}
+                : isEditing
+                ? editStatus === 'planned'
+                  ? 'Convertir en planifié'
+                  : 'Enregistrer les modifications'
+                : doseConfirmed
+                ? futureReminders.length > 0
+                  ? `Enregistrer dose + ${futureReminders.length} rappel(s)`
+                  : 'Enregistrer la dose administrée'
+                : futureReminders.length > 0 || plannedDoses.length > 0
+                ? `Planifier ${Math.max(futureReminders.length, plannedDoses.length)} RDV (sans dose)`
+                : 'Planifier / enregistrer'}
             </Button>
           </div>
         </form>

@@ -174,13 +174,14 @@ const StockManagement: React.FC = () => {
     try {
       const organizationId = await getCurrentOrganizationId();
 
+      // stock_movements n'a pas organization_id — filtrer via stock_items
       const { data, error } = await supabase
         .from('stock_movements')
         .select(`
           *,
-          stock_item:stock_items(name)
+          stock_item:stock_items!inner(name, organization_id)
         `)
-        .eq('organization_id', organizationId)
+        .eq('stock_items.organization_id', organizationId)
         .order('movement_date', { ascending: false })
         .limit(50);
 
@@ -251,15 +252,48 @@ const StockManagement: React.FC = () => {
     e.preventDefault();
     
     try {
-      const organizationId = await getCurrentOrganizationId();
+      const qty = parseInt(movementData.quantity.toString()) || 0;
+      if (!movementData.stock_item_id || qty <= 0) {
+        throw new Error('Article et quantité requis');
+      }
+
+      const { data: item, error: itemErr } = await supabase
+        .from('stock_items')
+        .select('id, name, current_quantity')
+        .eq('id', movementData.stock_item_id)
+        .single();
+      if (itemErr || !item) throw itemErr || new Error('Article introuvable');
+
+      const current = Number(item.current_quantity) || 0;
+      const type = movementData.movement_type;
+      let newQty = current;
+      if (type === 'in' || type === 'purchase' || type === 'return') newQty = current + qty;
+      else if (type === 'out' || type === 'sale' || type === 'usage' || type === 'expired' || type === 'damaged') {
+        if (qty > current) throw new Error(`Stock insuffisant (disponible: ${current})`);
+        newQty = current - qty;
+      } else if (type === 'adjustment') {
+        newQty = qty;
+      }
+
+      if (newQty !== current) {
+        const { error: updErr } = await supabase
+          .from('stock_items')
+          .update({ current_quantity: newQty, updated_at: new Date().toISOString() })
+          .eq('id', item.id);
+        if (updErr) throw updErr;
+      }
 
       const { error } = await supabase
         .from('stock_movements')
         .insert([{
-          ...movementData,
-          quantity: parseInt(movementData.quantity.toString()) || 0,
-          organization_id: organizationId,
-          performed_by: user?.id
+          stock_item_id: item.id,
+          item_name: item.name,
+          movement_type: type,
+          quantity: type === 'adjustment' ? Math.abs(qty - current) : qty,
+          reason: movementData.reason || null,
+          notes: movementData.notes || null,
+          performed_by: user?.id || null,
+          movement_date: new Date().toISOString(),
         }]);
 
       if (error) throw error;
@@ -277,7 +311,7 @@ const StockManagement: React.FC = () => {
       console.error('Error saving stock movement:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'enregistrer le mouvement.',
+        description: (error as any)?.message || 'Impossible d\'enregistrer le mouvement.',
         variant: 'destructive',
       });
     }

@@ -213,7 +213,18 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                       ...consultations.map((c: any) => ({ d: c.consultation_date, t: "Consultation", l: c.diagnosis || c.consultation_type, color: "bg-emerald-500" })),
                       ...vaccinations.map((v: any) => ({ d: v.vaccination_date, t: "Vaccination", l: v.vaccine_name, color: "bg-blue-500" })),
                       ...antiparasitics.map((a: any) => ({ d: a.treatment_date, t: "Antiparasitaire", l: a.product_name, color: "bg-orange-500" })),
-                      ...prescriptions.map((p: any) => ({ d: p.prescription_date, t: "Ordonnance", l: p.diagnosis || "Prescription", color: "bg-purple-500" })),
+                      ...prescriptions.map((p: any) => {
+                        const meds = (p.medications || [])
+                          .map((m: any) => m.medication_name)
+                          .filter(Boolean)
+                          .join(", ");
+                        return {
+                          d: p.prescription_date,
+                          t: "Ordonnance",
+                          l: meds || p.diagnosis || "Prescription",
+                          color: "bg-purple-500",
+                        };
+                      }),
                     ].filter(e => e.d).sort((a, b) => (a.d < b.d ? 1 : -1));
                     if (events.length === 0) return <p className="text-sm text-muted-foreground">Aucun événement enregistré</p>;
                     return (
@@ -244,7 +255,9 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                 <CardContent>
                   {consultations.length === 0 ? <p className="text-sm text-muted-foreground">Aucune consultation.</p> :
                   <div className="space-y-2">
-                    {consultations.map((c: any) => (
+                    {consultations.map((c: any) => {
+                      const linkedRx = prescriptions.filter((p: any) => p.consultation_id === c.id);
+                      return (
                       <button
                         type="button"
                         key={c.id}
@@ -259,13 +272,26 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                                 <ImageIcon className="h-3 w-3" />{c.photos.length}
                               </span>
                             )}
+                            {linkedRx.length > 0 && (
+                              <Badge variant="secondary" className="text-xs">Ordonnance</Badge>
+                            )}
                             <span className="text-muted-foreground text-xs">{c.consultation_type}</span>
                           </div>
                         </div>
                         {c.diagnosis && <div className="mt-1"><strong>Diagnostic :</strong> {c.diagnosis}</div>}
                         {c.treatment && <div><strong>Traitement :</strong> {c.treatment}</div>}
+                        {linkedRx.map((p: any) => {
+                          const meds = (p.medications || []).map((m: any) => m.medication_name).filter(Boolean);
+                          if (meds.length === 0) return null;
+                          return (
+                            <div key={p.id} className="mt-1 text-xs text-muted-foreground">
+                              <strong>Médicaments :</strong> {meds.join(", ")}
+                            </div>
+                          );
+                        })}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>}
                 </CardContent>
               </Card>
@@ -319,13 +345,46 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                 </CardHeader>
                 <CardContent>
                   {prescriptions.length === 0 ? <p className="text-sm text-muted-foreground">Aucune ordonnance.</p> :
-                  <div className="space-y-2">
-                    {prescriptions.map((p: any) => (
-                      <div key={p.id} className="border rounded p-3 text-sm">
-                        <div className="flex justify-between"><span className="font-medium">{fmt(p.prescription_date)}</span><Badge variant="outline">{p.status}</Badge></div>
-                        {p.diagnosis && <div className="mt-1">{p.diagnosis}</div>}
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {prescriptions.map((p: any) => {
+                      const meds = Array.isArray(p.medications) ? p.medications : [];
+                      return (
+                        <div key={p.id} className="border rounded p-3 text-sm space-y-2">
+                          <div className="flex justify-between gap-2">
+                            <span className="font-medium">{fmt(p.prescription_date)}</span>
+                            <Badge variant="outline">{p.status || "active"}</Badge>
+                          </div>
+                          {p.diagnosis && (
+                            <div><span className="text-muted-foreground">Diagnostic :</span> {p.diagnosis}</div>
+                          )}
+                          {meds.length === 0 ? (
+                            <p className="text-muted-foreground text-xs">Aucun médicament enregistré</p>
+                          ) : (
+                            <ul className="space-y-1.5 border-t pt-2">
+                              {meds.map((m: any) => (
+                                <li key={m.id} className="rounded bg-muted/40 px-2 py-1.5">
+                                  <div className="font-medium">{m.medication_name || "Médicament"}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {[
+                                      m.dosage,
+                                      m.frequency,
+                                      m.duration ? `pendant ${m.duration}` : null,
+                                      m.quantity ? `Qté : ${m.quantity}` : null,
+                                    ].filter(Boolean).join(" · ") || "Posologie non renseignée"}
+                                  </div>
+                                  {m.instructions && (
+                                    <div className="text-xs text-muted-foreground mt-0.5">{m.instructions}</div>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {p.notes && (
+                            <div className="text-xs text-muted-foreground border-t pt-2">Notes : {p.notes}</div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>}
                 </CardContent>
               </Card>

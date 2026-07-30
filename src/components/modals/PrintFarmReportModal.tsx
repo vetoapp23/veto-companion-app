@@ -15,7 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   buildFarmReportHtml,
   printHtml,
-  downloadHtmlAsPdf,
   FARM_SECTION_LABELS,
   FARM_TEMPLATES,
   type FarmSectionKey,
@@ -79,27 +78,31 @@ export function PrintFarmReportModal({ open, onOpenChange, farm }: PrintFarmRepo
     });
   };
 
-  const handlePrint = async () => {
+  const openPrintDialog = async () => {
     const html = buildHtml();
     if (!html) return;
-    await printHtml(html);
-  };
-
-  const handleDownloadPdf = async () => {
-    const html = buildHtml();
-    if (!html || !farm) return;
     try {
-      await downloadHtmlAsPdf(
-        html,
-        `Rapport-${farm.farm_name}-${new Date().toISOString().slice(0, 10)}.pdf`
-      );
+      await printHtml(html);
     } catch (e: any) {
       toast({
-        title: "Erreur PDF",
-        description: e?.message || "Impossible de générer le PDF.",
+        title: "Impression impossible",
+        description: e?.message || "Autorisez les popups pour imprimer ou enregistrer en PDF.",
         variant: "destructive",
       });
     }
+  };
+
+  const handlePrint = () => {
+    void openPrintDialog();
+  };
+
+  /** Même module que Imprimer (dialogue navigateur → Enregistrer au format PDF). */
+  const handleDownloadPdf = async () => {
+    toast({
+      title: "Enregistrer en PDF",
+      description: "Dans la boîte d'impression, choisissez « Enregistrer au format PDF ».",
+    });
+    await openPrintDialog();
   };
 
   if (!farm) return null;

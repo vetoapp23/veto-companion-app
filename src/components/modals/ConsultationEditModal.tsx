@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useClients, Consultation } from "@/contexts/ClientContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { temperatureInputValue, formatTemperatureValue } from "@/lib/utils";
 
 interface ConsultationEditModalProps {
   open: boolean;
@@ -99,7 +100,9 @@ export function ConsultationEditModal({ open, onOpenChange, consultation }: Cons
       petName: formData.petName,
       date: formData.date || today,
       weight: formData.weight,
-      temperature: formData.temperature,
+      temperature: formData.temperature
+        ? formatTemperatureValue(formData.temperature) ?? formData.temperature
+        : formData.temperature,
       symptoms: formData.symptoms,
       diagnosis: formData.diagnosis,
       treatment: formData.treatment,
@@ -127,7 +130,7 @@ export function ConsultationEditModal({ open, onOpenChange, consultation }: Cons
         petName: consultation.petName,
         date: consultation.date,
         weight: consultation.weight || "",
-        temperature: consultation.temperature || "",
+        temperature: temperatureInputValue(consultation.temperature) || "",
         symptoms: consultation.symptoms || "",
         diagnosis: consultation.diagnosis || "",
         treatment: consultation.treatment || "",
@@ -221,10 +224,10 @@ export function ConsultationEditModal({ open, onOpenChange, consultation }: Cons
               <Input
                 id="temperature"
                 type="number"
-                step="0.1"
+                step="0.01"
                 value={formData.temperature}
                 onChange={handleChange}
-                placeholder="ex: 38.5"
+                placeholder="ex: 38.50"
               />
             </div>
           </div>

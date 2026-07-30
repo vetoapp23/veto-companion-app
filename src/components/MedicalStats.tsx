@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Weight, Thermometer, TrendingUp, TrendingDown, Minus, Activity, Calendar, AlertTriangle } from "lucide-react";
 import { Pet, Consultation } from "@/contexts/ClientContext";
+import { roundTemperature, formatTemperatureValue } from "@/lib/utils";
 
 interface MedicalStatsProps {
   pet: Pet;
@@ -21,7 +22,10 @@ export function MedicalStats({ pet, consultations }: MedicalStatsProps) {
 
   const temperatureData = sortedConsultations
     .filter(c => c.temperature)
-    .map(c => ({ date: c.date, temperature: parseFloat(c.temperature) }));
+    .map(c => ({
+      date: c.date,
+      temperature: roundTemperature(c.temperature) ?? 0,
+    }));
 
   // Calculer les statistiques
   const currentWeight = weightData[0]?.weight || 0;
@@ -131,13 +135,16 @@ export function MedicalStats({ pet, consultations }: MedicalStatsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentTemperature}°C</div>
+            <div className="text-2xl font-bold">
+              {formatTemperatureValue(currentTemperature) ?? '—'}°C
+            </div>
             <div className="text-sm text-muted-foreground mt-1">
-              Moy: {avgTemperature.toFixed(1)}°C
+              Moy: {formatTemperatureValue(avgTemperature) ?? '—'}°C
             </div>
             {temperatureData.length > 1 && (
               <div className="text-xs text-muted-foreground">
-                Min: {minTemperature}°C | Max: {maxTemperature}°C
+                Min: {formatTemperatureValue(minTemperature) ?? '—'}°C | Max:{' '}
+                {formatTemperatureValue(maxTemperature) ?? '—'}°C
               </div>
             )}
           </CardContent>
@@ -249,11 +256,13 @@ export function MedicalStats({ pet, consultations }: MedicalStatsProps) {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span>Température moyenne:</span>
-                      <span>{avgTemperature.toFixed(1)}°C</span>
+                      <span>{formatTemperatureValue(avgTemperature) ?? '—'}°C</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Variation:</span>
-                      <span>{maxTemperature - minTemperature}°C</span>
+                      <span>
+                        {formatTemperatureValue(maxTemperature - minTemperature) ?? '—'}°C
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Stabilité:</span>

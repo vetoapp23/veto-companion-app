@@ -2,13 +2,13 @@ import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
-import { useAnimals, useClients, useVaccinations, useAppointmentsByAnimal } from '@/hooks/useDatabase';
+import { useAnimals, useClients, useAntiparasitics, useAppointmentsByAnimal } from '@/hooks/useDatabase';
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  buildCertificateDoseRows,
+  buildAntiparasiticCertificateRows,
   formatCertDate,
 } from '@/lib/vaccinationCertificate';
 
@@ -16,26 +16,26 @@ interface CertificateProps {
   animalId: string;
 }
 
-export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProps) {
+export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificateProps) {
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
   const { data: animals } = useAnimals();
   const { data: clients } = useClients();
-  const { data: vaccinations } = useVaccinations();
+  const { data: antiparasitics } = useAntiparasitics();
   const { data: appointments = [] } = useAppointmentsByAnimal(animalId);
 
   const vets = (settings.veterinarians || []).filter((v: any) => v.isActive !== false);
 
   const animal = animals?.find(a => a.id === animalId);
   const client = animal ? clients?.find(c => c.id === animal.client_id) : null;
-  const animalVaccinations = useMemo(
-    () => (vaccinations?.filter(v => v.animal_id === animalId) || []),
-    [vaccinations, animalId]
+  const animalTreatments = useMemo(
+    () => (antiparasitics?.filter(v => v.animal_id === animalId) || []),
+    [antiparasitics, animalId]
   );
 
   const doseRows = useMemo(
-    () => buildCertificateDoseRows(animalVaccinations, appointments),
-    [animalVaccinations, appointments]
+    () => buildAntiparasiticCertificateRows(animalTreatments, appointments),
+    [animalTreatments, appointments]
   );
 
   const getDetailedAge = (birthDate: string): string => {
@@ -72,7 +72,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
     }
 
     try {
-      const printWindow = window.open('', `vaccination_certificate_${animal.id}`, 'height=800,width=800');
+      const printWindow = window.open('', `antiparasitic_certificate_${animal.id}`, 'height=800,width=800');
       if (!printWindow) {
         alert("L'impression a été bloquée par le navigateur. Veuillez autoriser les popups pour ce site.");
         return;
@@ -88,11 +88,11 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Vaccin</th>
-                  <th>Dose</th>
+                  <th>Produit</th>
+                  <th>Traitement</th>
                   <th>Statut</th>
-                  <th>Lot</th>
-                  <th>Fabricant</th>
+                  <th>—</th>
+                  <th>Principe actif</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,7 +108,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                     <td>${row.doseLabel}</td>
                     <td>
                       <span class="badge ${row.status === 'planned' ? 'badge-planned' : 'badge-done'}">
-                        ${row.status === 'planned' ? 'Rappel prévu' : 'Administré'}
+                        ${row.status === 'planned' ? 'Rappel prévu' : 'Réalisé'}
                       </span>
                     </td>
                     <td>${row.batchNumber || (row.status === 'planned' ? '—' : 'N/A')}</td>
@@ -125,19 +125,19 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
               </tbody>
             </table>
             <p class="doses-summary">
-              ${administeredCount} dose(s) administrée(s)
+              ${administeredCount} traitement(s) réalisé(s)
               ${plannedCount > 0 ? ` · ${plannedCount} rappel(s) prévu(s)` : ''}
             </p>
           `
           : `<div class="no-vaccinations">
-              <p>Aucune vaccination enregistrée pour cet animal</p>
+              <p>Aucun traitement antiparasitaire enregistré pour cet animal</p>
             </div>`;
 
       const printContent = `
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Certificat de Vaccination - ${animal.name}</title>
+            <title>Certificat Antiparasitaire - ${animal.name}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -323,7 +323,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
             ${buildWatermarkHtml(isFree)}
             <div class="header">
               ${settings.logo ? `<img src="${settings.logo}" alt="Logo clinique" />` : ''}
-              <h1>CERTIFICAT DE VACCINATION</h1>
+              <h1>CERTIFICAT ANTIPARASITAIRE</h1>
               <div class="qr-section">
                 <canvas id="qrcode" width="100" height="100"></canvas>
               </div>
@@ -396,7 +396,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
             </div>
 
             <div class="vaccinations-section">
-              <h2>Calendrier vaccinal (doses &amp; rappels)</h2>
+              <h2>Calendrier antiparasitaire (traitements &amp; rappels)</h2>
               ${dosesTableHtml}
             </div>
 
@@ -452,7 +452,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
     return (
       <Button variant="outline" disabled>
         <Printer className="h-4 w-4 mr-2" />
-        Certificat de vaccination
+        Certificat antiparasitaire
       </Button>
     );
   }
@@ -460,10 +460,10 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
   return (
     <Button variant="outline" onClick={handlePrint}>
       <Printer className="h-4 w-4 mr-2" />
-      Certificat de vaccination
+      Certificat antiparasitaire
       {doseRows.length > 0 ? ` (${doseRows.length})` : ''}
     </Button>
   );
 }
 
-export default CertificateVaccinationPrintDynamic;
+export default CertificateAntiparasiticPrintDynamic;

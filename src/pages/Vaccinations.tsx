@@ -10,14 +10,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useDisplayPreference } from '@/hooks/use-display-preference';
 import { useAnimalSpecies } from '@/hooks/useAppSettings';
-import { 
+import {
   useVaccinations,
   useVaccinationProtocols,
   useDeleteVaccination,
+  useCreateVaccination,
   useUpdateVaccination,
+  useUpdateAppointment,
+  useAppointments,
   useAnimals,
-  useClients
+  useClients,
+  appointmentKeys,
 } from '@/hooks/useDatabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Syringe,
   Calendar,
@@ -39,7 +44,7 @@ import {
   Trash2,
   Loader2
 } from 'lucide-react';
-import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { format, isBefore, addDays, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -47,49 +52,76 @@ import { AppPageHeader } from '@/components/AppPageHeader';
 import NewVaccinationModal from '@/components/forms/NewVaccinationModalDynamic';
 import VaccinationProtocolModal from '@/components/forms/VaccinationProtocolModalDynamic';
 import CertificateVaccinationPrintDynamic from '@/components/CertificateVaccinationPrintDynamic';
-import type { Vaccination, Animal, Client } from '@/lib/database';
+import type { Vaccination, Appointment } from '@/lib/database';
+import { syncRemindersAfterAdministered } from '@/lib/medicalDoseSync';
+import {
+  buildCertificateDoseRows,
+  buildVaccinationNotes,
+  todayDayKey,
+  type CertificateDoseRow,
+} from '@/lib/vaccinationCertificate';
 
-// Helper functions
-const getVaccinationStatus = (vaccination: Vaccination): 'completed' | 'overdue' | 'scheduled' | 'missed' => {
-  if (!vaccination.next_due_date) return 'completed';
-  
-  const today = new Date();
-  const dueDate = new Date(vaccination.next_due_date);
-  
-  if (isBefore(dueDate, today)) return 'overdue';
-  return 'scheduled';
+type DoseListStatus = 'administered' | 'planned' | 'overdue';
+
+type UnifiedDoseRow = CertificateDoseRow & {
+  rowKey: string;
+  animalId: string;
+  petName: string;
+  clientName: string;
+  species?: string;
+  listStatus: DoseListStatus;
+  /** Original vaccination record when source is vaccination (for edit/delete) */
+  vaccinationRecord?: Vaccination;
 };
 
-const getStatusColor = (status: string) => {
+function resolveListStatus(row: CertificateDoseRow): DoseListStatus {
+  if (row.status === 'administered') return 'administered';
+  const today = todayDayKey();
+  if (row.date < today) return 'overdue';
+  return 'planned';
+}
+
+const getStatusColor = (status: DoseListStatus) => {
   switch (status) {
-    case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+    case 'administered': return 'bg-green-100 text-green-800 border-green-200';
     case 'overdue': return 'bg-red-100 text-red-800 border-red-200';
-    case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'missed': return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'planned': return 'bg-blue-100 text-blue-800 border-blue-200';
     default: return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
 
-const getStatusIcon = (status: string) => {
+const getStatusIcon = (status: DoseListStatus) => {
   switch (status) {
-    case 'completed': return <CheckCircle className="h-4 w-4" />;
+    case 'administered': return <CheckCircle className="h-4 w-4" />;
     case 'overdue': return <AlertTriangle className="h-4 w-4" />;
-    case 'scheduled': return <Clock className="h-4 w-4" />;
-    case 'missed': return <AlertTriangle className="h-4 w-4" />;
+    case 'planned': return <Clock className="h-4 w-4" />;
     default: return <Clock className="h-4 w-4" />;
+  }
+};
+
+const getStatusLabel = (status: DoseListStatus) => {
+  switch (status) {
+    case 'administered': return 'Administré';
+    case 'overdue': return 'En retard';
+    case 'planned': return 'Planifié';
+    default: return status;
   }
 };
 
 export default function Vaccinations() {
   // Data fetching hooks
   const { data: vaccinations = [], isLoading: vaccinationsLoading } = useVaccinations();
+  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
   const { data: animals = [], isLoading: animalsLoading } = useAnimals();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: vaccinationProtocols = [] } = useVaccinationProtocols();
   
   // Mutation hooks
   const deleteVaccinationMutation = useDeleteVaccination();
+  const createVaccinationMutation = useCreateVaccination();
   const updateVaccinationMutation = useUpdateVaccination();
+  const updateAppointmentMutation = useUpdateAppointment();
+  const queryClient = useQueryClient();
   
   const { toast } = useToast();
   const { currentView } = useDisplayPreference('vaccinations');
@@ -103,63 +135,139 @@ export default function Vaccinations() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [speciesFilter, setSpeciesFilter] = useState<string>('all');
   const [currentTab, setCurrentTab] = useState('overview');
-  const [selectedVaccination, setSelectedVaccination] = useState<any>(null);
+  const [selectedDose, setSelectedDose] = useState<UnifiedDoseRow | null>(null);
   const [showVaccinationDetails, setShowVaccinationDetails] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [vaccinationToDelete, setVaccinationToDelete] = useState<any>(null);
+  const [vaccinationToDelete, setVaccinationToDelete] = useState<Vaccination | null>(null);
+  const [editingVaccination, setEditingVaccination] = useState<Vaccination | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [markingDoneId, setMarkingDoneId] = useState<string | null>(null);
 
-  // Enrich vaccinations with animal and client data
-  const enrichedVaccinations = useMemo(() => {
-    if (vaccinationsLoading || animalsLoading || clientsLoading) return [];
-    
-    return vaccinations.map(vaccination => {
-      const animal = animals.find(a => a.id === vaccination.animal_id);
-      const client = clients.find(c => c.id === animal?.client_id);
-      
-      return {
-        ...vaccination,
-        petName: animal?.name || 'Animal inconnu',
-        clientName: client ? `${client.first_name} ${client.last_name}` : 'Client inconnu',
-        status: getVaccinationStatus(vaccination),
-        animal,
-        client,
-      };
-    });
-  }, [vaccinations, animals, clients, vaccinationsLoading, animalsLoading, clientsLoading]);
+  const openEditVaccination = (vaccination: Vaccination) => {
+    setEditingVaccination(vaccination);
+    setEditOpen(true);
+    setShowVaccinationDetails(false);
+  };
 
-  // Calculate statistics
+  // Unified dose rows: administered vaccinations + planned RDV rappels
+  const unifiedDoses = useMemo((): UnifiedDoseRow[] => {
+    if (vaccinationsLoading || animalsLoading || clientsLoading || appointmentsLoading) {
+      return [];
+    }
+
+    const byAnimal = new Map<string, Vaccination[]>();
+    for (const v of vaccinations) {
+      const list = byAnimal.get(v.animal_id) || [];
+      list.push(v);
+      byAnimal.set(v.animal_id, list);
+    }
+
+    const reminderApts = appointments.filter(
+      (a: Appointment) =>
+        a.animal_id &&
+        a.status !== 'cancelled' &&
+        a.status !== 'no-show' &&
+        (a.appointment_type === 'vaccination' || a.appointment_type === 'follow-up')
+    );
+
+    const aptsByAnimal = new Map<string, Appointment[]>();
+    for (const a of reminderApts) {
+      if (!a.animal_id) continue;
+      const list = aptsByAnimal.get(a.animal_id) || [];
+      list.push(a);
+      aptsByAnimal.set(a.animal_id, list);
+    }
+
+    const animalIds = new Set([
+      ...byAnimal.keys(),
+      ...aptsByAnimal.keys(),
+    ]);
+
+    const rows: UnifiedDoseRow[] = [];
+
+    for (const animalId of animalIds) {
+      const animal = animals.find((a) => a.id === animalId);
+      const client = clients.find((c) => c.id === animal?.client_id);
+      const petName = animal?.name || 'Animal inconnu';
+      const clientName = client
+        ? `${client.first_name} ${client.last_name}`
+        : 'Client inconnu';
+
+      const animalVax = byAnimal.get(animalId) || [];
+      const animalApts = aptsByAnimal.get(animalId) || [];
+      const doseRows = buildCertificateDoseRows(animalVax, animalApts);
+
+      for (const row of doseRows) {
+        const listStatus = resolveListStatus(row);
+        const vaccinationRecord = row.vaccinationId
+          ? animalVax.find(
+              (v) =>
+                v.id === row.vaccinationId &&
+                (v.vaccination_date || '').slice(0, 10) === row.date
+            )
+          : undefined;
+
+        rows.push({
+          ...row,
+          rowKey: `${row.source || 'x'}-${row.vaccinationId || row.appointmentId || row.date}-${row.doseLabel}-${row.vaccineName}`,
+          animalId,
+          petName,
+          clientName,
+          species: animal?.species,
+          listStatus,
+          vaccinationRecord,
+        });
+      }
+    }
+
+    return rows.sort((a, b) => b.date.localeCompare(a.date) || a.petName.localeCompare(b.petName));
+  }, [
+    vaccinations,
+    appointments,
+    animals,
+    clients,
+    vaccinationsLoading,
+    appointmentsLoading,
+    animalsLoading,
+    clientsLoading,
+  ]);
+
   const stats = useMemo(() => {
-    const total = enrichedVaccinations.length;
-    const completed = enrichedVaccinations.filter(v => v.status === 'completed').length;
-    const overdue = enrichedVaccinations.filter(v => v.status === 'overdue').length;
-    const scheduled = enrichedVaccinations.filter(v => v.status === 'scheduled').length;
-    const upcoming = enrichedVaccinations.filter(v => {
-      if (!v.next_due_date) return false;
-      const today = new Date();
-      const dueDate = new Date(v.next_due_date);
-      const thirtyDaysFromNow = addDays(today, 30);
-      return isAfter(dueDate, today) && isBefore(dueDate, thirtyDaysFromNow);
+    const total = unifiedDoses.length;
+    const administered = unifiedDoses.filter((d) => d.listStatus === 'administered').length;
+    const overdue = unifiedDoses.filter((d) => d.listStatus === 'overdue').length;
+    const planned = unifiedDoses.filter((d) => d.listStatus === 'planned').length;
+    const today = todayDayKey();
+    const upcoming = unifiedDoses.filter((d) => {
+      if (d.listStatus !== 'planned') return false;
+      const limit = format(addDays(parseISO(today), 30), 'yyyy-MM-dd');
+      return d.date >= today && d.date <= limit;
     }).length;
-    
-    return { total, completed, overdue, scheduled, upcoming };
-  }, [enrichedVaccinations]);
 
-  // Filter vaccinations
-  const filteredVaccinations = useMemo(() => {
-    return enrichedVaccinations.filter(vaccination => {
-      const matchesSearch = 
-        vaccination.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vaccination.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        vaccination.vaccine_name.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = statusFilter === 'all' || vaccination.status === statusFilter;
-      const matchesSpecies = speciesFilter === 'all' || vaccination.animal?.species === speciesFilter;
-      
+    return { total, administered, overdue, planned, upcoming };
+  }, [unifiedDoses]);
+
+  const filteredDoses = useMemo(() => {
+    return unifiedDoses.filter((dose) => {
+      const matchesSearch =
+        dose.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dose.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        dose.vaccineName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        dose.listStatus === statusFilter ||
+        (statusFilter === 'completed' && dose.listStatus === 'administered') ||
+        (statusFilter === 'scheduled' && dose.listStatus === 'planned');
+
+      const matchesSpecies =
+        speciesFilter === 'all' || dose.species === speciesFilter;
+
       return matchesSearch && matchesStatus && matchesSpecies;
     });
-  }, [enrichedVaccinations, searchTerm, statusFilter, speciesFilter]);
+  }, [unifiedDoses, searchTerm, statusFilter, speciesFilter]);
 
-  const handleDeleteVaccination = (vaccination: any) => {
+  const handleDeleteVaccination = (vaccination: Vaccination) => {
     setVaccinationToDelete(vaccination);
     setShowDeleteConfirm(true);
   };
@@ -176,8 +284,74 @@ export default function Vaccinations() {
     }
   };
 
+  const handleMarkDone = async (dose: UnifiedDoseRow) => {
+    if (dose.listStatus === 'administered') return;
+    setMarkingDoneId(dose.rowKey);
+    try {
+      const day = dose.date.slice(0, 10);
+      const existingVax = vaccinations.find(
+        (v) =>
+          v.animal_id === dose.animalId &&
+          (v.vaccination_date || '').slice(0, 10) === day &&
+          (v.vaccine_name || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim() ===
+            dose.vaccineName.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim()
+      );
+
+      // Si une vaccination existe déjà: ne pas toucher au libellé / notes.
+      // Sinon: créer avec le libellé de la ligne planifiée telle quelle.
+      if (!existingVax) {
+        const notes = buildVaccinationNotes({
+          doseLabel: dose.doseLabel,
+          plannedReminders: [],
+          userNotes: 'Marqué fait depuis la liste Vaccinations',
+        });
+        await createVaccinationMutation.mutateAsync({
+          animal_id: dose.animalId,
+          vaccine_name: dose.vaccineName,
+          vaccine_type: dose.vaccineType,
+          vaccination_date: day,
+          notes,
+        });
+      }
+
+      await syncRemindersAfterAdministered({
+        appointments,
+        animalId: dose.animalId,
+        productName: dose.vaccineName,
+        date: day,
+        kind: 'vaccination',
+        primaryAppointmentId: dose.appointmentId,
+        updateFn: (id, data) =>
+          updateAppointmentMutation.mutateAsync({ id, data }),
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['vaccinations'] });
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
+      if (dose.animalId) {
+        queryClient.invalidateQueries({
+          queryKey: appointmentKeys.byAnimal(dose.animalId),
+        });
+      }
+
+      toast({
+        title: 'Dose administrée',
+        description: `${dose.vaccineName} · ${dose.doseLabel} — même ligne mise à jour.`,
+      });
+      setShowVaccinationDetails(false);
+      setSelectedDose(null);
+    } catch (e: any) {
+      toast({
+        title: 'Impossible de marquer fait',
+        description: e?.message || 'Erreur lors de l’enregistrement.',
+        variant: 'destructive',
+      });
+    } finally {
+      setMarkingDoneId(null);
+    }
+  };
+
   const exportVaccinationData = () => {
-    const dataStr = JSON.stringify(enrichedVaccinations, null, 2);
+    const dataStr = JSON.stringify(filteredDoses, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -187,7 +361,8 @@ export default function Vaccinations() {
     URL.revokeObjectURL(url);
   };
 
-  const isLoading = vaccinationsLoading || animalsLoading || clientsLoading;
+  const isLoading =
+    vaccinationsLoading || animalsLoading || clientsLoading || appointmentsLoading;
 
   if (isLoading) {
     return (
@@ -242,8 +417,8 @@ export default function Vaccinations() {
           <CheckCircle className="h-5 sm:h-6 w-5 sm:w-6 text-green-600" />
           </div>
           <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Terminées</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Administrées</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.administered}</p>
           </div>
         </div>
         </CardContent>
@@ -285,7 +460,7 @@ export default function Vaccinations() {
           </div>
           <div>
           <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Planifiées</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.scheduled}</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.planned}</p>
           </div>
         </div>
         </CardContent>
@@ -328,8 +503,8 @@ export default function Vaccinations() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous statuts</SelectItem>
-              <SelectItem value="completed">Terminées</SelectItem>
-              <SelectItem value="scheduled">Planifiées</SelectItem>
+              <SelectItem value="administered">Administrées</SelectItem>
+              <SelectItem value="planned">Planifiées</SelectItem>
               <SelectItem value="overdue">En retard</SelectItem>
             </SelectContent>
             </Select>
@@ -369,11 +544,18 @@ export default function Vaccinations() {
         </CardContent>
         </Card>
 
-        {/* Vaccinations List */}
-        {viewMode === 'cards' ? (
+        {/* Unified doses: administered + planned RDVs */}
+        {filteredDoses.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center text-muted-foreground">
+              <Syringe className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>Aucune dose trouvée</p>
+            </CardContent>
+          </Card>
+        ) : viewMode === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredVaccinations.map((vaccination) => (
-          <Card key={vaccination.id} className="hover:shadow-md transition-shadow">
+          {filteredDoses.map((dose) => (
+          <Card key={dose.rowKey} className="hover:shadow-md transition-shadow">
             <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -383,43 +565,41 @@ export default function Vaccinations() {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-semibold text-sm">{vaccination.petName}</h3>
-                <p className="text-xs text-gray-600">{vaccination.animal?.species} • {vaccination.clientName}</p>
+                <h3 className="font-semibold text-sm">{dose.petName}</h3>
+                <p className="text-xs text-gray-600">{dose.species} • {dose.clientName}</p>
               </div>
               </div>
-              <Badge className={`${getStatusColor(vaccination.status)} text-xs`}>
-              {getStatusIcon(vaccination.status)}
-              <span className="ml-1 capitalize">{vaccination.status}</span>
+              <Badge className={`${getStatusColor(dose.listStatus)} text-xs`}>
+              {getStatusIcon(dose.listStatus)}
+              <span className="ml-1">{getStatusLabel(dose.listStatus)}</span>
               </Badge>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
               <Syringe className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-sm">{vaccination.vaccine_name}</span>
-              {vaccination.vaccine_type && (
+              <span className="font-medium text-sm">{dose.vaccineName}</span>
+              {dose.vaccineType && (
                 <Badge variant="outline" className="text-xs">
-                {vaccination.vaccine_type}
+                {dose.vaccineType}
                 </Badge>
               )}
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <FileText className="h-4 w-4" />
+              <span>{dose.doseLabel}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm text-gray-600">
               <Calendar className="h-4 w-4" />
-              <span>Date: {format(new Date(vaccination.vaccination_date), 'dd/MM/yyyy', { locale: fr })}</span>
+              <span>Date: {format(parseISO(dose.date), 'dd/MM/yyyy', { locale: fr })}</span>
               </div>
-              
-              {vaccination.next_due_date && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock className="h-4 w-4" />
-                <span>Prochain: {format(new Date(vaccination.next_due_date), 'dd/MM/yyyy', { locale: fr })}</span>
-              </div>
-              )}
 
-              {vaccination.administered_by && (
+              {dose.administeredBy && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Users className="h-4 w-4" />
-                <span>{vaccination.administered_by}</span>
+                <span>{dose.administeredBy}</span>
               </div>
               )}
             </div>
@@ -430,21 +610,48 @@ export default function Vaccinations() {
               variant="outline" 
               className="flex-1"
               onClick={() => {
-                setSelectedVaccination(vaccination);
+                setSelectedDose(dose);
                 setShowVaccinationDetails(true);
               }}
               >
               <Eye className="h-4 w-4 mr-1" />
               Détails
               </Button>
-              <Button 
-              size="sm" 
-              variant="outline"
-              onClick={() => handleDeleteVaccination(vaccination)}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              {dose.listStatus !== 'administered' && (
+              <Button
+                size="sm"
+                variant="default"
+                disabled={markingDoneId === dose.rowKey}
+                onClick={() => handleMarkDone(dose)}
+                title="Marquer fait"
               >
-              <Trash2 className="h-4 w-4" />
+                {markingDoneId === dose.rowKey ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
               </Button>
+              )}
+              {dose.vaccinationRecord && (
+              <>
+                <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openEditVaccination(dose.vaccinationRecord!)}
+                title="Modifier"
+                >
+                <Edit className="h-4 w-4" />
+                </Button>
+                <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => handleDeleteVaccination(dose.vaccinationRecord!)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+              )}
             </div>
             </CardContent>
           </Card>
@@ -459,15 +666,15 @@ export default function Vaccinations() {
               <TableRow>
               <TableHead>Animal</TableHead>
               <TableHead>Vaccin</TableHead>
+              <TableHead>Dose</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Prochain</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVaccinations.map((vaccination) => (
-              <TableRow key={vaccination.id}>
+              {filteredDoses.map((dose) => (
+              <TableRow key={dose.rowKey}>
                 <TableCell>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
@@ -476,23 +683,18 @@ export default function Vaccinations() {
                   </AvatarFallback>
                   </Avatar>
                   <div>
-                  <div className="font-medium text-sm">{vaccination.petName}</div>
-                  <div className="text-xs text-gray-600">{vaccination.clientName}</div>
+                  <div className="font-medium text-sm">{dose.petName}</div>
+                  <div className="text-xs text-gray-600">{dose.clientName}</div>
                   </div>
                 </div>
                 </TableCell>
-                <TableCell className="font-medium">{vaccination.vaccine_name}</TableCell>
-                <TableCell>{format(new Date(vaccination.vaccination_date), 'dd/MM/yyyy')}</TableCell>
+                <TableCell className="font-medium">{dose.vaccineName}</TableCell>
+                <TableCell>{dose.doseLabel}</TableCell>
+                <TableCell>{format(parseISO(dose.date), 'dd/MM/yyyy')}</TableCell>
                 <TableCell>
-                {vaccination.next_due_date 
-                  ? format(new Date(vaccination.next_due_date), 'dd/MM/yyyy')
-                  : 'N/A'
-                }
-                </TableCell>
-                <TableCell>
-                <Badge className={getStatusColor(vaccination.status)}>
-                  {getStatusIcon(vaccination.status)}
-                  <span className="ml-1 capitalize">{vaccination.status}</span>
+                <Badge className={getStatusColor(dose.listStatus)}>
+                  {getStatusIcon(dose.listStatus)}
+                  <span className="ml-1">{getStatusLabel(dose.listStatus)}</span>
                 </Badge>
                 </TableCell>
                 <TableCell>
@@ -501,20 +703,47 @@ export default function Vaccinations() {
                   size="sm" 
                   variant="outline"
                   onClick={() => {
-                    setSelectedVaccination(vaccination);
+                    setSelectedDose(dose);
                     setShowVaccinationDetails(true);
                   }}
                   >
                   <Eye className="h-4 w-4" />
                   </Button>
-                  <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={() => handleDeleteVaccination(vaccination)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  {dose.listStatus !== 'administered' && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    disabled={markingDoneId === dose.rowKey}
+                    onClick={() => handleMarkDone(dose)}
+                    title="Marquer fait"
                   >
-                  <Trash2 className="h-4 w-4" />
+                    {markingDoneId === dose.rowKey ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
                   </Button>
+                  )}
+                  {dose.vaccinationRecord && (
+                  <>
+                    <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEditVaccination(dose.vaccinationRecord!)}
+                    title="Modifier"
+                    >
+                    <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleDeleteVaccination(dose.vaccinationRecord!)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                    <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                  )}
                 </div>
                 </TableCell>
               </TableRow>
@@ -593,61 +822,100 @@ export default function Vaccinations() {
       
       </Tabs>
 
-      {/* Vaccination Details Modal */}
+      {/* Dose Details Modal */}
       <Dialog open={showVaccinationDetails} onOpenChange={setShowVaccinationDetails}>
       <DialogContent className="max-w-2xl w-full mx-4">
         <DialogHeader>
-        <DialogTitle>Détails de la Vaccination</DialogTitle>
+        <DialogTitle>Détails de la dose</DialogTitle>
         </DialogHeader>
-        {selectedVaccination && (
+        {selectedDose && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <p className="font-medium">Animal:</p>
-            <p>{selectedVaccination.petName}</p>
+            <p>{selectedDose.petName}</p>
           </div>
           <div>
             <p className="font-medium">Client:</p>
-            <p>{selectedVaccination.clientName}</p>
+            <p>{selectedDose.clientName}</p>
           </div>
           <div>
             <p className="font-medium">Vaccin:</p>
-            <p>{selectedVaccination.vaccine_name}</p>
+            <p>{selectedDose.vaccineName}</p>
+          </div>
+          <div>
+            <p className="font-medium">Dose:</p>
+            <p>{selectedDose.doseLabel}</p>
           </div>
           <div>
             <p className="font-medium">Date:</p>
-            <p>{format(new Date(selectedVaccination.vaccination_date), 'dd/MM/yyyy', { locale: fr })}</p>
+            <p>{format(parseISO(selectedDose.date), 'dd/MM/yyyy', { locale: fr })}</p>
           </div>
-          {selectedVaccination.next_due_date && (
-            <div>
-            <p className="font-medium">Prochain rappel:</p>
-            <p>{format(new Date(selectedVaccination.next_due_date), 'dd/MM/yyyy', { locale: fr })}</p>
-            </div>
-          )}
-          {/* {selectedVaccination.administered_by && (
+          <div>
+            <p className="font-medium">Statut:</p>
+            <Badge className={getStatusColor(selectedDose.listStatus)}>
+              {getStatusIcon(selectedDose.listStatus)}
+              <span className="ml-1">{getStatusLabel(selectedDose.listStatus)}</span>
+            </Badge>
+          </div>
+          {selectedDose.administeredBy && (
             <div>
             <p className="font-medium">Administré par:</p>
-            <p>{selectedVaccination.administered_by}</p>
+            <p>{selectedDose.administeredBy}</p>
             </div>
-          )} */}
+          )}
           </div>
-          {selectedVaccination.notes && (
+          {selectedDose.notes && (
           <div>
             <p className="font-medium">Notes:</p>
-            <p className="text-gray-600">{selectedVaccination.notes}</p>
+            <p className="text-gray-600">{selectedDose.notes}</p>
           </div>
           )}
           
-          {/* Certificate Print Button */}
-          <div className="border-t pt-4 mt-4">
-          <div className="flex justify-center">
-            <CertificateVaccinationPrintDynamic animalId={selectedVaccination.animal_id} />
+          <div className="border-t pt-4 mt-4 space-y-3">
+          <div className="flex flex-wrap justify-center gap-2">
+            {selectedDose.listStatus !== 'administered' && (
+              <Button
+                disabled={markingDoneId === selectedDose.rowKey}
+                onClick={() => handleMarkDone(selectedDose)}
+              >
+                {markingDoneId === selectedDose.rowKey ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
+                Marquer fait
+              </Button>
+            )}
+            {selectedDose.vaccinationRecord && (
+              <Button
+                variant="outline"
+                onClick={() => openEditVaccination(selectedDose.vaccinationRecord!)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Modifier
+              </Button>
+            )}
+            <CertificateVaccinationPrintDynamic animalId={selectedDose.animalId} />
           </div>
           </div>
         </div>
         )}
       </DialogContent>
       </Dialog>
+
+      <NewVaccinationModal
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) setEditingVaccination(null);
+        }}
+        editingVaccination={editingVaccination}
+        onUpdated={() => {
+          setEditingVaccination(null);
+          setEditOpen(false);
+        }}
+      />
 
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -658,7 +926,7 @@ export default function Vaccinations() {
         {vaccinationToDelete && (
         <div className="space-y-4">
           <p className="text-gray-600">
-          Êtes-vous sûr de vouloir supprimer la vaccination <strong>{vaccinationToDelete.vaccine_name}</strong> pour <strong>{vaccinationToDelete.petName}</strong> ?
+          Êtes-vous sûr de vouloir supprimer la vaccination <strong>{vaccinationToDelete.vaccine_name}</strong> ?
           </p>
           <p className="text-sm text-red-600">
           Cette action est irréversible.

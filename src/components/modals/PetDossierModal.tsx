@@ -11,7 +11,7 @@ import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
 import { ConfirmVaccinationReminderModal } from "@/components/modals/ConfirmVaccinationReminderModal";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { calculateAge, formatDate } from "@/lib/utils";
+import { calculateAge, formatDate, roundTemperature, formatTemperature, formatTemperatureValue } from "@/lib/utils";
 import { PrescriptionsList } from "@/components/PrescriptionsList";
 
 import { useToast } from '@/hooks/use-toast';
@@ -278,13 +278,15 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     .map(c => ({
       date: new Date(c.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
       weight: c.weight ? parseFloat(c.weight) : 0,
-      temperature: c.temperature ? parseFloat(c.temperature) : 0
+      temperature: c.temperature ? roundTemperature(c.temperature) ?? 0 : 0
     }))
     .reverse(); // Plus anciennes en premier pour le graphique
 
   // Calculer les statistiques
   const weightHistory = sortedConsultations.filter(c => c.weight).map(c => parseFloat(c.weight));
-  const temperatureHistory = sortedConsultations.filter(c => c.temperature).map(c => parseFloat(c.temperature));
+  const temperatureHistory = sortedConsultations
+    .filter(c => c.temperature)
+    .map(c => roundTemperature(c.temperature) ?? 0);
   
   const currentWeight = weightHistory[0] || 0;
   const previousWeight = weightHistory[1] || 0;
@@ -327,7 +329,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     alerts.push({
       type: 'danger',
       title: 'Température anormale',
-      message: `Température actuelle: ${currentTemperature}°C`,
+      message: `Température actuelle: ${formatTemperature(currentTemperature)}`,
       action: 'Contrôle urgent',
       actionType: 'consultation'
     });
@@ -500,7 +502,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
               <p><strong>Sexe:</strong> ${pet.gender === 'male' ? 'Mâle' : pet.gender === 'female' ? 'Femelle' : 'Non spécifié'}</p>
               <p><strong>Âge:</strong> ${pet.birthDate ? calculateAge(pet.birthDate) : 'Non spécifié'}</p>
               <p><strong>Poids actuel:</strong> ${currentWeight}kg</p>
-              <p><strong>Température actuelle:</strong> ${currentTemperature}°C</p>
+              <p><strong>Température actuelle:</strong> ${formatTemperature(currentTemperature)}</p>
               <p><strong>Couleur:</strong> ${pet.color || 'Non spécifiée'}</p>
               <p><strong>Puce électronique:</strong> ${pet.microchip || 'Non spécifiée'}</p>
               ${pet.medicalNotes ? `<p><strong>Notes médicales:</strong> ${pet.medicalNotes}</p>` : ''}
@@ -549,7 +551,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                   <div>
                     <p><strong>Poids:</strong> ${c.weight || 'Non renseigné'}</p>
-                    <p><strong>Température:</strong> ${c.temperature || 'Non renseigné'}</p>
+                    <p><strong>Température:</strong> ${c.temperature ? formatTemperature(c.temperature) : 'Non renseigné'}</p>
                     ${c.symptoms ? `<p><strong>Symptômes:</strong> ${c.symptoms}</p>` : ''}
                   </div>
                   <div>
@@ -887,9 +889,9 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                       <Thermometer className="h-5 w-5 text-primary" />
                       <div>
                         <p className="text-sm text-muted-foreground">Température</p>
-                        <p className="text-2xl font-bold">{currentTemperature}°C</p>
+                        <p className="text-2xl font-bold">{formatTemperature(currentTemperature)}</p>
                         <p className="text-sm text-muted-foreground">
-                          Moy: {avgTemperature.toFixed(1)}°C
+                          Moy: {formatTemperatureValue(avgTemperature) ?? '—'}°C
                         </p>
                       </div>
                     </div>
@@ -1024,7 +1026,11 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                           </div>
                           <div>
                             <span className="font-medium">Température:</span>
-                            <span className="ml-2">{consultation.temperature || 'Non renseigné'}</span>
+                            <span className="ml-2">
+                              {consultation.temperature
+                                ? formatTemperature(consultation.temperature)
+                                : 'Non renseigné'}
+                            </span>
                           </div>
                         </div>
                         

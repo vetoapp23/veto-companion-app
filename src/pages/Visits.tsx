@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useVisits, useCreateVisit } from "@/hooks/useVisits";
-import { useClients, useAnimals, useFarmsByClient } from "@/hooks/useDatabase";
-import { VISIT_STATUS_LABELS, getServiceDef } from "@/lib/visitCatalog";
+import { useClients, useAnimals, useFarmsByClient, type Client } from "@/hooks/useDatabase";
+import { VISIT_STATUS_LABELS, getServiceDef, resolveServiceAmount } from "@/lib/visitCatalog";
 import { ClipboardList, Plus, Search, Stethoscope, ArrowRight, Tractor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/contexts/SettingsContext";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { NewClientModal } from "@/components/forms/NewClientModal";
+import { NewPetModal } from "@/components/forms/NewPetModal";
 
 function isFarmClient(clientType?: string | null) {
   if (!clientType) return false;
@@ -32,6 +35,7 @@ function isFarmClient(clientType?: string | null) {
 export default function Visits() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { settings } = useSettings();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const { data: visits = [], isLoading } = useVisits(
@@ -42,6 +46,8 @@ export default function Visits() {
   const { data: animals = [] } = useAnimals();
 
   const [showNew, setShowNew] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [showPetModal, setShowPetModal] = useState(false);
   const [newClientId, setNewClientId] = useState("");
   const [newAnimalId, setNewAnimalId] = useState("");
   const [newFarmId, setNewFarmId] = useState("");
@@ -87,6 +93,21 @@ export default function Visits() {
     setForceFarmMode(false);
   };
 
+  const handleClientCreated = (client: Client) => {
+    setNewClientId(client.id);
+    setNewAnimalId("");
+    setNewFarmId("");
+    setForceFarmMode(isFarmClient(client.client_type));
+    toast({
+      title: "Client ajouté",
+      description: `${client.first_name} ${client.last_name} est sélectionné pour la visite.`,
+    });
+  };
+
+  const handlePetCreated = (animal: { id: string }) => {
+    setNewAnimalId(animal.id);
+  };
+
   const startWalkIn = async () => {
     if (!newClientId) {
       toast({ title: "Client requis", variant: "destructive" });
@@ -114,7 +135,7 @@ export default function Visits() {
         initial_service: {
           service_code: def.code,
           service_label: def.label,
-          amount: def.defaultAmount,
+          amount: resolveServiceAmount(def.code, settings.servicePrices),
         },
       });
       setShowNew(false);
@@ -247,27 +268,43 @@ export default function Visits() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Client *</Label>
-              <Select
-                value={newClientId}
-                onValueChange={(v) => {
-                  setNewClientId(v);
-                  setNewAnimalId("");
-                  setNewFarmId("");
-                  setForceFarmMode(false);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name}
-                      {isFarmClient(c.client_type) ? " · Éleveur" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={newClientId}
+                  onValueChange={(v) => {
+                    setNewClientId(v);
+                    setNewAnimalId("");
+                    setNewFarmId("");
+                    setForceFarmMode(false);
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Sélectionner un client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.first_name} {c.last_name}
+                        {isFarmClient(c.client_type) ? " · Éleveur" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={() => setShowClientModal(true)}
+                  title="Nouveau client"
+                  aria-label="Ajouter un nouveau client"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Client absent ? Cliquez sur + pour l&apos;enregistrer en base.
+              </p>
             </div>
 
             {newClientId && (
@@ -370,23 +407,37 @@ export default function Visits() {
             ) : (
               <div className="space-y-2">
                 <Label>Animal (recommandé)</Label>
-                <Select
-                  value={newAnimalId || "__none__"}
-                  onValueChange={(v) => setNewAnimalId(v === "__none__" ? "" : v)}
-                  disabled={!newClientId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un animal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Aucun</SelectItem>
-                    {clientAnimals.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name} ({a.species})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select
+                    value={newAnimalId || "__none__"}
+                    onValueChange={(v) => setNewAnimalId(v === "__none__" ? "" : v)}
+                    disabled={!newClientId}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Sélectionner un animal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Aucun</SelectItem>
+                      {clientAnimals.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} ({a.species})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    disabled={!newClientId}
+                    onClick={() => setShowPetModal(true)}
+                    title="Nouvel animal"
+                    aria-label="Ajouter un nouvel animal"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -401,6 +452,19 @@ export default function Visits() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <NewClientModal
+        open={showClientModal}
+        onOpenChange={setShowClientModal}
+        onCreated={handleClientCreated}
+      />
+
+      <NewPetModal
+        open={showPetModal}
+        onOpenChange={setShowPetModal}
+        defaultClientId={newClientId || undefined}
+        onCreated={handlePetCreated}
+      />
     </div>
   );
 }

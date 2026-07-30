@@ -138,6 +138,10 @@ export function VisitServiceDetailPanel({
       });
       toast({
         title: markDone ? "Prestation enregistrée" : "Modifications enregistrées",
+        description:
+          panel === "imaging" || panel === "lab"
+            ? "Synchronisé avec le dossier médical de l'animal."
+            : undefined,
       });
     } catch (e: any) {
       toast({ title: "Erreur", description: e?.message, variant: "destructive" });
@@ -308,8 +312,10 @@ export function VisitServiceDetailPanel({
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
           <p className="font-medium">Vaccination</p>
           <p className="text-muted-foreground text-xs">
-            Enregistrez la dose du jour et le protocole — les rappels créeront des RDV
-            automatiquement.
+            <strong>Enregistrer vaccin</strong> : saisie complète (lot, protocole, rappels).
+            <br />
+            <strong>Marquer fait</strong> : pour un RDV de rappel, enregistre la dose sur le
+            certificat de vaccination.
           </p>
         </div>
       )}
@@ -318,7 +324,10 @@ export function VisitServiceDetailPanel({
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
           <p className="font-medium">Traitement antiparasitaire</p>
           <p className="text-muted-foreground text-xs">
-            Saisissez le produit et le plan — les rappels futurs deviennent des RDV.
+            <strong>Enregistrer traitement</strong> : saisie complète (produit, plan, rappels).
+            <br />
+            <strong>Marquer fait</strong> : pour un RDV de rappel, enregistre le traitement sur
+            le certificat antiparasitaire.
           </p>
         </div>
       )}
@@ -344,6 +353,10 @@ export function VisitServiceDetailPanel({
 
       {panel === "imaging" && (
         <div className="space-y-3">
+          <p className="text-xs text-muted-foreground rounded-lg border bg-muted/30 p-2">
+            À l&apos;enregistrement, cet examen est ajouté au <strong>dossier médical</strong>{" "}
+            de l&apos;animal (comme une consultation de type {def?.label || "imagerie"}).
+          </p>
           <div className="space-y-2">
             <Label>Région / zone anatomique</Label>
             <Input
@@ -378,6 +391,10 @@ export function VisitServiceDetailPanel({
 
       {panel === "lab" && (
         <div className="space-y-3">
+          <p className="text-xs text-muted-foreground rounded-lg border bg-muted/30 p-2">
+            À l&apos;enregistrement, les résultats sont ajoutés au{" "}
+            <strong>dossier médical</strong> de l&apos;animal.
+          </p>
           <div className="space-y-2">
             <Label>Analyses demandées</Label>
             <Input

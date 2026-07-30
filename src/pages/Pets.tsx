@@ -31,7 +31,7 @@ import {
 import type { Animal, Client, CreateAnimalData } from "@/lib/database";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDisplayPreference } from "@/hooks/use-display-preference";
-import { calculateAge } from "@/lib/utils";
+import { calculateAge, formatTemperatureValue } from "@/lib/utils";
 import { 
   useFarmManagementSettings,
   useAnimalColors,
@@ -149,7 +149,7 @@ const PetsContent = () => {
       petName: dbConsultation.animal?.name || 'Animal inconnu',
       date: dbConsultation.consultation_date || dbConsultation.created_at,
       weight: dbConsultation.weight?.toString(),
-      temperature: dbConsultation.temperature?.toString(),
+      temperature: formatTemperatureValue(dbConsultation.temperature) ?? undefined,
       symptoms: dbConsultation.symptoms,
       diagnosis: dbConsultation.diagnosis,
       treatment: dbConsultation.treatment,

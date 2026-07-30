@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useStock } from '@/hooks/useStock';
 import { useToast } from '@/hooks/use-toast';
+import { calcStockMargin, recordStockMovement } from '@/lib/stockMovements';
 import { 
   Package,
   AlertTriangle,
@@ -40,6 +40,7 @@ import { AppPageHeader } from '@/components/AppPageHeader';
 import { format, isWithinInterval, startOfDay, endOfDay, addDays, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { NewStockItemModal } from '@/components/forms/NewStockItemModal';
+import { StockMovementModal } from '@/components/forms/StockMovementModal';
 
 // Interface pour compatibilité avec l'ancienne UI
 interface StockItem {
@@ -123,7 +124,10 @@ export default function Stock() {
     addStockItem,
     updateStockItem,
     deleteStockItem,
+    addStockMovement,
     compatibleStockMovements,
+    fetchStockItems,
+    fetchStockMovements,
   } = useStock();
   const { toast } = useToast();
   
@@ -142,12 +146,12 @@ export default function Stock() {
       batchNumber: item.batch_number || '',
       dosage: '', // Not in database
       unit: item.unit,
-      currentStock: item.current_quantity || 0,
-      minimumStock: item.minimum_quantity || 0,
-      maximumStock: item.maximum_quantity || 0,
-      purchasePrice: item.unit_cost || 0,
-      sellingPrice: item.selling_price || 0,
-      totalValue: (item.current_quantity || 0) * (item.unit_cost || 0),
+      currentStock: Number(item.current_quantity) || 0,
+      minimumStock: Number(item.minimum_quantity) || 0,
+      maximumStock: Number(item.maximum_quantity) || 0,
+      purchasePrice: Number(item.unit_cost) || 0,
+      sellingPrice: Number(item.selling_price) || 0,
+      totalValue: (Number(item.current_quantity) || 0) * (Number(item.unit_cost) || 0),
       expirationDate: item.expiration_date,
       supplier: item.supplier || '',
       location: item.location || '',
@@ -206,6 +210,8 @@ export default function Stock() {
   // Force refresh function
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
+    void fetchStockItems();
+    void fetchStockMovements();
   };
 
   // Filtrer et trier les éléments
@@ -283,36 +289,52 @@ export default function Stock() {
     const dbItem = findDatabaseItem(itemId);
     if (!dbItem) return;
 
-    const updates: any = {};
-    
-    switch (field) {
-      case "currentStock":
-        updates.current_quantity = parseInt(value) || 0;
-        break;
-      case "minimumStock":
-        updates.minimum_quantity = parseInt(value) || 0;
-        break;
-      case "purchasePrice":
-        updates.unit_cost = parseFloat(value) || 0;
-        break;
-      case "sellingPrice":
-        updates.selling_price = parseFloat(value) || 0;
-        break;
-      case "location":
-        updates.location = value;
-        break;
-      case "notes":
-        updates.description = value;
-        break;
+    try {
+      if (field === "currentStock") {
+        const newQty = parseInt(value) || 0;
+        await recordStockMovement({
+          stock_item_id: dbItem.id,
+          item_name: dbItem.name,
+          movement_type: "adjustment",
+          quantity: newQty,
+          reason: "Correction inventaire (édition rapide)",
+          absoluteAdjustment: true,
+        });
+        await Promise.all([fetchStockItems?.(), fetchStockMovements?.()]);
+      } else {
+        const updates: any = {};
+        switch (field) {
+          case "minimumStock":
+            updates.minimum_quantity = parseInt(value) || 0;
+            break;
+          case "purchasePrice":
+            updates.unit_cost = parseFloat(value) || 0;
+            break;
+          case "sellingPrice":
+            updates.selling_price = parseFloat(value) || 0;
+            break;
+          case "location":
+            updates.location = value;
+            break;
+          case "notes":
+            updates.description = value;
+            break;
+        }
+        await updateStockItem(dbItem.id, updates);
+      }
+
+      setEditingField(null);
+      toast({
+        title: "Stock mis à jour",
+        description: "L'élément de stock a été mis à jour avec succès.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err?.message || "Impossible de mettre à jour le stock",
+        variant: "destructive",
+      });
     }
-    
-    await updateStockItem(dbItem.id, updates);
-    setEditingField(null);
-    
-    toast({
-      title: "Stock mis à jour",
-      description: "L'élément de stock a été mis à jour avec succès.",
-    });
   };
 
   const handleEditItem = (item: StockItem) => {
@@ -898,9 +920,14 @@ export default function Stock() {
                             }}
                           >
                             <div className="font-medium text-sm">{item.sellingPrice.toFixed(2)} MAD</div>
-                            <div className="text-xs text-green-600">
-                              Marge: {((item.sellingPrice - item.purchasePrice) * item.currentStock).toFixed(2)} MAD
-                            </div>
+                            {(() => {
+                              const { unit, pct } = calcStockMargin(item.purchasePrice, item.sellingPrice);
+                              return (
+                                <div className={`text-xs ${unit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                                  Marge: {unit.toFixed(2)} MAD ({pct.toFixed(0)}%)
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </TableCell>
@@ -1103,21 +1130,14 @@ export default function Stock() {
         rawStockItems={rawStockItems}
       />
       
-      {showMovementModal && (
-        <Dialog open={showMovementModal} onOpenChange={setShowMovementModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Mouvement de Stock</DialogTitle>
-              <DialogDescription>
-                Ajouter une entrée ou sortie pour {selectedItem?.name}
-              </DialogDescription>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              Cette fonctionnalité sera bientôt disponible.
-            </p>
-          </DialogContent>
-        </Dialog>
-      )}
+      <StockMovementModal
+        open={showMovementModal}
+        onOpenChange={setShowMovementModal}
+        item={selectedItem}
+        addStockMovementFn={addStockMovement}
+        rawStockItems={rawStockItems}
+        onMovementAdded={handleRefresh}
+      />
     </div>
   );
 }

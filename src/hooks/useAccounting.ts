@@ -86,12 +86,24 @@ export const useAccounting = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const resolveOrganizationId = async (): Promise<string | null> => {
+    const fromUser = user?.organization_id || user?.profile?.organization_id;
+    if (fromUser) return fromUser;
+    if (!user?.id) return null;
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    return data?.organization_id || null;
+  };
+
   // Fetch revenues
   const fetchRevenues = async () => {
     if (!user) return;
     
     try {
-      const organizationId = user.organization_id || user.profile?.organization_id;
+      const organizationId = await resolveOrganizationId();
       let query = supabase.from('revenue').select('*').order('revenue_date', { ascending: false });
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
@@ -108,16 +120,19 @@ export const useAccounting = () => {
     }
   };
 
-  // Fetch expenses
+  // Fetch expenses (scoped by organization)
   const fetchExpenses = async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('expense_date', { ascending: false });
+      const organizationId = await resolveOrganizationId();
+      let query = supabase.from('expenses').select('*').order('expense_date', { ascending: false });
+      if (organizationId) {
+        query = query.eq('organization_id', organizationId);
+      } else {
+        query = query.eq('user_id', user.id);
+      }
+      const { data, error } = await query;
 
       if (error) throw error;
       setExpenses(data || []);
@@ -127,13 +142,19 @@ export const useAccounting = () => {
     }
   };
 
-  // Fetch invoices
+  // Fetch invoices with client name
   const fetchInvoices = async () => {
     if (!user) return;
     
     try {
-      const organizationId = user.organization_id || user.profile?.organization_id;
-      let query = supabase.from('invoices').select('*').order('invoice_date', { ascending: false });
+      const organizationId = await resolveOrganizationId();
+      let query = supabase
+        .from('invoices')
+        .select(`
+          *,
+          client:clients(id, first_name, last_name)
+        `)
+        .order('invoice_date', { ascending: false });
       if (organizationId) {
         query = query.eq('organization_id', organizationId);
       } else {
@@ -154,14 +175,33 @@ export const useAccounting = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('payment_date', { ascending: false });
-
-      if (error) throw error;
-      setPayments(data || []);
+      const organizationId = await resolveOrganizationId();
+      if (organizationId) {
+        const { data: orgInvoices } = await supabase
+          .from('invoices')
+          .select('id')
+          .eq('organization_id', organizationId);
+        const ids = (orgInvoices || []).map((i: any) => i.id);
+        if (ids.length === 0) {
+          setPayments([]);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('payments')
+          .select('*')
+          .in('invoice_id', ids)
+          .order('payment_date', { ascending: false });
+        if (error) throw error;
+        setPayments(data || []);
+      } else {
+        const { data, error } = await supabase
+          .from('payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('payment_date', { ascending: false });
+        if (error) throw error;
+        setPayments(data || []);
+      }
     } catch (err: any) {
       console.error('Error fetching payments:', err);
       setError(err.message);
@@ -185,7 +225,7 @@ export const useAccounting = () => {
   const addRevenue = async (revenueData: Omit<DatabaseRevenue, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
-    const organizationId = user.organization_id || user.profile?.organization_id;
+    const organizationId = await resolveOrganizationId();
     if (!organizationId) {
       toast({
         title: "Erreur",
@@ -233,7 +273,7 @@ export const useAccounting = () => {
   const addExpense = async (expenseData: Omit<DatabaseExpense, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
-    const organizationId = user.organization_id || user.profile?.organization_id;
+    const organizationId = await resolveOrganizationId();
     if (!organizationId) {
       toast({
         title: "Erreur",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,13 +14,19 @@ import {
   useVaccinationsByAnimal,
   useAntiparasiticsByAnimal,
   usePrescriptionsByAnimal,
+  useAppointmentsByAnimal,
   useClients,
 } from "@/hooks/useDatabase";
 import { usePedigree } from "@/hooks/usePedigree";
-import { calculateAge } from "@/lib/utils";
+import { calculateAge, formatTemperature } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { downloadHtmlAsPdf, printHtml } from "@/lib/htmlToPdf";
+import { printHtml } from "@/lib/htmlToPdf";
 import { buildReportDocument, buildDefaultFooter } from "@/lib/reportStyles";
+import {
+  buildAdministeredDoseRows,
+  buildAdministeredAntiparasiticRows,
+  formatCertDate,
+} from "@/lib/vaccinationCertificate";
 
 type SectionKey =
   | "identity"
@@ -71,6 +77,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const { data: consultations = [] } = useConsultationsByAnimal(animalId);
   const { data: vaccinations = [] } = useVaccinationsByAnimal(animalId);
   const { data: antiparasitics = [] } = useAntiparasiticsByAnimal(animalId);
+  const { data: appointments = [] } = useAppointmentsByAnimal(animalId || "");
   const { data: prescriptions = [] } = usePrescriptionsByAnimal(animalId);
   const { data: pedigree } = usePedigree(animalId);
   const { data: clients = [] } = useClients();
@@ -99,6 +106,22 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     if (dateTo && d > dateTo) return false;
     return true;
   };
+
+  const completedVaccinations = useMemo(
+    () =>
+      buildAdministeredDoseRows(vaccinations, appointments).filter((r) =>
+        inRange(r.date)
+      ),
+    [vaccinations, appointments, dateFrom, dateTo]
+  );
+
+  const completedAntiparasitics = useMemo(
+    () =>
+      buildAdministeredAntiparasiticRows(antiparasitics, appointments).filter((r) =>
+        inRange(r.date)
+      ),
+    [antiparasitics, appointments, dateFrom, dateTo]
+  );
 
   const buildHtml = () => {
     if (!animal) return "";
@@ -145,20 +168,30 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = consultations.filter((c: any) => inRange(c.consultation_date));
       sectionsHtml.push(`
         <section class="block">
-          <h2>Consultations (${list.length})</h2>
+          <h2>Consultations & examens (${list.length})</h2>
           ${list.length === 0 ? "<p class='muted'>Aucune consultation</p>" : `
           <table class="data">
-            <thead><tr><th>Date</th><th>Type</th><th>Poids</th><th>T°</th><th>Diagnostic</th><th>Traitement</th></tr></thead>
+            <thead><tr><th>Date</th><th>Type</th><th>Contexte</th><th>Diagnostic / résultats</th><th>Traitement</th><th>Notes</th></tr></thead>
             <tbody>
-              ${list.map((c: any) => `
+              ${list.map((c: any) => {
+                const linkedRx = prescriptions.filter((p: any) => p.consultation_id === c.id);
+                const medNames = linkedRx
+                  .flatMap((p: any) => (p.medications || []).map((m: any) => m.medication_name))
+                  .filter(Boolean);
+                const treatmentCell = [
+                  c.treatment ?? null,
+                  medNames.length ? `Ordo. : ${medNames.join(", ")}` : null,
+                ].filter(Boolean).join(" · ") || "—";
+                return `
                 <tr>
                   <td>${fmtDate(c.consultation_date)}</td>
                   <td>${c.consultation_type ?? "—"}</td>
-                  <td>${c.weight ? c.weight + " kg" : "—"}</td>
-                  <td>${c.temperature ? c.temperature + "°C" : "—"}</td>
+                  <td>${c.symptoms ?? (c.weight ? c.weight + " kg" : "—")}${c.temperature ? " · " + formatTemperature(c.temperature) : ""}</td>
                   <td>${c.diagnosis ?? "—"}</td>
-                  <td>${c.treatment ?? "—"}</td>
-                </tr>`).join("")}
+                  <td>${treatmentCell}</td>
+                  <td>${c.notes ?? "—"}</td>
+                </tr>`;
+              }).join("")}
             </tbody>
           </table>`}
         </section>
@@ -166,22 +199,22 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     }
 
     if (sections.vaccinations) {
-      const list = vaccinations.filter((v: any) => inRange(v.vaccination_date));
+      const list = completedVaccinations;
       sectionsHtml.push(`
         <section class="block">
-          <h2>Vaccinations (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucune vaccination</p>" : `
+          <h2>Vaccinations réalisées (${list.length})</h2>
+          ${list.length === 0 ? "<p class='muted'>Aucune vaccination réalisée</p>" : `
           <table class="data">
-            <thead><tr><th>Date</th><th>Vaccin</th><th>Type</th><th>Fabricant</th><th>Lot</th><th>Rappel</th></tr></thead>
+            <thead><tr><th>Date</th><th>Vaccin</th><th>Dose</th><th>Type</th><th>Fabricant</th><th>Lot</th></tr></thead>
             <tbody>
-              ${list.map((v: any) => `
+              ${list.map((v) => `
                 <tr>
-                  <td>${fmtDate(v.vaccination_date)}</td>
-                  <td>${v.vaccine_name ?? "—"}</td>
-                  <td>${v.vaccine_type ?? "—"}</td>
+                  <td>${formatCertDate(v.date)}</td>
+                  <td>${v.vaccineName ?? "—"}</td>
+                  <td>${v.doseLabel ?? "—"}</td>
+                  <td>${v.vaccineType ?? "—"}</td>
                   <td>${v.manufacturer ?? "—"}</td>
-                  <td>${v.batch_number ?? "—"}</td>
-                  <td>${fmtDate(v.next_due_date)}</td>
+                  <td>${v.batchNumber ?? "—"}</td>
                 </tr>`).join("")}
             </tbody>
           </table>`}
@@ -190,22 +223,22 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     }
 
     if (sections.antiparasitics) {
-      const list = antiparasitics.filter((a: any) => inRange(a.treatment_date));
+      const list = completedAntiparasitics;
       sectionsHtml.push(`
         <section class="block">
-          <h2>Antiparasitaires (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucun traitement</p>" : `
+          <h2>Antiparasitaires réalisés (${list.length})</h2>
+          ${list.length === 0 ? "<p class='muted'>Aucun traitement réalisé</p>" : `
           <table class="data">
-            <thead><tr><th>Date</th><th>Produit</th><th>Principe actif</th><th>Type</th><th>Dosage</th><th>Prochain</th></tr></thead>
+            <thead><tr><th>Date</th><th>Produit</th><th>Traitement</th><th>Type</th><th>Principe actif</th><th>Notes</th></tr></thead>
             <tbody>
-              ${list.map((a: any) => `
+              ${list.map((a) => `
                 <tr>
-                  <td>${fmtDate(a.treatment_date)}</td>
-                  <td>${a.product_name ?? "—"}</td>
-                  <td>${a.active_ingredient ?? "—"}</td>
-                  <td>${a.parasite_type ?? "—"}</td>
-                  <td>${a.dosage ?? "—"}</td>
-                  <td>${fmtDate(a.next_treatment_date)}</td>
+                  <td>${formatCertDate(a.date)}</td>
+                  <td>${a.vaccineName ?? "—"}</td>
+                  <td>${a.doseLabel ?? "—"}</td>
+                  <td>${a.vaccineType ?? "—"}</td>
+                  <td>${a.manufacturer ?? "—"}</td>
+                  <td>${a.notes ?? "—"}</td>
                 </tr>`).join("")}
             </tbody>
           </table>`}
@@ -218,19 +251,34 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       sectionsHtml.push(`
         <section class="block">
           <h2>Ordonnances (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucune ordonnance</p>" : `
-          <table class="data">
-            <thead><tr><th>Date</th><th>Diagnostic</th><th>Statut</th><th>Validité</th></tr></thead>
-            <tbody>
-              ${list.map((p: any) => `
-                <tr>
-                  <td>${fmtDate(p.prescription_date)}</td>
-                  <td>${p.diagnosis ?? "—"}</td>
-                  <td>${p.status ?? "—"}</td>
-                  <td>${fmtDate(p.valid_until)}</td>
-                </tr>`).join("")}
-            </tbody>
-          </table>`}
+          ${list.length === 0 ? "<p class='muted'>Aucune ordonnance</p>" : list.map((p: any) => {
+            const meds = Array.isArray(p.medications) ? p.medications : [];
+            return `
+            <div class="rx-block" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
+              <p style="margin:0 0 6px;"><strong>${fmtDate(p.prescription_date)}</strong>
+                · ${p.status ?? "—"}
+                ${p.valid_until ? ` · Valide jusqu'au ${fmtDate(p.valid_until)}` : ""}
+              </p>
+              ${p.diagnosis ? `<p style="margin:0 0 6px;"><strong>Diagnostic :</strong> ${p.diagnosis}</p>` : ""}
+              ${meds.length === 0
+                ? `<p class="muted" style="margin:0;">Aucun médicament enregistré</p>`
+                : `<table class="data">
+                    <thead><tr><th>Médicament</th><th>Dosage</th><th>Fréquence</th><th>Durée</th><th>Qté</th><th>Instructions</th></tr></thead>
+                    <tbody>
+                      ${meds.map((m: any) => `
+                        <tr>
+                          <td>${m.medication_name ?? "—"}</td>
+                          <td>${m.dosage ?? "—"}</td>
+                          <td>${m.frequency ?? "—"}</td>
+                          <td>${m.duration ?? "—"}</td>
+                          <td>${m.quantity ?? "—"}</td>
+                          <td>${m.instructions ?? "—"}</td>
+                        </tr>`).join("")}
+                    </tbody>
+                  </table>`}
+              ${p.notes ? `<p style="margin:6px 0 0;"><strong>Notes :</strong> ${p.notes}</p>` : ""}
+            </div>`;
+          }).join("")}
         </section>
       `);
     }
@@ -283,27 +331,31 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     });
   };
 
-  const handlePrint = () => {
-    const html = buildHtml();
-    if (!html) return;
-    printHtml(html);
-  };
-
-  const handleDownloadPdf = async () => {
+  const openPrintDialog = async () => {
     const html = buildHtml();
     if (!html) return;
     try {
-      await downloadHtmlAsPdf(
-        html,
-        `Dossier-${animal?.name || "animal"}-${new Date().toISOString().slice(0, 10)}.pdf`
-      );
+      await printHtml(html);
     } catch (e: any) {
       toast({
-        title: "Erreur PDF",
-        description: e?.message || "Impossible de générer le PDF.",
+        title: "Impression impossible",
+        description: e?.message || "Autorisez les popups pour imprimer ou enregistrer en PDF.",
         variant: "destructive",
       });
     }
+  };
+
+  const handlePrint = () => {
+    void openPrintDialog();
+  };
+
+  /** Même module que Imprimer (dialogue navigateur → Enregistrer au format PDF). */
+  const handleDownloadPdf = async () => {
+    toast({
+      title: "Enregistrer en PDF",
+      description: "Dans la boîte d'impression, choisissez « Enregistrer au format PDF ».",
+    });
+    await openPrintDialog();
   };
 
   if (!animal) return null;
@@ -312,7 +364,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     identity: "Identité",
     pedigree: "Pédigrée",
     history: "Historique général",
-    consultations: "Consultations",
+    consultations: "Consultations & examens",
     vaccinations: "Vaccinations",
     antiparasitics: "Antiparasitaires",
     prescriptions: "Ordonnances",
@@ -329,6 +381,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
           </DialogTitle>
           <DialogDescription>
             Sélectionnez le modèle puis les sections à inclure pour {animal.name}.
+            Impression et PDF utilisent le même rendu (boîte d&apos;impression du navigateur).
           </DialogDescription>
         </DialogHeader>
 

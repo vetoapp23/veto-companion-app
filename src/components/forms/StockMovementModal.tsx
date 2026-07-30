@@ -55,6 +55,9 @@ interface StockMovementModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item: StockItem | null;
+  addStockMovementFn?: (data: any) => Promise<any>;
+  rawStockItems?: any[];
+  onMovementAdded?: () => void;
 }
 
 // Types de mouvements
@@ -118,14 +121,23 @@ const commonReasons = {
   ]
 };
 
-export function StockMovementModal({ open, onOpenChange, item }: StockMovementModalProps) {
-  const { addStockMovement: addStockMovementRaw, stockItems: rawStockItems } = useStock();
+export function StockMovementModal({
+  open,
+  onOpenChange,
+  item,
+  addStockMovementFn,
+  rawStockItems: rawStockItemsProp,
+  onMovementAdded,
+}: StockMovementModalProps) {
+  const hook = useStock();
+  const addStockMovementRaw = addStockMovementFn || hook.addStockMovement;
+  const rawStockItems = rawStockItemsProp || hook.stockItems;
   const { settings } = useSettings();
   const { toast } = useToast();
 
   // Helper function to find database item ID from compatibility ID
   const findDatabaseItemId = (compatibilityId: number): string | null => {
-    const dbItem = rawStockItems.find(dbItem => 
+    const dbItem = rawStockItems.find((dbItem: any) => 
       parseInt(dbItem.id.replace(/-/g, '').slice(0, 8), 16) === compatibilityId
     );
     return dbItem?.id || null;
@@ -136,7 +148,6 @@ export function StockMovementModal({ open, onOpenChange, item }: StockMovementMo
     const dbItemId = findDatabaseItemId(movementData.itemId);
     if (!dbItemId) return null;
     
-    // Convert UI movement to database format
     const dbMovementData = {
       stock_item_id: dbItemId,
       item_name: movementData.itemName,
@@ -177,7 +188,7 @@ export function StockMovementModal({ open, onOpenChange, item }: StockMovementMo
     }
   }, [item, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!item) return;
@@ -217,11 +228,7 @@ export function StockMovementModal({ open, onOpenChange, item }: StockMovementMo
     } else if (formData.type === 'adjustment') {
       newStock = formData.quantity;
     }
-    // Pour 'transfer', on ne change pas le stock total, juste l'emplacement
 
-    // Note: Le stock sera automatiquement mis à jour par le trigger de la base de données
-
-    // Créer le mouvement de stock
     const performedByValue = formData.performedBy === "Autre" ? customPerformedBy : formData.performedBy;
     
     const movementData = {
@@ -236,21 +243,9 @@ export function StockMovementModal({ open, onOpenChange, item }: StockMovementMo
       notes: formData.notes || undefined
     };
 
-    addStockMovement(movementData);
-
-    // Message de confirmation
-    const typeLabels = {
-      in: 'Entrée',
-      out: 'Sortie',
-      adjustment: 'Ajustement',
-      transfer: 'Transfert'
-    };
-
-    toast({
-      title: "Mouvement enregistré",
-      description: `${typeLabels[formData.type]} de ${formData.quantity} ${item.unit} pour "${item.name}" enregistrée.`,
-    });
-    
+    const result = await addStockMovement(movementData);
+    if (!result) return;
+    onMovementAdded?.();
     onOpenChange(false);
   };
 

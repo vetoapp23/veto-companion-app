@@ -39,3 +39,53 @@ export function resolveMaintenanceDueDate(
   }
   return undefined;
 }
+
+/**
+ * Ensure the plan includes at least one future reminder after the first dose.
+ * Uses protocol duration_days (ex. rappel annuel) when the booster schedule
+ * only contains J0 / 1ère dose.
+ */
+export function ensureFutureReminders(
+  baseDate: string,
+  plan: ReminderDose[],
+  durationDays?: number | null
+): ReminderDose[] {
+  const sorted = [...plan].sort((a, b) => a.date.localeCompare(b.date));
+  const hasFuture = sorted.some((d) => d.date > baseDate);
+
+  if (hasFuture) return sorted;
+
+  const withToday =
+    sorted.length > 0
+      ? sorted
+      : [{ label: "1ère dose", date: baseDate }];
+
+  if (durationDays && durationDays > 0) {
+    const rappelDate = format(
+      addDays(parseLocalDay(baseDate), durationDays),
+      "yyyy-MM-dd"
+    );
+    if (rappelDate > baseDate && !withToday.some((d) => d.date === rappelDate)) {
+      return [
+        ...withToday,
+        {
+          label: durationDays >= 300 ? "Rappel annuel" : `Rappel (+${durationDays} j)`,
+          date: rappelDate,
+        },
+      ];
+    }
+  }
+
+  // Default clinical gap if protocol has no duration: +28 days
+  if (!withToday.some((d) => d.date > baseDate)) {
+    return [
+      ...withToday,
+      {
+        label: "Rappel 1",
+        date: format(addDays(parseLocalDay(baseDate), 28), "yyyy-MM-dd"),
+      },
+    ];
+  }
+
+  return withToday;
+}

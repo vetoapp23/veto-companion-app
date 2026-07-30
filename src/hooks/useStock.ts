@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { recordStockMovement } from '@/lib/stockMovements';
 
 // Database types that map to existing Supabase schema
 export interface DatabaseStockItem {
@@ -78,12 +79,12 @@ export const convertDatabaseStockItem = (dbItem: DatabaseStockItem): any => {
     category: dbItem.category,
     description: dbItem.description,
     unit: dbItem.unit,
-    currentStock: dbItem.current_quantity,
-    minimumStock: dbItem.minimum_quantity,
-    maximumStock: dbItem.maximum_quantity,
-    purchasePrice: dbItem.unit_cost || 0,
-    sellingPrice: dbItem.selling_price || 0,
-    totalValue: (dbItem.current_quantity || 0) * (dbItem.unit_cost || 0),
+    currentStock: Number(dbItem.current_quantity) || 0,
+    minimumStock: Number(dbItem.minimum_quantity) || 0,
+    maximumStock: Number(dbItem.maximum_quantity) || 0,
+    purchasePrice: Number(dbItem.unit_cost) || 0,
+    sellingPrice: Number(dbItem.selling_price) || 0,
+    totalValue: (Number(dbItem.current_quantity) || 0) * (Number(dbItem.unit_cost) || 0),
     expirationDate: dbItem.expiration_date,
     supplier: dbItem.supplier,
     location: dbItem.location,
@@ -156,18 +157,45 @@ export const useStock = () => {
         return;
       }
 
+      // stock_movements n'a pas organization_id — filtrer via jointure stock_items
       const { data, error } = await supabase
         .from('stock_movements')
         .select(`
-          *,
-          stock_items!inner(organization_id)
+          id,
+          stock_item_id,
+          item_name,
+          movement_type,
+          quantity,
+          reason,
+          reference,
+          performed_by,
+          movement_date,
+          notes,
+          created_at,
+          stock_items!inner(id, name, organization_id)
         `)
         .eq('stock_items.organization_id', profile.organization_id)
-        .order('movement_date', { ascending: false });
+        .order('movement_date', { ascending: false })
+        .limit(200);
 
       if (error) throw error;
-      console.log('✅ Stock movements loaded for organization:', profile.organization_id, 'Count:', data?.length);
-      setStockMovements(data || []);
+
+      const normalized = (data || []).map((row: any) => ({
+        id: row.id,
+        stock_item_id: row.stock_item_id,
+        item_name: row.item_name || row.stock_items?.name || 'Article',
+        movement_type: row.movement_type,
+        quantity: Number(row.quantity) || 0,
+        reason: row.reason,
+        reference: row.reference,
+        performed_by: row.performed_by,
+        movement_date: row.movement_date || row.created_at,
+        notes: row.notes,
+        created_at: row.created_at,
+      }));
+
+      console.log('✅ Stock movements loaded for organization:', profile.organization_id, 'Count:', normalized.length);
+      setStockMovements(normalized);
     } catch (err: any) {
       console.error('Error fetching stock movements:', err);
       setError(err.message);
@@ -269,6 +297,25 @@ export const useStock = () => {
         .single();
 
       if (error) throw error;
+
+      // Historique : entrée initiale si quantité > 0
+      const initialQty = Number(data.current_quantity) || 0;
+      if (initialQty > 0) {
+        try {
+          await recordStockMovement({
+            stock_item_id: data.id,
+            item_name: data.name,
+            movement_type: 'in',
+            quantity: initialQty,
+            reason: 'Inventaire initial',
+            performed_by: user.id,
+            updateQuantity: false,
+          });
+          await fetchStockMovements();
+        } catch (movErr) {
+          console.warn('Initial stock movement log failed', movErr);
+        }
+      }
 
       // Immediately update local state for instant UI update
       setStockItems(prev => {
@@ -388,35 +435,43 @@ export const useStock = () => {
     }
   };
 
-  // Add stock movement
+  // Add stock movement (écrit dans Supabase + met à jour la quantité)
   const addStockMovement = async (movementData: Omit<DatabaseStockMovement, 'id' | 'created_at'>) => {
     if (!user) return null;
 
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single();
+      const data = await recordStockMovement({
+        stock_item_id: movementData.stock_item_id,
+        item_name: movementData.item_name,
+        movement_type: movementData.movement_type,
+        quantity: Number(movementData.quantity) || 0,
+        reason: movementData.reason,
+        reference: movementData.reference,
+        performed_by: movementData.performed_by || user.id,
+        notes: movementData.notes,
+        movement_date: movementData.movement_date,
+        absoluteAdjustment: true,
+      });
 
-      if (profileError || !profile?.organization_id) {
-        throw new Error('User profile or organization not found');
-      }
+      setStockMovements((prev) => [
+        {
+          id: data.id,
+          stock_item_id: data.stock_item_id,
+          item_name: data.item_name,
+          movement_type: data.movement_type,
+          quantity: Number(data.quantity) || 0,
+          reason: data.reason,
+          reference: data.reference,
+          performed_by: data.performed_by,
+          movement_date: data.movement_date,
+          notes: data.notes,
+          created_at: data.created_at,
+        },
+        ...prev,
+      ]);
 
-      const { data, error } = await supabase
-        .from('stock_movements')
-        .insert([{ ...movementData, organization_id: profile.organization_id, performed_by: user.id }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Immediately update local state for movements
-      setStockMovements(prev => [data, ...prev]);
-      
-      // Refresh items to get updated quantities (database trigger updates these)
       await fetchStockItems();
-      
+
       toast({
         title: "Succès",
         description: "Mouvement de stock enregistré",
@@ -427,7 +482,7 @@ export const useStock = () => {
       console.error('Error adding stock movement:', err);
       toast({
         title: "Erreur",
-        description: "Impossible d'enregistrer le mouvement",
+        description: err?.message || "Impossible d'enregistrer le mouvement",
         variant: "destructive",
       });
       return null;

@@ -4,6 +4,7 @@ import { Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
+import { formatTemperature, formatTemperatureValue } from "@/lib/utils";
 
 interface ConsultationPrintProps {
   consultation: Consultation;
@@ -34,7 +35,7 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
       treatment: dbConsultation.treatment || '',
       notes: dbConsultation.notes || '',
       weight: dbConsultation.weight || null,
-      temperature: dbConsultation.temperature || null,
+      temperature: formatTemperatureValue(dbConsultation.temperature) ?? null,
       medications: dbConsultation.medications || '',
       followUp: dbConsultation.follow_up_notes || dbConsultation.followUp || null,
       cost: dbConsultation.cost || null
@@ -150,7 +151,7 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
                 <span class="info-label">Poids:</span> ${transformedConsultation.weight || 'Non renseigné'}
               </div>
               <div class="info-item">
-                <span class="info-label">Température:</span> ${transformedConsultation.temperature || 'Non renseigné'}
+                <span class="info-label">Température:</span> ${transformedConsultation.temperature ? transformedConsultation.temperature + '°C' : 'Non renseigné'}
               </div>
             </div>
           </div>

@@ -81,3 +81,40 @@ export function formatDate(dateString: string): string {
     day: 'numeric'
   });
 }
+
+/** Arrondit une température à 2 décimales (stockage / calculs). */
+export function roundTemperature(
+  value: number | string | null | undefined
+): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n =
+    typeof value === 'number'
+      ? value
+      : parseFloat(String(value).replace(',', '.'));
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100) / 100;
+}
+
+/** Valeur affichable sans unité (ex. « 38.50 »). */
+export function formatTemperatureValue(
+  value: number | string | null | undefined
+): string | null {
+  const rounded = roundTemperature(value);
+  return rounded === null ? null : rounded.toFixed(2);
+}
+
+/** Valeur affichable avec unité (ex. « 38.50°C »). */
+export function formatTemperature(
+  value: number | string | null | undefined,
+  fallback = '—'
+): string {
+  const formatted = formatTemperatureValue(value);
+  return formatted === null ? fallback : `${formatted}°C`;
+}
+
+/** Préremplissage des champs formulaire température. */
+export function temperatureInputValue(
+  value: number | string | null | undefined
+): string {
+  return formatTemperatureValue(value) ?? '';
+}

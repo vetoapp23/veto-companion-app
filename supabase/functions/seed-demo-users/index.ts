@@ -38,11 +38,29 @@ const PET_NAMES = ["Rex", "Luna", "Max", "Bella", "Simba", "Nala", "Rocky", "Mia
 const VAX = ["CHPPi", "Rage", "Leucose", "Typhus"];
 const ANTIPARA = [{ name: "Frontline", ai: "Fipronil" }, { name: "Bravecto", ai: "Fluralaner" }, { name: "Milbemax", ai: "Milbémycine" }];
 const STOCK = [
-  { name: "Amoxicilline 500mg", category: "medicament", unit: "comprimé", qty: 200, min: 50, cost: 1.2, price: 3 },
-  { name: "Seringues 5ml", category: "consommable", unit: "unité", qty: 500, min: 100, cost: 0.3, price: 1 },
-  { name: "Vaccin CHPPi", category: "vaccin", unit: "dose", qty: 50, min: 10, cost: 15, price: 35 },
-  { name: "Frontline Spot-on", category: "antiparasitaire", unit: "pipette", qty: 80, min: 20, cost: 8, price: 20 },
-  { name: "Compresses stériles", category: "consommable", unit: "boîte", qty: 40, min: 10, cost: 4, price: 10 },
+  { name: "Amoxicilline 500mg", category: "medicament", unit: "comprimé", qty: 200, min: 50, cost: 1.2, price: 3, description: "Antibiotique large spectre" },
+  { name: "Clavaseptin 50 mg", category: "medicament", unit: "comprimé", qty: 120, min: 30, cost: 0.9, price: 2.5, description: "Amoxicilline + acide clavulanique" },
+  { name: "Clavaseptin 250 mg", category: "medicament", unit: "comprimé", qty: 80, min: 20, cost: 1.8, price: 4.5, description: "Amoxicilline + acide clavulanique" },
+  { name: "Synulox 50 mg", category: "medicament", unit: "comprimé", qty: 100, min: 25, cost: 1.0, price: 2.8, description: "Infections cutanées / urinaires" },
+  { name: "Baytril 50 mg", category: "medicament", unit: "comprimé", qty: 50, min: 10, cost: 2.5, price: 6.0, description: "Enrofloxacine" },
+  { name: "Metacam 1.5 mg/ml", category: "medicament", unit: "flacon", qty: 25, min: 5, cost: 18, price: 38, description: "Méloxicam AINS oral" },
+  { name: "Onsior 6 mg", category: "medicament", unit: "comprimé", qty: 90, min: 20, cost: 1.2, price: 3.2, description: "Robénacoxib chats" },
+  { name: "Rimadyl 50 mg", category: "medicament", unit: "comprimé", qty: 100, min: 25, cost: 0.8, price: 2.2, description: "Carprofène chiens" },
+  { name: "Cerenia 16 mg", category: "medicament", unit: "comprimé", qty: 60, min: 15, cost: 3.5, price: 8.5, description: "Maropitant antiémétique" },
+  { name: "Prednisolone 5 mg", category: "medicament", unit: "comprimé", qty: 150, min: 40, cost: 0.25, price: 0.8, description: "Corticostéroïde" },
+  { name: "Metronidazole 250 mg", category: "medicament", unit: "comprimé", qty: 100, min: 25, cost: 0.55, price: 1.6, description: "Antiprotozoaire / diarrhée" },
+  { name: "Gabapentine 100 mg", category: "medicament", unit: "gélule", qty: 100, min: 25, cost: 0.35, price: 1.2, description: "Douleur neuropathique" },
+  { name: "Vetmedin 1.25 mg", category: "medicament", unit: "comprimé", qty: 70, min: 15, cost: 1.8, price: 4.5, description: "Pimobendane cardiaque" },
+  { name: "Fortekor 5 mg", category: "medicament", unit: "comprimé", qty: 70, min: 15, cost: 1.6, price: 4.0, description: "Bénazépril IEC" },
+  { name: "Aurizon", category: "medicament", unit: "flacon", qty: 30, min: 8, cost: 8.5, price: 19, description: "Otite externe" },
+  { name: "Milbemax Chien", category: "antiparasitaire", unit: "comprimé", qty: 60, min: 15, cost: 4.5, price: 12, description: "Vermifuge chien" },
+  { name: "Milbemax Chat", category: "antiparasitaire", unit: "comprimé", qty: 70, min: 15, cost: 3.8, price: 10.5, description: "Vermifuge chat" },
+  { name: "Bravecto 500 mg", category: "antiparasitaire", unit: "comprimé", qty: 40, min: 10, cost: 18, price: 42, description: "Fluralaner 12 semaines" },
+  { name: "Frontline Spot-on", category: "antiparasitaire", unit: "pipette", qty: 80, min: 20, cost: 8, price: 20, description: "Fipronil puces/tiques" },
+  { name: "Fortiflora Canin", category: "supplement", unit: "sachet", qty: 80, min: 20, cost: 1.2, price: 3, description: "Probiotique chien" },
+  { name: "Seringues 5ml", category: "consommable", unit: "unité", qty: 500, min: 100, cost: 0.3, price: 1, description: null },
+  { name: "Vaccin CHPPi", category: "vaccin", unit: "dose", qty: 50, min: 10, cost: 15, price: 35, description: "Vaccin polyvalent chien" },
+  { name: "Compresses stériles", category: "consommable", unit: "boîte", qty: 40, min: 10, cost: 4, price: 10, description: null },
 ];
 
 const rand = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
@@ -58,9 +76,17 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
   await admin.from("stock_items").insert(
     STOCK.map((s) => ({
       organization_id: orgId,
-      name: s.name, category: s.category, unit: s.unit,
-      current_quantity: s.qty, minimum_quantity: s.min,
-      unit_cost: s.cost, selling_price: s.price,
+      user_id: userId,
+      name: s.name,
+      category: s.category,
+      unit: s.unit,
+      description: s.description,
+      current_quantity: s.qty,
+      minimum_quantity: s.min,
+      unit_cost: s.cost,
+      selling_price: s.price,
+      requires_prescription: s.category === "medicament",
+      active: true,
     }))
   );
 

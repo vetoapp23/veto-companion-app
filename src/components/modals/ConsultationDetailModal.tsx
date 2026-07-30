@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useUpdateConsultation } from "@/hooks/useDatabase";
+import { useUpdateConsultation, usePrescriptionsByAnimal } from "@/hooks/useDatabase";
 import { compressPhoto, estimateDataUrlBytes, recordStorageChange } from "@/lib/photoCompression";
-import { Edit, Save, X, Loader2, ImagePlus } from "lucide-react";
+import { roundTemperature, formatTemperature, temperatureInputValue } from "@/lib/utils";
+import { Edit, Save, X, Loader2, ImagePlus, Pill } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -20,6 +21,11 @@ interface Props {
 export function ConsultationDetailModal({ open, onOpenChange, consultation }: Props) {
   const { toast } = useToast();
   const update = useUpdateConsultation();
+  const animalId = consultation?.animal_id || "";
+  const { data: prescriptions = [] } = usePrescriptionsByAnimal(animalId);
+  const linkedPrescriptions = prescriptions.filter(
+    (p: any) => p.consultation_id === consultation?.id
+  );
   const [editing, setEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -30,7 +36,7 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
       setForm({
         consultation_date: consultation.consultation_date?.slice(0, 10) || "",
         weight: consultation.weight ?? "",
-        temperature: consultation.temperature ?? "",
+        temperature: temperatureInputValue(consultation.temperature),
         symptoms: consultation.symptoms || "",
         diagnosis: consultation.diagnosis || "",
         treatment: consultation.treatment || "",
@@ -52,7 +58,7 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
         data: {
           consultation_date: form.consultation_date || consultation.consultation_date,
           weight: form.weight ? Number(form.weight) : null,
-          temperature: form.temperature ? Number(form.temperature) : null,
+          temperature: form.temperature ? roundTemperature(form.temperature) : null,
           symptoms: form.symptoms || null,
           diagnosis: form.diagnosis || null,
           treatment: form.treatment || null,
@@ -127,8 +133,8 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
                   : <span>{consultation.weight ?? "—"}</span>}
               </Field>
               <Field label="Température (°C)">
-                {editing ? <Input type="number" step="0.1" value={form.temperature} onChange={(e) => setForm({ ...form, temperature: e.target.value })} />
-                  : <span>{consultation.temperature ?? "—"}</span>}
+                {editing ? <Input type="number" step="0.01" value={form.temperature} onChange={(e) => setForm({ ...form, temperature: e.target.value })} />
+                  : <span>{formatTemperature(consultation.temperature)}</span>}
               </Field>
             </div>
 
@@ -152,6 +158,42 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
               {editing ? <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
                 : <p className="whitespace-pre-line">{consultation.notes || "—"}</p>}
             </Field>
+
+            {linkedPrescriptions.length > 0 && (
+              <div className="rounded-md border p-3 space-y-2">
+                <div className="flex items-center gap-2 font-medium">
+                  <Pill className="h-4 w-4" />
+                  Ordonnance liée
+                </div>
+                {linkedPrescriptions.map((p: any) => {
+                  const meds = Array.isArray(p.medications) ? p.medications : [];
+                  return (
+                    <div key={p.id} className="space-y-1.5">
+                      {p.diagnosis && (
+                        <p className="text-xs text-muted-foreground">Diagnostic : {p.diagnosis}</p>
+                      )}
+                      {meds.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Aucun médicament</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {meds.map((m: any) => (
+                            <li key={m.id} className="rounded bg-muted/40 px-2 py-1.5 text-xs">
+                              <span className="font-medium">{m.medication_name}</span>
+                              {(m.dosage || m.frequency || m.duration) && (
+                                <span className="text-muted-foreground">
+                                  {" — "}
+                                  {[m.dosage, m.frequency, m.duration].filter(Boolean).join(" · ")}
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-2">

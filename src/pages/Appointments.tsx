@@ -17,10 +17,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateVisit, useVisits } from "@/hooks/useVisits";
-import { getServiceDef, suggestServiceFromAppointmentType } from "@/lib/visitCatalog";
+import { getServiceDef, suggestServiceFromAppointmentType, resolveServiceAmount } from "@/lib/visitCatalog";
 import { buildClinicCalendarEvents } from "@/lib/clinicCalendar";
 import { toLocalDateKey, toLocalTimeKey, todayLocalKey, localDateTimeToISO } from "@/lib/dateLocal";
 import type { UpdateAppointmentData } from "@/lib/database";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const statusStyles = {
   scheduled: "bg-blue-100 text-blue-800",
@@ -58,6 +59,7 @@ export default function Appointments() {
   const createVisit = useCreateVisit();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { settings } = useSettings();
   const { currentView } = useDisplayPreference('appointments');
   
   // Dynamic settings
@@ -205,7 +207,10 @@ export default function Appointments() {
       return;
     }
     try {
-      const code = suggestServiceFromAppointmentType(appointment.appointment_type);
+      const code = suggestServiceFromAppointmentType(
+        appointment.appointment_type,
+        appointment.notes
+      );
       const def = getServiceDef(code)!;
       const visit = await createVisit.mutateAsync({
         client_id: appointment.client_id,
@@ -216,7 +221,7 @@ export default function Appointments() {
         initial_service: {
           service_code: def.code,
           service_label: def.label,
-          amount: def.defaultAmount,
+          amount: resolveServiceAmount(def.code, settings.servicePrices),
         },
       });
       navigate(`/visites/${visit.id}`);

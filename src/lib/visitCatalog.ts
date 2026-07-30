@@ -78,7 +78,7 @@ export const VISIT_SERVICE_CATALOG: VisitServiceDef[] = [
     action: "consultation",
     panel: "clinical",
     defaultAmount: 150,
-    appointmentHints: ["consultation", "follow-up", "follow_up"],
+    appointmentHints: ["consultation"],
   },
   {
     code: "emergency",
@@ -98,7 +98,7 @@ export const VISIT_SERVICE_CATALOG: VisitServiceDef[] = [
     action: "consultation",
     panel: "clinical",
     defaultAmount: 100,
-    appointmentHints: ["controle", "contrôle", "checkup"],
+    appointmentHints: ["controle", "contrôle", "checkup", "follow-up", "follow_up"],
   },
   {
     code: "vaccination",
@@ -118,7 +118,7 @@ export const VISIT_SERVICE_CATALOG: VisitServiceDef[] = [
     action: "antiparasitic",
     panel: "antiparasitic",
     defaultAmount: 80,
-    appointmentHints: ["antiparasitaire", "antiparasite"],
+    appointmentHints: ["antiparasitaire", "antiparasite", "antiparasitic"],
   },
   {
     code: "surgery",
@@ -239,8 +239,50 @@ export function getServiceDef(code: string): VisitServiceDef | undefined {
   return VISIT_SERVICE_CATALOG.find((s) => s.code === code);
 }
 
-/** Suggest a service from an appointment type string */
-export function suggestServiceFromAppointmentType(appointmentType?: string | null): VisitServiceCode {
+/** Prix catalogue par défaut (code → montant). */
+export function getCatalogDefaultPrices(): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const def of VISIT_SERVICE_CATALOG) {
+    out[def.code] = def.defaultAmount;
+  }
+  return out;
+}
+
+/** Montant à utiliser pour une prestation (paramètres clinique prioritaire). */
+export function resolveServiceAmount(
+  code: string,
+  overrides?: Record<string, number> | null
+): number {
+  const fromSettings = overrides?.[code];
+  if (typeof fromSettings === "number" && !Number.isNaN(fromSettings) && fromSettings >= 0) {
+    return fromSettings;
+  }
+  return getServiceDef(code)?.defaultAmount ?? 0;
+}
+
+/** Catalogue enrichi avec les prix configurés. */
+export function getCatalogWithPrices(
+  overrides?: Record<string, number> | null
+): Array<VisitServiceDef & { amount: number }> {
+  return VISIT_SERVICE_CATALOG.map((def) => ({
+    ...def,
+    amount: resolveServiceAmount(def.code, overrides),
+  }));
+}
+
+/** Suggest a service from an appointment type string (+ optional notes for rappels). */
+export function suggestServiceFromAppointmentType(
+  appointmentType?: string | null,
+  notes?: string | null
+): VisitServiceCode {
+  const note = (notes || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  if (note.includes("rappel antiparasitaire") || note.includes("antiparasit")) {
+    return "antiparasitic";
+  }
+  if (note.includes("rappel vaccin") || note.includes("vaccin")) {
+    return "vaccination";
+  }
+
   if (!appointmentType) return "consultation";
   const slug = appointmentType.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
   for (const def of VISIT_SERVICE_CATALOG) {
@@ -248,6 +290,8 @@ export function suggestServiceFromAppointmentType(appointmentType?: string | nul
       return def.code;
     }
   }
+  // Generic follow-up without reminder notes → contrôle / consultation
+  if (slug.includes("follow")) return "checkup";
   return "consultation";
 }
 

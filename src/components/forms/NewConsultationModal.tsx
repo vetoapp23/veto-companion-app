@@ -5,16 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { useClients, useAnimals, useCreateConsultation } from "@/hooks/useDatabase";
+import { useClients, useAnimals, useCreateConsultation, useCreatePrescription, useStockItems } from "@/hooks/useDatabase";
 import { NewClientModal } from "./NewClientModal";
 import { NewPetModal } from "./NewPetModal";
+import {
+  PrescriptionMedicationsFields,
+  emptyPrescriptionMed,
+  buildPrescriptionMedPayload,
+  type PrescriptionMedDraft,
+} from "./PrescriptionMedicationsFields";
+import { PrescriptionPrint } from "@/components/PrescriptionPrint";
+import { transformDbPrescriptionForPrint } from "@/lib/prescriptionPrint";
 
-import { Plus, User, Heart } from "lucide-react";
+import { Plus, User, Heart, Pill } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext"; // Added for dynamic currency
 import type { Animal, Client, CreateConsultationData } from "@/lib/database";
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 import { Loader2 } from "lucide-react";
+import { roundTemperature, temperatureInputValue } from "@/lib/utils";
 
 interface NewConsultationModalProps {
   open: boolean;
@@ -27,11 +37,16 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: animals = [], isLoading: animalsLoading } = useAnimals();
   const createConsultationMutation = useCreateConsultation();
+  const createPrescriptionMutation = useCreatePrescription();
+  const { data: stockItems = [] } = useStockItems();
   const { toast } = useToast();
   const { settings } = useSettings(); // Destructure currency for cost label
   const [showClientModal, setShowClientModal] = useState(false);
   const [showPetModal, setShowPetModal] = useState(false);
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [withPrescription, setWithPrescription] = useState(false);
+  const [rxMedications, setRxMedications] = useState<PrescriptionMedDraft[]>([emptyPrescriptionMed()]);
+  const [createdRxForPrint, setCreatedRxForPrint] = useState<any | null>(null);
 
   
   const [formData, setFormData] = useState({
@@ -41,7 +56,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
     animalName: "",
     date: prefillData?.consultation_date ? new Date(prefillData.consultation_date).toISOString().split('T')[0] : "",
     weight: prefillData?.weight?.toString() || "",
-    temperature: prefillData?.temperature?.toString() || "",
+    temperature: temperatureInputValue(prefillData?.temperature) || "",
     symptoms: prefillData?.symptoms || "",
     diagnosis: prefillData?.diagnosis || "",
     treatment: prefillData?.treatment || "",
@@ -160,6 +175,38 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
     }
     
     try {
+      let prescriptionMeds: ReturnType<typeof buildPrescriptionMedPayload> = [];
+      if (withPrescription) {
+        try {
+          prescriptionMeds = buildPrescriptionMedPayload(rxMedications, stockItems);
+        } catch (stockErr: any) {
+          toast({
+            title: "Stock insuffisant",
+            description: stockErr?.message || "Impossible de générer l'ordonnance.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (prescriptionMeds.length === 0) {
+          toast({
+            title: "Ordonnance incomplete",
+            description: "Ajoutez au moins un médicament, ou désactivez l'ordonnance.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      const treatmentFromRx =
+        withPrescription && prescriptionMeds.length > 0
+          ? prescriptionMeds
+              .map((m) => {
+                const bits = [m.medication_name, m.dosage, m.frequency, m.duration].filter(Boolean);
+                return bits.join(" — ");
+              })
+              .join("; ")
+          : "";
+
       // Create consultation data for database
       const consultationData: CreateConsultationData & { consultation_date: string; visit_id?: string } = {
         client_id: formData.clientId,
@@ -167,10 +214,14 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
         consultation_type: prefillData?.consultation_type || "routine",
         consultation_date: formData.date || today,
         weight: formData.weight ? Math.min(parseFloat(formData.weight), 999.9) : undefined,
-        temperature: formData.temperature ? Math.min(parseFloat(formData.temperature), 99.9) : undefined,
+        temperature: formData.temperature
+          ? roundTemperature(Math.min(parseFloat(formData.temperature), 99.9)) ?? undefined
+          : undefined,
         symptoms: formData.symptoms.trim() || undefined,
         diagnosis: formData.diagnosis.trim() || undefined,
-        treatment: formData.treatment.trim() || undefined,
+        treatment:
+          formData.treatment.trim() ||
+          (treatmentFromRx || undefined),
         follow_up_notes: formData.followUp.trim() || undefined,
         notes: formData.notes.trim() || undefined,
         photos: formData.photos && formData.photos.length > 0 ? formData.photos : undefined,
@@ -180,12 +231,45 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
       console.log("[consultation] submitting with photos:", formData.photos?.length || 0);
       const created = await createConsultationMutation.mutateAsync(consultationData);
       onCreated?.(created);
-      
+
+      let rxCreated: any = null;
+      const animalLabel = formData.animalName;
+      const clientLabel = formData.clientName;
+      if (withPrescription && prescriptionMeds.length > 0) {
+        rxCreated = await createPrescriptionMutation.mutateAsync({
+          consultation_id: created.id,
+          visit_id: prefillData?.visit_id || null,
+          animal_id: formData.animalId,
+          client_id: formData.clientId,
+          diagnosis: formData.diagnosis.trim() || undefined,
+          notes: formData.notes.trim() || undefined,
+          medications: prescriptionMeds,
+        });
+        setCreatedRxForPrint({
+          ...rxCreated,
+          _animalLabel: animalLabel,
+          _clientLabel: clientLabel,
+          medications: prescriptionMeds.map((m, i) => ({
+            id: `tmp-${i}`,
+            medication_name: m.medication_name,
+            dosage: m.dosage,
+            frequency: m.frequency,
+            duration: m.duration,
+            quantity: m.quantity,
+            instructions: m.instructions,
+            route: m.route,
+          })),
+        });
+      }
+
       toast({
-        title: "✓ Consultation enregistrée",
-        description: `La consultation pour ${formData.animalName} a été sauvegardée avec succès.`,
+        title: withPrescription && rxCreated ? "✓ Consultation + ordonnance" : "✓ Consultation enregistrée",
+        description:
+          withPrescription && rxCreated
+            ? `Consultation et ordonnance créées pour ${animalLabel}.`
+            : `La consultation pour ${animalLabel} a été sauvegardée.`,
       });
-      
+
       // Reset form
       setFormData({
         clientId: "",
@@ -202,8 +286,12 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
         notes: "",
         photos: []
       });
-      
-      onOpenChange(false);
+      setWithPrescription(false);
+      setRxMedications([emptyPrescriptionMed()]);
+
+      if (!(withPrescription && rxCreated)) {
+        onOpenChange(false);
+      }
     } catch (error: any) {
       console.error('Error creating consultation:', error);
       
@@ -248,7 +336,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
         animalName: preAnimal?.name || "",
         date: prefillData?.consultation_date ? new Date(prefillData.consultation_date).toISOString().split('T')[0] : today,
         weight: prefillData?.weight?.toString() || "",
-        temperature: prefillData?.temperature?.toString() || "",
+        temperature: temperatureInputValue(prefillData?.temperature) || "",
         symptoms: prefillData?.symptoms || "",
         diagnosis: prefillData?.diagnosis || "",
         treatment: prefillData?.treatment || "",
@@ -384,12 +472,12 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                 <Input
                   id="temperature"
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   min="30"
                   max="50"
                   value={formData.temperature}
                   onChange={handleChange}
-                  placeholder="ex: 38.5"
+                  placeholder="ex: 38.50"
                   title="Température corporelle (30°C à 50°C)"
                 />
               </div>
@@ -441,6 +529,34 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
               <div className="text-xs text-muted-foreground text-right">
                 {formData.treatment.length}/1000 caractères
               </div>
+            </div>
+
+            {/* Ordonnance optionnelle */}
+            <div className="rounded-lg border border-border p-4 space-y-4 bg-background">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="with-prescription" className="flex items-center gap-2 text-base font-semibold cursor-pointer">
+                    <Pill className="h-4 w-4 text-primary" />
+                    Générer une ordonnance
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Optionnel — laissez désactivé pour enregistrer la consultation seule.
+                  </p>
+                </div>
+                <Switch
+                  id="with-prescription"
+                  checked={withPrescription}
+                  onCheckedChange={setWithPrescription}
+                />
+              </div>
+
+              {withPrescription && (
+                <PrescriptionMedicationsFields
+                  medications={rxMedications}
+                  onChange={setRxMedications}
+                  stockItems={stockItems as any}
+                />
+              )}
             </div>
             
             <div className="space-y-2">
@@ -544,7 +660,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
-                disabled={createConsultationMutation.isPending}
+                disabled={createConsultationMutation.isPending || createPrescriptionMutation.isPending}
               >
                 Annuler
               </Button>
@@ -554,15 +670,74 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                   !formData.clientId || 
                   !formData.animalId || 
                   createConsultationMutation.isPending ||
+                  createPrescriptionMutation.isPending ||
                   uploadingPhotos ||
                   clientsLoading ||
                   animalsLoading
                 }
               >
-                {createConsultationMutation.isPending ? "Enregistrement..." : uploadingPhotos ? "Photos en cours..." : "Enregistrer Consultation"}
+                {createConsultationMutation.isPending || createPrescriptionMutation.isPending
+                  ? "Enregistrement..."
+                  : uploadingPhotos
+                    ? "Photos en cours..."
+                    : withPrescription
+                      ? "Enregistrer + ordonnance"
+                      : "Enregistrer Consultation"}
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Après création avec ordonnance : imprimer / télécharger */}
+      <Dialog
+        open={!!createdRxForPrint}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreatedRxForPrint(null);
+            onOpenChange(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pill className="h-5 w-5" />
+              Ordonnance créée
+            </DialogTitle>
+            <DialogDescription>
+              La consultation et l&apos;ordonnance ont été enregistrées. Vous pouvez imprimer ou télécharger maintenant.
+            </DialogDescription>
+          </DialogHeader>
+          {createdRxForPrint && (
+            <div className="flex flex-col gap-3">
+              <PrescriptionPrint
+                prescription={
+                  transformDbPrescriptionForPrint({
+                    ...createdRxForPrint,
+                    animal: createdRxForPrint.animal || { name: createdRxForPrint._animalLabel || "" },
+                    client: createdRxForPrint.client || (() => {
+                      const parts = String(createdRxForPrint._clientLabel || "").trim().split(/\s+/);
+                      return {
+                        first_name: parts[0] || "",
+                        last_name: parts.slice(1).join(" ") || "",
+                      };
+                    })(),
+                    medications: createdRxForPrint.medications || [],
+                  }) as any
+                }
+              />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCreatedRxForPrint(null);
+                  onOpenChange(false);
+                }}
+              >
+                Fermer
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

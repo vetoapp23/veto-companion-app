@@ -1,15 +1,17 @@
-import { createAppointment } from "@/lib/database";
-import { localDateTimeToISO } from "@/lib/dateLocal";
 import type { ReminderDose } from "@/lib/reminderSchedule";
+import { upsertReminderAppointments } from "@/lib/medicalDoseSync";
 
 export type { ReminderDose } from "@/lib/reminderSchedule";
-export { buildPlanFromSchedule, resolveMaintenanceDueDate } from "@/lib/reminderSchedule";
-
-const DEFAULT_REMINDER_TIME = "09:00";
+export {
+  buildPlanFromSchedule,
+  resolveMaintenanceDueDate,
+  ensureFutureReminders,
+} from "@/lib/reminderSchedule";
 
 /**
- * Create real appointments for future reminder doses.
- * Skips the dose matching administeredDate (already done today).
+ * Create real appointments for reminder doses (idempotent upsert).
+ * By default skips the dose matching administeredDate (already done today).
+ * With includeBaseDate, also creates a RDV for the base date (plan-only mode).
  */
 export async function createReminderAppointments(input: {
   clientId: string;
@@ -21,31 +23,12 @@ export async function createReminderAppointments(input: {
   appointmentType: "vaccination" | "follow-up";
   titlePrefix: string;
   productName: string;
+  /** If true, also create RDV for administeredDate (schedule without dose done). */
+  includeBaseDate?: boolean;
 }): Promise<{ created: number; appointmentIds: string[] }> {
-  const future = input.plannedDoses
-    .filter((d) => d.date > input.administeredDate)
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  const toCreate: ReminderDose[] =
-    future.length > 0
-      ? future
-      : input.nextDueDate && input.nextDueDate > input.administeredDate
-        ? [{ label: "Rappel", date: input.nextDueDate }]
-        : [];
-
-  const appointmentIds: string[] = [];
-
-  for (const dose of toCreate) {
-    const apt = await createAppointment({
-      client_id: input.clientId,
-      animal_id: input.animalId,
-      appointment_date: localDateTimeToISO(dose.date, DEFAULT_REMINDER_TIME),
-      appointment_type: input.appointmentType,
-      duration_minutes: 20,
-      notes: `${input.titlePrefix} — ${dose.label} · ${input.productName}`,
-    });
-    appointmentIds.push(apt.id);
-  }
-
-  return { created: appointmentIds.length, appointmentIds };
+  const result = await upsertReminderAppointments(input);
+  return {
+    created: result.created + result.reused,
+    appointmentIds: result.appointmentIds,
+  };
 }

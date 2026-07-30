@@ -14,6 +14,8 @@ import { useAccounting } from '@/hooks/useAccounting';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAccountingTemplates, type AccountingTemplate } from '@/hooks/useAccountingTemplates';
 import { useToast } from '@/hooks/use-toast';
+import { formatSourceLabel } from '@/lib/accountingLedger';
+import { markInvoicePaid } from '@/lib/visitInvoice';
 import { 
   Calculator, 
   Plus, 
@@ -25,7 +27,12 @@ import {
   Trash2,
   FileText,
   Lightbulb,
-  X
+  X,
+  Receipt,
+  Wallet,
+  CheckCircle2,
+  Clock3,
+  RefreshCw
 } from 'lucide-react';
 import { AppPageHeader } from '@/components/AppPageHeader';
 import { format } from 'date-fns';
@@ -34,21 +41,28 @@ import { fr } from 'date-fns/locale';
 // UI-compatible AccountingEntry interface
 export interface AccountingEntry {
   id: string;
-  type: 'revenue' | 'expense';
+  /** valuation = entrée stock (inventaire), hors CA / hors charges P&L */
+  type: 'revenue' | 'expense' | 'valuation';
   category: 'automatic' | 'manual';
   frequency: 'monthly' | 'annual' | 'occasional';
   description: string;
   amount: number;
   date: string;
   reference?: string;
-  source?: 'consultation' | 'vaccination' | 'antiparasitic' | 'prescription' | 'stock_sale' | 'stock_purchase' | 'salary' | 'rent' | 'tax' | 'insurance' | 'other';
+  source?: string;
   sourceId?: string;
   notes?: string;
   createdAt: string;
   createdBy?: string;
 }
 
-// Using dynamic templates via hook; removed hardcoded suggestions
+function isStockValuationExpense(exp: { category?: string; subcategory?: string | null }) {
+  return (
+    exp.category === 'stock_purchase' ||
+    exp.category === 'stock_valuation' ||
+    exp.subcategory === 'inventory_valuation'
+  );
+}
 
 const Accounting: React.FC = () => {
   const { 
@@ -62,44 +76,57 @@ const Accounting: React.FC = () => {
     updateRevenue,
     updateExpense,
     deleteRevenue,
-    deleteExpense
+    deleteExpense,
+    refreshAll,
+    fetchInvoices,
   } = useAccounting();
   const { settings } = useSettings();
   const { toast } = useToast();
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
 
   // Convert database entries to UI format
   const accountingEntries: AccountingEntry[] = useMemo(() => {
-    const revenueEntries = revenues.map(rev => ({
-      id: rev.id,
-      type: 'revenue' as const,
-      category: 'manual' as const,
-      frequency: 'occasional' as const,
-      description: rev.description,
-      amount: rev.amount,
-      date: rev.revenue_date,
-      reference: rev.reference_id || undefined,
-      source: (rev.source as any) || 'other',
-      sourceId: rev.reference_id,
-      notes: rev.notes || undefined,
-      createdAt: rev.created_at,
-      createdBy: rev.user_id
-    }));
+    const revenueEntries = revenues.map(rev => {
+      const isAuto = !!(rev.reference_id || ['visit', 'prescription', 'stock_sale', 'consultation', 'vaccination', 'antiparasitic'].includes(rev.source));
+      return {
+        id: rev.id,
+        type: 'revenue' as const,
+        category: (isAuto ? 'automatic' : 'manual') as 'automatic' | 'manual',
+        frequency: 'occasional' as const,
+        description: rev.description,
+        amount: Number(rev.amount) || 0,
+        date: rev.revenue_date,
+        reference: rev.reference_id || undefined,
+        source: rev.source || 'other',
+        sourceId: rev.reference_id,
+        notes: rev.notes || undefined,
+        createdAt: rev.created_at,
+        createdBy: rev.user_id
+      };
+    });
 
-    const expenseEntries = expenses.map(exp => ({
-      id: exp.id,
-      type: 'expense' as const,
-      category: 'manual' as const,
-      frequency: 'occasional' as const,
-      description: exp.description,
-      amount: exp.amount,
-      date: exp.expense_date,
-      reference: exp.receipt_number || undefined,
-      source: (exp.category as any) || 'other',
-      sourceId: undefined,
-      notes: exp.notes || undefined,
-      createdAt: exp.created_at,
-      createdBy: exp.user_id
-    }));
+    const expenseEntries = expenses.map(exp => {
+      const isValuation = isStockValuationExpense(exp);
+      const isAuto = !!(
+        exp.receipt_number?.startsWith('SM-') ||
+        ['stock_purchase', 'stock_valuation', 'cogs'].includes(exp.category)
+      );
+      return {
+        id: exp.id,
+        type: (isValuation ? 'valuation' : 'expense') as 'expense' | 'valuation',
+        category: (isAuto ? 'automatic' : 'manual') as 'automatic' | 'manual',
+        frequency: 'occasional' as const,
+        description: exp.description,
+        amount: Number(exp.amount) || 0,
+        date: exp.expense_date,
+        reference: exp.receipt_number || undefined,
+        source: exp.category || 'other',
+        sourceId: undefined,
+        notes: exp.notes || undefined,
+        createdAt: exp.created_at,
+        createdBy: exp.user_id
+      };
+    });
 
     return [...revenueEntries, ...expenseEntries].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -160,40 +187,88 @@ const Accounting: React.FC = () => {
 
     const revenues = filteredByDate.filter(e => e.type === 'revenue');
     const expensesFiltered = filteredByDate.filter(e => e.type === 'expense');
+    const valuations = filteredByDate.filter(e => e.type === 'valuation');
 
+    // CA = recettes (prix de vente total des ventes, pas la marge)
     const totalRevenue = revenues.reduce((sum, e) => sum + e.amount, 0);
+    // Charges P&L hors valorisation stock (l'entrée stock n'est pas une charge)
     const totalExpenses = expensesFiltered.reduce((sum, e) => sum + e.amount, 0);
+    const stockValuation = valuations.reduce((sum, e) => sum + e.amount, 0);
 
     // Calculate revenue breakdown
+    const sumBy = (list: AccountingEntry[], pred: (e: AccountingEntry) => boolean) =>
+      list.filter(pred).reduce((sum, e) => sum + e.amount, 0);
+
     const revenueBreakdown = {
-      consultations: revenues.filter(e => e.source === 'consultation').reduce((sum, e) => sum + e.amount, 0),
-      vaccinations: revenues.filter(e => e.source === 'vaccination').reduce((sum, e) => sum + e.amount, 0),
-      antiparasitics: revenues.filter(e => e.source === 'antiparasitic').reduce((sum, e) => sum + e.amount, 0),
-      prescriptions: revenues.filter(e => e.source === 'prescription').reduce((sum, e) => sum + e.amount, 0),
-      stockSales: revenues.filter(e => e.source === 'stock_sale').reduce((sum, e) => sum + e.amount, 0),
-      manualEntries: revenues.filter(e => !e.source || e.source === 'other').reduce((sum, e) => sum + e.amount, 0),
+      visits: sumBy(revenues, e => e.source === 'visit' || e.source === 'visite' || e.source === 'elevage'),
+      consultations: sumBy(revenues, e => e.source === 'consultation'),
+      vaccinations: sumBy(revenues, e => e.source === 'vaccination'),
+      antiparasitics: sumBy(revenues, e => e.source === 'antiparasitic'),
+      prescriptions: sumBy(revenues, e => e.source === 'prescription'),
+      stockSales: sumBy(revenues, e => e.source === 'stock_sale'),
+      manualEntries: sumBy(revenues, e => !e.source || e.source === 'other' || e.source === 'manual'),
     };
 
-    // Calculate expense breakdown
+    // Calculate expense breakdown (COGS = coût à la vente ; stockPurchases = valorisation hors P&L)
     const expenseBreakdown = {
-      stockPurchases: expensesFiltered.filter(e => e.source === 'stock_purchase').reduce((sum, e) => sum + e.amount, 0),
-      salaries: expensesFiltered.filter(e => e.source === 'salary').reduce((sum, e) => sum + e.amount, 0),
-      rent: expensesFiltered.filter(e => e.source === 'rent').reduce((sum, e) => sum + e.amount, 0),
-      taxes: expensesFiltered.filter(e => e.source === 'tax').reduce((sum, e) => sum + e.amount, 0),
-      insurance: expensesFiltered.filter(e => e.source === 'insurance').reduce((sum, e) => sum + e.amount, 0),
-      other: expensesFiltered.filter(e => !e.source || e.source === 'other').reduce((sum, e) => sum + e.amount, 0),
-      manualEntries: expensesFiltered.length > 0 ? totalExpenses : 0
+      stockPurchases: stockValuation,
+      cogs: sumBy(expensesFiltered, e => e.source === 'cogs'),
+      salaries: sumBy(expensesFiltered, e => e.source === 'salary'),
+      rent: sumBy(expensesFiltered, e => e.source === 'rent'),
+      taxes: sumBy(expensesFiltered, e => e.source === 'tax'),
+      insurance: sumBy(expensesFiltered, e => e.source === 'insurance'),
+      other: sumBy(expensesFiltered, e => !['stock_purchase', 'stock_valuation', 'cogs', 'salary', 'rent', 'tax', 'insurance'].includes(e.source || '')),
     };
+
+    const grossMargin = totalRevenue - expenseBreakdown.cogs;
 
     return {
       totalRevenue,
       totalExpenses,
+      stockValuation,
       netIncome: totalRevenue - totalExpenses,
+      grossMargin,
       entriesCount: filteredByDate.length,
       revenueBreakdown,
       expenseBreakdown
     };
   }, [accountingEntries, startDate, endDate]);
+
+  const invoiceStats = useMemo(() => {
+    const inPeriod = (d?: string) => {
+      if (!startDate || !endDate || !d) return true;
+      const x = new Date(d);
+      return x >= new Date(startDate) && x <= new Date(endDate);
+    };
+    const list = invoices.filter((inv: any) => inPeriod(inv.invoice_date));
+    const outstanding = list.filter((inv: any) => inv.status === 'issued' || inv.status === 'draft');
+    const paid = list.filter((inv: any) => inv.status === 'paid');
+    const outstandingAmount = outstanding.reduce((s: number, inv: any) => s + (Number(inv.total_amount) || 0), 0);
+    const paidAmount = paid.reduce((s: number, inv: any) => s + (Number(inv.total_amount) || 0), 0);
+    const paymentsInPeriod = payments.filter((p: any) => inPeriod(p.payment_date));
+    const cashIn = paymentsInPeriod.reduce((s: number, p: any) => s + (Number(p.amount) || 0), 0);
+    return {
+      count: list.length,
+      outstandingCount: outstanding.length,
+      outstandingAmount,
+      paidAmount,
+      cashIn,
+    };
+  }, [invoices, payments, startDate, endDate]);
+
+  const handleMarkInvoicePaid = async (invoiceId: string) => {
+    try {
+      setMarkingPaidId(invoiceId);
+      await markInvoicePaid(invoiceId, 'cash');
+      await fetchInvoices();
+      refreshAll();
+      toast({ title: 'Facture marquée payée' });
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e?.message || 'Paiement impossible', variant: 'destructive' });
+    } finally {
+      setMarkingPaidId(null);
+    }
+  };
 
   // Calculer le résumé quand les dates changent
   useEffect(() => {
@@ -397,11 +472,16 @@ const Accounting: React.FC = () => {
 
   const getSourceIcon = (source: string) => {
     switch (source) {
+      case 'visit':
+      case 'visite':
+      case 'elevage': return '🏥';
       case 'consultation': return '🩺';
       case 'vaccination': return '💉';
       case 'antiparasitic': return '💊';
       case 'prescription': return '📋';
+      case 'stock_sale': return '🛒';
       case 'stock_purchase': return '📦';
+      case 'cogs': return '📉';
       case 'salary': return '👥';
       case 'rent': return '🏢';
       case 'tax': return '📊';
@@ -417,9 +497,13 @@ const Accounting: React.FC = () => {
           className="flex-1"
           icon={Calculator}
           title="Comptabilité"
-          description="Suivi des recettes et charges de votre clinique vétérinaire"
+          description="CA, charges, factures et stock synchronisés en temps réel"
         />
         <div className="flex gap-2 lg:pt-4">
+          <Button variant="outline" className="rounded-full" onClick={() => refreshAll()} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Actualiser
+          </Button>
           <Dialog open={isAddEntryModalOpen} onOpenChange={setIsAddEntryModalOpen}>
             <DialogTrigger asChild>
               <Button
@@ -598,6 +682,14 @@ const Accounting: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="visit">Visite / prestations</SelectItem>
+                      <SelectItem value="consultation">Consultation</SelectItem>
+                      <SelectItem value="vaccination">Vaccination</SelectItem>
+                      <SelectItem value="antiparasitic">Antiparasitaire</SelectItem>
+                      <SelectItem value="prescription">Ordonnance / Rx</SelectItem>
+                      <SelectItem value="stock_sale">Vente stock</SelectItem>
+                      <SelectItem value="stock_purchase">Achat stock</SelectItem>
+                      <SelectItem value="cogs">Coût de revient</SelectItem>
                       <SelectItem value="salary">Salaire</SelectItem>
                       <SelectItem value="rent">Loyer</SelectItem>
                       <SelectItem value="tax">Impôts</SelectItem>
@@ -696,66 +788,95 @@ const Accounting: React.FC = () => {
 
       {/* Résumé financier */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Recettes</CardTitle>
+              <CardTitle className="text-sm font-medium">Chiffre d'affaires</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
                 {formatCurrency(summary.totalRevenue)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                <div>Consultations: {formatCurrency(summary.revenueBreakdown.consultations)}</div>
-                <div>Vaccinations: {formatCurrency(summary.revenueBreakdown.vaccinations)}</div>
-                <div>Antiparasitaires: {formatCurrency(summary.revenueBreakdown.antiparasitics)}</div>
-                <div>Prescriptions: {formatCurrency(summary.revenueBreakdown.prescriptions)}</div>
-                <div>Manuelles: {formatCurrency(summary.revenueBreakdown.manualEntries)}</div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Prix de vente total (pas la marge)
+              </p>
+              <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                <div>Visites / prestations: {formatCurrency(summary.revenueBreakdown.visits)}</div>
+                <div>Ordonnances / Rx: {formatCurrency(summary.revenueBreakdown.prescriptions)}</div>
+                <div>Ventes stock: {formatCurrency(summary.revenueBreakdown.stockSales)}</div>
+                <div>Consult. / vacc. / anti.: {formatCurrency(
+                  summary.revenueBreakdown.consultations +
+                  summary.revenueBreakdown.vaccinations +
+                  summary.revenueBreakdown.antiparasitics
+                )}</div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Charges</CardTitle>
+              <CardTitle className="text-sm font-medium">Charges</CardTitle>
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
                 {formatCurrency(summary.totalExpenses)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                <div>Achats stock: {formatCurrency(summary.expenseBreakdown.stockPurchases)}</div>
+              <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                <div>COGS (coût à la vente): {formatCurrency(summary.expenseBreakdown.cogs)}</div>
+                <div className="text-blue-600">Valorisation stock (hors CA): {formatCurrency(summary.stockValuation)}</div>
                 <div>Salaires: {formatCurrency(summary.expenseBreakdown.salaries)}</div>
-                <div>Loyer: {formatCurrency(summary.expenseBreakdown.rent)}</div>
-                <div>Impôts: {formatCurrency(summary.expenseBreakdown.taxes)}</div>
-                <div>Autres: {formatCurrency(summary.expenseBreakdown.other)}</div>
+                <div>Loyer / impôts / autres: {formatCurrency(
+                  summary.expenseBreakdown.rent +
+                  summary.expenseBreakdown.taxes +
+                  summary.expenseBreakdown.insurance +
+                  summary.expenseBreakdown.other
+                )}</div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Résultat Net</CardTitle>
+              <CardTitle className="text-sm font-medium">Résultat net</CardTitle>
               <DollarSign className="h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${summary.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(summary.netIncome)}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {summary.netIncome >= 0 ? 'Bénéfice' : 'Perte'}
+              <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                <div>Marge brute (CA − COGS): {formatCurrency(summary.grossMargin)}</div>
+                <div>{summary.entriesCount} écriture(s) sur la période</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Factures & encaissements</CardTitle>
+              <Receipt className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {formatCurrency(invoiceStats.outstandingAmount)}
+              </div>
+              <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                <div>{invoiceStats.outstandingCount} facture(s) en attente</div>
+                <div>Payé: {formatCurrency(invoiceStats.paidAmount)}</div>
+                <div>Encaissements (cash): {formatCurrency(invoiceStats.cashIn)}</div>
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Onglets pour les entrées comptables et la configuration */}
+      {/* Onglets */}
       <Tabs defaultValue="entries" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="entries">Entrées Comptables</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="entries">Journal</TabsTrigger>
+          <TabsTrigger value="invoices">Factures ({invoices.length})</TabsTrigger>
           <TabsTrigger value="configuration">Configuration</TabsTrigger>
         </TabsList>
         
@@ -764,10 +885,10 @@ const Accounting: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Entrées comptables automatiques et manuelles
+                Journal comptable
               </CardTitle>
               <CardDescription>
-                Entrées générées automatiquement (consultations, vaccinations, etc.) et entrées manuelles ajoutées
+                Écritures automatiques (visites, stock, ordonnances) et manuelles
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -778,37 +899,62 @@ const Accounting: React.FC = () => {
                 <TableHead>Type</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Source</TableHead>
-                <TableHead>Fréquence</TableHead>
+                <TableHead>Origine</TableHead>
                 <TableHead>Montant</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEntries.map((entry) => (
-                <TableRow key={entry.id}>
+              {filteredEntries.map((entry) => {
+                const typeLabel =
+                  entry.type === 'revenue'
+                    ? 'Recette'
+                    : entry.type === 'valuation'
+                      ? 'Valorisation'
+                      : 'Charge';
+                const typeBadgeClass =
+                  entry.type === 'revenue'
+                    ? 'bg-green-600 hover:bg-green-600'
+                    : entry.type === 'valuation'
+                      ? 'bg-blue-600 hover:bg-blue-600'
+                      : '';
+                const amountClass =
+                  entry.type === 'revenue'
+                    ? 'text-green-600'
+                    : entry.type === 'valuation'
+                      ? 'text-blue-600'
+                      : 'text-red-600';
+                const amountPrefix =
+                  entry.type === 'revenue' ? '+' : entry.type === 'valuation' ? '' : '-';
+
+                return (
+                <TableRow key={`${entry.type}-${entry.id}`}>
                   <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy', { locale: fr })}</TableCell>
                   <TableCell>
-                    <Badge variant={entry.type === 'revenue' ? 'default' : 'destructive'}>
-                      {entry.type === 'revenue' ? 'Recette' : 'Charge'}
+                    <Badge
+                      variant={entry.type === 'expense' ? 'destructive' : 'default'}
+                      className={typeBadgeClass || undefined}
+                    >
+                      {typeLabel}
                     </Badge>
                   </TableCell>
-                  <TableCell>{entry.description}</TableCell>
+                  <TableCell className="max-w-[280px]">
+                    <div className="truncate font-medium">{entry.description}</div>
+                    {entry.notes && <div className="text-xs text-muted-foreground truncate">{entry.notes}</div>}
+                  </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-sm">
                       <span>{getSourceIcon(entry.source || 'other')}</span>
-                      <span className="text-sm">
-                        {entry.category === 'automatic' ? 'Automatique' : 'Manuel'}
-                      </span>
+                      <span>{formatSourceLabel(entry.source)}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {entry.frequency === 'monthly' ? 'Mensuel' : 
-                       entry.frequency === 'annual' ? 'Annuel' : 'Occasionnel'}
+                      {entry.category === 'automatic' ? 'Auto' : 'Manuel'}
                     </Badge>
                   </TableCell>
-                  <TableCell className={`font-medium ${entry.type === 'revenue' ? 'text-green-600' : 'text-red-600'}`}>
-                    {entry.type === 'revenue' ? '+' : '-'}{formatCurrency(entry.amount)}
+                  <TableCell className={`font-medium ${amountClass}`}>
+                    {amountPrefix}{formatCurrency(entry.amount)}
                   </TableCell>
                   <TableCell>
                     {entry.category === 'manual' && (
@@ -831,7 +977,8 @@ const Accounting: React.FC = () => {
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
           
@@ -840,6 +987,91 @@ const Accounting: React.FC = () => {
               Aucune entrée comptable pour cette période
             </div>
           )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invoices">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Receipt className="h-5 w-5" />
+                Factures
+              </CardTitle>
+              <CardDescription>
+                Factures générées depuis les visites / prestations — statut et encaissement
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {invoices.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground">
+                  <Wallet className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p>Aucune facture pour le moment.</p>
+                  <p className="text-sm">Facturez une visite depuis l&apos;espace Visites pour alimenter ce tableau.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>N°</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead>Paiement</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((inv: any) => {
+                      const clientName = inv.client
+                        ? `${inv.client.first_name || ''} ${inv.client.last_name || ''}`.trim()
+                        : '—';
+                      const status = inv.status || 'issued';
+                      return (
+                        <TableRow key={inv.id}>
+                          <TableCell className="font-medium">{inv.invoice_number}</TableCell>
+                          <TableCell>
+                            {inv.invoice_date
+                              ? format(new Date(inv.invoice_date), 'dd/MM/yyyy', { locale: fr })
+                              : '—'}
+                          </TableCell>
+                          <TableCell>{clientName || '—'}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={status === 'paid' ? 'default' : status === 'cancelled' ? 'destructive' : 'outline'}
+                              className="gap-1"
+                            >
+                              {status === 'paid' ? <CheckCircle2 className="h-3 w-3" /> : <Clock3 className="h-3 w-3" />}
+                              {status === 'paid' ? 'Payée' : status === 'issued' ? 'Émise' : status === 'draft' ? 'Brouillon' : status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {formatCurrency(Number(inv.total_amount) || 0)}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {inv.payment_date
+                              ? `${format(new Date(inv.payment_date), 'dd/MM/yyyy', { locale: fr })}${inv.payment_method ? ` · ${inv.payment_method}` : ''}`
+                              : '—'}
+                          </TableCell>
+                          <TableCell>
+                            {(status === 'issued' || status === 'draft') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={markingPaidId === inv.id}
+                                onClick={() => handleMarkInvoicePaid(inv.id)}
+                              >
+                                Marquer payée
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1013,6 +1245,14 @@ const Accounting: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="visit">Visite / prestations</SelectItem>
+                    <SelectItem value="consultation">Consultation</SelectItem>
+                    <SelectItem value="vaccination">Vaccination</SelectItem>
+                    <SelectItem value="antiparasitic">Antiparasitaire</SelectItem>
+                    <SelectItem value="prescription">Ordonnance / Rx</SelectItem>
+                    <SelectItem value="stock_sale">Vente stock</SelectItem>
+                    <SelectItem value="stock_purchase">Achat stock</SelectItem>
+                    <SelectItem value="cogs">Coût de revient</SelectItem>
                     <SelectItem value="salary">Salaire</SelectItem>
                     <SelectItem value="rent">Loyer</SelectItem>
                     <SelectItem value="tax">Impôts</SelectItem>

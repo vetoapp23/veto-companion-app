@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { roundTemperature } from '@/lib/utils'
+import { recordStockMovement } from '@/lib/stockMovements'
 import {
   getClients,
   getClientById,
@@ -537,7 +539,8 @@ export const useCreateConsultation = () => {
           treatment: data.treatment || null,
           notes: data.notes || null,
           weight: data.weight || null,
-          temperature: data.temperature || null,
+          temperature:
+            data.temperature != null ? roundTemperature(data.temperature) : null,
           heart_rate: data.heart_rate || null,
           respiratory_rate: data.respiratory_rate || null,
           photos: data.photos || null,
@@ -547,6 +550,9 @@ export const useCreateConsultation = () => {
         };
         if ((data as any).visit_id) {
           consultationData.visit_id = (data as any).visit_id;
+        }
+        if (data.cost != null) {
+          consultationData.cost = data.cost;
         }
 
         const { data: consultation, error } = await supabase
@@ -571,6 +577,8 @@ export const useCreateConsultation = () => {
             follow_up_date,
             follow_up_notes,
             status,
+            cost,
+            visit_id,
             created_at,
             updated_at,
             animal:animals(
@@ -603,11 +611,33 @@ export const useCreateConsultation = () => {
           console.error('Error creating consultation:', error);
           throw error;
         }
+
+        // Même acte que la visite : lier / créer la prestation + CA si fait
+        try {
+          const { ensureVisitServiceForConsultation } = await import(
+            "@/lib/consultationVisitSync"
+          );
+          await ensureVisitServiceForConsultation({
+            id: consultation.id,
+            client_id: consultation.client_id,
+            animal_id: consultation.animal_id,
+            visit_id: (consultation as any).visit_id || (data as any).visit_id,
+            consultation_date: consultation.consultation_date,
+            consultation_type: consultation.consultation_type,
+            status: consultation.status,
+            cost: (consultation as any).cost ?? data.cost,
+            symptoms: consultation.symptoms,
+            diagnosis: consultation.diagnosis,
+            notes: consultation.notes,
+          });
+        } catch (syncErr) {
+          console.warn("Consultation ↔ visite sync failed:", syncErr);
+        }
         
         return {
           ...consultation,
           followUp: consultation.follow_up_notes || null,
-          cost: null, // UI compatibility
+          cost: (consultation as any).cost ?? data.cost ?? null,
         };
       } catch (error) {
         console.error('Failed to create consultation:', error);
@@ -617,6 +647,8 @@ export const useCreateConsultation = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultations'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['visits'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
     },
   });
 };
@@ -627,9 +659,14 @@ export const useUpdateConsultation = () => {
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateConsultationData> }) => {
+      const payload = { ...data };
+      if ('temperature' in payload) {
+        payload.temperature =
+          payload.temperature != null ? roundTemperature(payload.temperature) : null;
+      }
       const { data: consultation, error } = await supabase
         .from('consultations')
-        .update(data)
+        .update(payload)
         .eq('id', id)
         .select(`
           *,
@@ -639,11 +676,42 @@ export const useUpdateConsultation = () => {
         .single();
       
       if (error) throw error;
+
+      // Resync visite / CA si statut ou coût change
+      if (
+        payload.status !== undefined ||
+        payload.cost !== undefined ||
+        payload.consultation_type !== undefined
+      ) {
+        try {
+          const { ensureVisitServiceForConsultation } = await import(
+            "@/lib/consultationVisitSync"
+          );
+          await ensureVisitServiceForConsultation({
+            id: consultation.id,
+            client_id: consultation.client_id,
+            animal_id: consultation.animal_id,
+            visit_id: (consultation as any).visit_id,
+            consultation_date: consultation.consultation_date,
+            consultation_type: consultation.consultation_type,
+            status: consultation.status,
+            cost: (consultation as any).cost,
+            symptoms: consultation.symptoms,
+            diagnosis: consultation.diagnosis,
+            notes: consultation.notes,
+          });
+        } catch (syncErr) {
+          console.warn("Consultation ↔ visite sync (update) failed:", syncErr);
+        }
+      }
+
       return consultation;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['consultations'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['visits'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
     },
   });
 };
@@ -655,6 +723,15 @@ export const useDeleteConsultation = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       try {
+        try {
+          const { removeVisitLinkForConsultation } = await import(
+            "@/lib/consultationVisitSync"
+          );
+          await removeVisitLinkForConsultation(id);
+        } catch (syncErr) {
+          console.warn("Could not unlink visit service for consultation", syncErr);
+        }
+
         // Step 1: Check for and handle related records dynamically
         const relatedTables = [
           { table: 'prescriptions', field: 'consultation_id' },
@@ -734,6 +811,8 @@ export const useDeleteConsultation = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['vaccinations'] });
       queryClient.invalidateQueries({ queryKey: ['lab-results'] });
+      queryClient.invalidateQueries({ queryKey: ['visits'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
     },
     retry: 1, // Retry once if deletion fails
   });
@@ -1079,6 +1158,8 @@ export const usePrescriptions = () => {
               quantity,
               instructions,
               route,
+              unit_price,
+              sold_by_clinic,
               created_at
             )
           `)
@@ -1162,6 +1243,8 @@ export const usePrescriptionsByAnimal = (animalId: string) => {
               quantity,
               instructions,
               route,
+              unit_price,
+              sold_by_clinic,
               created_at
             )
           `)
@@ -1330,6 +1413,11 @@ export const useCreatePrescription = () => {
             quantity: med.quantity || 1,
             instructions: med.instructions || null,
             route: med.route || null,
+            sold_by_clinic: Boolean(med.sold_by_clinic),
+            unit_price:
+              med.unit_price != null && Number.isFinite(Number(med.unit_price))
+                ? Number(med.unit_price)
+                : null,
           }));
 
           const { data: medicationsResult, error: medicationsError } = await supabase
@@ -1344,45 +1432,27 @@ export const useCreatePrescription = () => {
             throw new Error(`Error creating prescription medications: ${medicationsError.message}`);
           }
 
-          // Stock decrement: for each medication linked to a stock item, record an "out" movement and decrement
+          // Stock: déduire uniquement si prescrit ET vendu par le cabinet
           for (const med of medications) {
-            if (!med.stock_item_id || !med.quantity || med.quantity <= 0) continue;
-            const { data: stockItem, error: stockErr } = await supabase
-              .from('stock_items')
-              .select('id, current_quantity, organization_id, name')
-              .eq('id', med.stock_item_id)
-              .single();
-            if (stockErr || !stockItem) {
-              throw new Error(`Stock introuvable pour ${med.medication_name}`);
+            if (!med.sold_by_clinic || !med.stock_item_id || !med.quantity || med.quantity <= 0) continue;
+            try {
+              await recordStockMovement({
+                stock_item_id: med.stock_item_id,
+                item_name: med.medication_name,
+                movement_type: 'out',
+                quantity: Number(med.quantity),
+                reason: 'Ordonnance — vente cabinet',
+                reference: prescriptionResult.id,
+                performed_by: user.id,
+                notes: `Médicament: ${med.medication_name}${
+                  med.unit_price != null ? ` · PU ${Number(med.unit_price).toFixed(2)} MAD` : ""
+                }`,
+                sellingPriceOverride: med.unit_price,
+              });
+            } catch (stockErr: any) {
+              throw new Error(stockErr?.message || `Impossible de déduire le stock pour ${med.medication_name}`);
             }
-            const available = Number(stockItem.current_quantity || 0);
-            if (available < Number(med.quantity)) {
-              throw new Error(
-                `Stock insuffisant pour ${med.medication_name} (disponible: ${available}, demandé: ${med.quantity})`
-              );
-            }
-
-            const newQty = available - Number(med.quantity);
-            const { error: updErr } = await supabase
-              .from('stock_items')
-              .update({ current_quantity: newQty, updated_at: new Date().toISOString() })
-              .eq('id', stockItem.id);
-            if (updErr) throw new Error(`Impossible de décrémenter le stock: ${updErr.message}`);
-
-            const { error: movErr } = await supabase.from('stock_movements').insert({
-              stock_item_id: stockItem.id,
-              organization_id: stockItem.organization_id,
-              movement_type: 'out',
-              quantity: med.quantity,
-              reason: 'Prescription',
-              reference_id: prescriptionResult.id,
-              reference_type: 'prescription',
-              performed_by: user.id,
-              notes: `Médicament: ${med.medication_name}`,
-            });
-            if (movErr) console.warn('Stock movement log failed', movErr);
           }
-          // Successfully created prescription medications
         }
 
         // Successfully created prescription
@@ -1403,6 +1473,110 @@ export const useCreatePrescription = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['stock-items'] });
       queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+    },
+    retry: 1,
+  });
+};
+
+/** Met à jour l'ordonnance + synchronise le prix de vente en compta. */
+export const useUpdatePrescription = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: import('../lib/database').UpdatePrescriptionData;
+    }) => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Utilisateur non authentifié');
+
+      const { medications, ...header } = data;
+      const updates: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (header.diagnosis !== undefined) updates.diagnosis = header.diagnosis || null;
+      if (header.notes !== undefined) updates.notes = header.notes || null;
+      if (header.status !== undefined) updates.status = header.status;
+      if (header.refill_count !== undefined) updates.refill_count = header.refill_count;
+      if (header.valid_until !== undefined) updates.valid_until = header.valid_until || null;
+
+      const { error: updErr } = await supabase
+        .from('prescriptions')
+        .update(updates)
+        .eq('id', id);
+      if (updErr) throw new Error(updErr.message);
+
+      if (medications) {
+        const { error: delErr } = await supabase
+          .from('prescription_medications')
+          .delete()
+          .eq('prescription_id', id);
+        if (delErr) throw new Error(delErr.message);
+
+        const rows = medications
+          .filter((m) => m.medication_name?.trim())
+          .map((m) => ({
+            prescription_id: id,
+            stock_item_id: m.stock_item_id || null,
+            medication_name: m.medication_name.trim(),
+            dosage: m.dosage || null,
+            frequency: m.frequency || null,
+            duration: m.duration || null,
+            quantity: m.quantity || 1,
+            instructions: m.instructions || null,
+            route: m.route || null,
+            sold_by_clinic: Boolean(m.sold_by_clinic),
+            unit_price:
+              m.unit_price != null && Number.isFinite(Number(m.unit_price))
+                ? Number(m.unit_price)
+                : null,
+          }));
+
+        if (rows.length === 0) {
+          throw new Error('Ajoutez au moins un médicament');
+        }
+
+        const { error: insErr } = await supabase
+          .from('prescription_medications')
+          .insert(rows);
+        if (insErr) throw new Error(insErr.message);
+
+        // Compta : appliquer le dernier prix de l'ordonnance sur les recettes liées
+        const { syncPrescriptionSaleToAccounting } = await import('@/lib/accountingLedger');
+        await syncPrescriptionSaleToAccounting(id, rows);
+      }
+
+      const { data: complete, error: fetchErr } = await supabase
+        .from('prescriptions')
+        .select(`
+          *,
+          animal:animals(*),
+          client:clients(*),
+          medications:prescription_medications(*)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (fetchErr) throw new Error(fetchErr.message);
+      return {
+        ...complete,
+        animal: Array.isArray(complete.animal) ? complete.animal[0] : complete.animal,
+        client: Array.isArray(complete.client) ? complete.client[0] : complete.client,
+        medications: complete.medications || [],
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['prescriptions'] });
+      queryClient.invalidateQueries({ queryKey: ['consultations'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      queryClient.invalidateQueries({ queryKey: ['revenues'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     retry: 1,
   });
@@ -1769,5 +1943,6 @@ export type {
   Consultation,
   Prescription,
   CreatePrescriptionData,
+  UpdatePrescriptionData,
   StockItem
 } from '../lib/database'

@@ -1,4 +1,5 @@
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
+import { getCatalogDefaultPrices } from '@/lib/visitCatalog';
 
 export interface FarmManagementSettings {
   farmTypes: string[];
@@ -51,7 +52,10 @@ export interface ClinicSettings {
   veterinarians: Veterinarian[];
   farmManagement: FarmManagementSettings;
   displayPreferences: DisplayPreferences;
+  /** @deprecated Prefer servicePrices.consultation — kept for compat */
   defaultConsultationPrice: number;
+  /** Prix par défaut des prestations visite (code → montant) */
+  servicePrices: Record<string, number>;
   scheduleSettings: ScheduleSettings;
 }
 
@@ -135,7 +139,8 @@ const defaultSettings: ClinicSettings = {
   veterinarians: defaultVeterinarians,
   farmManagement: defaultFarmManagementSettings,
   displayPreferences: defaultDisplayPreferences,
-  defaultConsultationPrice: 0,
+  defaultConsultationPrice: getCatalogDefaultPrices().consultation ?? 150,
+  servicePrices: getCatalogDefaultPrices(),
   scheduleSettings: defaultScheduleSettings
 };
 
@@ -150,6 +155,20 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       try {
         const parsedSettings = JSON.parse(saved);
         // Fusionner avec les paramètres par défaut pour s'assurer que toutes les propriétés sont présentes
+        const catalogPrices = getCatalogDefaultPrices();
+        const mergedServicePrices = {
+          ...catalogPrices,
+          ...(parsedSettings.servicePrices || {}),
+        };
+        // Migrate legacy single consultation price into servicePrices
+        if (
+          typeof parsedSettings.defaultConsultationPrice === 'number' &&
+          parsedSettings.defaultConsultationPrice > 0 &&
+          parsedSettings.servicePrices?.consultation == null
+        ) {
+          mergedServicePrices.consultation = parsedSettings.defaultConsultationPrice;
+        }
+
         const mergedSettings = {
           ...defaultSettings,
           ...parsedSettings,
@@ -171,7 +190,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           scheduleSettings: {
             ...defaultScheduleSettings,
             ...parsedSettings.scheduleSettings
-          }
+          },
+          servicePrices: mergedServicePrices,
+          defaultConsultationPrice:
+            mergedServicePrices.consultation ??
+            parsedSettings.defaultConsultationPrice ??
+            defaultSettings.defaultConsultationPrice,
         };
         // Settings loaded successfully
         setSettings(mergedSettings);

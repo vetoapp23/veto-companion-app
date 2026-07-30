@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { supabase } from './supabase'
 import { assertQuotaAvailable } from './quotaEnforcement'
+import { recordStockMovement } from './stockMovements'
 
 // =============================================
 // ORGANIZATION TYPES (MULTI-TENANT)
@@ -174,12 +175,14 @@ export interface Consultation {
   follow_up_date?: string
   follow_up_notes?: string
   status: string
+  cost?: number | null
+  visit_id?: string | null
   created_at: string
   updated_at: string
-  
+
   // UI compatibility fields
   followUp?: string | null
-  
+
   // Relations
   animal?: Animal
   client?: Client
@@ -237,6 +240,9 @@ export interface PrescriptionMedication {
   quantity: number
   instructions?: string
   route?: string
+  /** Prix unitaire vente (MAD) — source de vérité compta */
+  unit_price?: number | null
+  sold_by_clinic?: boolean | null
   created_at: string
 }
 
@@ -597,6 +603,30 @@ export interface CreatePrescriptionData {
     quantity: number
     instructions?: string
     route?: string
+    /** Si true + stock_item_id : déduire du stock (vendu par le cabinet) */
+    sold_by_clinic?: boolean
+    /** Prix unitaire de vente (modifiable ; hors colonne DB) */
+    unit_price?: number
+  }[]
+}
+
+export interface UpdatePrescriptionData {
+  diagnosis?: string
+  notes?: string
+  status?: string
+  refill_count?: number
+  valid_until?: string | null
+  medications?: {
+    stock_item_id?: string
+    medication_name: string
+    dosage?: string
+    frequency?: string
+    duration?: string
+    quantity: number
+    instructions?: string
+    route?: string
+    sold_by_clinic?: boolean
+    unit_price?: number
   }[]
 }
 
@@ -1341,11 +1371,28 @@ export const getVaccinationProtocols = async (): Promise<VaccinationProtocol[]> 
   return data || []
 }
 
+/** Case/accent-insensitive species key for protocol matching */
+export function normalizeSpeciesKey(species?: string | null): string {
+  if (!species) return ''
+  return species
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .trim()
+}
+
+function speciesMatches(protocolSpecies: string | null | undefined, animalSpecies: string): boolean {
+  const a = normalizeSpeciesKey(animalSpecies)
+  const p = normalizeSpeciesKey(protocolSpecies)
+  if (!a || !p) return false
+  return a === p || a.includes(p) || p.includes(a)
+}
+
 export const getVaccinationProtocolsBySpecies = async (species: string): Promise<VaccinationProtocol[]> => {
+  // Fetch all active org protocols (RLS), then soft-match species (Chat/chat/CHAT…)
   const { data, error } = await supabase
     .from('vaccination_protocols')
     .select('*')
-    .eq('species', species)
     .eq('active', true)
     .order('vaccine_name', { ascending: true })
 
@@ -1353,7 +1400,10 @@ export const getVaccinationProtocolsBySpecies = async (species: string): Promise
     throw new Error(`Error fetching vaccination protocols for species: ${error.message}`)
   }
 
-  return data || []
+  const rows = data || []
+  const matched = rows.filter((p) => speciesMatches(p.species, species))
+  // If nothing matches this species, still return all active so the UI can offer them
+  return matched.length > 0 ? matched : rows
 }
 
 export const createVaccinationProtocol = async (protocolData: Omit<VaccinationProtocol, 'id' | 'created_at' | 'updated_at'>): Promise<VaccinationProtocol> => {
@@ -1586,16 +1636,9 @@ export const deleteAntiparasitic = async (id: string): Promise<void> => {
 
 // Antiparasitic Protocol Operations
 export const getAntiparasiticProtocols = async (): Promise<AntiparasiticProtocol[]> => {
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    throw new Error('User must be authenticated to fetch antiparasitic protocols')
-  }
-
   const { data, error } = await supabase
     .from('antiparasitic_protocols')
     .select('*')
-    .eq('user_id', user.id)
     .order('species', { ascending: true })
 
   if (error) {
@@ -1606,17 +1649,9 @@ export const getAntiparasiticProtocols = async (): Promise<AntiparasiticProtocol
 }
 
 export const getAntiparasiticProtocolsBySpecies = async (species: string): Promise<AntiparasiticProtocol[]> => {
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    throw new Error('User must be authenticated to fetch antiparasitic protocols')
-  }
-
   const { data, error } = await supabase
     .from('antiparasitic_protocols')
     .select('*')
-    .eq('user_id', user.id)
-    .eq('species', species)
     .eq('active', true)
     .order('parasite_type', { ascending: true })
 
@@ -1624,7 +1659,9 @@ export const getAntiparasiticProtocolsBySpecies = async (species: string): Promi
     throw new Error(`Error fetching antiparasitic protocols for species: ${error.message}`)
   }
 
-  return data || []
+  const rows = data || []
+  const matched = rows.filter((p) => speciesMatches(p.species, species))
+  return matched.length > 0 ? matched : rows
 }
 
 export const createAntiparasiticProtocol = async (protocolData: Omit<AntiparasiticProtocol, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<AntiparasiticProtocol> => {
@@ -1793,11 +1830,23 @@ export const createPrescription = async (prescriptionData: CreatePrescriptionDat
     throw new Error(`Error creating prescription: ${prescriptionError.message}`)
   }
 
-  // Then create the medications
+  // Then create the medications (persist unit_price / sold_by_clinic)
   if (medications && medications.length > 0) {
-    const medicationsWithPrescriptionId = medications.map(med => ({
-      ...med,
-      prescription_id: prescriptionResult.id
+    const medicationsWithPrescriptionId = medications.map((med) => ({
+      prescription_id: prescriptionResult.id,
+      stock_item_id: med.stock_item_id || null,
+      medication_name: med.medication_name,
+      dosage: med.dosage || null,
+      frequency: med.frequency || null,
+      duration: med.duration || null,
+      quantity: med.quantity || 1,
+      instructions: med.instructions || null,
+      route: med.route || null,
+      sold_by_clinic: Boolean(med.sold_by_clinic),
+      unit_price:
+        med.unit_price != null && Number.isFinite(Number(med.unit_price))
+          ? Number(med.unit_price)
+          : null,
     }))
 
     const { error: medicationsError } = await supabase
@@ -1806,6 +1855,24 @@ export const createPrescription = async (prescriptionData: CreatePrescriptionDat
 
     if (medicationsError) {
       throw new Error(`Error creating prescription medications: ${medicationsError.message}`)
+    }
+
+    // Déduire le stock uniquement pour les lignes vendues par le cabinet
+    for (const med of medications) {
+      if (!med.sold_by_clinic || !med.stock_item_id || !med.quantity || med.quantity <= 0) continue
+      await recordStockMovement({
+        stock_item_id: med.stock_item_id,
+        item_name: med.medication_name,
+        movement_type: 'out',
+        quantity: Number(med.quantity),
+        reason: 'Ordonnance — vente cabinet',
+        reference: prescriptionResult.id,
+        performed_by: user.id,
+        notes: `Médicament: ${med.medication_name}${
+          med.unit_price != null ? ` · PU ${Number(med.unit_price).toFixed(2)} MAD` : ""
+        }`,
+        sellingPriceOverride: med.unit_price,
+      })
     }
   }
 

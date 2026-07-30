@@ -95,6 +95,16 @@ export const deleteConsultationDirect = async (id: string): Promise<{ success: b
       }
     }
     
+    // Step 3b: Unlink / remove visit service + accounting
+    try {
+      const { removeVisitLinkForConsultation } = await import(
+        './consultationVisitSync'
+      );
+      await removeVisitLinkForConsultation(id);
+    } catch (syncErr) {
+      console.warn('Could not unlink visit service for consultation', syncErr);
+    }
+
     // Step 4: Finally delete the main consultation
     // Step 4: Deleting main consultation...
     const { error: mainDeleteError } = await supabase
