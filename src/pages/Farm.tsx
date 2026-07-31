@@ -14,9 +14,13 @@ import { useFarmManagementSettings } from "@/hooks/useAppSettings";
 import NewFarmModal from "@/components/forms/NewFarmModal";
 import NewFarmInterventionModalSupabase from "@/components/forms/NewFarmInterventionModalSupabase";
 import FarmDetailDrawer from "@/components/modals/FarmDetailDrawer";
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
+import { matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 const FarmPage = () => {
   const { toast } = useToast();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_farms");
   const { data: farms = [], isLoading } = useFarms();
   const { data: clients = [] } = useClients();
   const { data: allInterventions = [] } = useFarmInterventions();
@@ -25,6 +29,7 @@ const FarmPage = () => {
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const [newFarmOpen, setNewFarmOpen] = useState(false);
   const [editingFarm, setEditingFarm] = useState<any>(null);
   const [detailFarm, setDetailFarm] = useState<any>(null);
@@ -40,7 +45,19 @@ const FarmPage = () => {
   }, [farmSettings, farms]);
 
   const filtered = useMemo(() => {
+    const farmIdsWithInterventionInPeriod =
+      dateFilter.period === "all"
+        ? null
+        : new Set(
+            allInterventions
+              .filter((i: any) => matchesListDateFilter(i.intervention_date, dateFilter))
+              .map((i: any) => i.farm_id)
+          );
+
     return farms.filter((f: any) => {
+      if (farmIdsWithInterventionInPeriod && !farmIdsWithInterventionInPeriod.has(f.id)) {
+        return false;
+      }
       if (typeFilter !== "all") {
         const types = (f.farm_types && f.farm_types.length > 0) ? f.farm_types : [f.farm_type];
         if (!types.includes(typeFilter)) return false;
@@ -53,7 +70,7 @@ const FarmPage = () => {
         f.registration_number?.toLowerCase().includes(q)
       );
     });
-  }, [farms, search, typeFilter]);
+  }, [farms, search, typeFilter, dateFilter, allInterventions]);
 
   const kpis = useMemo(() => {
     const totalHerd = farms.reduce((s: number, f: any) => s + (f.herd_size || 0), 0);
@@ -68,6 +85,7 @@ const FarmPage = () => {
   };
 
   const onDelete = async (farm: any) => {
+    if (!guardWrite()) return;
     if (!confirm(`Supprimer l'exploitation « ${farm.farm_name} » ?`)) return;
     try {
       await deleteFarm.mutateAsync(farm.id);
@@ -84,20 +102,30 @@ const FarmPage = () => {
         title="Fermes"
         description="Pilotez exploitations, lots, interventions et suivi sanitaire collectif."
         actions={
-          <>
-            <Button variant="outline" className="rounded-full" onClick={() => setInterventionOpen(true)}>
-              <Stethoscope className="h-4 w-4 mr-2" /> Intervention
-            </Button>
-            <Button
-              className="rounded-full"
-              onClick={() => {
-                setEditingFarm(null);
-                setNewFarmOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" /> Nouvelle exploitation
-            </Button>
-          </>
+          canWrite ? (
+            <>
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  if (!guardWrite()) return;
+                  setInterventionOpen(true);
+                }}
+              >
+                <Stethoscope className="h-4 w-4 mr-2" /> Intervention
+              </Button>
+              <Button
+                className="rounded-full"
+                onClick={() => {
+                  if (!guardWrite()) return;
+                  setEditingFarm(null);
+                  setNewFarmOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Nouvelle exploitation
+              </Button>
+            </>
+          ) : undefined
         }
       />
 
@@ -111,16 +139,29 @@ const FarmPage = () => {
 
       {/* Filters */}
       <Card>
-        <CardContent className="pt-4 flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[220px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Rechercher une exploitation…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <CardContent className="pt-4 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input className="pl-9" placeholder="Rechercher une exploitation…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <select className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+              <option value="all">Tous les types</option>
+              {farmTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
-          <select className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-            <option value="all">Tous les types</option>
-            {farmTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          <ListDateFilter
+            value={dateFilter}
+            onChange={setDateFilter}
+            idPrefix="farms-date"
+            compact
+          />
+          {dateFilter.period !== "all" && (
+            <p className="text-[11px] text-muted-foreground">
+              Affiche les exploitations ayant une intervention sur la période choisie.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -145,12 +186,16 @@ const FarmPage = () => {
                   </div>
                   <div className="flex gap-1">
                     <Button size="icon" variant="ghost" onClick={() => setDetailFarm(f)}><Eye className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { setEditingFarm(f); setNewFarmOpen(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => onDelete(f)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {canWrite && (
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingFarm(f); setNewFarmOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canWrite && (
+                      <Button size="icon" variant="ghost" onClick={() => onDelete(f)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 {f.photos?.[0] && (
@@ -192,7 +237,11 @@ const FarmPage = () => {
         open={!!detailFarm}
         onOpenChange={(o) => !o && setDetailFarm(null)}
         farm={detailFarm}
-        onEdit={(f) => { setDetailFarm(null); setEditingFarm(f); setNewFarmOpen(true); }}
+        onEdit={
+          canWrite
+            ? (f) => { setDetailFarm(null); setEditingFarm(f); setNewFarmOpen(true); }
+            : undefined
+        }
       />
     </div>
   );

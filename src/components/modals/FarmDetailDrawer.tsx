@@ -15,6 +15,7 @@ import NewFarmInterventionModalSupabase from "@/components/forms/NewFarmInterven
 import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
 import { formatDate } from "@/lib/utils";
 import { PrintFarmReportModal } from "@/components/modals/PrintFarmReportModal";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 interface FarmDetailDrawerProps {
   open: boolean;
@@ -24,6 +25,7 @@ interface FarmDetailDrawerProps {
 }
 
 const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawerProps) => {
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_farms");
   const [showPrint, setShowPrint] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<any>(null);
@@ -74,12 +76,16 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
         </SheetHeader>
 
         <div className="flex gap-2 mt-4 flex-wrap">
-          <Button size="sm" onClick={() => onEdit?.(farm)} variant="outline">
-            <Pencil className="h-4 w-4 mr-2" /> Modifier
-          </Button>
-          <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
-            <Stethoscope className="h-4 w-4 mr-2" /> Nouvelle intervention
-          </Button>
+          {canWrite && onEdit && (
+            <Button size="sm" onClick={() => onEdit?.(farm)} variant="outline">
+              <Pencil className="h-4 w-4 mr-2" /> Modifier
+            </Button>
+          )}
+          {canWrite && (
+            <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingIntervention(null); setInterventionOpen(true); }}>
+              <Stethoscope className="h-4 w-4 mr-2" /> Nouvelle intervention
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={() => setShowPrint(true)}>
             <FileText className="h-4 w-4 mr-2" /> Rapport PDF / Imprimer
           </Button>
@@ -146,11 +152,13 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
 
           {/* BATCHES */}
           <TabsContent value="batches" className="space-y-3">
-            <div className="flex justify-end">
-              <Button size="sm" onClick={() => { setEditingBatch(null); setBatchOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" /> Ajouter un lot
-              </Button>
-            </div>
+            {canWrite && (
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingBatch(null); setBatchOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter un lot
+                </Button>
+              </div>
+            )}
             {batches.length === 0 && <EmptyState text="Aucun lot. Créez votre premier lot/troupeau." />}
             {batches.map((b) => (
               <Card key={b.id}>
@@ -169,14 +177,19 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                     </div>
                     {b.notes && <p className="text-xs text-muted-foreground">{b.notes}</p>}
                   </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => { setEditingBatch(b); setBatchOpen(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer ce lot ?") && delBatch.mutate(b.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
+                  {canWrite && (
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingBatch(b); setBatchOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => {
+                        if (!guardWrite()) return;
+                        confirm("Supprimer ce lot ?") && delBatch.mutate(b.id);
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -184,11 +197,13 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
 
           {/* INTERVENTIONS */}
           <TabsContent value="interventions" className="space-y-3">
-            <div className="flex justify-end">
-              <Button size="sm" onClick={() => { setEditingIntervention(null); setInterventionOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" /> Nouvelle intervention
-              </Button>
-            </div>
+            {canWrite && (
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingIntervention(null); setInterventionOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-2" /> Nouvelle intervention
+                </Button>
+              </div>
+            )}
             {interventions.length === 0 && <EmptyState text="Aucune intervention enregistrée." />}
             {interventions.map((i: any) => (
               <Card key={i.id}>
@@ -205,14 +220,19 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                         {i.cost && <span>· {i.cost} MAD</span>}
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => { setEditingIntervention(i); setInterventionOpen(true); }}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer cette intervention ?") && delIntervention.mutate(i.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                    {canWrite && (
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditingIntervention(i); setInterventionOpen(true); }}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => {
+                          if (!guardWrite()) return;
+                          confirm("Supprimer cette intervention ?") && delIntervention.mutate(i.id);
+                        }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   {i.description && <p className="text-sm">{i.description}</p>}
                   {i.diagnosis && <p className="text-sm"><b>Diagnostic:</b> {i.diagnosis}</p>}
@@ -245,9 +265,14 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                     </div>
                     {e.notes && <p className="text-sm">{e.notes}</p>}
                   </div>
-                  <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer ?") && delEvent.mutate(e.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  {canWrite && (
+                    <Button size="icon" variant="ghost" onClick={() => {
+                      if (!guardWrite()) return;
+                      confirm("Supprimer ?") && delEvent.mutate(e.id);
+                    }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -255,11 +280,13 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
 
           {/* INFRASTRUCTURES */}
           <TabsContent value="infra" className="space-y-3">
-            <div className="flex justify-end">
-              <Button size="sm" onClick={() => { setEditingInfra(null); setInfraOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" /> Ajouter une infrastructure
-              </Button>
-            </div>
+            {canWrite && (
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingInfra(null); setInfraOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-2" /> Ajouter une infrastructure
+                </Button>
+              </div>
+            )}
             {infrastructures.length === 0 && <EmptyState text="Aucune infrastructure. Ajoutez écuries, poulaillers, bassins…" />}
             {infrastructures.map((inf: any) => (
               <Card key={inf.id}>
@@ -283,14 +310,19 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => { setEditingInfra(inf); setInfraOpen(true); }}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => confirm("Supprimer ?") && delInfra.mutate(inf.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
+                  {canWrite && (
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingInfra(inf); setInfraOpen(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => {
+                        if (!guardWrite()) return;
+                        confirm("Supprimer ?") && delInfra.mutate(inf.id);
+                      }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

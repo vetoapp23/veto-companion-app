@@ -22,6 +22,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { NewClientModal } from "@/components/forms/NewClientModal";
 import { NewPetModal } from "@/components/forms/NewPetModal";
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
+import { matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 function isFarmClient(clientType?: string | null) {
   if (!clientType) return false;
@@ -36,8 +39,10 @@ export default function Visits() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { settings } = useSettings();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_visits");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const { data: visits = [], isLoading } = useVisits(
     statusFilter === "all" ? undefined : (statusFilter as any)
   );
@@ -70,8 +75,9 @@ export default function Visits() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return visits;
     return visits.filter((v) => {
+      if (!matchesListDateFilter(v.visit_date, dateFilter)) return false;
+      if (!q) return true;
       const name = `${v.client?.first_name || ""} ${v.client?.last_name || ""}`.toLowerCase();
       const pet = (v.animal?.name || "").toLowerCase();
       const farm = (v.farm?.farm_name || "").toLowerCase();
@@ -82,7 +88,7 @@ export default function Visits() {
         (v.reason || "").toLowerCase().includes(q)
       );
     });
-  }, [visits, search]);
+  }, [visits, search, dateFilter]);
 
   const resetNewForm = () => {
     setNewClientId("");
@@ -109,6 +115,7 @@ export default function Visits() {
   };
 
   const startWalkIn = async () => {
+    if (!guardWrite()) return;
     if (!newClientId) {
       toast({ title: "Client requis", variant: "destructive" });
       return;
@@ -154,35 +161,45 @@ export default function Visits() {
         description="Une visite regroupe une ou plusieurs prestations (consultation, vaccin, élevage…) avant facturation."
         icon={ClipboardList}
         actions={
-          <Button onClick={() => setShowNew(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nouvelle visite
-          </Button>
+          canWrite ? (
+            <Button onClick={() => setShowNew(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nouvelle visite
+            </Button>
+          ) : undefined
         }
       />
 
       <Card>
-        <CardContent className="p-3 sm:p-4 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Client, animal, ferme, motif…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+        <CardContent className="p-3 sm:p-4 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Client, animal, ferme, motif…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="in_progress">En cours</SelectItem>
+                <SelectItem value="completed">Terminées</SelectItem>
+                <SelectItem value="cancelled">Annulées</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les statuts</SelectItem>
-              <SelectItem value="in_progress">En cours</SelectItem>
-              <SelectItem value="completed">Terminées</SelectItem>
-              <SelectItem value="cancelled">Annulées</SelectItem>
-            </SelectContent>
-          </Select>
+          <ListDateFilter
+            value={dateFilter}
+            onChange={setDateFilter}
+            idPrefix="visits-date"
+            compact
+          />
         </CardContent>
       </Card>
 
@@ -194,9 +211,11 @@ export default function Visits() {
             <Stethoscope className="h-10 w-10 mx-auto opacity-40" />
             <p>Aucune visite pour le moment</p>
             <p className="text-sm">Lancez une visite depuis un RDV, ou créez une visite walk-in.</p>
-            <Button variant="outline" onClick={() => setShowNew(true)}>
-              Démarrer une visite
-            </Button>
+            {canWrite && (
+              <Button variant="outline" onClick={() => setShowNew(true)}>
+                Démarrer une visite
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -290,21 +309,25 @@ export default function Visits() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                  onClick={() => setShowClientModal(true)}
-                  title="Nouveau client"
-                  aria-label="Ajouter un nouveau client"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                {canWrite && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => setShowClientModal(true)}
+                    title="Nouveau client"
+                    aria-label="Ajouter un nouveau client"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                Client absent ? Cliquez sur + pour l&apos;enregistrer en base.
-              </p>
+              {canWrite && (
+                <p className="text-xs text-muted-foreground">
+                  Client absent ? Cliquez sur + pour l&apos;enregistrer en base.
+                </p>
+              )}
             </div>
 
             {newClientId && (
@@ -425,18 +448,20 @@ export default function Visits() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    disabled={!newClientId}
-                    onClick={() => setShowPetModal(true)}
-                    title="Nouvel animal"
-                    aria-label="Ajouter un nouvel animal"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  {canWrite && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      disabled={!newClientId}
+                      onClick={() => setShowPetModal(true)}
+                      title="Nouvel animal"
+                      aria-label="Ajouter un nouvel animal"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -445,9 +470,11 @@ export default function Visits() {
               <Button variant="outline" onClick={() => setShowNew(false)}>
                 Annuler
               </Button>
-              <Button onClick={startWalkIn} disabled={createVisit.isPending}>
-                Démarrer
-              </Button>
+              {canWrite && (
+                <Button onClick={startWalkIn} disabled={createVisit.isPending}>
+                  Démarrer
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>

@@ -23,25 +23,44 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { cn } from "@/lib/utils";
+import { type PermissionKey, userHasPermission } from "@/lib/permissions";
 
-const mainTabs = [
-  { icon: Home, label: "Accueil", path: "/dashboard" },
-  { icon: Users, label: "Clients", path: "/clients" },
-  { icon: Calendar, label: "RDV", path: "/appointments" },
-  { icon: Heart, label: "Animaux", path: "/pets" },
+const mainTabs: {
+  icon: typeof Home;
+  label: string;
+  path: string;
+  permission?: PermissionKey | null;
+}[] = [
+  { icon: Home, label: "Accueil", path: "/dashboard", permission: null },
+  { icon: Users, label: "Clients", path: "/clients", permission: "can_manage_clients" },
+  { icon: Calendar, label: "RDV", path: "/appointments", permission: "can_manage_appointments" },
+  { icon: Heart, label: "Animaux", path: "/pets", permission: "can_manage_animals" },
 ];
 
-const moreItems = [
-  { icon: ClipboardList, label: "Visites", path: "/visites" },
-  { icon: FileText, label: "Consultations", path: "/consultations" },
-  { icon: Syringe, label: "Vaccinations", path: "/vaccinations" },
-  { icon: Bug, label: "Antiparasites", path: "/antiparasites" },
-  { icon: BarChart3, label: "Historiques", path: "/history" },
-  { icon: Building2, label: "Fermes", path: "/farms", planFeature: "farm" as const },
-  { icon: Package, label: "Stock", path: "/stock", planFeature: "stock" as const },
-  { icon: Euro, label: "Comptabilité", path: "/accounting", adminOnly: true, planFeature: "accounting" as const },
+const moreItems: {
+  icon: typeof Home;
+  label: string;
+  path: string;
+  permission?: PermissionKey | null;
+  planFeature?: "farm" | "accounting" | "stock";
+  adminOnly?: boolean;
+}[] = [
+  { icon: ClipboardList, label: "Visites", path: "/visites", permission: "can_manage_visits" },
+  { icon: FileText, label: "Consultations", path: "/consultations", permission: "can_create_consultations" },
+  { icon: Syringe, label: "Vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
+  { icon: Bug, label: "Antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
+  { icon: BarChart3, label: "Historiques", path: "/history", permission: "can_view_history" },
+  { icon: Building2, label: "Fermes", path: "/farms", planFeature: "farm", permission: "can_manage_farms" },
+  { icon: Package, label: "Stock", path: "/stock", planFeature: "stock", permission: "can_manage_stock" },
+  {
+    icon: Euro,
+    label: "Comptabilité",
+    path: "/accounting",
+    planFeature: "accounting",
+    permission: "can_manage_accounting",
+  },
   { icon: UsersIcon, label: "Équipe", path: "/admin/team", adminOnly: true },
-  { icon: Cog, label: "Paramètres", path: "/settings" },
+  { icon: Cog, label: "Paramètres", path: "/settings", permission: "can_manage_settings" },
 ];
 
 export function MobileBottomNav() {
@@ -49,7 +68,8 @@ export function MobileBottomNav() {
   const { user } = useAuth();
   const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
   const [open, setOpen] = useState(false);
-  const isAdmin = user?.profile?.role === "admin";
+  const isAdmin =
+    user?.profile?.role === "admin" || user?.profile?.role === "super_admin";
 
   const planAllows = (f?: "farm" | "accounting" | "stock") =>
     !f ||
@@ -57,9 +77,13 @@ export function MobileBottomNav() {
     (f === "accounting" && hasAccounting) ||
     (f === "stock" && hasStock);
 
-  const visibleMore = moreItems.filter(
-    (i: any) => (!i.adminOnly || isAdmin) && planAllows(i.planFeature)
-  );
+  const itemAllowed = (i: (typeof moreItems)[number] | (typeof mainTabs)[number]) => {
+    if ("adminOnly" in i && i.adminOnly) return isAdmin;
+    return userHasPermission(user, i.permission ?? null);
+  };
+
+  const visibleMain = mainTabs.filter((i) => itemAllowed(i));
+  const visibleMore = moreItems.filter((i) => itemAllowed(i) && planAllows(i.planFeature));
 
   if (!user) return null;
 
@@ -69,8 +93,13 @@ export function MobileBottomNav() {
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 app-bottom-nav"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="grid grid-cols-5 h-16">
-          {mainTabs.map((tab) => {
+        <div
+          className="grid h-16"
+          style={{
+            gridTemplateColumns: `repeat(${Math.min(visibleMain.length, 4) + 1}, minmax(0, 1fr))`,
+          }}
+        >
+          {visibleMain.slice(0, 4).map((tab) => {
             const active = pathname === tab.path;
             return (
               <Link

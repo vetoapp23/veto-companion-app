@@ -15,6 +15,8 @@ import { useFarmManagementSettings } from "@/hooks/useAppSettings";
 import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig, normalizeFarmTypeKey } from "@/lib/farmTypeConfig";
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
+import { NewClientModal } from "@/components/forms/NewClientModal";
+import type { Client } from "@/lib/database";
 
 interface NewFarmModalProps {
   open: boolean;
@@ -36,6 +38,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
   const certificationOptions = farmSettings?.certification_types || ["Bio", "Label Rouge", "AOC", "IGP", "Halal"];
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const [showClientModal, setShowClientModal] = useState(false);
 
   const [data, setData] = useState({
     client_id: "",
@@ -97,6 +100,10 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
 
   const set = (k: string, v: any) => setData((p) => ({ ...p, [k]: v }));
 
+  const handleClientCreated = (client: Client) => {
+    setData((p) => ({ ...p, client_id: client.id }));
+  };
+
   const toggleCert = (c: string) =>
     setData((p) => ({
       ...p,
@@ -156,6 +163,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
       toast({ title: "Erreur", description: "Propriétaire requis", variant: "destructive" });
       return;
     }
+    const coords = data.coordinates.trim();
     const payload = {
       client_id: data.client_id,
       farm_name: data.farm_name.trim(),
@@ -164,8 +172,8 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
       production_type: data.production_type || null,
       housing_type: data.housing_type || null,
       registration_number: data.registration_number || null,
-      address: data.address || null,
-      coordinates: data.coordinates || null,
+      address: data.address.trim() || null,
+      coordinates: coords || null,
       phone: data.phone || null,
       email: data.email || null,
       herd_size: data.herd_size ? parseInt(data.herd_size) : null,
@@ -194,6 +202,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -215,17 +224,33 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                 </div>
                 <div className="space-y-2">
                   <Label>Propriétaire *</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={data.client_id}
-                    onChange={(e) => set("client_id", e.target.value)}
-                    required
-                  >
-                    <option value="">Sélectionner un client</option>
-                    {clients.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={data.client_id}
+                      onChange={(e) => set("client_id", e.target.value)}
+                      required
+                    >
+                      <option value="">Sélectionner un client</option>
+                      {clients.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="shrink-0"
+                      onClick={() => setShowClientModal(true)}
+                      title="Nouveau propriétaire"
+                      aria-label="Ajouter un nouveau propriétaire"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Absent de la liste ? Cliquez sur + pour créer le propriétaire.
+                  </p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -361,8 +386,12 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Coordonnées GPS</Label>
-                  <Input placeholder="lat, lng" value={data.coordinates} onChange={(e) => set("coordinates", e.target.value)} />
+                  <Label>Coordonnées GPS (optionnel)</Label>
+                  <Input
+                    placeholder="lat, lng — ex: 33.57, -7.59"
+                    value={data.coordinates}
+                    onChange={(e) => set("coordinates", e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Téléphone</Label>
@@ -439,6 +468,13 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
         </form>
       </DialogContent>
     </Dialog>
+
+      <NewClientModal
+        open={showClientModal}
+        onOpenChange={setShowClientModal}
+        onCreated={handleClientCreated}
+      />
+    </>
   );
 };
 

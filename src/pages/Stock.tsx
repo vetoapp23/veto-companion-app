@@ -37,6 +37,7 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { AppPageHeader } from '@/components/AppPageHeader';
+import { useWriteAccess } from '@/components/RoleGuard';
 import { format, isWithinInterval, startOfDay, endOfDay, addDays, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { NewStockItemModal } from '@/components/forms/NewStockItemModal';
@@ -130,6 +131,7 @@ export default function Stock() {
     fetchStockMovements,
   } = useStock();
   const { toast } = useToast();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_stock");
   
   // State for forcing refresh
   const [refreshKey, setRefreshKey] = useState(0);
@@ -286,6 +288,7 @@ export default function Stock() {
 
   // Gestion de l'édition inline
   const handleFieldSave = async (itemId: number, field: string, value: string) => {
+    if (!guardWrite()) return;
     const dbItem = findDatabaseItem(itemId);
     if (!dbItem) return;
 
@@ -338,6 +341,7 @@ export default function Stock() {
   };
 
   const handleEditItem = (item: StockItem) => {
+    if (!guardWrite()) return;
     // Pass the UI-formatted item, not the database item
     setEditingItem(item);
     setShowEditModal(true);
@@ -351,6 +355,7 @@ export default function Stock() {
   };
 
   const handleDeleteItem = async (item: StockItem) => {
+    if (!guardWrite()) return;
     const dbItem = findDatabaseItem(item.id);
     if (!dbItem) return;
 
@@ -364,6 +369,7 @@ export default function Stock() {
   };
 
   const handleMovement = (item: StockItem) => {
+    if (!guardWrite()) return;
     setSelectedItem(item);
     setShowMovementModal(true);
   };
@@ -444,6 +450,10 @@ export default function Stock() {
 
   // Fonction pour importer depuis Excel/CSV
   const importFromExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!guardWrite()) {
+      event.target.value = '';
+      return;
+    }
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -598,21 +608,23 @@ export default function Stock() {
               <Download className="h-3 sm:h-4 w-3 sm:w-4" />
               Exporter CSV
             </Button>
-            <div className="relative">
-              <input
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={importFromExcel}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                id="import-file"
-              />
-              <Button variant="outline" className="gap-2 text-xs sm:text-sm rounded-full" size="sm" asChild>
-                <label htmlFor="import-file" className="cursor-pointer">
-                  <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
-                  Importer CSV
-                </label>
-              </Button>
-            </div>
+            {canWrite && (
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={importFromExcel}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  id="import-file"
+                />
+                <Button variant="outline" className="gap-2 text-xs sm:text-sm rounded-full" size="sm" asChild>
+                  <label htmlFor="import-file" className="cursor-pointer">
+                    <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
+                    Importer CSV
+                  </label>
+                </Button>
+              </div>
+            )}
             <Button
               variant="outline"
               onClick={downloadTemplate}
@@ -622,14 +634,16 @@ export default function Stock() {
               <FileSpreadsheet className="h-3 sm:h-4 w-3 sm:w-4" />
               Gabarit
             </Button>
-            <Button
-              className="gap-2 text-xs sm:text-sm rounded-full"
-              size="sm"
-              onClick={() => setShowNewItemModal(true)}
-            >
-              <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
-              Nouvel Élément
-            </Button>
+            {canWrite && (
+              <Button
+                className="gap-2 text-xs sm:text-sm rounded-full"
+                size="sm"
+                onClick={() => setShowNewItemModal(true)}
+              >
+                <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
+                Nouvel Élément
+              </Button>
+            )}
           </>
         }
       />
@@ -884,8 +898,9 @@ export default function Stock() {
                           />
                         ) : (
                           <div
-                            className="cursor-pointer hover:bg-muted p-1 rounded text-sm"
+                            className={`p-1 rounded text-sm ${canWrite ? "cursor-pointer hover:bg-muted" : ""}`}
                             onClick={() => {
+                              if (!canWrite) return;
                               setEditingField({ id: item.id, field: 'purchasePrice' });
                               setFieldValue(item.purchasePrice.toString());
                             }}
@@ -913,8 +928,9 @@ export default function Stock() {
                           />
                         ) : (
                           <div
-                            className="cursor-pointer hover:bg-muted p-1 rounded"
+                            className={`p-1 rounded ${canWrite ? "cursor-pointer hover:bg-muted" : ""}`}
                             onClick={() => {
+                              if (!canWrite) return;
                               setEditingField({ id: item.id, field: 'sellingPrice' });
                               setFieldValue(item.sellingPrice.toString());
                             }}
@@ -976,8 +992,9 @@ export default function Stock() {
                           />
                         ) : (
                           <div
-                            className="cursor-pointer hover:bg-muted p-1 rounded flex items-center gap-1 text-xs sm:text-sm"
+                            className={`p-1 rounded flex items-center gap-1 text-xs sm:text-sm ${canWrite ? "cursor-pointer hover:bg-muted" : ""}`}
                             onClick={() => {
+                              if (!canWrite) return;
                               setEditingField({ id: item.id, field: 'location' });
                               setFieldValue(item.location || '');
                             }}
@@ -990,30 +1007,34 @@ export default function Stock() {
                       
                       <TableCell>
                         <div className="flex items-center gap-1 sm:gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleMovement(item)}
-                            className="p-1 sm:p-2"
-                          >
-                            <TrendingUp className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditItem(item)}
-                            className="p-1 sm:p-2"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteItem(item)}
-                            className="p-1 sm:p-2"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          {canWrite && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleMovement(item)}
+                                className="p-1 sm:p-2"
+                              >
+                                <TrendingUp className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditItem(item)}
+                                className="p-1 sm:p-2"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteItem(item)}
+                                className="p-1 sm:p-2"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

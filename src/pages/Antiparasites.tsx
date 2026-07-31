@@ -49,11 +49,14 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AppPageHeader } from '@/components/AppPageHeader';
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from '@/components/ListDateFilter';
+import { matchesListDateFilter, type ListDateFilterState } from '@/lib/dateLocal';
 import NewAntiparasiticModal from '@/components/forms/NewAntiparasiticModalDynamic';
 import AntiparasiticProtocolModal from '@/components/forms/AntiparasiticProtocolModalDynamic';
 import CertificateAntiparasiticPrintDynamic from '@/components/CertificateAntiparasiticPrintDynamic';
 import type { Antiparasitic, Appointment } from '@/lib/database';
 import { syncRemindersAfterAdministered } from '@/lib/medicalDoseSync';
+import { useWriteAccess } from '@/components/RoleGuard';
 import {
   buildAntiparasiticCertificateRows,
   buildAntiparasiticNotes,
@@ -121,11 +124,13 @@ export default function Antiparasites() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: animalSpecies = [] } = useAnimalSpecies();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_antiparasites");
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [parasiteFilter, setParasiteFilter] = useState('all');
   const [speciesFilter, setSpeciesFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const [showNewAntiparasitic, setShowNewAntiparasitic] = useState(false);
   const [showProtocolModal, setShowProtocolModal] = useState(false);
   const [showAntiparasiticDetails, setShowAntiparasiticDetails] = useState(false);
@@ -138,6 +143,7 @@ export default function Antiparasites() {
   const [markingDoneId, setMarkingDoneId] = useState<string | null>(null);
 
   const openEditAntiparasitic = (row: Antiparasitic) => {
+    if (!guardWrite()) return;
     setEditingAntiparasitic(row);
     setEditOpen(true);
     setShowAntiparasiticDetails(false);
@@ -262,16 +268,20 @@ export default function Antiparasites() {
       const matchesSpecies =
         speciesFilter === 'all' || dose.species === speciesFilter;
 
-      return matchesSearch && matchesStatus && matchesParasite && matchesSpecies;
+      const matchesDate = matchesListDateFilter(dose.date, dateFilter);
+
+      return matchesSearch && matchesStatus && matchesParasite && matchesSpecies && matchesDate;
     });
-  }, [unifiedDoses, searchTerm, statusFilter, parasiteFilter, speciesFilter]);
+  }, [unifiedDoses, searchTerm, statusFilter, parasiteFilter, speciesFilter, dateFilter]);
 
   const handleDeleteAntiparasitic = (antiparasitic: Antiparasitic) => {
+    if (!guardWrite()) return;
     setAntiparasiticToDelete(antiparasitic);
     setShowDeleteConfirm(true);
   };
 
   const confirmDeleteAntiparasitic = async () => {
+    if (!guardWrite()) return;
     if (!antiparasiticToDelete) return;
     try {
       await deleteAntiparasitic.mutateAsync(antiparasiticToDelete.id);
@@ -291,6 +301,7 @@ export default function Antiparasites() {
   };
 
   const handleMarkDone = async (dose: UnifiedDoseRow) => {
+    if (!guardWrite()) return;
     if (dose.listStatus === 'administered') return;
     setMarkingDoneId(dose.rowKey);
     try {
@@ -390,21 +401,31 @@ export default function Antiparasites() {
         description="Suivi et planification des traitements antiparasitaires"
         actions={
           <>
+            {canWrite && (
             <Button
-              onClick={() => setShowProtocolModal(true)}
+              onClick={() => {
+                if (!guardWrite()) return;
+                setShowProtocolModal(true);
+              }}
               variant="outline"
               className="gap-2 rounded-full"
             >
               <Shield className="h-4 w-4" />
               Protocoles
             </Button>
+            )}
+            {canWrite && (
             <Button
-              onClick={() => setShowNewAntiparasitic(true)}
+              onClick={() => {
+                if (!guardWrite()) return;
+                setShowNewAntiparasitic(true);
+              }}
               className="gap-2 rounded-full"
             >
               <Plus className="h-4 w-4" />
               Nouveau traitement
             </Button>
+            )}
           </>
         }
       />
@@ -523,6 +544,13 @@ export default function Antiparasites() {
                 </SelectContent>
               </Select>
             </div>
+
+            <ListDateFilter
+              value={dateFilter}
+              onChange={setDateFilter}
+              idPrefix="antiparasites-date"
+              compact
+            />
           </div>
         </CardContent>
       </Card>
@@ -619,7 +647,7 @@ export default function Antiparasites() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              {dose.listStatus !== 'administered' && (
+                              {canWrite && dose.listStatus !== 'administered' && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -634,7 +662,7 @@ export default function Antiparasites() {
                                   )}
                                 </Button>
                               )}
-                              {dose.treatmentRecord && (
+                              {canWrite && dose.treatmentRecord && (
                                 <>
                                   <Button
                                     variant="ghost"
@@ -722,7 +750,7 @@ export default function Antiparasites() {
                             <Eye className="h-4 w-4 mr-1" />
                             Détails
                           </Button>
-                          {dose.listStatus !== 'administered' && (
+                          {canWrite && dose.listStatus !== 'administered' && (
                             <Button
                               size="sm"
                               disabled={markingDoneId === dose.rowKey}
@@ -736,7 +764,7 @@ export default function Antiparasites() {
                               )}
                             </Button>
                           )}
-                          {dose.treatmentRecord && (
+                          {canWrite && dose.treatmentRecord && (
                             <>
                               <Button
                                 variant="outline"
@@ -770,8 +798,10 @@ export default function Antiparasites() {
             <CardHeader>
               <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <span>Protocoles antiparasitaires ({protocols.length})</span>
+                {canWrite && (
                 <Button
                   onClick={() => {
+                    if (!guardWrite()) return;
                     setEditingProtocol(null);
                     setShowProtocolModal(true);
                   }}
@@ -780,6 +810,7 @@ export default function Antiparasites() {
                   <Plus className="h-4 w-4" />
                   Nouveau protocole
                 </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -794,16 +825,19 @@ export default function Antiparasites() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">
                           <Badge variant="outline">{protocol.species}</Badge>
+                          {canWrite && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
+                              if (!guardWrite()) return;
                               setEditingProtocol(protocol);
                               setShowProtocolModal(true);
                             }}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
+                          )}
                         </div>
                         <h4 className="font-medium mb-2">{protocol.product_name}</h4>
                         <div className="space-y-1 text-sm text-gray-600">
@@ -977,7 +1011,7 @@ export default function Antiparasites() {
                 </div>
               )}
               <div className="border-t pt-4 flex flex-wrap gap-2 justify-center">
-                {selectedDose.listStatus !== 'administered' && (
+                {canWrite && selectedDose.listStatus !== 'administered' && (
                   <Button
                     disabled={markingDoneId === selectedDose.rowKey}
                     onClick={() => handleMarkDone(selectedDose)}
@@ -990,7 +1024,7 @@ export default function Antiparasites() {
                     Marquer fait
                   </Button>
                 )}
-                {selectedDose.treatmentRecord && (
+                {canWrite && selectedDose.treatmentRecord && (
                   <Button
                     variant="outline"
                     onClick={() => openEditAntiparasitic(selectedDose.treatmentRecord!)}

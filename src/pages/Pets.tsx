@@ -37,6 +37,7 @@ import {
   useAnimalColors,
   DEFAULT_SETTINGS
 } from "@/hooks/useAppSettings";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 // Import the original Pet interface from ClientContext for compatibility
 import { Pet } from "@/contexts/ClientContext";
@@ -99,6 +100,8 @@ const PetsContent = () => {
   const { data: stats } = useClientStats();
   const updateAnimalMutation = useUpdateAnimal();
   const deleteAnimalMutation = useDeleteAnimal();
+  const { canWrite: canWriteAnimals, guardWrite: guardWriteAnimals } = useWriteAccess("can_manage_animals");
+  const { canWrite: canWriteConsultations, guardWrite: guardWriteConsultations } = useWriteAccess("can_create_consultations");
   
   // Settings hooks for dynamic animal data
   const { data: farmSettings } = useFarmManagementSettings();
@@ -218,6 +221,7 @@ const PetsContent = () => {
   };
 
   const handleEdit = (pet: PetUI) => {
+    if (!guardWriteAnimals()) return;
     setSelectedPet(pet);
     // Populate edit form with pet data
     setEditForm({
@@ -242,6 +246,7 @@ const PetsContent = () => {
   };
 
   const handleEditFromView = () => {
+    if (!guardWriteAnimals()) return;
     if (selectedPet) {
       // Populate edit form with pet data
       setEditForm({
@@ -268,11 +273,13 @@ const PetsContent = () => {
   };
 
   const handleDelete = (pet: PetUI) => {
+    if (!guardWriteAnimals()) return;
     setPetToDelete(pet);
     setShowDeleteAlert(true);
   };
 
   const confirmDelete = async () => {
+    if (!guardWriteAnimals()) return;
     if (!petToDelete) return;
 
     try {
@@ -325,6 +332,7 @@ const PetsContent = () => {
   };
 
   const handleSaveEdit = async () => {
+    if (!guardWriteAnimals()) return;
     if (!selectedPet) return;
     
     // Basic validation
@@ -439,10 +447,15 @@ const PetsContent = () => {
               <List className="h-4 w-4" />
               Tableau
             </Button>
-            <Button className="gap-2 rounded-full" onClick={() => setShowPetModal(true)}>
-              <Plus className="h-4 w-4" />
-              Nouvel Animal
-            </Button>
+            {canWriteAnimals && (
+              <Button className="gap-2 rounded-full" onClick={() => {
+                if (!guardWriteAnimals()) return;
+                setShowPetModal(true);
+              }}>
+                <Plus className="h-4 w-4" />
+                Nouvel Animal
+              </Button>
+            )}
           </>
         }
       />
@@ -651,29 +664,36 @@ const PetsContent = () => {
               <Eye className="h-4 w-4" />
               Voir
             </Button>
-            <Button size="sm" variant="outline" className="gap-2 flex-1" onClick={() => handleEdit(pet)}>
-              <Edit className="h-4 w-4" />
-              Modifier
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-2 flex-1 text-destructive hover:text-destructive-foreground hover:bg-destructive" 
-              onClick={() => handleDelete(pet)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer
-            </Button>
+            {canWriteAnimals && (
+              <>
+                <Button size="sm" variant="outline" className="gap-2 flex-1" onClick={() => handleEdit(pet)}>
+                  <Edit className="h-4 w-4" />
+                  Modifier
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="gap-2 flex-1 text-destructive hover:text-destructive-foreground hover:bg-destructive" 
+                  onClick={() => handleDelete(pet)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </Button>
+              </>
+            )}
             </div>
             
             <div className="flex gap-2">
+            {canWriteConsultations && (
             <Button size="sm" className="flex-1" onClick={() => {
+              if (!guardWriteConsultations()) return;
               setSelectedPet(pet);
               setShowConsultationModal(true);
             }}>
               <Stethoscope className="h-4 w-4 mr-2" />
               Consultation
             </Button>
+            )}
             <Button size="sm" variant="secondary" className="flex-1" onClick={() => handleShowDossier(pet)}>
               <FileText className="h-4 w-4 mr-2" />
               Dossier
@@ -746,17 +766,21 @@ const PetsContent = () => {
                 <Button size="sm" variant="outline" onClick={() => handleView(pet)}>
                 <Eye className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleEdit(pet)}>
-                <Edit className="h-4 w-4" />
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                  onClick={() => handleDelete(pet)}
-                >
-                <Trash2 className="h-4 w-4" />
-                </Button>
+                {canWriteAnimals && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(pet)}>
+                    <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                      onClick={() => handleDelete(pet)}
+                    >
+                    <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
                 <Button size="sm" variant="outline" onClick={() => handleShowDossier(pet)}>
                 Dossier
                 </Button>
@@ -804,9 +828,9 @@ const PetsContent = () => {
       open={showViewModal}
       onOpenChange={setShowViewModal}
       pet={selectedPet}
-      onEdit={handleEditFromView}
+      onEdit={canWriteAnimals ? handleEditFromView : undefined}
       onShowDossier={handleShowDossierFromView}
-      onDelete={selectedPet ? () => handleDelete(selectedPet) : undefined}
+      onDelete={canWriteAnimals && selectedPet ? () => handleDelete(selectedPet) : undefined}
       />
       
       {/* Custom Dynamic Pet Edit Modal */}

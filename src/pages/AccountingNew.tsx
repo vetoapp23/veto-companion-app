@@ -10,12 +10,24 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { useAccounting } from '@/hooks/useAccounting';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAccountingTemplates, type AccountingTemplate } from '@/hooks/useAccountingTemplates';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatSourceLabel } from '@/lib/accountingLedger';
 import { markInvoicePaid } from '@/lib/visitInvoice';
+import {
+  buildDateFromDay,
+  materializeRecurringTemplates,
+  resolveTemplateValidityWindow,
+} from '@/lib/accountingRecurring';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { todayLocalKey } from '@/lib/dateLocal';
+import { PrintAccountingReportModal } from '@/components/modals/PrintAccountingReportModal';
 import { 
   Calculator, 
   Plus, 
@@ -32,11 +44,11 @@ import {
   Wallet,
   CheckCircle2,
   Clock3,
-  RefreshCw
+  RefreshCw,
+  Download,
 } from 'lucide-react';
 import { AppPageHeader } from '@/components/AppPageHeader';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useWriteAccess } from '@/components/RoleGuard';
 
 // UI-compatible AccountingEntry interface
 export interface AccountingEntry {
@@ -82,6 +94,8 @@ const Accounting: React.FC = () => {
   } = useAccounting();
   const { settings } = useSettings();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_accounting");
   const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
 
   // Convert database entries to UI format
@@ -92,7 +106,7 @@ const Accounting: React.FC = () => {
         id: rev.id,
         type: 'revenue' as const,
         category: (isAuto ? 'automatic' : 'manual') as 'automatic' | 'manual',
-        frequency: 'occasional' as const,
+        frequency: (rev.frequency as AccountingEntry['frequency']) || 'occasional',
         description: rev.description,
         amount: Number(rev.amount) || 0,
         date: rev.revenue_date,
@@ -109,13 +123,14 @@ const Accounting: React.FC = () => {
       const isValuation = isStockValuationExpense(exp);
       const isAuto = !!(
         exp.receipt_number?.startsWith('SM-') ||
+        exp.receipt_number?.startsWith('REC-TPL-') ||
         ['stock_purchase', 'stock_valuation', 'cogs'].includes(exp.category)
       );
       return {
         id: exp.id,
         type: (isValuation ? 'valuation' : 'expense') as 'expense' | 'valuation',
         category: (isAuto ? 'automatic' : 'manual') as 'automatic' | 'manual',
-        frequency: 'occasional' as const,
+        frequency: (exp.frequency as AccountingEntry['frequency']) || 'occasional',
         description: exp.description,
         amount: Number(exp.amount) || 0,
         date: exp.expense_date,
@@ -140,9 +155,10 @@ const Accounting: React.FC = () => {
   const [editingEntry, setEditingEntry] = useState<AccountingEntry | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const { grouped: templateGroups, addTemplate, updateTemplate, deleteTemplate } = useAccountingTemplates();
+  const { grouped: templateGroups, templates, addTemplate, updateTemplate, deleteTemplate } = useAccountingTemplates();
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [editingSuggestion, setEditingSuggestion] = useState<AccountingTemplate | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Formulaire pour la configuration des suggestions
   const [suggestionFormData, setSuggestionFormData] = useState({
@@ -150,7 +166,25 @@ const Accounting: React.FC = () => {
     amount: '',
     type: 'expense' as 'revenue' | 'expense',
     frequency: 'monthly' as 'monthly' | 'annual' | 'occasional',
-    source: 'other' as any
+    source: 'other' as any,
+    day: '' as string,
+    recurrenceMonth: '1' as string,
+    startDate: todayLocalKey(),
+    endDate: '' as string,
+    enabled: false,
+  });
+
+  const emptySuggestionForm = (frequency: 'monthly' | 'annual' | 'occasional' = 'monthly') => ({
+    description: '',
+    amount: '',
+    type: 'expense' as 'revenue' | 'expense',
+    frequency,
+    source: 'other' as any,
+    day: '',
+    recurrenceMonth: '1',
+    startDate: todayLocalKey(),
+    endDate: '',
+    enabled: false,
   });
 
   // Formulaire pour ajouter/modifier une entrée
@@ -160,9 +194,13 @@ const Accounting: React.FC = () => {
     description: '',
     amount: '',
     date: '',
+    day: '',
+    recurrenceMonth: String(new Date().getMonth() + 1),
     source: 'other' as any,
     notes: ''
   });
+
+  const isRecurringFreq = (f: string) => f === 'monthly' || f === 'annual';
 
   // Initialiser les dates
   useEffect(() => {
@@ -173,6 +211,42 @@ const Accounting: React.FC = () => {
     setStartDate(format(startOfMonth, 'yyyy-MM-dd'));
     setEndDate(format(endOfMonth, 'yyyy-MM-dd'));
   }, []);
+
+  // Matérialiser les modèles récurrents actifs sur la période affichée
+  useEffect(() => {
+    if (!user?.id || !startDate || !endDate || !templates?.length) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle();
+        const organizationId =
+          user.organization_id ||
+          user.profile?.organization_id ||
+          profile?.organization_id;
+        if (!organizationId || cancelled) return;
+
+        const created = await materializeRecurringTemplates({
+          templates,
+          startDate,
+          endDate,
+          userId: user.id,
+          organizationId,
+        });
+        if (!cancelled && created > 0) {
+          refreshAll();
+        }
+      } catch (err) {
+        console.warn('materializeRecurringTemplates failed', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, startDate, endDate, templates]);
 
   // Generate summary from accounting entries
   const generateAccountingSummary = useMemo(() => {
@@ -257,6 +331,7 @@ const Accounting: React.FC = () => {
   }, [invoices, payments, startDate, endDate]);
 
   const handleMarkInvoicePaid = async (invoiceId: string) => {
+    if (!guardWrite()) return;
     try {
       setMarkingPaidId(invoiceId);
       await markInvoicePaid(invoiceId, 'cash');
@@ -310,92 +385,201 @@ const Accounting: React.FC = () => {
   };
 
   const handleAddEntry = async () => {
-    if (!formData.description || !formData.amount || !formData.date) return;
+    if (!guardWrite()) return;
+    if (!formData.description || !formData.amount) return;
+
+    const recurring = isRecurringFreq(formData.frequency);
+    if (!recurring && !formData.date) {
+      toast({
+        title: 'Date requise',
+        description: 'Indiquez une date pour une entrée occasionnelle.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const dayNum = formData.day ? parseInt(formData.day, 10) : undefined;
+    const monthNum = formData.recurrenceMonth
+      ? parseInt(formData.recurrenceMonth, 10)
+      : undefined;
+    const entryDate = recurring
+      ? buildDateFromDay(dayNum, formData.frequency, monthNum)
+      : formData.date;
 
     if (editingEntry) {
-      // Update existing entry
       if (editingEntry.type === 'revenue') {
         await updateRevenue(editingEntry.id, {
           description: formData.description,
           amount: parseFloat(formData.amount),
-          revenue_date: formData.date,
+          revenue_date: entryDate,
           source: formData.source,
-          notes: formData.notes
+          notes: formData.notes,
+          frequency: formData.frequency,
         });
       } else {
         await updateExpense(editingEntry.id, {
           description: formData.description,
           amount: parseFloat(formData.amount),
-          expense_date: formData.date,
+          expense_date: entryDate,
           category: formData.source,
-          notes: formData.notes
+          notes: formData.notes,
+          frequency: formData.frequency,
         });
       }
       setEditingEntry(null);
-    } else {
-      // Add new entry
-      if (formData.type === 'revenue') {
-        await addRevenue({
-          revenue_date: formData.date,
-          source: formData.source,
-          description: formData.description,
+    } else if (recurring) {
+      // Config récurrente : modèle auto + génération sur la période (pas de double écriture)
+      const dayOfMonth = dayNum && dayNum >= 1 && dayNum <= 31 ? dayNum : 1;
+      const recurrenceMonth =
+        formData.frequency === 'annual'
+          ? monthNum && monthNum >= 1 && monthNum <= 12
+            ? monthNum
+            : new Date().getMonth() + 1
+          : null;
+
+      const existingTpl = templates.find(
+        (t) =>
+          t.description === formData.description &&
+          t.frequency === formData.frequency &&
+          t.type === formData.type
+      );
+      if (existingTpl) {
+        await updateTemplate(existingTpl.id, {
           amount: parseFloat(formData.amount),
-          notes: formData.notes
+          source: formData.source,
+          day_of_month: dayOfMonth,
+          recurrence_month: recurrenceMonth,
+          auto_generate: true,
+          is_active: true,
+          start_date: existingTpl.start_date || entryDate,
+          end_date: existingTpl.end_date || null,
         });
       } else {
-        await addExpense({
-          expense_date: formData.date,
-          category: formData.source,
+        await addTemplate({
+          type: formData.type,
+          frequency: formData.frequency,
           description: formData.description,
           amount: parseFloat(formData.amount),
-          status: 'approved',
-          is_deductible: true,
-          notes: formData.notes
+          source: formData.source,
+          day_of_month: dayOfMonth,
+          recurrence_month: recurrenceMonth,
+          auto_generate: true,
+          start_date: entryDate,
+          end_date: null,
         });
       }
+
+      // Forcer refresh templates puis matérialisation via effect / appel direct
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle();
+        const organizationId =
+          user?.organization_id ||
+          user?.profile?.organization_id ||
+          profile?.organization_id;
+        if (user?.id && organizationId) {
+          const { data: freshTemplates } = await supabase
+            .from('accounting_templates')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+          await materializeRecurringTemplates({
+            templates: freshTemplates || [],
+            startDate: startDate || entryDate.slice(0, 7) + '-01',
+            endDate:
+              endDate ||
+              format(
+                new Date(
+                  new Date(entryDate).getFullYear(),
+                  new Date(entryDate).getMonth() + 1,
+                  0
+                ),
+                'yyyy-MM-dd'
+              ),
+            userId: user.id,
+            organizationId,
+          });
+          refreshAll();
+        }
+      } catch (err) {
+        console.warn('Could not materialize after recurring save', err);
+      }
+    } else if (formData.type === 'revenue') {
+      await addRevenue({
+        revenue_date: entryDate,
+        source: formData.source,
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        notes: formData.notes,
+        frequency: formData.frequency,
+      });
+    } else {
+      await addExpense({
+        expense_date: entryDate,
+        category: formData.source,
+        description: formData.description,
+        amount: parseFloat(formData.amount),
+        status: 'approved',
+        is_deductible: true,
+        notes: formData.notes,
+        frequency: formData.frequency,
+      });
     }
 
-    // Reset form
     setFormData({
       type: 'revenue',
       frequency: 'occasional',
       description: '',
       amount: '',
       date: '',
+      day: '',
+      recurrenceMonth: String(new Date().getMonth() + 1),
       source: 'other',
-      notes: ''
+      notes: '',
     });
     setIsAddEntryModalOpen(false);
   };
 
   const handleEditEntry = (entry: AccountingEntry) => {
+    if (!guardWrite()) return;
     setEditingEntry(entry);
+    const d = entry.date ? new Date(`${entry.date}T00:00:00`) : new Date();
+    // En édition journal : toujours une date concrète (pas seulement le jour)
     setFormData({
-      type: entry.type,
-      frequency: entry.frequency,
+      type: entry.type === 'valuation' ? 'expense' : entry.type,
+      frequency: 'occasional',
       description: entry.description,
       amount: entry.amount.toString(),
-      date: entry.date,
+      date: entry.date?.slice(0, 10) || format(d, 'yyyy-MM-dd'),
+      day: String(d.getDate()),
+      recurrenceMonth: String(d.getMonth() + 1),
       source: entry.source || 'other',
-      notes: entry.notes || ''
+      notes: entry.notes?.startsWith('__recurring__:') ? '' : (entry.notes || ''),
     });
     setIsAddEntryModalOpen(true);
   };
 
-  const handleDeleteEntry = async (entryId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
-      const entry = accountingEntries.find(e => e.id === entryId);
-      if (entry) {
-        if (entry.type === 'revenue') {
-          await deleteRevenue(entryId);
-        } else {
-          await deleteExpense(entryId);
-        }
-      }
+  const handleDeleteEntry = async (entry: AccountingEntry) => {
+    if (!guardWrite()) return;
+    const isAuto = entry.category === 'automatic';
+    const msg = isAuto
+      ? `Supprimer « ${entry.description} » ?\n\nÉcriture automatique : elle pourra réapparaître si la source (visite, stock, config récurrente) la régénère.`
+      : `Supprimer « ${entry.description} » du journal ?`;
+    if (!window.confirm(msg)) return;
+
+    if (entry.type === 'revenue') {
+      await deleteRevenue(entry.id);
+    } else {
+      // charge + valorisation stock
+      await deleteExpense(entry.id);
     }
   };
 
   const handleApplySuggestion = (suggestion: AccountingTemplate) => {
+    if (!guardWrite()) return;
     setFormData({
       ...formData,
       type: suggestion.type,
@@ -403,57 +587,127 @@ const Accounting: React.FC = () => {
       description: suggestion.description,
       amount: suggestion.amount.toString(),
       source: suggestion.source,
-      date: formData.date || format(new Date(), 'yyyy-MM-dd')
+      date: formData.date || format(new Date(), 'yyyy-MM-dd'),
+      day: suggestion.day_of_month ? String(suggestion.day_of_month) : formData.day,
+      recurrenceMonth: suggestion.recurrence_month
+        ? String(suggestion.recurrence_month)
+        : formData.recurrenceMonth,
     });
     setShowSuggestions(false);
   };
 
   const handleAddSuggestion = async () => {
+    if (!guardWrite()) return;
     if (!suggestionFormData.description || !suggestionFormData.amount) return;
 
-    if (editingSuggestion) {
-      await updateTemplate(editingSuggestion.id, {
-        description: suggestionFormData.description,
-        amount: parseFloat(suggestionFormData.amount),
-        type: suggestionFormData.type,
-        frequency: suggestionFormData.frequency,
-        source: suggestionFormData.source,
+    const dayNum = suggestionFormData.day
+      ? parseInt(suggestionFormData.day, 10)
+      : 1;
+    const monthNum = suggestionFormData.recurrenceMonth
+      ? parseInt(suggestionFormData.recurrenceMonth, 10)
+      : 1;
+    const recurring = isRecurringFreq(suggestionFormData.frequency);
+    const enabled = !!suggestionFormData.enabled;
+
+    if (enabled && recurring && !suggestionFormData.startDate) {
+      toast({
+        title: 'Date de début requise',
+        description: 'Indiquez une date de début pour activer cette configuration.',
+        variant: 'destructive',
       });
-      setEditingSuggestion(null);
-    } else {
-      await addTemplate({
-        description: suggestionFormData.description,
-        amount: parseFloat(suggestionFormData.amount),
-        type: suggestionFormData.type,
-        frequency: suggestionFormData.frequency,
-        source: suggestionFormData.source,
-      });
+      return;
     }
 
-    // Reset form
-    setSuggestionFormData({
-      description: '',
-      amount: '',
-      type: 'expense',
-      frequency: 'monthly',
-      source: 'other'
-    });
+    if (
+      suggestionFormData.startDate &&
+      suggestionFormData.endDate &&
+      suggestionFormData.endDate < suggestionFormData.startDate
+    ) {
+      toast({
+        title: 'Dates invalides',
+        description: 'La date de fin doit être après la date de début.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const payload = {
+      description: suggestionFormData.description,
+      amount: parseFloat(suggestionFormData.amount),
+      type: suggestionFormData.type,
+      frequency: suggestionFormData.frequency,
+      source: suggestionFormData.source,
+      day_of_month: recurring ? (dayNum >= 1 && dayNum <= 31 ? dayNum : 1) : null,
+      recurrence_month:
+        suggestionFormData.frequency === 'annual'
+          ? monthNum >= 1 && monthNum <= 12
+            ? monthNum
+            : 1
+          : null,
+      auto_generate: enabled,
+      start_date: suggestionFormData.startDate || null,
+      end_date: suggestionFormData.endDate || null,
+    };
+
+    if (editingSuggestion) {
+      await updateTemplate(editingSuggestion.id, payload);
+      setEditingSuggestion(null);
+    } else {
+      await addTemplate(payload);
+    }
+
+    setSuggestionFormData(emptySuggestionForm('monthly'));
     setIsConfigModalOpen(false);
   };
 
   const handleEditSuggestion = (suggestion: AccountingTemplate) => {
+    if (!guardWrite()) return;
     setEditingSuggestion(suggestion);
     setSuggestionFormData({
       description: suggestion.description,
       amount: suggestion.amount.toString(),
       type: suggestion.type,
       frequency: suggestion.frequency,
-      source: suggestion.source
+      source: suggestion.source,
+      day: suggestion.day_of_month ? String(suggestion.day_of_month) : '',
+      recurrenceMonth: suggestion.recurrence_month
+        ? String(suggestion.recurrence_month)
+        : '1',
+      startDate: suggestion.start_date
+        ? suggestion.start_date.slice(0, 10)
+        : todayLocalKey(),
+      endDate: suggestion.end_date ? suggestion.end_date.slice(0, 10) : '',
+      enabled: !!suggestion.auto_generate,
     });
     setIsConfigModalOpen(true);
   };
 
+  const handleToggleSuggestion = async (
+    suggestion: AccountingTemplate,
+    enabled: boolean
+  ) => {
+    if (!guardWrite()) return;
+    const start =
+      suggestion.start_date?.slice(0, 10) || todayLocalKey();
+    await updateTemplate(
+      suggestion.id,
+      {
+        auto_generate: enabled,
+        start_date: enabled ? start : suggestion.start_date || start,
+        end_date: suggestion.end_date || null,
+      },
+      { silent: true }
+    );
+    toast({
+      title: enabled ? 'Activée' : 'Désactivée',
+      description: enabled
+        ? `${suggestion.description} sera prise en compte dans la compta.`
+        : `${suggestion.description} ne génère plus d'écritures.`,
+    });
+  };
+
   const handleDeleteSuggestion = async (suggestion: AccountingTemplate) => {
+    if (!guardWrite()) return;
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette suggestion ?')) {
       await deleteTemplate(suggestion.id);
     }
@@ -499,16 +753,26 @@ const Accounting: React.FC = () => {
           title="Comptabilité"
           description="CA, charges, factures et stock synchronisés en temps réel"
         />
-        <div className="flex gap-2 lg:pt-4">
+        <div className="flex flex-wrap gap-2 lg:pt-4">
           <Button variant="outline" className="rounded-full" onClick={() => refreshAll()} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Actualiser
           </Button>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => setIsExportModalOpen(true)}
+            disabled={!startDate || !endDate}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter PDF
+          </Button>
+          {canWrite && (
           <Dialog open={isAddEntryModalOpen} onOpenChange={setIsAddEntryModalOpen}>
             <DialogTrigger asChild>
               <Button
                 className="rounded-full"
-                onClick={() => { setEditingEntry(null); setFormData({ type: 'revenue', frequency: 'occasional', description: '', amount: '', date: '', source: 'other', notes: '' }); }}
+                onClick={() => { setEditingEntry(null); setFormData({ type: 'revenue', frequency: 'occasional', description: '', amount: '', date: '', day: '', recurrenceMonth: String(new Date().getMonth() + 1), source: 'other', notes: '' }); }}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter une entrée
@@ -520,7 +784,9 @@ const Accounting: React.FC = () => {
                   {editingEntry ? 'Modifier l\'entrée comptable' : 'Ajouter une entrée comptable'}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingEntry ? 'Modifiez les informations de cette entrée.' : 'Ajoutez une nouvelle recette ou charge manuelle.'}
+                  {editingEntry
+                    ? 'Modifiez les informations de cette entrée.'
+                    : 'Occasionnel = une fois. Mensuel / annuel = configuration reprise automatiquement sur les périodes suivantes (jour optionnel).'}
                 </DialogDescription>
               </DialogHeader>
               
@@ -664,16 +930,60 @@ const Accounting: React.FC = () => {
                     />
                   </div>
                   
-                  <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    />
-                  </div>
+                  {isRecurringFreq(formData.frequency) ? (
+                    <div>
+                      <Label htmlFor="day">Jour du mois (optionnel)</Label>
+                      <Input
+                        id="day"
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={formData.day}
+                        onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+                        placeholder="Ex: 5"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Vide = 1er du mois. L’écriture est reprise chaque période.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label htmlFor="date">Date</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      />
+                    </div>
+                  )}
                 </div>
+
+                {formData.frequency === 'annual' && (
+                  <div>
+                    <Label htmlFor="recurrenceMonth">Mois (annuel)</Label>
+                    <Select
+                      value={formData.recurrenceMonth}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, recurrenceMonth: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[
+                          'Janvier','Février','Mars','Avril','Mai','Juin',
+                          'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
+                        ].map((label, i) => (
+                          <SelectItem key={label} value={String(i + 1)}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="source">Source</Label>
@@ -720,6 +1030,7 @@ const Accounting: React.FC = () => {
               </div>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -888,7 +1199,7 @@ const Accounting: React.FC = () => {
                 Journal comptable
               </CardTitle>
               <CardDescription>
-                Écritures automatiques (visites, stock, ordonnances) et manuelles
+                Écritures automatiques et manuelles — vous pouvez modifier ou supprimer chaque ligne
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -957,24 +1268,28 @@ const Accounting: React.FC = () => {
                     {amountPrefix}{formatCurrency(entry.amount)}
                   </TableCell>
                   <TableCell>
-                    {entry.category === 'manual' && (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditEntry(entry)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteEntry(entry.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      {canWrite && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="Modifier"
+                            onClick={() => handleEditEntry(entry)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="Supprimer"
+                            onClick={() => handleDeleteEntry(entry)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
                 );
@@ -1055,7 +1370,7 @@ const Accounting: React.FC = () => {
                               : '—'}
                           </TableCell>
                           <TableCell>
-                            {(status === 'issued' || status === 'draft') && (
+                            {canWrite && (status === 'issued' || status === 'draft') && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1084,90 +1399,128 @@ const Accounting: React.FC = () => {
                 Configuration des Suggestions
               </CardTitle>
               <CardDescription>
-                Configurez les suggestions prédéfinies pour faciliter la saisie des charges et recettes
+                Activez une suggestion pour la générer automatiquement dans le journal.
+                Date de fin optionnelle (sinon 12 mois / une fois par an).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Suggestions Mensuelles</h3>
-                <Button onClick={() => { setEditingSuggestion(null); setSuggestionFormData({ description: '', amount: '', type: 'expense', frequency: 'monthly', source: 'other' }); setIsConfigModalOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
-              </div>
-              
-              <div className="grid gap-3">
-                {templateGroups.monthly.map((suggestion) => (
-                  <div key={suggestion.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">{suggestion.description}</span>
-                      <span className="text-sm text-muted-foreground">{suggestion.amount} {settings.currency}</span>
+              <p className="text-sm text-muted-foreground">
+                Activez une suggestion pour l’inclure automatiquement dans le journal.
+                Sans date de fin : <strong>12 mois</strong> (mensuel) ou <strong>une fois</strong> sur l’année (annuel).
+              </p>
+
+              {(['monthly', 'annual', 'occasional'] as const).map((freq) => {
+                const titles = {
+                  monthly: 'Suggestions Mensuelles',
+                  annual: 'Suggestions Annuelles',
+                  occasional: 'Suggestions Occasionnelles',
+                };
+                const list = templateGroups[freq];
+                return (
+                  <div key={freq} className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-medium">{titles[freq]}</h3>
+                      {canWrite && (
+                        <Button
+                          onClick={() => {
+                            setEditingSuggestion(null);
+                            setSuggestionFormData(emptySuggestionForm(freq));
+                            setIsConfigModalOpen(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Ajouter
+                        </Button>
+                      )}
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditSuggestion(suggestion)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteSuggestion(suggestion)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+
+                    <div className="grid gap-3">
+                      {list.length === 0 && (
+                        <p className="text-sm text-muted-foreground">Aucune suggestion</p>
+                      )}
+                      {list.map((suggestion) => {
+                        const enabled = !!suggestion.auto_generate;
+                        const window =
+                          isRecurringFreq(suggestion.frequency) && enabled
+                            ? resolveTemplateValidityWindow(suggestion)
+                            : null;
+                        return (
+                          <div
+                            key={suggestion.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 border rounded-lg"
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-medium">
+                                  {suggestion.description}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  {suggestion.amount} {settings.currency}
+                                </span>
+                                <Badge variant={enabled ? 'default' : 'secondary'}>
+                                  {enabled ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </div>
+                              {isRecurringFreq(suggestion.frequency) && (
+                                <p className="text-xs text-muted-foreground">
+                                  Jour {suggestion.day_of_month || 1}
+                                  {suggestion.frequency === 'annual' &&
+                                    suggestion.recurrence_month
+                                    ? ` · mois ${suggestion.recurrence_month}`
+                                    : ''}
+                                  {window
+                                    ? ` · du ${window.start} au ${window.end}`
+                                    : suggestion.start_date
+                                      ? ` · début ${suggestion.start_date.slice(0, 10)}`
+                                      : ''}
+                                  {!suggestion.end_date && enabled
+                                    ? suggestion.frequency === 'monthly'
+                                      ? ' (12 mois par défaut)'
+                                      : ' (1 an / une fois par défaut)'
+                                    : ''}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              {canWrite && isRecurringFreq(suggestion.frequency) && (
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={enabled}
+                                    onCheckedChange={(v) =>
+                                      handleToggleSuggestion(suggestion, v)
+                                    }
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    Compta
+                                  </span>
+                                </div>
+                              )}
+                              {canWrite && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditSuggestion(suggestion)}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDeleteSuggestion(suggestion)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Suggestions Annuelles</h3>
-                <Button onClick={() => { setEditingSuggestion(null); setSuggestionFormData({ description: '', amount: '', type: 'expense', frequency: 'annual', source: 'other' }); setIsConfigModalOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
-              </div>
-              
-              <div className="grid gap-3">
-                {templateGroups.annual.map((suggestion) => (
-                  <div key={suggestion.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">{suggestion.description}</span>
-                      <span className="text-sm text-muted-foreground">{suggestion.amount} {settings.currency}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditSuggestion(suggestion)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteSuggestion(suggestion)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Suggestions Occasionnelles</h3>
-                <Button onClick={() => { setEditingSuggestion(null); setSuggestionFormData({ description: '', amount: '', type: 'expense', frequency: 'occasional', source: 'other' }); setIsConfigModalOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
-              </div>
-              
-              <div className="grid gap-3">
-                {templateGroups.occasional.map((suggestion) => (
-                  <div key={suggestion.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium">{suggestion.description}</span>
-                      <span className="text-sm text-muted-foreground">{suggestion.amount} {settings.currency}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditSuggestion(suggestion)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteSuggestion(suggestion)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                );
+              })}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1263,6 +1616,116 @@ const Accounting: React.FC = () => {
               </div>
             </div>
 
+            {isRecurringFreq(suggestionFormData.frequency) && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="suggestion-day">Jour du mois (optionnel)</Label>
+                  <Input
+                    id="suggestion-day"
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={suggestionFormData.day}
+                    onChange={(e) =>
+                      setSuggestionFormData({ ...suggestionFormData, day: e.target.value })
+                    }
+                    placeholder="Ex: 5"
+                  />
+                </div>
+                {suggestionFormData.frequency === 'annual' && (
+                  <div>
+                    <Label htmlFor="suggestion-month">Mois</Label>
+                    <Select
+                      value={suggestionFormData.recurrenceMonth}
+                      onValueChange={(value) =>
+                        setSuggestionFormData({
+                          ...suggestionFormData,
+                          recurrenceMonth: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[
+                          'Janvier','Février','Mars','Avril','Mai','Juin',
+                          'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
+                        ].map((label, i) => (
+                          <SelectItem key={label} value={String(i + 1)}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isRecurringFreq(suggestionFormData.frequency) && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="suggestion-start">Date de début</Label>
+                  <Input
+                    id="suggestion-start"
+                    type="date"
+                    value={suggestionFormData.startDate}
+                    onChange={(e) =>
+                      setSuggestionFormData({
+                        ...suggestionFormData,
+                        startDate: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="suggestion-end">Date de fin (optionnel)</Label>
+                  <Input
+                    id="suggestion-end"
+                    type="date"
+                    value={suggestionFormData.endDate}
+                    onChange={(e) =>
+                      setSuggestionFormData({
+                        ...suggestionFormData,
+                        endDate: e.target.value,
+                      })
+                    }
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Vide = {suggestionFormData.frequency === 'monthly'
+                      ? '12 mois'
+                      : 'une fois sur l’année'} à partir du début
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {isRecurringFreq(suggestionFormData.frequency) && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <Label htmlFor="suggestion-enabled">Activer dans la compta</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Une fois activée, l’écriture est générée selon la fréquence.
+                  </p>
+                </div>
+                <Switch
+                  id="suggestion-enabled"
+                  checked={suggestionFormData.enabled}
+                  onCheckedChange={(v) =>
+                    setSuggestionFormData({ ...suggestionFormData, enabled: v })
+                  }
+                />
+              </div>
+            )}
+
+            {isRecurringFreq(suggestionFormData.frequency) && (
+              <p className="text-xs text-muted-foreground">
+                Inactive = suggestion seulement (préremplissage). Active = prise en compte
+                dans le journal et le CA.
+              </p>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsConfigModalOpen(false)}>
                 Annuler
@@ -1274,6 +1737,14 @@ const Accounting: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PrintAccountingReportModal
+        open={isExportModalOpen}
+        onOpenChange={setIsExportModalOpen}
+        entries={filteredEntries}
+        startDate={startDate}
+        endDate={endDate}
+      />
     </div>
   );
 };

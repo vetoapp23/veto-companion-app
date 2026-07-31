@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Heart, Users, Calendar, Stethoscope } from "lucide-react";
+import { Stethoscope, Users, Calendar } from "lucide-react";
 import { useState } from "react";
 import { NewClientModal } from "@/components/forms/NewClientModal";
 import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
@@ -14,7 +14,7 @@ import {
 } from "@/hooks/useDatabase";
 import { useAccounting } from "@/hooks/useAccounting";
 import { useSettings } from "@/contexts/SettingsContext";
-import { AdminOnly } from "./RoleGuard";
+import { AdminOnly, WriteGuard } from "./RoleGuard";
 
 export function HeroSection() {
   const { data: clients = [] } = useClients();
@@ -70,7 +70,7 @@ export function HeroSection() {
         <div className="flex flex-col gap-4 md:gap-6">
           <div className="space-y-2 md:space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#5eead4" }}>
-              <Heart className="h-4 w-4" />
+              <Stethoscope className="h-4 w-4" />
               <span className="font-display tracking-wide uppercase text-[11px] md:text-xs opacity-90">
                 Espace clinique
               </span>
@@ -88,41 +88,49 @@ export function HeroSection() {
           </div>
 
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-            <Button
-              size="sm"
-              className="gap-1.5 rounded-full bg-[#5eead4] text-[#07131f] hover:bg-[#99f6e4] col-span-2 sm:col-span-1"
-              onClick={() => setShowClientModal(true)}
-            >
-              <Users className="h-4 w-4" />
-              Nouveau client
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-              onClick={() => setShowPetModal(true)}
-            >
-              <Heart className="h-4 w-4" />
-              Animal
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
-              onClick={() => setShowAppointmentModal(true)}
-            >
-              <Calendar className="h-4 w-4" />
-              RDV
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white col-span-2 sm:col-span-1"
-              onClick={() => setShowConsultationModal(true)}
-            >
-              <Stethoscope className="h-4 w-4" />
-              Consultation
-            </Button>
+            <WriteGuard permission="can_manage_clients">
+              <Button
+                size="sm"
+                className="gap-1.5 rounded-full bg-[#5eead4] text-[#07131f] hover:bg-[#99f6e4] col-span-2 sm:col-span-1"
+                onClick={() => setShowClientModal(true)}
+              >
+                <Users className="h-4 w-4" />
+                Nouveau client
+              </Button>
+            </WriteGuard>
+            <WriteGuard permission="can_manage_animals">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                onClick={() => setShowPetModal(true)}
+              >
+                <Stethoscope className="h-4 w-4" />
+                Animal
+              </Button>
+            </WriteGuard>
+            <WriteGuard permission="can_manage_appointments">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                onClick={() => setShowAppointmentModal(true)}
+              >
+                <Calendar className="h-4 w-4" />
+                RDV
+              </Button>
+            </WriteGuard>
+            <WriteGuard permission="can_create_consultations">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 rounded-full border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white col-span-2 sm:col-span-1"
+                onClick={() => setShowConsultationModal(true)}
+              >
+                <Stethoscope className="h-4 w-4" />
+                Consultation
+              </Button>
+            </WriteGuard>
           </div>
 
           <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2">

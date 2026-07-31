@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     // Force la redirection post-vérification vers l'URL publique du projet
     // (sinon Supabase renvoie sur lovable.dev/auth-bridge qui exige un login Lovable
     // lorsque le lien est ouvert dans un navigateur externe).
-    const PUBLIC_APP_URL = 'https://cuddle-care-cloud.lovable.app'
+    const PUBLIC_APP_URL = Deno.env.get('PUBLIC_APP_URL') || 'https://vetocrm.com'
     const incoming_redirect = email_data.redirect_to || ''
     const safe_redirect = incoming_redirect && !/lovable\.(dev|app)\/(login|auth-bridge)/.test(incoming_redirect)
       ? incoming_redirect

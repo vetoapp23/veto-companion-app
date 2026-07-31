@@ -24,6 +24,9 @@ import { useConsultations, useCreateConsultation, useUpdateConsultation, useDele
 import type { Consultation, CreateConsultationData, Prescription } from "@/lib/database";
 import { deleteConsultationDirect } from "@/lib/consultationUtils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
+import { matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 const Consultations = () => {
   const { data: consultations = [], isLoading } = useConsultations();
@@ -34,8 +37,9 @@ const Consultations = () => {
   const { settings } = useSettings();
   const { toast } = useToast();
   const { currentView } = useDisplayPreference('consultations');
+  const { canWrite, guardWrite } = useWriteAccess("can_create_consultations");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterPeriod, setFilterPeriod] = useState("all");
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>(currentView);
   const [showNewConsultation, setShowNewConsultation] = useState(false);
   const [showEditConsultation, setShowEditConsultation] = useState(false);
@@ -67,42 +71,31 @@ const Consultations = () => {
                          petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (consultation.symptoms && consultation.symptoms.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (consultation.diagnosis && consultation.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    if (filterPeriod === "all") return matchesSearch;
-    
-    const consultationDate = new Date(consultation.consultation_date);
-    const today = new Date();
-    const daysAgo = (today.getTime() - consultationDate.getTime()) / (1000 * 3600 * 24);
-    
-    switch (filterPeriod) {
-      case "week":
-        return matchesSearch && daysAgo <= 7;
-      case "month":
-        return matchesSearch && daysAgo <= 30;
-      case "quarter":
-        return matchesSearch && daysAgo <= 90;
-      default:
-        return matchesSearch;
-    }
+
+    return matchesSearch && matchesListDateFilter(consultation.consultation_date, dateFilter);
   });
 
   const handleEditConsultation = (consultation: Consultation) => {
+    if (!guardWrite()) return;
     setSelectedConsultation(consultation);
     setShowEditConsultation(true);
   };
 
   const handleNewPrescription = (consultation: Consultation) => {
+    if (!guardWrite()) return;
     setPrescriptionPetId(consultation.animal_id);
     setPrescriptionConsultationId(consultation.id);
     setShowNewPrescription(true);
   };
 
   const handleDeleteConsultation = (consultation: Consultation) => {
+    if (!guardWrite()) return;
     setConsultationToDelete(consultation);
     setShowDeleteAlert(true);
   };
 
   const confirmDeleteConsultation = async () => {
+    if (!guardWrite()) return;
     if (!consultationToDelete) return;
     
     try {
@@ -156,6 +149,7 @@ const Consultations = () => {
   };
 
   const handleNewFollowUp = (consultation: Consultation) => {
+    if (!guardWrite()) return;
     // Pré-remplir le formulaire avec les informations du client et de l'animal
     setConsultationPrefillData({
       clientId: consultation.client_id,
@@ -204,13 +198,18 @@ const Consultations = () => {
                 <List className="h-4 w-4" />
               </Button>
             </div>
+            {canWrite && (
             <Button
               className="gap-2 rounded-full text-sm sm:text-base"
-              onClick={() => setShowNewConsultation(true)}
+              onClick={() => {
+                if (!guardWrite()) return;
+                setShowNewConsultation(true);
+              }}
             >
               <Plus className="h-4 w-4" />
               Nouvelle Consultation
             </Button>
+            )}
           </>
         }
       />
@@ -223,25 +222,18 @@ const Consultations = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4">
         <Input 
           placeholder="Rechercher par client, animal, symptômes ou diagnostic..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-full sm:max-w-md"
         />
-        
-        <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-          <SelectTrigger className="w-full sm:w-48">
-          <SelectValue placeholder="Période" />
-          </SelectTrigger>
-          <SelectContent>
-          <SelectItem value="all">Toutes les périodes</SelectItem>
-          <SelectItem value="week">Cette semaine</SelectItem>
-          <SelectItem value="month">Ce mois</SelectItem>
-          <SelectItem value="quarter">Ce trimestre</SelectItem>
-          </SelectContent>
-        </Select>
+        <ListDateFilter
+          value={dateFilter}
+          onChange={setDateFilter}
+          idPrefix="consultations-date"
+        />
         </div>
       </CardContent>
       </Card>
@@ -387,6 +379,8 @@ const Consultations = () => {
             
             <div className="flex flex-wrap gap-2">
               <ConsultationPrintNew consultation={consultation as Consultation} />
+              {canWrite && (
+              <>
               <Button 
               size="sm" 
               variant="outline"
@@ -421,6 +415,8 @@ const Consultations = () => {
               >
               Nouveau suivi
               </Button>
+              </>
+              )}
             </div>
             </div>
           </div>
@@ -493,6 +489,8 @@ const Consultations = () => {
               <TableCell className="text-xs sm:text-sm">
                 <div className="flex gap-1 flex-wrap">
                 <ConsultationPrintNew consultation={consultation as Consultation} />
+                {canWrite && (
+                <>
                 <Button 
                   size="sm" 
                   variant="outline"
@@ -518,6 +516,8 @@ const Consultations = () => {
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
+                </>
+                )}
                 </div>
               </TableCell>
               </TableRow>
@@ -598,12 +598,14 @@ const Consultations = () => {
         >
           {prescription.status}
         </Badge>
+        {canWrite && (
         <Button
           type="button"
           variant="outline"
           size="sm"
           className="h-8"
           onClick={() => {
+            if (!guardWrite()) return;
             setPrescriptionToEdit(prescription);
             setShowEditPrescription(true);
           }}
@@ -611,6 +613,7 @@ const Consultations = () => {
           <Edit className="h-4 w-4 mr-1" />
           Modifier
         </Button>
+        )}
         <PrescriptionPrint
           prescription={transformDbPrescriptionForPrint(prescription) as any}
           compact

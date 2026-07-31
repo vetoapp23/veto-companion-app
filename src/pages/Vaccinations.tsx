@@ -48,6 +48,8 @@ import { format, isBefore, addDays, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from '@/components/ListDateFilter';
+import { matchesListDateFilter, type ListDateFilterState } from '@/lib/dateLocal';
 import { AppPageHeader } from '@/components/AppPageHeader';
 import NewVaccinationModal from '@/components/forms/NewVaccinationModalDynamic';
 import VaccinationProtocolModal from '@/components/forms/VaccinationProtocolModalDynamic';
@@ -60,6 +62,7 @@ import {
   todayDayKey,
   type CertificateDoseRow,
 } from '@/lib/vaccinationCertificate';
+import { useWriteAccess } from '@/components/RoleGuard';
 
 type DoseListStatus = 'administered' | 'planned' | 'overdue';
 
@@ -125,6 +128,7 @@ export default function Vaccinations() {
   
   const { toast } = useToast();
   const { currentView } = useDisplayPreference('vaccinations');
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_vaccinations");
   
   // Dynamic settings
   const { data: animalSpecies = [], isLoading: speciesLoading } = useAnimalSpecies();
@@ -134,6 +138,7 @@ export default function Vaccinations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [speciesFilter, setSpeciesFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const [currentTab, setCurrentTab] = useState('overview');
   const [selectedDose, setSelectedDose] = useState<UnifiedDoseRow | null>(null);
   const [showVaccinationDetails, setShowVaccinationDetails] = useState(false);
@@ -144,6 +149,7 @@ export default function Vaccinations() {
   const [markingDoneId, setMarkingDoneId] = useState<string | null>(null);
 
   const openEditVaccination = (vaccination: Vaccination) => {
+    if (!guardWrite()) return;
     setEditingVaccination(vaccination);
     setEditOpen(true);
     setShowVaccinationDetails(false);
@@ -263,16 +269,20 @@ export default function Vaccinations() {
       const matchesSpecies =
         speciesFilter === 'all' || dose.species === speciesFilter;
 
-      return matchesSearch && matchesStatus && matchesSpecies;
+      const matchesDate = matchesListDateFilter(dose.date, dateFilter);
+
+      return matchesSearch && matchesStatus && matchesSpecies && matchesDate;
     });
-  }, [unifiedDoses, searchTerm, statusFilter, speciesFilter]);
+  }, [unifiedDoses, searchTerm, statusFilter, speciesFilter, dateFilter]);
 
   const handleDeleteVaccination = (vaccination: Vaccination) => {
+    if (!guardWrite()) return;
     setVaccinationToDelete(vaccination);
     setShowDeleteConfirm(true);
   };
 
   const confirmDeleteVaccination = () => {
+    if (!guardWrite()) return;
     if (vaccinationToDelete) {
       deleteVaccinationMutation.mutate(vaccinationToDelete.id);
       toast({
@@ -285,6 +295,7 @@ export default function Vaccinations() {
   };
 
   const handleMarkDone = async (dose: UnifiedDoseRow) => {
+    if (!guardWrite()) return;
     if (dose.listStatus === 'administered') return;
     setMarkingDoneId(dose.rowKey);
     try {
@@ -389,7 +400,7 @@ export default function Vaccinations() {
               <Download className="h-4 w-4" />
               Exporter
             </Button>
-            <NewVaccinationModal />
+            {canWrite && <NewVaccinationModal />}
           </>
         }
       />
@@ -524,6 +535,13 @@ export default function Vaccinations() {
             </Select>
           </div>
 
+          <ListDateFilter
+            value={dateFilter}
+            onChange={setDateFilter}
+            idPrefix="vaccinations-date"
+            compact
+          />
+
           <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-end">
             <Button
             variant={viewMode === 'cards' ? 'default' : 'outline'}
@@ -617,7 +635,7 @@ export default function Vaccinations() {
               <Eye className="h-4 w-4 mr-1" />
               Détails
               </Button>
-              {dose.listStatus !== 'administered' && (
+              {canWrite && dose.listStatus !== 'administered' && (
               <Button
                 size="sm"
                 variant="default"
@@ -632,7 +650,7 @@ export default function Vaccinations() {
                 )}
               </Button>
               )}
-              {dose.vaccinationRecord && (
+              {canWrite && dose.vaccinationRecord && (
               <>
                 <Button
                 size="sm"
@@ -709,7 +727,7 @@ export default function Vaccinations() {
                   >
                   <Eye className="h-4 w-4" />
                   </Button>
-                  {dose.listStatus !== 'administered' && (
+                  {canWrite && dose.listStatus !== 'administered' && (
                   <Button
                     size="sm"
                     variant="default"
@@ -724,7 +742,7 @@ export default function Vaccinations() {
                     )}
                   </Button>
                   )}
-                  {dose.vaccinationRecord && (
+                  {canWrite && dose.vaccinationRecord && (
                   <>
                     <Button
                     size="sm"
@@ -764,7 +782,7 @@ export default function Vaccinations() {
             <Shield className="h-5 w-5" />
             Protocoles Vaccinaux ({vaccinationProtocols.length})
           </div>
-          <VaccinationProtocolModal mode="create" />
+          {canWrite && <VaccinationProtocolModal mode="create" />}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -790,6 +808,7 @@ export default function Vaccinations() {
               {protocol.notes && (
                 <p className="text-xs text-gray-500 mt-2">{protocol.notes}</p>
               )}
+              {canWrite && (
               <div className="flex gap-2 mt-3">
                 <VaccinationProtocolModal mode="edit" protocol={protocol}>
                 <Button size="sm" variant="outline" className="flex-1">
@@ -798,6 +817,7 @@ export default function Vaccinations() {
                 </Button>
                 </VaccinationProtocolModal>
               </div>
+              )}
               </div>
             </CardContent>
             </Card>
@@ -807,12 +827,14 @@ export default function Vaccinations() {
           <div className="text-center py-8 text-gray-500">
             <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>Aucun protocole vaccinal configuré</p>
+            {canWrite && (
             <VaccinationProtocolModal mode="create">
             <Button className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
               Créer un protocole
             </Button>
             </VaccinationProtocolModal>
+            )}
           </div>
           )}
         </CardContent>
@@ -874,7 +896,7 @@ export default function Vaccinations() {
           
           <div className="border-t pt-4 mt-4 space-y-3">
           <div className="flex flex-wrap justify-center gap-2">
-            {selectedDose.listStatus !== 'administered' && (
+            {canWrite && selectedDose.listStatus !== 'administered' && (
               <Button
                 disabled={markingDoneId === selectedDose.rowKey}
                 onClick={() => handleMarkDone(selectedDose)}
@@ -887,7 +909,7 @@ export default function Vaccinations() {
                 Marquer fait
               </Button>
             )}
-            {selectedDose.vaccinationRecord && (
+            {canWrite && selectedDose.vaccinationRecord && (
               <Button
                 variant="outline"
                 onClick={() => openEditVaccination(selectedDose.vaccinationRecord!)}

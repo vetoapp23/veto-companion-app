@@ -16,6 +16,14 @@ export interface AccountingTemplate {
   amount: number;
   source: string;
   is_active: boolean;
+  /** Jour du mois (1-31) pour mensuel / annuel — optionnel */
+  day_of_month?: number | null;
+  /** Mois (1-12) pour fréquence annuelle */
+  recurrence_month?: number | null;
+  /** Activé = généré dans le journal / CA */
+  auto_generate?: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -28,23 +36,24 @@ export interface UpsertTemplateInput {
   amount: number;
   source: string;
   is_active?: boolean;
+  day_of_month?: number | null;
+  recurrence_month?: number | null;
+  auto_generate?: boolean;
+  start_date?: string | null;
+  end_date?: string | null;
 }
 
-// Default seed values copied from current UI suggestions
 const DEFAULT_TEMPLATES: Omit<AccountingTemplate, 'id' | 'user_id' | 'created_at' | 'updated_at'>[] = [
-  // monthly
-  { type: 'expense', frequency: 'monthly', description: 'Salaire Secrétaire', amount: 3000, source: 'salary', is_active: true },
-  { type: 'expense', frequency: 'monthly', description: 'CNSS Secrétaire', amount: 700, source: 'insurance', is_active: true },
-  { type: 'expense', frequency: 'monthly', description: 'CNSS Vétérinaire', amount: 1500, source: 'insurance', is_active: true },
-  { type: 'expense', frequency: 'monthly', description: 'Loyer', amount: 3000, source: 'rent', is_active: true },
-  { type: 'expense', frequency: 'monthly', description: 'Eau et Électricité', amount: 300, source: 'other', is_active: true },
-  // annual
-  { type: 'expense', frequency: 'annual', description: 'Impôts', amount: 3000, source: 'tax', is_active: true },
-  { type: 'expense', frequency: 'annual', description: "Cotisation Ordre des Vétérinaires", amount: 1200, source: 'other', is_active: true },
-  // occasional
-  { type: 'expense', frequency: 'occasional', description: 'Maintenance Équipement', amount: 500, source: 'other', is_active: true },
-  { type: 'expense', frequency: 'occasional', description: 'Formation Professionnelle', amount: 800, source: 'other', is_active: true },
-  { type: 'expense', frequency: 'occasional', description: 'Achat Matériel', amount: 1200, source: 'other', is_active: true },
+  { type: 'expense', frequency: 'monthly', description: 'Salaire Secrétaire', amount: 3000, source: 'salary', is_active: true, day_of_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'monthly', description: 'CNSS Secrétaire', amount: 700, source: 'insurance', is_active: true, day_of_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'monthly', description: 'CNSS Vétérinaire', amount: 1500, source: 'insurance', is_active: true, day_of_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'monthly', description: 'Loyer', amount: 3000, source: 'rent', is_active: true, day_of_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'monthly', description: 'Eau et Électricité', amount: 300, source: 'other', is_active: true, day_of_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'annual', description: 'Impôts', amount: 3000, source: 'tax', is_active: true, day_of_month: 1, recurrence_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'annual', description: "Cotisation Ordre des Vétérinaires", amount: 1200, source: 'other', is_active: true, day_of_month: 1, recurrence_month: 1, auto_generate: false },
+  { type: 'expense', frequency: 'occasional', description: 'Maintenance Équipement', amount: 500, source: 'other', is_active: true, auto_generate: false },
+  { type: 'expense', frequency: 'occasional', description: 'Formation Professionnelle', amount: 800, source: 'other', is_active: true, auto_generate: false },
+  { type: 'expense', frequency: 'occasional', description: 'Achat Matériel', amount: 1200, source: 'other', is_active: true, auto_generate: false },
 ];
 
 export const useAccountingTemplates = () => {
@@ -58,11 +67,11 @@ export const useAccountingTemplates = () => {
     if (!user) return;
     setLoading(true);
     try {
+      // Tous les modèles (actifs ou non) pour pouvoir activer/désactiver
       const { data, error } = await supabase
         .from('accounting_templates')
         .select('*')
         .eq('user_id', user.id)
-        .eq('is_active', true)
         .order('frequency', { ascending: true })
         .order('description', { ascending: true });
 
@@ -85,19 +94,14 @@ export const useAccountingTemplates = () => {
         .eq('user_id', user.id);
       if (countErr) throw countErr;
       if ((count || 0) > 0) {
-        // Still perform a safety upsert in case of partial seed
-        const rows = DEFAULT_TEMPLATES.map(t => ({ ...t, user_id: user.id }));
-        await supabase
-          .from('accounting_templates')
-          .upsert(rows, { onConflict: 'user_id,description,frequency,type', ignoreDuplicates: true });
         await fetchTemplates();
-        return; // already had templates
+        return;
       }
 
-      const rows = DEFAULT_TEMPLATES.map(t => ({ ...t, user_id: user.id }));
+      const rows = DEFAULT_TEMPLATES.map((t) => ({ ...t, user_id: user.id }));
       const { error: insertErr } = await supabase
         .from('accounting_templates')
-        .upsert(rows, { onConflict: 'user_id,description,frequency,type', ignoreDuplicates: true });
+        .insert(rows);
       if (insertErr) throw insertErr;
       await fetchTemplates();
     } catch (e: any) {
@@ -116,24 +120,65 @@ export const useAccountingTemplates = () => {
   const addTemplate = async (input: UpsertTemplateInput) => {
     if (!user) return null;
     try {
-      const payload = { ...input, is_active: input.is_active ?? true, user_id: user.id } as any;
+      const payload = {
+        type: input.type,
+        frequency: input.frequency,
+        description: input.description,
+        amount: input.amount,
+        source: input.source,
+        is_active: input.is_active ?? true,
+        day_of_month: input.day_of_month ?? null,
+        recurrence_month: input.recurrence_month ?? null,
+        auto_generate: input.auto_generate ?? false,
+        start_date: input.start_date || null,
+        end_date: input.end_date || null,
+        user_id: user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: existing } = await supabase
+        .from('accounting_templates')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('description', input.description)
+        .eq('frequency', input.frequency)
+        .eq('type', input.type)
+        .maybeSingle();
+
+      if (existing?.id) {
+        const { data, error } = await supabase
+          .from('accounting_templates')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        await fetchTemplates();
+        toast({ title: 'Succès', description: 'Configuration mise à jour' });
+        return data as AccountingTemplate;
+      }
+
       const { data, error } = await supabase
         .from('accounting_templates')
-        .upsert([payload], { onConflict: 'user_id,description,frequency,type', ignoreDuplicates: true })
+        .insert(payload)
         .select()
         .single();
       if (error) throw error;
       await fetchTemplates();
-      toast({ title: 'Succès', description: 'Suggestion ajoutée' });
+      toast({ title: 'Succès', description: 'Configuration enregistrée' });
       return data as AccountingTemplate;
     } catch (e: any) {
-      const msg = e?.code === '23505' ? 'Cette suggestion existe déjà' : 'Impossible d\'ajouter la suggestion';
+      console.error('addTemplate error', e);
+      const msg =
+        e?.code === '23505'
+          ? 'Cette configuration existe déjà'
+          : e?.message || "Impossible d'enregistrer la configuration";
       toast({ title: 'Erreur', description: msg, variant: 'destructive' });
       return null;
     }
   };
 
-  const updateTemplate = async (id: string, input: Partial<UpsertTemplateInput>) => {
+  const updateTemplate = async (id: string, input: Partial<UpsertTemplateInput>, opts?: { silent?: boolean }) => {
     try {
       const { error } = await supabase
         .from('accounting_templates')
@@ -141,7 +186,9 @@ export const useAccountingTemplates = () => {
         .eq('id', id);
       if (error) throw error;
       await fetchTemplates();
-      toast({ title: 'Succès', description: 'Suggestion modifiée' });
+      if (!opts?.silent) {
+        toast({ title: 'Succès', description: 'Suggestion modifiée' });
+      }
     } catch (e: any) {
       toast({ title: 'Erreur', description: 'Impossible de modifier la suggestion', variant: 'destructive' });
     }

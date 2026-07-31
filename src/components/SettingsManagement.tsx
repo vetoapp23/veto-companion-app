@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Settings, Save, X, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWriteAccess } from "@/components/RoleGuard";
 import {
   useAppSettings,
   useAppSettingsByCategory,
@@ -45,6 +46,7 @@ export const SettingsManagement = () => {
   const [newSetting, setNewSetting] = useState({ key: '', description: '', value: '' });
 
   const { toast } = useToast();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_settings");
   const { data: allSettings } = useAppSettings();
   const { data: categorySettings, isLoading } = useAppSettingsByCategory(selectedCategory);
   const updateSettingMutation = useUpdateAppSetting();
@@ -54,6 +56,7 @@ export const SettingsManagement = () => {
 
   // Auto-load default settings on first visit if the user has none yet
   useEffect(() => {
+    if (!canWrite) return;
     if (autoInitRef.current) return;
     if (allSettings && allSettings.length === 0 && !isInitializing) {
       autoInitRef.current = true;
@@ -68,7 +71,7 @@ export const SettingsManagement = () => {
     } else if (allSettings && allSettings.length > 0) {
       autoInitRef.current = true;
     }
-  }, [allSettings, isInitializing, initializeDefaults, toast]);
+  }, [allSettings, isInitializing, initializeDefaults, toast, canWrite]);
 
   useEffect(() => {
     if (categorySettings) {
@@ -81,6 +84,7 @@ export const SettingsManagement = () => {
   }, [categorySettings]);
 
   const handleInitializeDefaults = async () => {
+    if (!guardWrite()) return;
     if (!confirm("Restaurer toutes les valeurs par défaut ? Vos personnalisations actuelles seront écrasées.")) {
       return;
     }
@@ -100,6 +104,7 @@ export const SettingsManagement = () => {
   };
 
   const handleSaveSetting = async (key: string) => {
+    if (!guardWrite()) return;
     try {
       const value = editingValues[key];
       await updateSettingMutation.mutateAsync({
@@ -123,6 +128,7 @@ export const SettingsManagement = () => {
   };
 
   const handleDeleteSetting = async (key: string) => {
+    if (!guardWrite()) return;
     if (!confirm(`Êtes-vous sûr de vouloir supprimer le paramètre ${key} ?`)) {
       return;
     }
@@ -147,6 +153,7 @@ export const SettingsManagement = () => {
   };
 
   const handleAddValue = async (key: string, newValue: string) => {
+    if (!guardWrite()) return;
     if (!newValue.trim()) return;
 
     const currentValue = editingValues[key] || [];
@@ -182,6 +189,7 @@ export const SettingsManagement = () => {
   };
 
   const handleRemoveValue = async (key: string, valueToRemove: string) => {
+    if (!guardWrite()) return;
     const currentValue = editingValues[key] || [];
     const updatedValue = Array.isArray(currentValue)
       ? currentValue.filter(v => v !== valueToRemove)
@@ -215,6 +223,7 @@ export const SettingsManagement = () => {
   };
 
   const handleAddNewSetting = async () => {
+    if (!guardWrite()) return;
     if (!newSetting.key.trim()) {
       toast({
         title: "Erreur",
@@ -260,13 +269,16 @@ export const SettingsManagement = () => {
             {value.map((item, index) => (
               <Badge key={index} variant="secondary" className="flex items-center gap-1">
                 {item}
-                <X 
-                  className="h-3 w-3 cursor-pointer" 
-                  onClick={() => handleRemoveValue(key, item)}
-                />
+                {canWrite && (
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => handleRemoveValue(key, item)}
+                  />
+                )}
               </Badge>
             ))}
           </div>
+          {canWrite && (
           <div className="flex gap-2">
             <Input
               placeholder="Ajouter une valeur..."
@@ -288,6 +300,7 @@ export const SettingsManagement = () => {
               <Plus className="h-4 w-4" />
             </Button>
           </div>
+          )}
         </div>
       );
     }
@@ -296,7 +309,9 @@ export const SettingsManagement = () => {
       return (
         <Textarea
           value={JSON.stringify(value, null, 2)}
+          disabled={!canWrite}
           onChange={(e) => {
+            if (!canWrite) return;
             try {
               const parsed = JSON.parse(e.target.value);
               setEditingValues(prev => ({ ...prev, [key]: parsed }));
@@ -313,7 +328,11 @@ export const SettingsManagement = () => {
     return (
       <Input
         value={value || ''}
-        onChange={(e) => setEditingValues(prev => ({ ...prev, [key]: e.target.value }))}
+        disabled={!canWrite}
+        onChange={(e) => {
+          if (!canWrite) return;
+          setEditingValues(prev => ({ ...prev, [key]: e.target.value }));
+        }}
       />
     );
   };
@@ -334,10 +353,12 @@ export const SettingsManagement = () => {
             Configurez les valeurs utilisées dans toute l'application
           </p>
         </div>
-        <Button onClick={handleInitializeDefaults} disabled={isInitializing} variant="outline">
-          <RotateCcw className="h-4 w-4 mr-2" />
-          {isInitializing ? "Restauration..." : "Restaurer les valeurs par défaut"}
-        </Button>
+        {canWrite && (
+          <Button onClick={handleInitializeDefaults} disabled={isInitializing} variant="outline">
+            <RotateCcw className="h-4 w-4 mr-2" />
+            {isInitializing ? "Restauration..." : "Restaurer les valeurs par défaut"}
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -372,6 +393,7 @@ export const SettingsManagement = () => {
                   {SETTING_CATEGORIES.find(c => c.key === selectedCategory)?.description}
                 </p>
               </div>
+              {canWrite && (
               <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                 <DialogTrigger asChild>
                   <Button>
@@ -423,6 +445,7 @@ export const SettingsManagement = () => {
                   </div>
                 </DialogContent>
               </Dialog>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -441,6 +464,7 @@ export const SettingsManagement = () => {
                         <p className="text-sm text-muted-foreground">{setting.description}</p>
                       )}
                     </div>
+                    {canWrite && (
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -458,6 +482,7 @@ export const SettingsManagement = () => {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                    )}
                   </div>
                   
                   <div>

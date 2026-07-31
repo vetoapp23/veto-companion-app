@@ -24,37 +24,56 @@ import { LogoutButton } from "@/components/LogoutButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { cn } from "@/lib/utils";
+import { type PermissionKey, userHasPermission } from "@/lib/permissions";
 
-const primaryNavItems = [
+const primaryNavItems: {
+  icon: typeof Home;
+  label: string;
+  path: string;
+  permission: PermissionKey | null;
+}[] = [
   { icon: Home, label: "Dashboard", path: "/dashboard", permission: null },
-  { icon: Users, label: "Clients", path: "/clients", permission: null },
-  { icon: Heart, label: "Animaux", path: "/pets", permission: null },
-  { icon: Calendar, label: "RDV", path: "/appointments", permission: null },
-  { icon: ClipboardList, label: "Visites", path: "/visites", permission: null },
-  { icon: FileText, label: "Consultations", path: "/consultations", permission: null },
-  { icon: Syringe, label: "Vaccinations", path: "/vaccinations", permission: null },
-  { icon: Bug, label: "Antiparasites", path: "/antiparasites", permission: null },
-  { icon: BarChart3, label: "Historiques", path: "/history", permission: null },
+  { icon: Users, label: "Clients", path: "/clients", permission: "can_manage_clients" },
+  { icon: Heart, label: "Animaux", path: "/pets", permission: "can_manage_animals" },
+  { icon: Calendar, label: "RDV", path: "/appointments", permission: "can_manage_appointments" },
+  { icon: ClipboardList, label: "Visites", path: "/visites", permission: "can_manage_visits" },
+  { icon: FileText, label: "Consultations", path: "/consultations", permission: "can_create_consultations" },
+  { icon: Syringe, label: "Vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
+  { icon: Bug, label: "Antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
+  { icon: BarChart3, label: "Historiques", path: "/history", permission: "can_view_history" },
 ];
 
-const secondaryNavItems = [
-  { icon: Building2, label: "Fermes", path: "/farms", permission: null, planFeature: "farm" as const },
-  { icon: Package, label: "Stock", path: "/stock", permission: null, planFeature: "stock" as const },
-  { icon: Euro, label: "Comptabilité", path: "/accounting", permission: null, adminOnly: true, planFeature: "accounting" as const },
+const secondaryNavItems: {
+  icon: typeof Home;
+  label: string;
+  path: string;
+  permission: PermissionKey | null;
+  planFeature?: "farm" | "stock" | "accounting";
+  adminOnly?: boolean;
+  superAdminOnly?: boolean;
+}[] = [
+  { icon: Building2, label: "Fermes", path: "/farms", permission: "can_manage_farms", planFeature: "farm" },
+  { icon: Package, label: "Stock", path: "/stock", permission: "can_manage_stock", planFeature: "stock" },
+  {
+    icon: Euro,
+    label: "Comptabilité",
+    path: "/accounting",
+    permission: "can_manage_accounting",
+    planFeature: "accounting",
+  },
   { icon: Users, label: "Équipe", path: "/admin/team", permission: null, adminOnly: true },
   { icon: Shield, label: "Super Admin", path: "/super-admin", permission: null, superAdminOnly: true },
-  { icon: Cog, label: "Paramètres", path: "/settings", permission: null },
+  { icon: Cog, label: "Paramètres", path: "/settings", permission: "can_manage_settings" },
 ];
 
-const hasPermission = (user: any, item: any) => {
+const navItemAllowed = (user: any, item: any) => {
   const isSuper = (user?.profile?.role as string) === "super_admin";
   if (item.superAdminOnly) return isSuper;
   if (isSuper) return true;
-  if (user?.profile?.role === "admin") return true;
-  if (item.adminOnly && user?.profile?.role !== "admin") return false;
-  if (!item.permission) return true;
-  if (!user?.profile?.permissions) return false;
-  return user?.profile?.permissions[item.permission] === true;
+  if (item.adminOnly) {
+    return user?.profile?.role === "admin" || isSuper;
+  }
+  return userHasPermission(user, item.permission);
 };
 
 export function VetNavigation() {
@@ -71,9 +90,9 @@ export function VetNavigation() {
     return true;
   };
 
-  const filteredPrimaryNavItems = primaryNavItems.filter((item) => hasPermission(user, item));
+  const filteredPrimaryNavItems = primaryNavItems.filter((item) => navItemAllowed(user, item));
   const filteredSecondaryNavItems = secondaryNavItems.filter(
-    (item) => hasPermission(user, item) && planAllows((item as any).planFeature)
+    (item) => navItemAllowed(user, item) && planAllows(item.planFeature)
   );
   const allNavItems = [...filteredPrimaryNavItems, ...filteredSecondaryNavItems];
 
@@ -83,9 +102,13 @@ export function VetNavigation() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <Link to="/dashboard" className="app-brand flex items-center gap-2">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Heart className="h-4 w-4" />
-              </span>
+              <img
+                src="/favicon.svg"
+                alt=""
+                className="h-8 w-8 rounded-lg"
+                width={32}
+                height={32}
+              />
               <span className="hidden sm:inline">
                 Veto<span>Crm</span>
               </span>

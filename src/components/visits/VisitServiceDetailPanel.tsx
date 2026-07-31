@@ -25,6 +25,7 @@ interface VisitServiceDetailPanelProps {
   service: VisitService;
   currency: string;
   perHead?: boolean;
+  readOnly?: boolean;
   onSaveAmount: (amount: number) => void;
   onSaveDetails: (payload: {
     notes?: string;
@@ -53,6 +54,7 @@ export function VisitServiceDetailPanel({
   service,
   currency,
   perHead,
+  readOnly = false,
   onSaveAmount,
   onSaveDetails,
   onRealize,
@@ -162,7 +164,9 @@ export function VisitServiceDetailPanel({
         step={1}
         defaultValue={Number(service.amount || 0)}
         key={`amt-${service.id}-${service.amount}`}
+        disabled={readOnly}
         onBlur={(e) => {
+          if (readOnly) return;
           const v = parseFloat(e.target.value);
           if (!Number.isNaN(v)) onSaveAmount(v);
         }}
@@ -181,47 +185,55 @@ export function VisitServiceDetailPanel({
               alt={`cliché ${idx + 1}`}
               className="h-20 w-20 object-cover rounded-md border"
             />
-            <button
-              type="button"
-              onClick={() => removeImage(idx)}
-              className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-90 hover:opacity-100"
-              aria-label="Supprimer l'image"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => removeImage(idx)}
+                className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-90 hover:opacity-100"
+                aria-label="Supprimer l'image"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         ))}
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => fileRef.current?.click()}
-          className="h-20 w-20 rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-        >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <>
-              <ImagePlus className="h-5 w-5" />
-              <span className="text-[10px]">Ajouter</span>
-            </>
-          )}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileRef.current?.click()}
+            className="h-20 w-20 rounded-md border border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+          >
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <ImagePlus className="h-5 w-5" />
+                <span className="text-[10px]">Ajouter</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => handleAddImages(e.target.files)}
-      />
-      <p className="text-[11px] text-muted-foreground">
-        JPG / PNG — compressées automatiquement. Cliquez Enregistrer pour les sauvegarder.
-      </p>
+      {!readOnly && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => handleAddImages(e.target.files)}
+        />
+      )}
+      {!readOnly && (
+        <p className="text-[11px] text-muted-foreground">
+          JPG / PNG — compressées automatiquement. Cliquez Enregistrer pour les sauvegarder.
+        </p>
+      )}
     </div>
   );
 
-  const ActionBar = (
+  const ActionBar = readOnly ? null : (
     <>
       <Separator />
       <div className="flex flex-wrap gap-2">

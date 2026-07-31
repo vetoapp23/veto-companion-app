@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SITE_URL = (import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || "https://cuddle-care-cloud.lovable.app").replace(/\/$/, "");
+const SITE_URL = (import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || "https://vetocrm.com").replace(/\/$/, "");
 const DEFAULT_OG = `${SITE_URL}/og-cover.jpg`;
 
 export type SeoProps = {

@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X, Cog, Banknote, RotateCcw } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
+import { useWriteAccess } from "@/components/RoleGuard";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAnimals } from "@/hooks/useDatabase";
 import { useSettings, ClinicSettings, DisplayPreferences } from '@/contexts/SettingsContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -40,6 +42,7 @@ export default function Settings() {
   const { toast } = useToast();
   const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_settings");
   
   // Active tab state
   const [activeTab, setActiveTab] = useState<'general' | 'data'>('general');
@@ -99,15 +102,18 @@ export default function Settings() {
 
   // Handlers for clinic settings
   const handleSettingsChange = (field: keyof ClinicSettings, value: string | boolean | number | any) => {
+    if (!guardWrite()) return;
     updateSettings({ ...settings, [field]: value } as ClinicSettings);
   };
 
   const saveSettings = () => {
+    if (!guardWrite()) return;
     toast({ title: 'Paramètres sauvegardés', description: 'Informations de la clinique mises à jour.' });
   };
 
   // Logo handler
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!guardWrite()) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -118,6 +124,7 @@ export default function Settings() {
 
   // Display preferences handler
   const handleDisplayPreferenceChange = (section: keyof DisplayPreferences, value: 'table' | 'cards') => {
+    if (!guardWrite()) return;
     const updatedPreferences = {
       ...settings.displayPreferences,
       [section]: value
@@ -135,6 +142,7 @@ export default function Settings() {
 
   // Veterinarian handlers
   const openNewVet = () => {
+    if (!guardWrite()) return;
     setEditVet(null);
     setVetForm({ 
       name: '', 
@@ -148,6 +156,7 @@ export default function Settings() {
   };
 
   const openEditVet = (vet: VeterinarianSetting) => {
+    if (!guardWrite()) return;
     setEditVet(vet);
     setVetForm({ 
       name: vet.name, 
@@ -161,6 +170,7 @@ export default function Settings() {
   };
 
   const saveVet = () => {
+    if (!guardWrite()) return;
     if (!vetForm.name || !vetForm.title) {
       toast({ title: 'Erreur', description: 'Nom et titre requis', variant: 'destructive' });
       return;
@@ -202,6 +212,7 @@ export default function Settings() {
   };
 
   const deleteVet = (id: string) => {
+    if (!guardWrite()) return;
     if (!confirm('Supprimer ce vétérinaire ?')) return;
     const updatedVets = dbVeterinarians.filter(v => v.id !== id);
     updateVeterinarianMutation.mutate(updatedVets);
@@ -210,6 +221,7 @@ export default function Settings() {
 
   // Farm management handlers
   const addFarmType = (type: string) => {
+    if (!guardWrite()) return;
     if (!type.trim() || !farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -222,6 +234,7 @@ export default function Settings() {
   };
 
   const removeFarmType = (type: string) => {
+    if (!guardWrite()) return;
     if (!farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -232,6 +245,7 @@ export default function Settings() {
   };
 
   const addAnimalCategory = (category: string) => {
+    if (!guardWrite()) return;
     if (!category.trim() || !farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -248,6 +262,7 @@ export default function Settings() {
   };
 
   const removeAnimalCategory = (category: string) => {
+    if (!guardWrite()) return;
     if (!farmSettings) return;
     const { [category]: removed, ...remainingBreeds } = farmSettings.breeds_by_category;
     const updated = {
@@ -260,6 +275,7 @@ export default function Settings() {
   };
 
   const addBreedToCategory = (category: string, breed: string) => {
+    if (!guardWrite()) return;
     if (!breed.trim() || !farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -276,6 +292,7 @@ export default function Settings() {
   };
 
   const removeBreedFromCategory = (category: string, breed: string) => {
+    if (!guardWrite()) return;
     if (!farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -289,6 +306,7 @@ export default function Settings() {
   };
 
   const addCertificationType = (type: string) => {
+    if (!guardWrite()) return;
     if (!type.trim() || !farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -301,6 +319,7 @@ export default function Settings() {
   };
 
   const removeCertificationType = (type: string) => {
+    if (!guardWrite()) return;
     if (!farmSettings) return;
     const updated = {
       ...farmSettings,
@@ -317,6 +336,16 @@ export default function Settings() {
         title="Paramètres"
         description="Configurez votre clinique, l’équipe et les préférences d’affichage"
       />
+
+      {!canWrite && (
+        <Alert>
+          <Shield className="h-4 w-4" />
+          <AlertTitle>Lecture seule</AlertTitle>
+          <AlertDescription>
+            Contactez un vétérinaire pour modifier les paramètres.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Tab Navigation */}
       <Card>
@@ -359,36 +388,36 @@ export default function Settings() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="logo">Logo de la clinique</Label>
-                        <Input id="logo" type="file" accept="image/*" onChange={handleLogoChange} />
+                        <Input id="logo" type="file" accept="image/*" onChange={handleLogoChange} disabled={!canWrite} />
                         {settings.logo && <img src={settings.logo} alt="Logo" className="h-24 mt-2" />}
                       </div>
                       <div>
                         <Label htmlFor="clinicName">Nom de la clinique</Label>
-                        <Input id="clinicName" value={settings.clinicName} onChange={e => handleSettingsChange('clinicName', e.target.value)} />
+                        <Input id="clinicName" value={settings.clinicName} onChange={e => handleSettingsChange('clinicName', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
                         <Label htmlFor="address">Adresse</Label>
-                        <Input id="address" value={settings.address} onChange={e => handleSettingsChange('address', e.target.value)} />
+                        <Input id="address" value={settings.address} onChange={e => handleSettingsChange('address', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
                         <Label htmlFor="phone">Téléphone</Label>
-                        <Input id="phone" value={settings.phone} onChange={e => handleSettingsChange('phone', e.target.value)} />
+                        <Input id="phone" value={settings.phone} onChange={e => handleSettingsChange('phone', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" value={settings.email} onChange={e => handleSettingsChange('email', e.target.value)} />
+                        <Input id="email" type="email" value={settings.email} onChange={e => handleSettingsChange('email', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
                         <Label htmlFor="website">Site web</Label>
-                        <Input id="website" value={settings.website} onChange={e => handleSettingsChange('website', e.target.value)} />
+                        <Input id="website" value={settings.website} onChange={e => handleSettingsChange('website', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
                         <Label htmlFor="currency">Devise</Label>
-                        <Input id="currency" value={settings.currency} onChange={e => handleSettingsChange('currency', e.target.value)} />
+                        <Input id="currency" value={settings.currency} onChange={e => handleSettingsChange('currency', e.target.value)} disabled={!canWrite} />
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={saveSettings}>Enregistrer</Button>
+                      {canWrite && <Button onClick={saveSettings}>Enregistrer</Button>}
                     </div>
                   </CardContent>
                 </Card>
@@ -438,7 +467,9 @@ export default function Settings() {
                                 min="0"
                                 className="text-right tabular-nums"
                                 value={value}
+                                disabled={!canWrite}
                                 onChange={(e) => {
+                                  if (!canWrite) return;
                                   const amount = Math.max(
                                     0,
                                     parseFloat(e.target.value) || 0
@@ -465,36 +496,42 @@ export default function Settings() {
                       })}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() => {
-                          const defaults = getCatalogDefaultPrices();
-                          updateSettings({
-                            ...settings,
-                            servicePrices: defaults,
-                            defaultConsultationPrice: defaults.consultation ?? 150,
-                          });
-                          toast({
-                            title: "Prix réinitialisés",
-                            description: "Valeurs catalogue du logiciel restaurées.",
-                          });
-                        }}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Réinitialiser
-                      </Button>
-                      <Button
-                        onClick={() =>
-                          toast({
-                            title: "Prix enregistrés",
-                            description: "Les nouveaux montants s'appliquent aux prochaines prestations.",
-                          })
-                        }
-                      >
-                        Enregistrer
-                      </Button>
+                      {canWrite && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => {
+                              if (!guardWrite()) return;
+                              const defaults = getCatalogDefaultPrices();
+                              updateSettings({
+                                ...settings,
+                                servicePrices: defaults,
+                                defaultConsultationPrice: defaults.consultation ?? 150,
+                              });
+                              toast({
+                                title: "Prix réinitialisés",
+                                description: "Valeurs catalogue du logiciel restaurées.",
+                              });
+                            }}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Réinitialiser
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              if (!guardWrite()) return;
+                              toast({
+                                title: "Prix enregistrés",
+                                description: "Les nouveaux montants s'appliquent aux prochaines prestations.",
+                              });
+                            }}
+                          >
+                            Enregistrer
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -576,9 +613,11 @@ export default function Settings() {
                 <Card>
                   <CardHeader className="flex justify-between items-center">
                     <CardTitle>Vétérinaires</CardTitle>
-                    <Button onClick={openNewVet} className="gap-2">
-                      <Plus className="h-4 w-4" /> Ajouter
-                    </Button>
+                    {canWrite && (
+                      <Button onClick={openNewVet} className="gap-2">
+                        <Plus className="h-4 w-4" /> Ajouter
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {vets.length === 0 ? (
@@ -591,14 +630,16 @@ export default function Settings() {
                             <p className="text-sm text-muted-foreground">{v.specialty}</p>
                             <p className="text-xs">{v.phone} | {v.email}</p>
                           </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => openEditVet(v)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => deleteVet(v.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          {canWrite && (
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" onClick={() => openEditVet(v)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => deleteVet(v.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}
@@ -764,23 +805,27 @@ export default function Settings() {
                         <div>
                           <div className="flex items-center justify-between mb-3">
                             <Label>Types d'élevage</Label>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="gap-2"
-                              onClick={() => setShowFarmTypeModal(true)}
-                            >
-                              <Plus className="h-3 w-3" /> Ajouter
-                            </Button>
+                            {canWrite && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="gap-2"
+                                onClick={() => setShowFarmTypeModal(true)}
+                              >
+                                <Plus className="h-3 w-3" /> Ajouter
+                              </Button>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {(farmSettings?.farm_types || []).map((type) => (
                               <Badge key={type} variant="secondary" className="gap-1">
                                 {type}
-                                <X 
-                                  className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                                  onClick={() => removeFarmType(type)}
-                                />
+                                {canWrite && (
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                                    onClick={() => removeFarmType(type)}
+                                  />
+                                )}
                               </Badge>
                             ))}
                             {(farmSettings?.farm_types || []).length === 0 && (
@@ -793,23 +838,27 @@ export default function Settings() {
                         <div>
                           <div className="flex items-center justify-between mb-3">
                             <Label>Catégories d'animaux</Label>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="gap-2"
-                              onClick={() => setShowCategoryModal(true)}
-                            >
-                              <Plus className="h-3 w-3" /> Ajouter
-                            </Button>
+                            {canWrite && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="gap-2"
+                                onClick={() => setShowCategoryModal(true)}
+                              >
+                                <Plus className="h-3 w-3" /> Ajouter
+                              </Button>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {(farmSettings?.animal_categories || []).map((category) => (
                               <Badge key={category} variant="secondary" className="gap-1">
                                 {category}
-                                <X 
-                                  className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                                  onClick={() => removeAnimalCategory(category)}
-                                />
+                                {canWrite && (
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                                    onClick={() => removeAnimalCategory(category)}
+                                  />
+                                )}
                               </Badge>
                             ))}
                             {(farmSettings?.animal_categories || []).length === 0 && (
@@ -824,26 +873,30 @@ export default function Settings() {
                             <div key={category}>
                               <div className="flex items-center justify-between mb-3">
                                 <Label>{category}</Label>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  className="gap-2"
-                                  onClick={() => {
-                                    setSelectedCategory(category);
-                                    setShowBreedModal(true);
-                                  }}
-                                >
-                                  <Plus className="h-3 w-3" /> Race
-                                </Button>
+                                {canWrite && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="gap-2"
+                                    onClick={() => {
+                                      setSelectedCategory(category);
+                                      setShowBreedModal(true);
+                                    }}
+                                  >
+                                    <Plus className="h-3 w-3" /> Race
+                                  </Button>
+                                )}
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {(breeds || []).map((breed) => (
                                   <Badge key={breed} variant="outline" className="gap-1">
                                     {breed}
-                                    <X 
-                                      className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                                      onClick={() => removeBreedFromCategory(category, breed)}
-                                    />
+                                    {canWrite && (
+                                      <X 
+                                        className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                                        onClick={() => removeBreedFromCategory(category, breed)}
+                                      />
+                                    )}
                                   </Badge>
                                 ))}
                                 {(breeds || []).length === 0 && (
@@ -862,23 +915,27 @@ export default function Settings() {
                         <div>
                           <div className="flex items-center justify-between mb-3">
                             <Label>Types de certifications</Label>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="gap-2"
-                              onClick={() => setShowCertificationModal(true)}
-                            >
-                              <Plus className="h-3 w-3" /> Ajouter
-                            </Button>
+                            {canWrite && (
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="gap-2"
+                                onClick={() => setShowCertificationModal(true)}
+                              >
+                                <Plus className="h-3 w-3" /> Ajouter
+                              </Button>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {(farmSettings?.certification_types || []).map((cert) => (
                               <Badge key={cert} variant="secondary" className="gap-1">
                                 {cert}
-                                <X 
-                                  className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                                  onClick={() => removeCertificationType(cert)}
-                                />
+                                {canWrite && (
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                                    onClick={() => removeCertificationType(cert)}
+                                  />
+                                )}
                               </Badge>
                             ))}
                             {(farmSettings?.certification_types || []).length === 0 && (

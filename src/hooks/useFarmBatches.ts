@@ -13,6 +13,8 @@ export interface FarmBatch {
   location: string | null;
   status: string;
   notes: string | null;
+  /** Numéros de puces / boucles du lot */
+  chip_numbers?: string[] | null;
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;

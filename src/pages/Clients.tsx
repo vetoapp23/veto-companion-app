@@ -26,6 +26,7 @@ import { useDisplayPreference } from "@/hooks/use-display-preference";
 import { useToast } from "@/hooks/use-toast";
 import { useAnimalSpecies, useClientTypes } from '@/hooks/useAppSettings';
 import type { Client as DBClient, Animal, CreateClientData } from "@/lib/database";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 // Interface matching the old UI structure
 interface ClientUI {
@@ -94,6 +95,7 @@ const ClientsContent = () => {
   const updateClientMutation = useUpdateClient();
   const deleteClientMutation = useDeleteClient();
   const { toast } = useToast();
+  const { canWrite: canWriteClients, guardWrite: guardWriteClients } = useWriteAccess("can_manage_clients");
   
   // Dynamic settings
   const { data: animalSpecies = [], isLoading: speciesLoading } = useAnimalSpecies();
@@ -145,6 +147,7 @@ const ClientsContent = () => {
   };
 
   const handleEdit = (client: ClientUI) => {
+    if (!guardWriteClients()) return;
     setSelectedClient(client);
     // Populate edit form with client data
     setEditForm({
@@ -164,11 +167,13 @@ const ClientsContent = () => {
   };
 
   const handleDelete = (client: ClientUI) => {
+    if (!guardWriteClients()) return;
     setClientToDelete(client);
     setShowDeleteAlert(true);
   };
 
   const confirmDelete = async () => {
+    if (!guardWriteClients()) return;
     if (!clientToDelete) return;
 
     try {
@@ -191,6 +196,7 @@ const ClientsContent = () => {
   };
 
   const handleEditFromView = () => {
+    if (!guardWriteClients()) return;
     if (selectedClient) {
       setEditForm({
         first_name: selectedClient.firstName,
@@ -212,6 +218,7 @@ const ClientsContent = () => {
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardWriteClients()) return;
     
     if (!selectedClient || !editForm.first_name || !editForm.last_name) {
       toast({
@@ -283,10 +290,12 @@ const ClientsContent = () => {
               <List className="h-4 w-4" />
               Tableau
             </Button>
-            <Button className="gap-2 rounded-full" onClick={() => setShowClientModal(true)}>
-              <Plus className="h-4 w-4" />
-              Nouveau Client
-            </Button>
+            {canWriteClients && (
+              <Button className="gap-2 rounded-full" onClick={() => setShowClientModal(true)}>
+                <Plus className="h-4 w-4" />
+                Nouveau Client
+              </Button>
+            )}
           </>
         }
       />
@@ -389,19 +398,23 @@ const ClientsContent = () => {
               <Eye className="h-4 w-4" />
               Voir
             </Button>
-            <Button size="sm" variant="outline" className="gap-2" onClick={() => handleEdit(client)}>
-              <Edit className="h-4 w-4" />
-              Modifier
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-2 text-destructive hover:text-destructive-foreground hover:bg-destructive" 
-              onClick={() => handleDelete(client)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Supprimer
-            </Button>
+            {canWriteClients && (
+              <>
+                <Button size="sm" variant="outline" className="gap-2" onClick={() => handleEdit(client)}>
+                  <Edit className="h-4 w-4" />
+                  Modifier
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="gap-2 text-destructive hover:text-destructive-foreground hover:bg-destructive" 
+                  onClick={() => handleDelete(client)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Supprimer
+                </Button>
+              </>
+            )}
             </div>
           </div>
           </CardContent>
@@ -469,17 +482,21 @@ const ClientsContent = () => {
                 <Button size="sm" variant="outline" onClick={() => handleView(client)}>
                 <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => handleEdit(client)}>
-                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
-                  onClick={() => handleDelete(client)}
-                >
-                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
+                {canWriteClients && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(client)}>
+                    <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                      onClick={() => handleDelete(client)}
+                    >
+                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
               </td>
             </tr>
@@ -542,19 +559,23 @@ const ClientsContent = () => {
           </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 pt-4">
-          <Button onClick={() => handleEditFromView()} className="w-full sm:w-auto">Modifier</Button>
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              setShowViewModal(false);
-              if (selectedClient) {
-                handleDelete(selectedClient);
-              }
-            }} 
-            className="w-full sm:w-auto text-destructive hover:text-destructive-foreground hover:bg-destructive"
-          >
-            Supprimer
-          </Button>
+          {canWriteClients && (
+            <>
+              <Button onClick={() => handleEditFromView()} className="w-full sm:w-auto">Modifier</Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowViewModal(false);
+                  if (selectedClient) {
+                    handleDelete(selectedClient);
+                  }
+                }} 
+                className="w-full sm:w-auto text-destructive hover:text-destructive-foreground hover:bg-destructive"
+              >
+                Supprimer
+              </Button>
+            </>
+          )}
           <Button variant="outline" onClick={() => setShowViewModal(false)} className="w-full sm:w-auto">Fermer</Button>
           </div>
         </CardContent>

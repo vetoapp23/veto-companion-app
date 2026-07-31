@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Heart, Loader2, Eye, EyeOff } from "lucide-react";
+import { Stethoscope, Loader2, Eye, EyeOff } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -149,7 +149,7 @@ export function ResetPassword() {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-red-100 rounded-full">
-                <Heart className="h-8 w-8 text-red-600" />
+                <Stethoscope className="h-8 w-8 text-destructive" />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-red-600">Lien invalide</CardTitle>
@@ -176,7 +176,7 @@ export function ResetPassword() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
-              <Heart className="h-8 w-8 text-primary" />
+              <Stethoscope className="h-8 w-8 text-primary" />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">VetoCrm</CardTitle>

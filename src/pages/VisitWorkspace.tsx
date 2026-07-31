@@ -100,6 +100,7 @@ import {
   shouldSyncServiceToMedicalRecord,
   syncVisitExamToMedicalRecord,
 } from "@/lib/medicalActSync";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 export default function VisitWorkspace() {
   const { id } = useParams<{ id: string }>();
@@ -108,6 +109,9 @@ export default function VisitWorkspace() {
   const queryClient = useQueryClient();
   const { settings } = useSettings();
   const currency = settings?.currency || "MAD";
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_visits");
+  const { canWrite: canWriteAnimals, guardWrite: guardWriteAnimals } =
+    useWriteAccess("can_manage_animals");
 
   const { data: visit, isLoading, error } = useVisit(id);
   const addService = useAddVisitService();
@@ -214,6 +218,7 @@ export default function VisitWorkspace() {
   }, [visit?.context, settings.servicePrices]);
 
   const openActionFor = async (service: VisitService) => {
+    if (!guardWrite()) return;
     setActiveServiceId(service.id);
     const def = getServiceDef(service.service_code);
     const needsAnimal =
@@ -298,6 +303,7 @@ export default function VisitWorkspace() {
   );
 
   const markDone = async (service: VisitService, reference?: { type: string; id: string }) => {
+    if (!guardWrite()) return;
     if (!visit) return;
 
     let ref = reference;
@@ -543,6 +549,7 @@ export default function VisitWorkspace() {
   };
 
   const markSkipped = async (service: VisitService) => {
+    if (!guardWrite()) return;
     await updateService.mutateAsync({
       serviceId: service.id,
       visitId: visit!.id,
@@ -551,6 +558,7 @@ export default function VisitWorkspace() {
   };
 
   const addFromCatalog = async (code: string) => {
+    if (!guardWrite()) return;
     const def = getServiceDef(code);
     if (!def || !visit) return;
     try {
@@ -570,6 +578,7 @@ export default function VisitWorkspace() {
   };
 
   const saveAmount = async (service: VisitService, amount: number) => {
+    if (!guardWrite()) return;
     await updateService.mutateAsync({
       serviceId: service.id,
       visitId: visit!.id,
@@ -586,6 +595,7 @@ export default function VisitWorkspace() {
       markDone?: boolean;
     }
   ) => {
+    if (!guardWrite()) return;
     if (!visit) return;
 
     const notes = payload.notes ?? service.notes;
@@ -676,6 +686,8 @@ export default function VisitWorkspace() {
       return;
     }
 
+    if (!guardWrite()) return;
+
     const billable = buildBillableLines(services, visit.billing_mode, visit.head_count);
     const amount = sumLines(billable);
     if (amount <= 0) {
@@ -717,6 +729,7 @@ export default function VisitWorkspace() {
   };
 
   const handleMarkPaid = async () => {
+    if (!guardWrite()) return;
     if (!visit?.invoice_id) return;
     setPayBusy(true);
     try {
@@ -731,6 +744,7 @@ export default function VisitWorkspace() {
   };
 
   const doCompleteVisit = async () => {
+    if (!guardWrite()) return;
     if (!visit) return;
     try {
       await completeVisit.mutateAsync(visit.id);
@@ -749,6 +763,7 @@ export default function VisitWorkspace() {
   };
 
   const handleComplete = async () => {
+    if (!guardWrite()) return;
     if (!visit) return;
     if (pendingServices.length > 0 || vaccinationWithoutDose.length > 0) {
       setCompleteConfirmOpen(true);
@@ -758,6 +773,7 @@ export default function VisitWorkspace() {
   };
 
   const assignAnimal = async (animalId: string | null) => {
+    if (!guardWrite()) return;
     if (!visit) return;
     try {
       await updateVisit.mutateAsync({
@@ -777,6 +793,7 @@ export default function VisitWorkspace() {
   };
 
   const openEditVisit = () => {
+    if (!guardWrite()) return;
     if (!visit) return;
     setEditReason(visit.reason || "");
     setEditNotes(visit.notes || "");
@@ -787,6 +804,7 @@ export default function VisitWorkspace() {
   };
 
   const saveVisitEdits = async () => {
+    if (!guardWrite()) return;
     if (!visit) return;
     setEditSaving(true);
     try {
@@ -812,6 +830,7 @@ export default function VisitWorkspace() {
   };
 
   const reopenVisit = async () => {
+    if (!guardWrite()) return;
     if (!visit) return;
     try {
       await updateVisit.mutateAsync({
@@ -898,7 +917,7 @@ export default function VisitWorkspace() {
                   : "Sans animal"}
               </span>
             )}
-            {visit.status === "in_progress" && visit.context !== "farm" && (
+            {visit.status === "in_progress" && visit.context !== "farm" && canWrite && (
               <Button
                 type="button"
                 size="sm"
@@ -910,7 +929,7 @@ export default function VisitWorkspace() {
                 {visit.animal_id ? "Changer l'animal" : "Ajouter un animal"}
               </Button>
             )}
-            {visit.status === "completed" && visit.context !== "farm" && (
+            {visit.status === "completed" && visit.context !== "farm" && canWrite && (
               <Button
                 type="button"
                 size="sm"
@@ -957,36 +976,42 @@ export default function VisitWorkspace() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" onClick={openEditVisit}>
-            <Pencil className="h-4 w-4" />
-            Modifier
-          </Button>
-          {visit.status === "completed" && (
+          {canWrite && (
+            <Button variant="outline" className="gap-2" onClick={openEditVisit}>
+              <Pencil className="h-4 w-4" />
+              Modifier
+            </Button>
+          )}
+          {canWrite && visit.status === "completed" && (
             <Button variant="outline" className="gap-2" onClick={reopenVisit}>
               <RotateCcw className="h-4 w-4" />
               Réouvrir
             </Button>
           )}
-          <Button variant="outline" className="gap-2" onClick={() => setShowCatalog(true)}>
-            <Plus className="h-4 w-4" />
-            Prestation
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={handleInvoice}
-            disabled={invoiceBusy || visit.status === "cancelled"}
-          >
-            {invoiceBusy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : visit.invoiced ? (
-              <Printer className="h-4 w-4" />
-            ) : (
-              <Receipt className="h-4 w-4" />
-            )}
-            {visit.invoiced ? "Imprimer / PDF" : "Générer facture"}
-          </Button>
-          {visit.invoiced && visit.invoice_id && lastInvoice?.status !== "paid" && (
+          {canWrite && (
+            <Button variant="outline" className="gap-2" onClick={() => setShowCatalog(true)}>
+              <Plus className="h-4 w-4" />
+              Prestation
+            </Button>
+          )}
+          {(visit.invoiced || canWrite) && (
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleInvoice}
+              disabled={invoiceBusy || visit.status === "cancelled"}
+            >
+              {invoiceBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : visit.invoiced ? (
+                <Printer className="h-4 w-4" />
+              ) : (
+                <Receipt className="h-4 w-4" />
+              )}
+              {visit.invoiced ? "Imprimer / PDF" : "Générer facture"}
+            </Button>
+          )}
+          {canWrite && visit.invoiced && visit.invoice_id && lastInvoice?.status !== "paid" && (
             <Button
               variant="outline"
               className="gap-2"
@@ -1001,7 +1026,7 @@ export default function VisitWorkspace() {
               Marquer payée
             </Button>
           )}
-          {visit.status === "in_progress" && (
+          {canWrite && visit.status === "in_progress" && (
             <Button className="gap-2" onClick={handleComplete} disabled={completeVisit.isPending}>
               {pendingServices.length > 0 || vaccinationWithoutDose.length > 0 ? (
                 <AlertTriangle className="h-4 w-4" />
@@ -1044,10 +1069,12 @@ export default function VisitWorkspace() {
             {services.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground space-y-3">
                 <p className="text-sm">Aucune prestation. Ajoutez-en une pour commencer.</p>
-                <Button size="sm" onClick={() => setShowCatalog(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Ajouter
-                </Button>
+                {canWrite && (
+                  <Button size="sm" onClick={() => setShowCatalog(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Ajouter
+                  </Button>
+                )}
               </div>
             ) : (
               services.map((service) => {
@@ -1124,17 +1151,19 @@ export default function VisitWorkspace() {
                 service={activeService}
                 currency={currency}
                 perHead={visit.billing_mode === "per_head"}
+                readOnly={!canWrite}
                 onSaveAmount={(amount) => saveAmount(activeService, amount)}
                 onSaveDetails={(payload) => saveServicePanel(activeService, payload)}
                 onRealize={() => openActionFor(activeService)}
                 onMarkDone={() => markDone(activeService)}
                 onSkip={() => markSkipped(activeService)}
-                onRemove={() =>
-                  removeService.mutateAsync({
+                onRemove={() => {
+                  if (!guardWrite()) return;
+                  return removeService.mutateAsync({
                     serviceId: activeService.id,
                     visitId: visit.id,
-                  })
-                }
+                  });
+                }}
                 onOpenRx={() => setRxOpen(true)}
               />
             )}
@@ -1310,26 +1339,19 @@ export default function VisitWorkspace() {
           farmName={visit.farm?.farm_name}
           defaultCost={activeService?.amount ?? undefined}
           defaultAnimalCount={visit.head_count ?? undefined}
-          onCreated={(row) => {
-            if (!activeService) return;
-            const patch: any = {
-              status: "done",
-              reference_type: "farm_intervention",
-              reference_id: row.id,
-            };
-            if (row.cost != null && row.cost > 0) patch.amount = row.cost;
-            updateService
-              .mutateAsync({
-                serviceId: activeService.id,
-                visitId: visit.id,
-                patch,
-              })
-              .then(() =>
-                toast({
-                  title: "Prestation terminée",
-                  description: activeService.service_label,
-                })
-              );
+          preferVisitId={visit.id}
+          preferServiceId={activeService?.id}
+          onCreated={() => {
+            toast({
+              title: "Prestation terminée",
+              description:
+                activeService?.service_label ||
+                "Intervention liée à la visite d'élevage",
+            });
+            void queryClient.invalidateQueries({
+              queryKey: visitKeys.detail(visit.id),
+            });
+            void queryClient.invalidateQueries({ queryKey: visitKeys.lists() });
           }}
         />
       )}
@@ -1367,17 +1389,20 @@ export default function VisitWorkspace() {
                 </p>
               )}
             </div>
-            <Button
-              type="button"
-              className="w-full gap-2"
-              onClick={() => {
-                setShowAnimalPicker(false);
-                setShowPetModal(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Créer un nouvel animal
-            </Button>
+            {canWriteAnimals && (
+              <Button
+                type="button"
+                className="w-full gap-2"
+                onClick={() => {
+                  if (!guardWriteAnimals()) return;
+                  setShowAnimalPicker(false);
+                  setShowPetModal(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Créer un nouvel animal
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

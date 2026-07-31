@@ -20,6 +20,7 @@ export interface DatabaseRevenue {
   reference_type?: string;
   client_id?: string;
   notes?: string;
+  frequency?: string;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +42,7 @@ export interface DatabaseExpense {
   notes?: string;
   attachment_url?: string;
   status: 'pending' | 'approved' | 'rejected';
+  frequency?: string;
   created_at: string;
   updated_at: string;
 }

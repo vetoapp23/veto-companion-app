@@ -11,7 +11,7 @@ import { ClientProvider } from "@/contexts/ClientContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LoginForm } from "@/components/LoginForm";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AdminRoute } from "@/components/AdminRoute";
+import { AdminRoute, PermissionRoute } from "@/components/AdminRoute";
 import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
 import { SuperAdminRoute } from "@/components/SuperAdminRoute";
 import SuperAdminLayout from "@/pages/super-admin/SuperAdminLayout";
@@ -87,118 +87,118 @@ const App = () => (
                       <Route
                         path="/clients"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_clients">
                             <VetNavigation />
                             <Clients />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/pets"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_animals">
                             <VetNavigation />
                             <Pets />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/appointments"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_appointments">
                             <VetNavigation />
                             <Appointments />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/visites"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_visits">
                             <VetNavigation />
                             <Visits />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/visites/:id"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_visits">
                             <VetNavigation />
                             <VisitWorkspace />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/consultations"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_create_consultations">
                             <VetNavigation />
                             <Consultations />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/history"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_view_history">
                             <VetNavigation />
                             <History />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/farm"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_farms">
                             <VetNavigation />
                             <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/vaccinations"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_vaccinations">
                             <VetNavigation />
                             <Vaccinations />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/antiparasites"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_antiparasites">
                             <VetNavigation />
                             <Antiparasites />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/accounting"
                         element={
-                          <AdminRoute>
+                          <PermissionRoute permission="can_manage_accounting">
                             <VetNavigation />
                             <PlanFeatureRoute feature="accounting"><AccountingNew /></PlanFeatureRoute>
-                          </AdminRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/farms"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_farms">
                             <VetNavigation />
                             <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
                         path="/stock"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_stock">
                             <VetNavigation />
                             <PlanFeatureRoute feature="stock"><Stock /></PlanFeatureRoute>
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route
@@ -213,10 +213,10 @@ const App = () => (
                       <Route
                         path="/settings"
                         element={
-                          <ProtectedRoute>
+                          <PermissionRoute permission="can_manage_settings">
                             <VetNavigation />
                             <Settings />
-                          </ProtectedRoute>
+                          </PermissionRoute>
                         }
                       />
                       <Route

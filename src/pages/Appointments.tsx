@@ -19,9 +19,12 @@ import { useNavigate } from "react-router-dom";
 import { useCreateVisit, useVisits } from "@/hooks/useVisits";
 import { getServiceDef, suggestServiceFromAppointmentType, resolveServiceAmount } from "@/lib/visitCatalog";
 import { buildClinicCalendarEvents } from "@/lib/clinicCalendar";
-import { toLocalDateKey, toLocalTimeKey, todayLocalKey, localDateTimeToISO } from "@/lib/dateLocal";
+import { toLocalDateKey, toLocalTimeKey, todayLocalKey, localDateTimeToISO, matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
 import type { UpdateAppointmentData } from "@/lib/database";
 import { useSettings } from "@/contexts/SettingsContext";
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
+import { Label } from "@/components/ui/label";
+import { useWriteAccess } from "@/components/RoleGuard";
 
 const statusStyles = {
   scheduled: "bg-blue-100 text-blue-800",
@@ -61,6 +64,7 @@ export default function Appointments() {
   const { toast } = useToast();
   const { settings } = useSettings();
   const { currentView } = useDisplayPreference('appointments');
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_appointments");
   
   // Dynamic settings
   const { data: animalSpecies = [], isLoading: speciesLoading } = useAnimalSpecies();
@@ -73,8 +77,7 @@ export default function Appointments() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterSpecies, setFilterSpecies] = useState("all");
-  const [filterDate, setFilterDate] = useState("all");
-  const [selectedDate, setSelectedDate] = useState(todayLocalKey());
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [displayMode, setDisplayMode] = useState<'cards' | 'table'>(currentView);
   
@@ -155,30 +158,13 @@ export default function Appointments() {
     const matchesStatus = filterStatus === "all" || appointment.status === filterStatus;
     const matchesType = filterType === "all" || appointment.appointment_type === filterType;
     const matchesSpecies = filterSpecies === "all" || getAnimalSpecies(appointment) === filterSpecies;
-    
-    let matchesDate = true;
-    const appointmentDate = new Date(appointment.appointment_date);
-    const appointmentDateStr = toLocalDateKey(appointment.appointment_date);
-    
-    if (filterDate === "today") {
-      matchesDate = appointmentDateStr === todayLocalKey();
-    } else if (filterDate === "week") {
-      const today = new Date();
-      const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-      matchesDate = appointmentDate >= today && appointmentDate <= weekFromNow;
-    } else if (filterDate === "month") {
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      matchesDate = appointmentDate.getMonth() === currentMonth && appointmentDate.getFullYear() === currentYear;
-    } else if (filterDate === "specific") {
-      matchesDate = appointmentDateStr === selectedDate;
-    }
+    const matchesDate = matchesListDateFilter(appointment.appointment_date, dateFilter);
     
     return matchesSearch && matchesStatus && matchesType && matchesSpecies && matchesDate;
   });
 
   const handleStatusChange = async (appointmentId: string, newStatus: Appointment['status']) => {
+    if (!guardWrite()) return;
     try {
       await updateAppointmentMutation.mutateAsync({
         id: appointmentId,
@@ -235,6 +221,7 @@ export default function Appointments() {
   };
 
   const handleFieldSave = async () => {
+    if (!guardWrite()) return;
     if (!editingField) return;
     const { id, field } = editingField;
     const appointment = appointments.find(a => a.id === id);
@@ -267,11 +254,13 @@ export default function Appointments() {
   };
 
   const handleDelete = async (appointment: Appointment) => {
+    if (!guardWrite()) return;
     setAppointmentToDelete(appointment);
     setShowDeleteConfirm(true);
   };
 
   const confirmDeleteAppointment = async () => {
+    if (!guardWrite()) return;
     if (!appointmentToDelete) return;
 
     const animalName = getAnimalName(appointmentToDelete);
@@ -323,6 +312,7 @@ export default function Appointments() {
   );
 
   const openNewAppointment = (date?: string, time?: string) => {
+    if (!guardWrite()) return;
     setPrefillDate(date);
     setPrefillTime(time);
     setShowNewAppointment(true);
@@ -378,11 +368,13 @@ export default function Appointments() {
         title="Rendez-vous"
         description="Planifiez et gérez tous vos rendez-vous vétérinaires"
         actions={
-          <Button onClick={() => openNewAppointment()} className="gap-2 rounded-full">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Nouveau Rendez-vous</span>
-            <span className="sm:hidden">Nouveau RDV</span>
-          </Button>
+          canWrite ? (
+            <Button onClick={() => openNewAppointment()} className="gap-2 rounded-full">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Nouveau Rendez-vous</span>
+              <span className="sm:hidden">Nouveau RDV</span>
+            </Button>
+          ) : null
         }
       />
 
@@ -571,34 +563,13 @@ export default function Appointments() {
           </SelectContent>
           </Select>
         </div>
-        
-        <div className="space-y-2">
-          <Label>Période</Label>
-          <Select value={filterDate} onValueChange={setFilterDate}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les dates</SelectItem>
-            <SelectItem value="today">Ce jour</SelectItem>
-            <SelectItem value="week">Cette semaine</SelectItem>
-            <SelectItem value="month">Ce mois</SelectItem>
-            <SelectItem value="specific">Date spécifique</SelectItem>
-          </SelectContent>
-          </Select>
         </div>
-        
-        {filterDate === "specific" && (
-          <div className="space-y-2">
-          <Label>Date</Label>
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
-          </div>
-        )}
-        </div>
+
+        <ListDateFilter
+          value={dateFilter}
+          onChange={setDateFilter}
+          idPrefix="appointments-date"
+        />
       </CardContent>
       </Card>
 
@@ -687,7 +658,7 @@ export default function Appointments() {
                   Démarrer visite
                 </Button>
               )}
-              {appointment.status === 'scheduled' && (
+              {canWrite && appointment.status === 'scheduled' && (
                 <>
                 <Button 
                   size="sm" 
@@ -710,7 +681,7 @@ export default function Appointments() {
                 </>
               )}
               
-              {appointment.status === 'confirmed' && (
+              {canWrite && appointment.status === 'confirmed' && (
                 <Button 
                 size="sm" 
                 variant="outline"
@@ -722,6 +693,7 @@ export default function Appointments() {
                 </Button>
               )}
               
+              {canWrite && (
               <Button 
                 size="sm" 
                 variant="outline"
@@ -731,6 +703,7 @@ export default function Appointments() {
                 <Trash2 className="h-3 w-3" />
                 Supprimer
               </Button>
+              )}
               </div>
             </div>
             </CardContent>
@@ -772,8 +745,12 @@ export default function Appointments() {
                 <td className="p-2 sm:p-4">
                 <div className="space-y-1">
                   <div 
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => { setEditingField({ id: appointment.id, field: 'date' }); setFieldValue(getAppointmentDate(appointment)); }}
+                  className={`flex items-center gap-2 ${canWrite ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (!canWrite) return;
+                    setEditingField({ id: appointment.id, field: 'date' });
+                    setFieldValue(getAppointmentDate(appointment));
+                  }}
                   >
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   {editingField?.id === appointment.id && editingField.field === 'date' ? (
@@ -790,8 +767,12 @@ export default function Appointments() {
                   )}
                   </div>
                   <div 
-                  className="flex items-center gap-2 cursor-pointer"
-                  onClick={() => { setEditingField({ id: appointment.id, field: 'time' }); setFieldValue(getAppointmentTime(appointment)); }}
+                  className={`flex items-center gap-2 ${canWrite ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (!canWrite) return;
+                    setEditingField({ id: appointment.id, field: 'time' });
+                    setFieldValue(getAppointmentTime(appointment));
+                  }}
                   >
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   {editingField?.id === appointment.id && editingField.field === 'time' ? (
@@ -817,8 +798,12 @@ export default function Appointments() {
                 </td>
                 <td className="p-2 sm:p-4">
                 <div 
-                  className="cursor-pointer"
-                  onClick={() => { setEditingField({ id: appointment.id, field: 'status' }); setFieldValue(appointment.status); }}
+                  className={canWrite ? 'cursor-pointer' : ''}
+                  onClick={() => {
+                    if (!canWrite) return;
+                    setEditingField({ id: appointment.id, field: 'status' });
+                    setFieldValue(appointment.status);
+                  }}
                 >
                   {editingField?.id === appointment.id && editingField.field === 'status' ? (
                   <Select
@@ -849,8 +834,12 @@ export default function Appointments() {
                 </td>
                 <td className="p-2 sm:p-4">
                 <div 
-                  className="max-w-xs cursor-pointer"
-                  onClick={() => { setEditingField({ id: appointment.id, field: 'reason' }); setFieldValue(appointment.notes || ''); }}
+                  className={`max-w-xs ${canWrite ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (!canWrite) return;
+                    setEditingField({ id: appointment.id, field: 'reason' });
+                    setFieldValue(appointment.notes || '');
+                  }}
                 >
                   {editingField?.id === appointment.id && editingField.field === 'reason' ? (
                   <Input
@@ -884,7 +873,7 @@ export default function Appointments() {
                       <Stethoscope className="h-3 w-3" />
                     </Button>
                   )}
-                  {appointment.status === 'scheduled' && (
+                  {canWrite && appointment.status === 'scheduled' && (
                   <>
                     <Button 
                     size="sm" 
@@ -904,7 +893,7 @@ export default function Appointments() {
                   </>
                   )}
                   
-                  {appointment.status === 'confirmed' && (
+                  {canWrite && appointment.status === 'confirmed' && (
                   <Button 
                     size="sm" 
                     variant="outline"
@@ -914,6 +903,7 @@ export default function Appointments() {
                   </Button>
                   )}
                   
+                  {canWrite && (
                   <Button 
                   size="sm" 
                   variant="outline"
@@ -922,6 +912,7 @@ export default function Appointments() {
                   >
                   <Trash2 className="h-3 w-3" />
                   </Button>
+                  )}
                 </div>
                 </td>
               </tr>
@@ -976,8 +967,3 @@ export default function Appointments() {
     </div>
   );
 }
-
-// Composant Label pour éviter l'erreur
-const Label = ({ children, ...props }: { children: React.ReactNode; [key: string]: any }) => (
-  <label className="text-sm font-medium" {...props}>{children}</label>
-);

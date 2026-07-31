@@ -40,35 +40,24 @@ export interface UserProfile {
   organization?: Organization
 }
 
+/** Droits assistants — niveaux none | view | edit (voir src/lib/permissions.ts) */
+export type AccessLevel = "none" | "view" | "edit"
+
 export interface UserPermissions {
-  clients?: {
-    view?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-  }
-  animals?: {
-    view?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-  }
-  consultations?: {
-    view?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-  }
-  inventory?: {
-    view?: boolean
-    create?: boolean
-    edit?: boolean
-    delete?: boolean
-  }
-  settings?: {
-    view?: boolean
-    edit?: boolean
-  }
+  can_manage_clients?: AccessLevel | boolean
+  can_manage_animals?: AccessLevel | boolean
+  can_manage_appointments?: AccessLevel | boolean
+  can_manage_visits?: AccessLevel | boolean
+  can_create_consultations?: AccessLevel | boolean
+  can_manage_vaccinations?: AccessLevel | boolean
+  can_manage_antiparasites?: AccessLevel | boolean
+  can_view_history?: AccessLevel | boolean
+  can_view_reports?: AccessLevel | boolean
+  can_manage_farms?: AccessLevel | boolean
+  can_manage_stock?: AccessLevel | boolean
+  can_manage_accounting?: AccessLevel | boolean
+  can_manage_settings?: AccessLevel | boolean
+  [key: string]: AccessLevel | boolean | undefined
 }
 
 export interface UserInvitation {
@@ -379,12 +368,20 @@ export interface Farm {
   organization_id?: string
   farm_name: string
   farm_type?: string
+  farm_types?: string[] | null
+  production_type?: string | null
+  housing_type?: string | null
   registration_number?: string
   address?: string
+  /** GPS optionnel — format "lat, lng" */
+  coordinates?: string | null
   phone?: string
   email?: string
   herd_size?: number
+  surface_hectares?: number | null
   certifications?: string[]
+  photos?: string[] | null
+  metadata?: Record<string, any> | null
   notes?: string
   active: boolean
   created_at: string
@@ -405,6 +402,14 @@ export interface FarmIntervention {
   cost?: number
   follow_up_date?: string
   notes?: string
+  batch_id?: string | null
+  protocol_type?: string | null
+  affected_count?: number | null
+  next_visit_date?: string | null
+  /** Numéros de puces des animaux concernés */
+  chip_numbers?: string[] | null
+  /** Photos prises lors de l'intervention */
+  photos?: string[] | null
   created_at: string
   updated_at: string
 }

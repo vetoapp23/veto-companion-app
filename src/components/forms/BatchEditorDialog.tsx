@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { useCreateFarmBatch, useUpdateFarmBatch, type FarmBatch } from "@/hooks/useFarmBatches";
 import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
+import { ChipNumbersField } from "@/components/forms/ChipNumbersField";
 
 interface BatchEditorDialogProps {
   open: boolean;
@@ -18,9 +19,11 @@ interface BatchEditorDialogProps {
   farmType?: string | null;
   farmTypes?: string[];
   batch?: FarmBatch | null;
+  /** Appelé après création / mise à jour réussie (ex. sélection auto) */
+  onSaved?: (batch: FarmBatch) => void;
 }
 
-const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [], batch }: BatchEditorDialogProps) => {
+const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [], batch, onSaved }: BatchEditorDialogProps) => {
   const { toast } = useToast();
   const create = useCreateFarmBatch();
   const update = useUpdateFarmBatch();
@@ -29,6 +32,7 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
     name: "", species: "", category: "", animal_count: "0",
     birth_period: "", location: "", status: "active", notes: "",
     farm_type: "",
+    chip_numbers: [] as string[],
   });
 
   useEffect(() => {
@@ -44,12 +48,14 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
         status: batch.status || "active",
         notes: batch.notes || "",
         farm_type: (batch as any).farm_type || farmType || farmTypes[0] || "",
+        chip_numbers: Array.isArray(batch.chip_numbers) ? [...batch.chip_numbers] : [],
       });
     } else {
       setData({
         name: "", species: "", category: "", animal_count: "0",
         birth_period: "", location: "", status: "active", notes: "",
         farm_type: farmType || farmTypes[0] || "",
+        chip_numbers: [],
       });
     }
   }, [open, batch, farmType, farmTypes]);
@@ -76,14 +82,17 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
       status: data.status,
       notes: data.notes || null,
       farm_type: data.farm_type || null,
+      chip_numbers: data.chip_numbers.length ? data.chip_numbers : [],
     };
     try {
       if (batch?.id) {
-        await update.mutateAsync({ id: batch.id, data: payload });
+        const updated = await update.mutateAsync({ id: batch.id, data: payload });
         toast({ title: "✓ Lot mis à jour" });
+        onSaved?.(updated);
       } else {
-        await create.mutateAsync(payload);
+        const created = await create.mutateAsync(payload);
         toast({ title: "✓ Lot créé" });
+        onSaved?.(created);
       }
       onOpenChange(false);
     } catch (err: any) {
@@ -158,6 +167,12 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
               </select>
             </div>
           </div>
+          <ChipNumbersField
+            value={data.chip_numbers}
+            onChange={(chips) => set("chip_numbers", chips)}
+            label="Numéros de puces / boucles"
+            hint="Identifiants des animaux du lot. Collez plusieurs numéros séparés par virgule ou espace."
+          />
           <div className="space-y-2">
             <Label>Notes</Label>
             <Textarea rows={2} value={data.notes} onChange={(e) => set("notes", e.target.value)} />

@@ -1,25 +1,57 @@
 // @ts-nocheck
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Heart, Grid, List, Eye, Edit, Plus, Search, Clock, Users, FileText, Shield, Syringe } from 'lucide-react';
+import { Calendar, Heart, Grid, List, Eye, Search, FileText } from 'lucide-react';
 import { AppPageHeader } from '@/components/AppPageHeader';
-import { useConsultations, usePrescriptions, useClients, useAnimals, type Prescription } from '@/hooks/useDatabase';
+import {
+  useConsultations,
+  usePrescriptions,
+  useClients,
+  useAnimals,
+  useVaccinations,
+  useAntiparasitics,
+  useFarmInterventions,
+} from '@/hooks/useDatabase';
+import { useVisits } from '@/hooks/useVisits';
 import ConsultationViewModal from '@/components/modals/ConsultationViewModal';
 import { NewPrescriptionModal } from '@/components/forms/NewPrescriptionModal';
 import { PrescriptionPrint } from '@/components/PrescriptionPrint';
 import { InvoicePrescriptionPrint } from '@/components/InvoicePrescriptionPrint';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from '@/components/ListDateFilter';
+import { matchesListDateFilter, toLocalDateKey, type ListDateFilterState } from '@/lib/dateLocal';
+
+type HistoryItemType =
+  | 'consultation'
+  | 'vaccination'
+  | 'antiparasitic'
+  | 'visit'
+  | 'farm_intervention';
+
+const TYPE_LABELS: Record<HistoryItemType, string> = {
+  consultation: 'Consultation',
+  vaccination: 'Vaccination',
+  antiparasitic: 'Antiparasitaire',
+  visit: 'Visite',
+  farm_intervention: 'Intervention élevage',
+};
 
 const History = () => {
+  const navigate = useNavigate();
   const { data: consultations = [] } = useConsultations();
   const { data: prescriptions = [] } = usePrescriptions();
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
+  const { data: vaccinations = [] } = useVaccinations();
+  const { data: antiparasitics = [] } = useAntiparasitics();
+  const { data: visits = [] } = useVisits();
+  const { data: farmInterventions = [] } = useFarmInterventions();
 
   // Helper function to transform database prescription to old format
   const transformPrescription = (dbPrescription: any) => {
@@ -56,8 +88,7 @@ const History = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPet, setFilterPet] = useState("all");
   const [filterType, setFilterType] = useState("all");
-  const [period, setPeriod] = useState("all");
-  const [filterDate, setFilterDate] = useState("");
+  const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<any>(null);
@@ -66,24 +97,153 @@ const History = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
 
-  // Construire l'historique médical complet incluant consultations, prescriptions
-  const medicalHistory = [
-    // Consultations
-    ...consultations.map(c => ({
+  const clientNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    clients.forEach((c: any) => {
+      map.set(c.id, `${c.first_name || ''} ${c.last_name || ''}`.trim());
+    });
+    return map;
+  }, [clients]);
+
+  const animalById = useMemo(() => {
+    const map = new Map<string, any>();
+    animals.forEach((a: any) => map.set(a.id, a));
+    return map;
+  }, [animals]);
+
+  const resolveAnimalClient = (animalId?: string | null, animal?: any) => {
+    const a = animal || (animalId ? animalById.get(animalId) : null);
+    const petName = a?.name || '—';
+    const petType = a?.species || '';
+    const client =
+      (a?.client ? `${a.client.first_name || ''} ${a.client.last_name || ''}`.trim() : '') ||
+      (a?.client_id ? clientNameById.get(a.client_id) || '' : '') ||
+      '—';
+    return { petName, petType, client };
+  };
+
+  // Historique unifié synchronisé avec les modules cliniques / élevage
+  const medicalHistory = useMemo(() => {
+    const consultationItems = consultations.map((c: any) => ({
       id: c.id,
-      date: c.consultation_date?.split('T')[0] || '',
+      sourceId: c.id,
+      date: toLocalDateKey(c.consultation_date),
       petName: c.animal?.name || '',
       petType: c.animal?.species || '',
       client: `${c.client?.first_name || ''} ${c.client?.last_name || ''}`.trim(),
-      type: 'consultation',
-      title: c.diagnosis || 'Consultation',
-      veterinarian: c.notes || 'Non spécifié',
-      details: c.symptoms || '',
-      prescriptions: [],
+      type: 'consultation' as HistoryItemType,
+      title: c.diagnosis || c.consultation_type || 'Consultation',
+      veterinarian: '—',
+      details: [c.symptoms, c.treatment].filter(Boolean).join(' · ') || c.notes || '',
       cost: c.cost || 0,
-      status: 'completed'
-    }))
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      status: c.status || 'completed',
+    }));
+
+    const vaccinationItems = vaccinations.map((v: any) => {
+      const { petName, petType, client } = resolveAnimalClient(v.animal_id, v.animal);
+      return {
+        id: `vacc-${v.id}`,
+        sourceId: v.id,
+        date: toLocalDateKey(v.vaccination_date),
+        petName,
+        petType,
+        client,
+        type: 'vaccination' as HistoryItemType,
+        title: v.vaccine_name || 'Vaccination',
+        veterinarian: v.administered_by || '—',
+        details: [
+          v.vaccine_type,
+          v.batch_number ? `Lot ${v.batch_number}` : '',
+          v.next_due_date ? `Prochain: ${toLocalDateKey(v.next_due_date)}` : '',
+          v.notes,
+        ].filter(Boolean).join(' · '),
+        cost: 0,
+        status: 'completed',
+      };
+    });
+
+    const antiparasiticItems = antiparasitics.map((a: any) => {
+      const { petName, petType, client } = resolveAnimalClient(a.animal_id, a.animal);
+      return {
+        id: `anti-${a.id}`,
+        sourceId: a.id,
+        date: toLocalDateKey(a.treatment_date),
+        petName,
+        petType,
+        client,
+        type: 'antiparasitic' as HistoryItemType,
+        title: a.product_name || 'Antiparasitaire',
+        veterinarian: a.administered_by || '—',
+        details: [
+          a.parasite_type,
+          a.dosage,
+          a.next_treatment_date ? `Prochain: ${toLocalDateKey(a.next_treatment_date)}` : '',
+          a.notes,
+        ].filter(Boolean).join(' · '),
+        cost: 0,
+        status: 'completed',
+      };
+    });
+
+    const visitItems = visits.map((v: any) => ({
+      id: `visit-${v.id}`,
+      sourceId: v.id,
+      date: toLocalDateKey(v.visit_date),
+      petName: v.animal?.name || (v.farm?.farm_name ? `Ferme: ${v.farm.farm_name}` : '—'),
+      petType: v.animal?.species || '',
+      client: v.client
+        ? `${v.client.first_name || ''} ${v.client.last_name || ''}`.trim()
+        : '—',
+      type: 'visit' as HistoryItemType,
+      title: v.reason || `Visite (${v.status || 'en cours'})`,
+      veterinarian: '—',
+      details: [
+        v.farm?.farm_name ? `Exploitation ${v.farm.farm_name}` : '',
+        Array.isArray(v.services) ? `${v.services.length} prestation(s)` : '',
+      ].filter(Boolean).join(' · '),
+      cost: v.total_amount || 0,
+      status: v.status || 'completed',
+    }));
+
+    const farmItems = farmInterventions.map((fi: any) => {
+      const farm = fi.farms || fi.farm;
+      const owner = farm?.clients;
+      return {
+        id: `farm-int-${fi.id}`,
+        sourceId: fi.id,
+        date: toLocalDateKey(fi.intervention_date),
+        petName: farm?.farm_name || 'Exploitation',
+        petType: '',
+        client: owner
+          ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim()
+          : '—',
+        type: 'farm_intervention' as HistoryItemType,
+        title: fi.intervention_type || 'Intervention élevage',
+        veterinarian: '—',
+        details: [fi.protocol_type, fi.description, fi.diagnosis, fi.treatment]
+          .filter(Boolean)
+          .join(' · '),
+        cost: fi.cost || 0,
+        status: 'completed',
+      };
+    });
+
+    return [
+      ...consultationItems,
+      ...vaccinationItems,
+      ...antiparasiticItems,
+      ...visitItems,
+      ...farmItems,
+    ].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }, [
+    consultations,
+    vaccinations,
+    antiparasitics,
+    visits,
+    farmInterventions,
+    animalById,
+    clientNameById,
+  ]);
 
   // Historique des prescriptions dynamique
   const prescriptionHistory = prescriptions.map(p => ({
@@ -95,34 +255,21 @@ const History = () => {
     dosage: p.medications?.[0]?.dosage || '',
     frequency: p.medications?.[0]?.frequency || '',
     duration: p.medications?.[0]?.duration || '',
-    veterinarian: 'Non spécifié', // TODO: Add veterinarian name
+    veterinarian: 'Non spécifié',
     status: p.status as string
   }));
 
   const filteredHistory = medicalHistory.filter(item => {
-    const matchesSearch = item.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPet = filterPet === "all" || item.petName.toLowerCase().includes(filterPet.toLowerCase());
+    const q = searchTerm.toLowerCase();
+    const matchesSearch =
+      !q ||
+      item.petName.toLowerCase().includes(q) ||
+      item.client.toLowerCase().includes(q) ||
+      item.title.toLowerCase().includes(q) ||
+      (item.details || '').toLowerCase().includes(q);
+    const matchesPet = filterPet === "all" || item.petName === filterPet;
     const matchesType = filterType === "all" || item.type === filterType;
-    
-    let matchesPeriod = true;
-    if (period === 'today') {
-      const todayStr = new Date().toISOString().split('T')[0];
-      matchesPeriod = item.date === todayStr;
-    } else if (period === 'week') {
-      const d = new Date(item.date);
-      const now = new Date();
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(now.setDate(diff));
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      matchesPeriod = d >= monday && d <= sunday;
-    } else if (period === 'specific') {
-      matchesPeriod = filterDate && item.date === filterDate;
-    }
-    
+    const matchesPeriod = matchesListDateFilter(item.date, dateFilter);
     return matchesSearch && matchesPet && matchesType && matchesPeriod;
   });
 
@@ -130,28 +277,45 @@ const History = () => {
     const matchesSearch = item.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.medication.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPet = filterPet === "all" || item.petName.toLowerCase().includes(filterPet.toLowerCase());
-    const matchesType = filterType === "all" || true; // Prescriptions n'ont pas de type
-    
-    let matchesPeriod = true;
-    if (period === 'today') {
-      const todayStr = new Date().toISOString().split('T')[0];
-      matchesPeriod = item.date === todayStr;
-    } else if (period === 'week') {
-      const d = new Date(item.date);
-      const now = new Date();
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(now.setDate(diff));
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      matchesPeriod = d >= monday && d <= sunday;
-    } else if (period === 'specific') {
-      matchesPeriod = filterDate && item.date === filterDate;
-    }
-    
-    return matchesSearch && matchesPet && matchesType && matchesPeriod;
+    const matchesPet = filterPet === "all" || item.petName === filterPet;
+    const matchesPeriod = matchesListDateFilter(item.date, dateFilter);
+    return matchesSearch && matchesPet && matchesPeriod;
   });
+
+  const petOptions = useMemo(
+    () => Array.from(new Set(medicalHistory.map((i) => i.petName).filter(Boolean))).sort(),
+    [medicalHistory]
+  );
+
+  const openHistoryItem = (item: any) => {
+    if (item.type === 'consultation') {
+      const consultation = consultations.find((c) => c.id === item.sourceId);
+      if (consultation) {
+        setSelectedConsultation({
+          ...consultation,
+          petId: consultation.animal_id,
+          clientId: consultation.client_id,
+        });
+        setShowConsultationModal(true);
+      }
+      return;
+    }
+    if (item.type === 'visit') {
+      navigate(`/visites/${item.sourceId}`);
+      return;
+    }
+    if (item.type === 'vaccination') {
+      navigate('/vaccinations');
+      return;
+    }
+    if (item.type === 'antiparasitic') {
+      navigate('/antiparasites');
+      return;
+    }
+    if (item.type === 'farm_intervention') {
+      navigate('/farm');
+    }
+  };
 
   const statusStyles = {
     active: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
@@ -164,7 +328,7 @@ const History = () => {
       <AppPageHeader
         icon={FileText}
         title="Historique médical"
-        description="Consultez l'historique complet des soins et traitements"
+        description="Consultations, vaccins, antiparasitaires, visites et interventions élevage"
         actions={
           <>
             <Button
@@ -210,7 +374,7 @@ const History = () => {
           </SelectTrigger>
           <SelectContent>
           <SelectItem value="all">Tous les animaux</SelectItem>
-          {Array.from(new Set(medicalHistory.map(item => item.petName))).map(petName => (
+          {petOptions.map(petName => (
             <SelectItem key={petName} value={petName}>{petName}</SelectItem>
           ))}
           </SelectContent>
@@ -223,32 +387,19 @@ const History = () => {
           <SelectContent>
           <SelectItem value="all">Tous types</SelectItem>
           <SelectItem value="consultation">Consultations</SelectItem>
-          <SelectItem value="treatment">Traitements</SelectItem>
-          <SelectItem value="surgery">Chirurgies</SelectItem>
-          </SelectContent>
-        </Select>
-        
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger>
-          <SelectValue placeholder="Période" />
-          </SelectTrigger>
-          <SelectContent>
-          <SelectItem value="all">Toute période</SelectItem>
-          <SelectItem value="today">Aujourd'hui</SelectItem>
-          <SelectItem value="week">Cette semaine</SelectItem>
-          <SelectItem value="specific">Date spécifique</SelectItem>
+          <SelectItem value="vaccination">Vaccinations</SelectItem>
+          <SelectItem value="antiparasitic">Antiparasitaires</SelectItem>
+          <SelectItem value="visit">Visites</SelectItem>
+          <SelectItem value="farm_intervention">Interventions élevage</SelectItem>
           </SelectContent>
         </Select>
         </div>
-        
-        {period === 'specific' && (
-        <Input 
-          type="date" 
-          value={filterDate} 
-          onChange={(e) => setFilterDate(e.target.value)}
-          className="max-w-xs"
+
+        <ListDateFilter
+          value={dateFilter}
+          onChange={setDateFilter}
+          idPrefix="history-date"
         />
-        )}
       </CardContent>
       </Card>
 
@@ -267,7 +418,7 @@ const History = () => {
       <TabsContent value="medical" className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h3 className="text-lg font-semibold">
-          Historique des consultations ({filteredHistory.length} entrées)
+          Historique médical ({filteredHistory.length} entrées)
         </h3>
         </div>
         
@@ -286,7 +437,7 @@ const History = () => {
                 </span>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                {item.type}
+                {TYPE_LABELS[item.type as HistoryItemType] || item.type}
                 </Badge>
               </div>
               
@@ -298,7 +449,9 @@ const History = () => {
                   {item.petName}
                 </span>
                 <span>Client: {item.client}</span>
-                <span>Vétérinaire: {item.veterinarian}</span>
+                {item.veterinarian && item.veterinarian !== '—' && (
+                  <span>Vétérinaire: {item.veterinarian}</span>
+                )}
                 </div>
               </div>
               
@@ -308,7 +461,7 @@ const History = () => {
                 </p>
               )}
               
-              {item.cost && (
+              {item.cost > 0 && (
                 <div className="text-sm">
                 <span className="font-medium">Coût: {item.cost} MAD</span>
                 </div>
@@ -316,17 +469,7 @@ const History = () => {
               </div>
               
               <div className="flex gap-2 w-full sm:w-auto justify-end">
-              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => {
-                const consultation = consultations.find(c => c.id === item.id);
-                if (consultation) {
-                setSelectedConsultation({
-                  ...consultation,
-                  petId: consultation.animal_id,
-                  clientId: consultation.client_id
-                });
-                }
-                setShowConsultationModal(true);
-              }}>
+              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => openHistoryItem(item)}>
                 <Eye className="h-4 w-4" />
               </Button>
               </div>
@@ -359,7 +502,7 @@ const History = () => {
                 </td>
                 <td className="p-4">
                 <Badge variant="outline" className="text-xs">
-                  {item.type}
+                  {TYPE_LABELS[item.type as HistoryItemType] || item.type}
                 </Badge>
                 </td>
                 <td className="p-4">
@@ -373,21 +516,8 @@ const History = () => {
                 <td className="p-4">{item.veterinarian}</td>
                 <td className="p-4">
                 <div className="flex flex-wrap gap-1">
-                  <Button size="sm" variant="outline" onClick={() => {
-                  const consultation = consultations.find(c => c.id === item.id);
-                  if (consultation) {
-                    setSelectedConsultation({
-                    ...consultation,
-                    petId: consultation.animal_id,
-                    clientId: consultation.client_id
-                    });
-                  }
-                  setShowConsultationModal(true);
-                  }}>
+                  <Button size="sm" variant="outline" onClick={() => openHistoryItem(item)}>
                   <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                  <Edit className="h-4 w-4" />
                   </Button>
                 </div>
                 </td>
