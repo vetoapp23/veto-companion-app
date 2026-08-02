@@ -89,6 +89,13 @@ export type MedicalShareSummary = {
   consultations_count?: number;
 };
 
+export type CreateMedicalShareResult = {
+  id: string;
+  token: string;
+  short_code: string;
+  expires_at: string;
+};
+
 export type MedicalShareView = {
   ok: boolean;
   valid?: boolean;
@@ -98,17 +105,13 @@ export type MedicalShareView = {
   expires_at?: string;
   use_count?: number;
   max_uses?: number;
+  short_code?: string | null;
+  token?: string | null;
   source_clinic_name?: string | null;
   exported_at?: string | null;
   summary?: MedicalShareSummary;
   payload?: MedicalSharePayload | null;
   error?: string;
-};
-
-export type CreateMedicalShareResult = {
-  id: string;
-  token: string;
-  expires_at: string;
 };
 
 export type ImportMedicalShareResult = {
@@ -291,8 +294,8 @@ export function buildMedicalSharePayload(input: {
   return payload;
 }
 
-export function medicalShareImportUrl(token: string): string {
-  const path = `/import/dossier/${encodeURIComponent(token)}`;
+export function medicalShareImportUrl(tokenOrCode: string): string {
+  const path = `/import/dossier/${encodeURIComponent(tokenOrCode)}`;
   // Prefer current origin so QR works on the same host (local / preview / prod)
   if (typeof window !== "undefined" && window.location?.origin) {
     return `${window.location.origin}${path}`;
@@ -300,27 +303,33 @@ export function medicalShareImportUrl(token: string): string {
   return siteUrl(path);
 }
 
-/** Extract share token from a pasted URL or raw token. */
+/** Extract share token or short code from a pasted URL / code. */
 export function parseMedicalShareToken(input: string): string | null {
   const raw = (input || "").trim();
   if (!raw) return null;
 
-  // Full URL: .../import/dossier/<token>
+  // Full URL: .../import/dossier/<token-or-code>
   const fromPath = raw.match(/\/import\/dossier\/([A-Za-z0-9_-]+)/i);
-  if (fromPath?.[1]) return decodeURIComponent(fromPath[1]);
+  if (fromPath?.[1]) {
+    const key = decodeURIComponent(fromPath[1]);
+    // Prefer uppercase for short codes; keep long hex tokens as-is
+    return key.length <= 14 ? key.toUpperCase() : key;
+  }
 
-  // Query ?token=
+  // Query ?token= / ?code=
   try {
     if (raw.includes("://") || raw.startsWith("http")) {
       const u = new URL(raw);
-      const q = u.searchParams.get("token");
+      const q = u.searchParams.get("token") || u.searchParams.get("code");
       if (q) return q.trim();
     }
   } catch {
     /* ignore */
   }
 
-  // Raw hex / opaque token (create_medical_share uses 48 hex chars)
+  // Short invite-style code (8 chars typical) or long opaque token
+  const cleaned = raw.replace(/[\s-]/g, "");
+  if (/^[A-Za-z0-9]{6,14}$/.test(cleaned)) return cleaned.toUpperCase();
   if (/^[A-Za-z0-9_-]{16,128}$/.test(raw)) return raw;
 
   return null;
@@ -381,11 +390,20 @@ export async function qrCodeDataUrl(
 export function buildTransferQrSectionHtml(opts: {
   qrDataUrl: string;
   importUrl: string;
+  shortCode?: string;
   expiresAt?: string;
 }): string {
   const expiresLabel = opts.expiresAt
     ? new Date(opts.expiresAt).toLocaleDateString("fr-FR")
     : "—";
+  const codeBlock = opts.shortCode
+    ? `<p style="margin:8px 0 6px;"><strong>Code de transfert :</strong>
+         <span style="font-family:ui-monospace,monospace;font-size:18px;letter-spacing:0.12em;font-weight:700;">${opts.shortCode}</span>
+       </p>
+       <p style="margin:0 0 8px;font-size:11px;color:#64748b;">
+         Dans VetoCrm : Animaux → Importer dossier (QR) → saisissez ce code.
+       </p>`
+    : "";
   return `
     <section class="block" style="page-break-inside:avoid;margin-top:18px;">
       <h2>Transfert de dossier (QR)</h2>
@@ -394,9 +412,10 @@ export function buildTransferQrSectionHtml(opts: {
           style="width:140px;height:140px;border:1px solid #e5e7eb;border-radius:8px;" />
         <div style="flex:1;min-width:200px;font-size:12px;line-height:1.45;">
           <p style="margin:0 0 8px;">
-            Scannez ce QR avec l’appareil photo du téléphone, ou dans VetoCrm :
-            <strong>Animaux → Importer dossier (QR)</strong>, puis collez le lien.
+            Scannez ce QR, ou saisissez le code court dans
+            <strong>Animaux → Importer dossier (QR)</strong>.
           </p>
+          ${codeBlock}
           <p style="margin:0 0 6px;"><strong>Valable jusqu’au :</strong> ${expiresLabel}</p>
           <p style="margin:0;word-break:break-all;color:#64748b;font-size:10px;">${opts.importUrl}</p>
         </div>

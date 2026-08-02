@@ -80,6 +80,7 @@ type SharePreview = {
   url: string;
   qrDataUrl: string;
   expiresAt: string;
+  shortCode: string;
 };
 
 export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMedicalRecordModalProps) {
@@ -105,6 +106,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const [busy, setBusy] = useState(false);
   const [sharePreview, setSharePreview] = useState<SharePreview | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const applyTemplate = (t: Template) => {
     setTemplate(t);
@@ -379,24 +381,26 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       expiresDays: Number(expiresDays) || 30,
       maxUses: 5,
     });
-    const url = medicalShareImportUrl(share.token);
+    const code = (share.short_code || "").toUpperCase();
+    const url = medicalShareImportUrl(code || share.token);
     const qr = await qrCodeDataUrl(url, 320);
-    return { url, qrDataUrl: qr, expiresAt: share.expires_at };
+    return { url, qrDataUrl: qr, expiresAt: share.expires_at, shortCode: code };
   };
 
   const handleGenerateQr = async () => {
     setBusy(true);
     setCopied(false);
+    setCopiedCode(false);
     try {
       const preview = await createShare();
       setSharePreview(preview);
       toast({
-        title: "QR généré",
-        description: "Vous pouvez le partager, le copier, ou l’inclure à l’impression.",
+        title: "Code généré",
+        description: `Code ${preview.shortCode} — partagez-le ou le QR.`,
       });
     } catch (e: any) {
       toast({
-        title: "QR impossible",
+        title: "Génération impossible",
         description: e?.message || "Erreur lors de la génération",
         variant: "destructive",
       });
@@ -412,6 +416,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     return buildTransferQrSectionHtml({
       qrDataUrl: preview.qrDataUrl,
       importUrl: preview.url,
+      shortCode: preview.shortCode,
       expiresAt: preview.expiresAt,
     });
   };
@@ -454,21 +459,38 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     }
   };
 
+  const handleCopyCode = async () => {
+    if (!sharePreview?.shortCode) return;
+    try {
+      await navigator.clipboard.writeText(sharePreview.shortCode);
+      setCopiedCode(true);
+      toast({ title: "Code copié", description: sharePreview.shortCode });
+      window.setTimeout(() => setCopiedCode(false), 2000);
+    } catch {
+      toast({
+        title: "Copie impossible",
+        description: "Notez le code manuellement.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleNativeShare = async () => {
-    if (!sharePreview?.url) return;
+    if (!sharePreview) return;
+    const text = `Code transfert VetoCrm : ${sharePreview.shortCode}\n${sharePreview.url}`;
     if (!navigator.share) {
-      await handleCopyLink();
+      await handleCopyCode();
       return;
     }
     try {
       await navigator.share({
         title: `Dossier ${animal?.name || "animal"} — VetoCrm`,
-        text: "Lien de transfert du dossier médical",
+        text,
         url: sharePreview.url,
       });
     } catch (e: any) {
       if (e?.name !== "AbortError") {
-        await handleCopyLink();
+        await handleCopyCode();
       }
     }
   };
@@ -495,6 +517,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
         if (!o) {
           setSharePreview(null);
           setCopied(false);
+          setCopiedCode(false);
         }
         onOpenChange(o);
       }}
@@ -568,7 +591,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                   Inclure un QR de transfert
                 </span>
                 <span className="block text-muted-foreground text-xs mt-0.5">
-                  Générez le QR ici (idéal mobile), puis partagez ou imprimez.
+                  Générez un code court (comme l’invitation clinique) + QR, puis partagez ou imprimez.
                 </span>
               </span>
             </label>
@@ -610,11 +633,29 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                   onClick={() => void handleGenerateQr()}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                  Générer le QR
+                  Générer le code / QR
                 </Button>
 
                 {sharePreview && (
                   <div className="rounded-lg border bg-background p-3 space-y-3">
+                    <div className="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground mb-1">Code de transfert</div>
+                        <div className="text-2xl sm:text-3xl font-bold tracking-[0.18em] font-mono text-primary select-all">
+                          {sharePreview.shortCode}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={copiedCode ? "secondary" : "default"}
+                        className="h-12 w-12 shrink-0"
+                        onClick={() => void handleCopyCode()}
+                      >
+                        {copiedCode ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       <img
                         src={sharePreview.qrDataUrl}
@@ -626,11 +667,14 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                           Valable jusqu’au{" "}
                           {new Date(sharePreview.expiresAt).toLocaleDateString("fr-FR")}
                         </p>
+                        <p className="text-xs text-muted-foreground">
+                          L’autre clinique saisit ce code dans Animaux → Importer dossier (QR).
+                        </p>
                         <Input readOnly value={sharePreview.url} className="text-xs font-mono" />
                         <div className="grid grid-cols-2 gap-2">
                           <Button type="button" variant="outline" className="gap-2" onClick={() => void handleCopyLink()}>
                             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {copied ? "Copié" : "Copier"}
+                            {copied ? "Lien copié" : "Copier lien"}
                           </Button>
                           <Button type="button" className="gap-2" onClick={() => void handleNativeShare()}>
                             <Share2 className="h-4 w-4" />

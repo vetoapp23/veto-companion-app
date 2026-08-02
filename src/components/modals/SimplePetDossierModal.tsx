@@ -142,7 +142,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                 className="gap-2 w-full sm:w-auto justify-center"
               >
                 <Printer className="h-4 w-4" />
-                Imprimer / QR
+                Imprimer Dossier / QR
               </Button>
             </div>
           </DialogHeader>

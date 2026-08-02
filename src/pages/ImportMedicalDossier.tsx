@@ -236,14 +236,14 @@ export default function ImportMedicalDossier() {
       : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <SeoHead
         title="Importer un dossier médical"
         description="Importer un dossier animal partagé via QR VetoCrm"
         path={routeToken ? `/import/dossier/${routeToken}` : "/import/dossier"}
         noIndex
       />
-      <Card className="w-full max-w-lg shadow-sm">
+      <Card className="w-full max-w-lg shadow-sm border-border bg-card text-card-foreground">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
             <QrCode className="h-5 w-5" />
@@ -260,23 +260,29 @@ export default function ImportMedicalDossier() {
                 <ClipboardPaste className="h-4 w-4" />
                 <AlertTitle>Comment importer ?</AlertTitle>
                 <AlertDescription className="space-y-1 text-sm">
-                  <p>1. Collez le lien sous le QR du PDF, ou</p>
-                  <p>2. Scannez le QR avec la caméra ci-dessous, ou</p>
-                  <p>3. Scannez avec l’appareil photo du téléphone (ouvre cette page).</p>
+                  <p>1. Saisissez le <strong>code à 8 caractères</strong> reçu (comme un code clinique), ou</p>
+                  <p>2. Collez le lien / scannez le QR.</p>
                 </AlertDescription>
               </Alert>
 
               <div className="space-y-2">
-                <Label htmlFor="share-link">Lien ou jeton du partage</Label>
+                <Label htmlFor="share-link">Code de transfert</Label>
                 <Input
                   id="share-link"
-                  placeholder="https://…/import/dossier/… ou jeton"
+                  placeholder="Ex. K7M2P9QX"
                   value={pasteValue}
-                  onChange={(e) => setPasteValue(e.target.value)}
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="text-center text-xl sm:text-2xl font-mono tracking-[0.2em] uppercase h-14"
+                  onChange={(e) => setPasteValue(e.target.value.toUpperCase())}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void goToToken(pasteValue);
                   }}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Vous pouvez aussi coller l’URL complète du partage.
+                </p>
                 <Button className="w-full gap-2" onClick={() => void goToToken(pasteValue)}>
                   <ArrowRight className="h-4 w-4" />
                   Continuer
@@ -346,37 +352,49 @@ export default function ImportMedicalDossier() {
                 </Alert>
               )}
 
-              <div className="rounded-md border bg-white p-4 space-y-2 text-sm">
+              <div className="rounded-lg border border-border bg-muted/40 p-4 space-y-3 text-sm text-foreground">
                 <div className="flex flex-wrap gap-2">
                   {view.source_clinic_name && (
-                    <Badge variant="secondary">Origine : {view.source_clinic_name}</Badge>
+                    <Badge variant="secondary" className="text-foreground">
+                      Origine : {view.source_clinic_name}
+                    </Badge>
                   )}
                   {view.expires_at && (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="border-border text-foreground">
                       Expire le {new Date(view.expires_at).toLocaleDateString("fr-FR")}
                     </Badge>
                   )}
+                  {view.short_code && (
+                    <Badge variant="outline" className="border-border font-mono tracking-wider text-foreground">
+                      {view.short_code}
+                    </Badge>
+                  )}
                 </div>
-                <p>
-                  <strong>Animal :</strong> {summary?.animal_name || "—"}{" "}
-                  <span className="text-muted-foreground">
-                    ({summary?.species || "—"}
-                    {summary?.breed ? ` · ${summary.breed}` : ""})
-                  </span>
-                </p>
-                <p>
-                  <strong>Propriétaire :</strong> {summary?.owner_name || "—"}
-                </p>
-                {summary?.microchip_number && (
+                <div className="space-y-1.5">
                   <p>
-                    <strong>Puce :</strong> {summary.microchip_number}
+                    <span className="font-semibold">Animal :</span>{" "}
+                    {summary?.animal_name || "—"}
+                    <span className="text-muted-foreground">
+                      {" "}
+                      ({summary?.species || "—"}
+                      {summary?.breed ? ` · ${summary.breed}` : ""})
+                    </span>
                   </p>
-                )}
-                <p className="text-muted-foreground">
-                  Contenu : {summary?.vaccinations_count ?? 0} vaccins ·{" "}
-                  {summary?.antiparasitics_count ?? 0} antiparasitaires ·{" "}
-                  {summary?.consultations_count ?? 0} consultations
-                </p>
+                  <p>
+                    <span className="font-semibold">Propriétaire :</span>{" "}
+                    {summary?.owner_name || "—"}
+                  </p>
+                  {summary?.microchip_number && (
+                    <p>
+                      <span className="font-semibold">Puce :</span> {summary.microchip_number}
+                    </p>
+                  )}
+                  <p className="text-muted-foreground pt-1 border-t border-border">
+                    Contenu : {summary?.vaccinations_count ?? 0} vaccins ·{" "}
+                    {summary?.antiparasitics_count ?? 0} antiparasitaires ·{" "}
+                    {summary?.consultations_count ?? 0} consultations
+                  </p>
+                </div>
               </div>
 
               {!isAuthenticated || !user ? (
