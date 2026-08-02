@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Html5Qrcode } from "html5-qrcode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,15 +27,7 @@ import {
 } from "@/lib/medicalShare";
 import { useQueryClient } from "@tanstack/react-query";
 
-type BarcodeDetectorLike = {
-  detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
-};
-
-declare global {
-  interface Window {
-    BarcodeDetector?: new (opts?: { formats: string[] }) => BarcodeDetectorLike;
-  }
-}
+const QR_READER_ID = "medical-share-qr-reader";
 
 export default function ImportMedicalDossier() {
   const { token: routeToken = "" } = useParams<{ token?: string }>();
@@ -46,27 +39,39 @@ export default function ImportMedicalDossier() {
   const [pasteValue, setPasteValue] = useState("");
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanTimerRef = useRef<number | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const handledScanRef = useRef(false);
 
   const [loading, setLoading] = useState(!!routeToken);
   const [importing, setImporting] = useState(false);
   const [view, setView] = useState<MedicalShareView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const stopCamera = useCallback(() => {
-    if (scanTimerRef.current != null) {
-      window.clearInterval(scanTimerRef.current);
-      scanTimerRef.current = null;
+  const stopCamera = useCallback(async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+    if (scanner) {
+      try {
+        if (scanner.isScanning) {
+          await scanner.stop();
+        }
+      } catch {
+        /* already stopped */
+      }
+      try {
+        scanner.clear();
+      } catch {
+        /* ignore */
+      }
     }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
     setScanning(false);
   }, []);
 
-  useEffect(() => () => stopCamera(), [stopCamera]);
+  useEffect(() => {
+    return () => {
+      void stopCamera();
+    };
+  }, [stopCamera]);
 
   useEffect(() => {
     if (!routeToken) {
@@ -103,7 +108,7 @@ export default function ImportMedicalDossier() {
     };
   }, [routeToken]);
 
-  const goToToken = (raw: string) => {
+  const goToToken = async (raw: string) => {
     const token = parseMedicalShareToken(raw);
     if (!token) {
       toast({
@@ -113,51 +118,79 @@ export default function ImportMedicalDossier() {
       });
       return;
     }
-    stopCamera();
+    await stopCamera();
     navigate(`/import/dossier/${encodeURIComponent(token)}`);
   };
 
   const startCamera = async () => {
     setScanError(null);
-    if (!window.BarcodeDetector) {
+    handledScanRef.current = false;
+
+    const host = window.location.hostname;
+    const isLocal = host === "localhost" || host === "127.0.0.1";
+    if (!window.isSecureContext && !isLocal) {
       setScanError(
-        "Le scan caméra n’est pas supporté sur ce navigateur. Collez le lien affiché sous le QR, ou scannez avec l’appareil photo du téléphone."
+        "La caméra nécessite une connexion sécurisée (HTTPS). Collez le lien sous le QR, ou ouvrez VetoCrm en https."
       );
       return;
     }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setScanError(
+        "Ce navigateur ne permet pas l’accès caméra. Collez le lien sous le QR, ou utilisez Chrome / Safari récent."
+      );
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
-        audio: false,
-      });
-      streamRef.current = stream;
+      if (scannerRef.current) {
+        await stopCamera();
+      }
+
       setScanning(true);
       await new Promise((r) => requestAnimationFrame(() => r(null)));
-      const video = videoRef.current;
-      if (!video) throw new Error("Caméra indisponible");
-      video.srcObject = stream;
-      await video.play();
+      await new Promise((r) => setTimeout(r, 80));
 
-      const detector = new window.BarcodeDetector!({ formats: ["qr_code"] });
-      scanTimerRef.current = window.setInterval(async () => {
-        if (!videoRef.current || videoRef.current.readyState < 2) return;
-        try {
-          const codes = await detector.detect(videoRef.current);
-          const value = codes.find((c) => c.rawValue)?.rawValue;
-          if (value && parseMedicalShareToken(value)) {
-            goToToken(value);
-          }
-        } catch {
-          /* ignore frame errors */
+      if (!document.getElementById(QR_READER_ID)) {
+        throw new Error("Zone de scan introuvable");
+      }
+
+      const scanner = new Html5Qrcode(QR_READER_ID, { verbose: false });
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: { width: 240, height: 240 },
+          aspectRatio: 1,
+        },
+        (decodedText) => {
+          if (handledScanRef.current) return;
+          if (!parseMedicalShareToken(decodedText)) return;
+          handledScanRef.current = true;
+          void goToToken(decodedText);
+        },
+        () => {
+          /* frame without QR — ignore */
         }
-      }, 450);
-    } catch (e: any) {
-      setScanning(false);
-      setScanError(
-        e?.message?.includes("Permission") || e?.name === "NotAllowedError"
-          ? "Autorisez l’accès à la caméra, ou collez le lien manuellement."
-          : e?.message || "Impossible d’ouvrir la caméra."
       );
+    } catch (e: any) {
+      await stopCamera();
+      const name = e?.name || "";
+      const msg = String(e?.message || e || "");
+      if (name === "NotAllowedError" || /permission|denied|notallowed/i.test(msg)) {
+        setScanError(
+          "Accès caméra refusé. Autorisez la caméra dans le navigateur, ou collez le lien sous le QR."
+        );
+      } else if (name === "NotFoundError" || /not found|no camera|requested device/i.test(msg)) {
+        setScanError("Aucune caméra détectée. Collez le lien affiché sous le QR.");
+      } else {
+        setScanError(
+          msg ||
+            "Impossible d’ouvrir la caméra. Collez le lien sous le QR, ou scannez avec l’appareil photo du téléphone."
+        );
+      }
     }
   };
 
@@ -241,10 +274,10 @@ export default function ImportMedicalDossier() {
                   value={pasteValue}
                   onChange={(e) => setPasteValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") goToToken(pasteValue);
+                    if (e.key === "Enter") void goToToken(pasteValue);
                   }}
                 />
-                <Button className="w-full gap-2" onClick={() => goToToken(pasteValue)}>
+                <Button className="w-full gap-2" onClick={() => void goToToken(pasteValue)}>
                   <ArrowRight className="h-4 w-4" />
                   Continuer
                 </Button>
@@ -267,7 +300,7 @@ export default function ImportMedicalDossier() {
                       type="button"
                       variant="outline"
                       className="gap-2 w-full"
-                      onClick={stopCamera}
+                      onClick={() => void stopCamera()}
                     >
                       Arrêter la caméra
                     </Button>
@@ -276,14 +309,11 @@ export default function ImportMedicalDossier() {
                 {scanError && (
                   <p className="text-sm text-amber-700 dark:text-amber-300">{scanError}</p>
                 )}
-                {scanning && (
-                  <video
-                    ref={videoRef}
-                    className="w-full rounded-md border bg-black aspect-square object-cover"
-                    muted
-                    playsInline
-                  />
-                )}
+                {/* Always mount when scanning so Html5Qrcode can attach */}
+                <div
+                  id={QR_READER_ID}
+                  className={scanning ? "w-full overflow-hidden rounded-md border bg-black" : "hidden"}
+                />
               </div>
 
               <div className="pt-2 text-center">
