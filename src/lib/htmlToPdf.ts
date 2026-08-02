@@ -16,6 +16,54 @@ function waitForImages(root: ParentNode): Promise<void> {
   ).then(() => undefined);
 }
 
+function delay(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function isMobileUa() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+/**
+ * Impression via iframe caché — plus fiable sur mobile (pas de popup bloquée).
+ */
+async function printViaIframe(html: string): Promise<void> {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("title", "print-frame");
+  iframe.style.cssText =
+    "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;";
+  document.body.appendChild(iframe);
+
+  const win = iframe.contentWindow;
+  const doc = win?.document;
+  if (!win || !doc) {
+    iframe.remove();
+    throw new Error("Impossible de préparer l’impression sur cet appareil.");
+  }
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  await waitForImages(doc.body);
+  await delay(isMobileUa() ? 600 : 350);
+
+  try {
+    win.focus();
+    win.print();
+  } finally {
+    // Laisser le dialogue d’impression s’ouvrir avant de retirer l’iframe
+    window.setTimeout(() => {
+      try {
+        iframe.remove();
+      } catch {
+        /* ignore */
+      }
+    }, 60_000);
+  }
+}
+
 function loadHtmlInWindow(html: string): Window | null {
   const win = window.open("", "_blank");
   if (!win) return null;
@@ -28,14 +76,23 @@ function loadHtmlInWindow(html: string): Window | null {
 /**
  * Ouvre le HTML dans la boîte d'impression du navigateur
  * (Imprimer papier ou « Enregistrer au format PDF » — même rendu CSS).
+ * Sur mobile / popup bloquée → iframe (sans nouvel onglet).
  */
 export async function printHtml(html: string): Promise<void> {
+  if (isMobileUa()) {
+    await printViaIframe(html);
+    return;
+  }
+
   const win = loadHtmlInWindow(html);
   if (!win) {
-    throw new Error("Autorisez les popups pour imprimer le rapport.");
+    // Desktop avec bloqueur de popups
+    await printViaIframe(html);
+    return;
   }
+
   await waitForImages(win.document.body);
-  await new Promise((r) => setTimeout(r, 400));
+  await delay(400);
   win.focus();
   win.print();
 }

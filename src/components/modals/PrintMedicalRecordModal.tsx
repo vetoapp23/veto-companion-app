@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Printer, FileText, Download, Loader2, QrCode } from "lucide-react";
+import { Printer, FileText, Download, Loader2, QrCode, Copy, Share2, Check } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml } from "@/lib/printWatermark";
@@ -76,6 +76,12 @@ interface PrintMedicalRecordModalProps {
   animal: any | null;
 }
 
+type SharePreview = {
+  url: string;
+  qrDataUrl: string;
+  expiresAt: string;
+};
+
 export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMedicalRecordModalProps) {
   const { toast } = useToast();
   const { settings } = useSettings();
@@ -97,6 +103,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const [ownerConsent, setOwnerConsent] = useState(false);
   const [expiresDays, setExpiresDays] = useState<"7" | "30" | "90">("30");
   const [busy, setBusy] = useState(false);
+  const [sharePreview, setSharePreview] = useState<SharePreview | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const applyTemplate = (t: Template) => {
     setTemplate(t);
@@ -346,10 +354,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     });
   };
 
-  const resolveTransferQrHtml = async (): Promise<string> => {
-    if (!includeTransferQr || !animalId) return "";
+  const createShare = async (): Promise<SharePreview> => {
+    if (!animalId) throw new Error("Animal introuvable");
     if (!ownerConsent) {
-      throw new Error("Confirmez le consentement du propriétaire pour inclure le QR de transfert.");
+      throw new Error("Confirmez le consentement du propriétaire pour générer le QR.");
     }
     const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
     const consultationsInRange = consultations.filter((c: any) => inRange(c.consultation_date));
@@ -372,26 +380,24 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       maxUses: 5,
     });
     const url = medicalShareImportUrl(share.token);
-    const qr = await qrCodeDataUrl(url, 280);
-    return buildTransferQrSectionHtml({
-      qrDataUrl: qr,
-      importUrl: url,
-      expiresAt: share.expires_at,
-    });
+    const qr = await qrCodeDataUrl(url, 320);
+    return { url, qrDataUrl: qr, expiresAt: share.expires_at };
   };
 
-  const openPrintDialog = async () => {
-    if (!animal) return;
+  const handleGenerateQr = async () => {
     setBusy(true);
+    setCopied(false);
     try {
-      const transferQrHtml = await resolveTransferQrHtml();
-      const html = await buildHtml(transferQrHtml);
-      if (!html) return;
-      await printHtml(html);
+      const preview = await createShare();
+      setSharePreview(preview);
+      toast({
+        title: "QR généré",
+        description: "Vous pouvez le partager, le copier, ou l’inclure à l’impression.",
+      });
     } catch (e: any) {
       toast({
-        title: "Impression impossible",
-        description: e?.message || "Autorisez les popups pour imprimer ou enregistrer en PDF.",
+        title: "QR impossible",
+        description: e?.message || "Erreur lors de la génération",
         variant: "destructive",
       });
     } finally {
@@ -399,17 +405,72 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     }
   };
 
-  const handlePrint = () => {
-    void openPrintDialog();
+  const resolveTransferQrHtml = async (): Promise<string> => {
+    if (!includeTransferQr) return "";
+    const preview = sharePreview || (await createShare());
+    if (!sharePreview) setSharePreview(preview);
+    return buildTransferQrSectionHtml({
+      qrDataUrl: preview.qrDataUrl,
+      importUrl: preview.url,
+      expiresAt: preview.expiresAt,
+    });
   };
 
-  /** Même module que Imprimer (dialogue navigateur → Enregistrer au format PDF). */
-  const handleDownloadPdf = async () => {
-    toast({
-      title: "Enregistrer en PDF",
-      description: "Dans la boîte d'impression, choisissez « Enregistrer au format PDF ».",
-    });
-    await openPrintDialog();
+  const openPrintDialog = async () => {
+    if (!animal) return;
+    setBusy(true);
+    try {
+      if (includeTransferQr && !ownerConsent) {
+        throw new Error("Confirmez le consentement du propriétaire pour inclure le QR.");
+      }
+      const transferQrHtml = await resolveTransferQrHtml();
+      const html = await buildHtml(transferQrHtml);
+      if (!html) return;
+      await printHtml(html);
+    } catch (e: any) {
+      toast({
+        title: "Impression impossible",
+        description: e?.message || "Réessayez ou utilisez « Générer le QR » puis partagez le lien.",
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!sharePreview?.url) return;
+    try {
+      await navigator.clipboard.writeText(sharePreview.url);
+      setCopied(true);
+      toast({ title: "Lien copié" });
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({
+        title: "Copie impossible",
+        description: "Sélectionnez le lien manuellement.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!sharePreview?.url) return;
+    if (!navigator.share) {
+      await handleCopyLink();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: `Dossier ${animal?.name || "animal"} — VetoCrm`,
+        text: "Lien de transfert du dossier médical",
+        url: sharePreview.url,
+      });
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        await handleCopyLink();
+      }
+    }
   };
 
   if (!animal) return null;
@@ -425,22 +486,32 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     photos: "Photos",
   };
 
+  const qrReady = includeTransferQr && ownerConsent;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) {
+          setSharePreview(null);
+          setCopied(false);
+        }
+        onOpenChange(o);
+      }}
+    >
+      <DialogContent className="max-w-2xl w-[calc(100%-1rem)] p-4 sm:p-6 gap-3">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Imprimer le dossier médical
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <FileText className="h-5 w-5 shrink-0" />
+            Imprimer / partager — {animal.name}
           </DialogTitle>
-          <DialogDescription>
-            Sélectionnez le modèle puis les sections à inclure pour {animal.name}.
-            Impression et PDF utilisent le même rendu (boîte d&apos;impression du navigateur).
+          <DialogDescription className="text-xs sm:text-sm">
+            Choisissez les sections. Sur mobile, générez d’abord le QR puis partagez le lien.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Modèle</Label>
               <Select value={template} onValueChange={(v) => applyTemplate(v as Template)}>
@@ -467,9 +538,9 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
           <div>
             <Label className="mb-2 block">Sections à inclure</Label>
-            <div className="grid grid-cols-2 gap-2 p-3 border rounded-md">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border rounded-md">
               {(Object.keys(SECTION_LABELS) as SectionKey[]).map((k) => (
-                <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
+                <label key={k} className="flex items-center gap-2 text-sm cursor-pointer min-h-9">
                   <Checkbox checked={sections[k]} onCheckedChange={() => toggle(k)} />
                   {SECTION_LABELS[k]}
                 </label>
@@ -484,7 +555,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                 onCheckedChange={(v) => {
                   const on = v === true;
                   setIncludeTransferQr(on);
-                  if (!on) setOwnerConsent(false);
+                  if (!on) {
+                    setOwnerConsent(false);
+                    setSharePreview(null);
+                  }
                 }}
                 className="mt-0.5"
               />
@@ -494,14 +568,13 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                   Inclure un QR de transfert
                 </span>
                 <span className="block text-muted-foreground text-xs mt-0.5">
-                  Un autre véto pourra importer via Animaux → « Importer dossier (QR) »,
-                  ou en scannant le QR avec le téléphone (lien sous le code).
+                  Générez le QR ici (idéal mobile), puis partagez ou imprimez.
                 </span>
               </span>
             </label>
 
             {includeTransferQr && (
-              <div className="space-y-3 pl-6">
+              <div className="space-y-3 sm:pl-6">
                 <label className="flex items-start gap-2 text-sm cursor-pointer">
                   <Checkbox
                     checked={ownerConsent}
@@ -512,7 +585,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                     Le propriétaire autorise le partage de ces données médicales via ce lien.
                   </span>
                 </label>
-                <div className="space-y-1.5 max-w-[200px]">
+                <div className="space-y-1.5 max-w-[220px]">
                   <Label htmlFor="qr-expiry">Validité du lien</Label>
                   <Select
                     value={expiresDays}
@@ -528,33 +601,73 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                     </SelectContent>
                   </Select>
                 </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full sm:w-auto gap-2"
+                  disabled={!qrReady || busy}
+                  onClick={() => void handleGenerateQr()}
+                >
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                  Générer le QR
+                </Button>
+
+                {sharePreview && (
+                  <div className="rounded-lg border bg-background p-3 space-y-3">
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <img
+                        src={sharePreview.qrDataUrl}
+                        alt="QR transfert"
+                        className="w-40 h-40 sm:w-36 sm:h-36 rounded-md border bg-white"
+                      />
+                      <div className="flex-1 w-full space-y-2 text-sm">
+                        <p className="text-muted-foreground text-xs">
+                          Valable jusqu’au{" "}
+                          {new Date(sharePreview.expiresAt).toLocaleDateString("fr-FR")}
+                        </p>
+                        <Input readOnly value={sharePreview.url} className="text-xs font-mono" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button type="button" variant="outline" className="gap-2" onClick={() => void handleCopyLink()}>
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {copied ? "Copié" : "Copier"}
+                          </Button>
+                          <Button type="button" className="gap-2" onClick={() => void handleNativeShare()}>
+                            <Share2 className="h-4 w-4" />
+                            Partager
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
-              Annuler
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => void handleDownloadPdf()}
-              className="gap-2"
-              disabled={busy || (includeTransferQr && !ownerConsent)}
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Télécharger PDF
-            </Button>
-            <Button
-              onClick={handlePrint}
-              className="gap-2"
-              disabled={busy || (includeTransferQr && !ownerConsent)}
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-              Imprimer
-            </Button>
-          </div>
         </div>
+
+        <DialogFooter className="!flex-col gap-2 sm:!flex-row sm:justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy} className="w-full sm:w-auto">
+            Fermer
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => void openPrintDialog()}
+            className="gap-2 w-full sm:w-auto"
+            disabled={busy || (includeTransferQr && !ownerConsent)}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            PDF / Imprimer
+          </Button>
+          <Button
+            onClick={() => void openPrintDialog()}
+            className="gap-2 w-full sm:w-auto hidden md:inline-flex"
+            disabled={busy || (includeTransferQr && !ownerConsent)}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+            Imprimer
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

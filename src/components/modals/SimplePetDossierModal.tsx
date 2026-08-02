@@ -101,104 +101,150 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
       variant="outline"
       size="sm"
       onClick={onClick}
-      className="gap-2 h-auto py-2 flex-col items-center text-xs"
+      className="gap-1.5 h-auto py-2.5 px-1 flex-col items-center text-[11px] sm:text-xs w-full"
     >
-      <Icon className={`h-5 w-5 ${color}`} />
-      {label}
+      <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${color}`} />
+      <span className="leading-tight text-center">{label}</span>
     </Button>
   );
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-start justify-between gap-4">
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Dossier Médical — {pet.name} <span className="text-sm font-normal text-muted-foreground">({pet.owner})</span>
-              </DialogTitle>
-              <div className="flex items-center gap-2">
+        <DialogContent
+          style={{ maxHeight: "100dvh" }}
+          className={[
+            "max-w-5xl gap-3 p-3 sm:p-6",
+            "w-full max-sm:left-0 max-sm:top-0 max-sm:translate-x-0 max-sm:translate-y-0",
+            "max-sm:w-full max-sm:max-w-none max-sm:h-[100dvh] max-sm:max-h-[100dvh]",
+            "max-sm:rounded-none max-sm:border-0",
+            "sm:w-[calc(100%-1.5rem)] sm:max-h-[90vh] sm:h-auto",
+          ].join(" ")}
+        >
+          <DialogHeader className="space-y-3 text-left">
+            <DialogTitle className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2 pr-6">
+              <span className="inline-flex items-center gap-2 text-base sm:text-lg">
+                <FileText className="h-5 w-5 shrink-0" />
+                {pet.name}
+              </span>
+              <span className="text-sm font-normal text-muted-foreground">
+                Dossier médical · {pet.owner}
+              </span>
+            </DialogTitle>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
+              <div className="[&_button]:w-full sm:[&_button]:w-auto">
                 <CertificateVaccinationPrintDynamic animalId={animalId} />
-                <Button onClick={() => setShowPrint(true)} variant="outline" size="sm" className="gap-2">
-                  <Printer className="h-4 w-4" /> Dossier (Imprimer / PDF)
-                </Button>
               </div>
+              <Button
+                onClick={() => setShowPrint(true)}
+                variant="outline"
+                size="sm"
+                className="gap-2 w-full sm:w-auto justify-center"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimer / QR
+              </Button>
             </div>
           </DialogHeader>
 
           {/* Quick actions */}
           <Card>
-            <CardContent className="pt-4">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                <QuickAction icon={Stethoscope} label="Consultation" color="text-emerald-600" onClick={() => setShowConsultation(true)} />
-                <QuickAction icon={Syringe} label="Vaccination" color="text-blue-600" onClick={() => setShowVaccination(true)} />
-                <QuickAction icon={AlertCircle} label="Antiparasitaire" color="text-orange-600" onClick={() => setShowAntiparasitic(true)} />
-                <QuickAction icon={ClipboardList} label="Ordonnance" color="text-purple-600" onClick={() => setShowPrescription(true)} />
-                <QuickAction icon={CalendarPlus} label="Rendez-vous" color="text-pink-600" onClick={() => setShowAppointment(true)} />
+            <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                <QuickAction icon={Stethoscope} label="Consult." color="text-emerald-600" onClick={() => setShowConsultation(true)} />
+                <QuickAction icon={Syringe} label="Vaccin" color="text-blue-600" onClick={() => setShowVaccination(true)} />
+                <QuickAction icon={AlertCircle} label="Anti-P." color="text-orange-600" onClick={() => setShowAntiparasitic(true)} />
+                <QuickAction icon={ClipboardList} label="Ordo." color="text-purple-600" onClick={() => setShowPrescription(true)} />
+                <QuickAction icon={CalendarPlus} label="RDV" color="text-pink-600" onClick={() => setShowAppointment(true)} />
               </div>
             </CardContent>
           </Card>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="overview"><Activity className="h-4 w-4 mr-1" />Vue</TabsTrigger>
-              <TabsTrigger value="historique"><Calendar className="h-4 w-4 mr-1" />Historique</TabsTrigger>
-              <TabsTrigger value="consultations"><Stethoscope className="h-4 w-4 mr-1" />Consult.</TabsTrigger>
-              <TabsTrigger value="vaccinations"><Syringe className="h-4 w-4 mr-1" />Vaccins</TabsTrigger>
-              <TabsTrigger value="antiparasites"><AlertCircle className="h-4 w-4 mr-1" />Antiparas.</TabsTrigger>
-              <TabsTrigger value="prescriptions"><FileText className="h-4 w-4 mr-1" />Ordo.</TabsTrigger>
-              <TabsTrigger value="pedigree"><Award className="h-4 w-4 mr-1" />Pédigrée</TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-h-0 flex-1">
+            <div className="overflow-x-auto -mx-1 px-1 pb-1">
+              <TabsList className="inline-flex w-max min-w-full sm:grid sm:w-full sm:grid-cols-7 h-auto gap-1 p-1">
+                <TabsTrigger value="overview" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <Activity className="h-3.5 w-3.5" />
+                  Vue
+                </TabsTrigger>
+                <TabsTrigger value="historique" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Historique
+                </TabsTrigger>
+                <TabsTrigger value="consultations" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <Stethoscope className="h-3.5 w-3.5" />
+                  Consult.
+                </TabsTrigger>
+                <TabsTrigger value="vaccinations" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <Syringe className="h-3.5 w-3.5" />
+                  Vaccins
+                </TabsTrigger>
+                <TabsTrigger value="antiparasites" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Anti-P.
+                </TabsTrigger>
+                <TabsTrigger value="prescriptions" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <FileText className="h-3.5 w-3.5" />
+                  Ordo.
+                </TabsTrigger>
+                <TabsTrigger value="pedigree" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
+                  <Award className="h-3.5 w-3.5" />
+                  Pédigrée
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="overview" className="space-y-4 mt-3">
               <Card>
-                <CardHeader><CardTitle>Informations générales</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">Informations générales</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="flex items-start gap-6">
-                    <Avatar className="h-28 w-28">
+                  <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                    <Avatar className="h-20 w-20 sm:h-28 sm:w-28 mx-auto sm:mx-0 shrink-0">
                       {pet.photo ? <AvatarImage src={pet.photo} alt={pet.name} /> :
                         <AvatarFallback className="bg-primary-glow text-primary-foreground">
-                          <Heart className="h-12 w-12" />
+                          <Heart className="h-10 w-10 sm:h-12 sm:w-12" />
                         </AvatarFallback>}
                     </Avatar>
-                    <div className="flex-1 grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm w-full">
                       <div className="space-y-2">
-                        <h3 className="font-semibold text-lg">{pet.name}</h3>
-                        <div><span className="font-medium">Type :</span> {pet.type}</div>
-                        <div><span className="font-medium">Race :</span> {pet.breed || "—"}</div>
-                        <div><span className="font-medium">Sexe :</span> {pet.gender === "male" ? "Mâle" : pet.gender === "female" ? "Femelle" : "—"}</div>
-                        <div><span className="font-medium">Âge :</span> {age}</div>
-                        <div><span className="font-medium">Naissance :</span> {pet.birthDate || "—"}</div>
+                        <h3 className="font-semibold text-lg text-center sm:text-left">{pet.name}</h3>
+                        <div><span className="font-medium text-muted-foreground">Type :</span> {pet.type}</div>
+                        <div><span className="font-medium text-muted-foreground">Race :</span> {pet.breed || "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">Sexe :</span> {pet.gender === "male" ? "Mâle" : pet.gender === "female" ? "Femelle" : "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">Âge :</span> {age}</div>
+                        <div><span className="font-medium text-muted-foreground">Naissance :</span> {pet.birthDate || "—"}</div>
                       </div>
                       <div className="space-y-2">
-                        <div><span className="font-medium">Couleur :</span> {pet.color || "—"}</div>
-                        <div><span className="font-medium">Poids :</span> {currentWeight}</div>
-                        <div><span className="font-medium">N° puce :</span> {pet.microchip || "—"}</div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Statut :</span>
+                        <div><span className="font-medium text-muted-foreground">Couleur :</span> {pet.color || "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">Poids :</span> {currentWeight}</div>
+                        <div><span className="font-medium text-muted-foreground">N° puce :</span> {pet.microchip || "—"}</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-muted-foreground">Statut :</span>
                           <Badge variant={pet.status === "healthy" ? "default" : pet.status === "treatment" ? "secondary" : "destructive"}>
                             {pet.status === "healthy" ? "En bonne santé" : pet.status === "treatment" ? "En traitement" : "Urgent"}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /><span className="font-medium">Propriétaire :</span> {pet.owner}</div>
-                        <div><span className="font-medium">Dernière visite :</span> {lastConsult ? fmt(lastConsult.consultation_date) : "Aucune"}</div>
+                        <div className="flex items-start gap-2">
+                          <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <span><span className="font-medium text-muted-foreground">Propriétaire :</span> {pet.owner}</span>
+                        </div>
+                        <div><span className="font-medium text-muted-foreground">Dernière visite :</span> {lastConsult ? fmt(lastConsult.consultation_date) : "Aucune"}</div>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Consultations</p><p className="text-2xl font-bold">{consultations.length}</p></CardContent></Card>
-                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Vaccinations</p><p className="text-2xl font-bold">{vaccinations.length}</p></CardContent></Card>
-                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Antiparasitaires</p><p className="text-2xl font-bold">{antiparasitics.length}</p></CardContent></Card>
-                <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Ordonnances</p><p className="text-2xl font-bold">{prescriptions.length}</p></CardContent></Card>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Consultations</p><p className="text-xl sm:text-2xl font-bold">{consultations.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Vaccinations</p><p className="text-xl sm:text-2xl font-bold">{vaccinations.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Antiparasitaires</p><p className="text-xl sm:text-2xl font-bold">{antiparasitics.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Ordonnances</p><p className="text-xl sm:text-2xl font-bold">{prescriptions.length}</p></CardContent></Card>
               </div>
 
               {pet.medicalNotes && (
                 <Card>
-                  <CardHeader><CardTitle className="text-sm">Notes / antécédents</CardTitle></CardHeader>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">Notes / antécédents</CardTitle></CardHeader>
                   <CardContent><p className="text-sm whitespace-pre-line">{pet.medicalNotes}</p></CardContent>
                 </Card>
               )}
@@ -264,9 +310,9 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                         onClick={() => setSelectedConsult(c)}
                         className="w-full text-left border rounded p-3 text-sm hover:bg-muted/40 transition-colors"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:items-center">
                           <span className="font-medium">{fmt(c.consultation_date)}</span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             {c.photos?.length > 0 && (
                               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                                 <ImageIcon className="h-3 w-3" />{c.photos.length}
@@ -395,8 +441,10 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Fermer</Button>
+          <div className="flex justify-stretch sm:justify-end pt-2 pb-[env(safe-area-inset-bottom)]">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+              Fermer
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

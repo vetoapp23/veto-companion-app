@@ -450,18 +450,21 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
 
   if (!animal || !client) {
     return (
-      <Button variant="outline" disabled>
-        <Printer className="h-4 w-4 mr-2" />
-        Certificat de vaccination
+      <Button variant="outline" disabled size="sm" className="w-full sm:w-auto justify-center">
+        <Printer className="h-4 w-4 mr-2 shrink-0" />
+        <span className="sm:hidden">Certificat</span>
+        <span className="hidden sm:inline">Certificat de vaccination</span>
       </Button>
     );
   }
 
   return (
-    <Button variant="outline" onClick={handlePrint}>
-      <Printer className="h-4 w-4 mr-2" />
-      Certificat de vaccination
-      {doseRows.length > 0 ? ` (${doseRows.length})` : ''}
+    <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={handlePrint}>
+      <Printer className="h-4 w-4 mr-2 shrink-0" />
+      <span className="sm:hidden">Certificat{doseRows.length > 0 ? ` (${doseRows.length})` : ""}</span>
+      <span className="hidden sm:inline">
+        Certificat de vaccination{doseRows.length > 0 ? ` (${doseRows.length})` : ""}
+      </span>
     </Button>
   );
 }
