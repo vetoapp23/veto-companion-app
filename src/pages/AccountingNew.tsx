@@ -362,18 +362,21 @@ const Accounting: React.FC = () => {
         setStartDate(today);
         setEndDate(today);
         break;
+      case 'week': {
+        const day = now.getDay();
+        const mondayOffset = day === 0 ? -6 : 1 - day;
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        setStartDate(format(startOfWeek, 'yyyy-MM-dd'));
+        setEndDate(format(endOfWeek, 'yyyy-MM-dd'));
+        break;
+      }
       case 'month':
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         setStartDate(format(startOfMonth, 'yyyy-MM-dd'));
         setEndDate(format(endOfMonth, 'yyyy-MM-dd'));
-        break;
-      case 'quarter':
-        const quarter = Math.floor(now.getMonth() / 3);
-        const startOfQuarter = new Date(now.getFullYear(), quarter * 3, 1);
-        const endOfQuarter = new Date(now.getFullYear(), quarter * 3 + 3, 0);
-        setStartDate(format(startOfQuarter, 'yyyy-MM-dd'));
-        setEndDate(format(endOfQuarter, 'yyyy-MM-dd'));
         break;
       case 'year':
         const startOfYear = new Date(now.getFullYear(), 0, 1);
@@ -1053,18 +1056,18 @@ const Accounting: React.FC = () => {
                 Ce jour
               </Button>
               <Button
+                variant={selectedPeriod === 'week' ? 'default' : 'outline'}
+                onClick={() => handlePeriodChange('week')}
+                size="sm"
+              >
+                Cette semaine
+              </Button>
+              <Button
                 variant={selectedPeriod === 'month' ? 'default' : 'outline'}
                 onClick={() => handlePeriodChange('month')}
                 size="sm"
               >
                 Ce mois
-              </Button>
-              <Button
-                variant={selectedPeriod === 'quarter' ? 'default' : 'outline'}
-                onClick={() => handlePeriodChange('quarter')}
-                size="sm"
-              >
-                Ce trimestre
               </Button>
               <Button
                 variant={selectedPeriod === 'year' ? 'default' : 'outline'}

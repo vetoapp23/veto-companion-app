@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import { InvoicePrescriptionPrint } from '@/components/InvoicePrescriptionPrint'
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from '@/components/ListDateFilter';
 import { matchesListDateFilter, toLocalDateKey, type ListDateFilterState } from '@/lib/dateLocal';
+import { useDisplayPreference } from '@/hooks/use-display-preference';
 
 type HistoryItemType =
   | 'consultation'
@@ -89,7 +90,14 @@ const History = () => {
   const [filterPet, setFilterPet] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const { currentView } = useDisplayPreference("history");
+  const [viewMode, setViewMode] = useState<"cards" | "table">(
+    currentView === "table" ? "table" : "cards"
+  );
+
+  useEffect(() => {
+    setViewMode(currentView === "table" ? "table" : "cards");
+  }, [currentView]);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<any>(null);
   const [showNewPrescription, setShowNewPrescription] = useState(false);

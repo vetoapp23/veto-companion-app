@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X, Cog, Banknote, RotateCcw } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Settings2, Shield, X, Cog, Banknote, RotateCcw, Save } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useWriteAccess } from "@/components/RoleGuard";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -37,6 +37,7 @@ import type {
   FarmManagementSettings,
   ScheduleSettings
 } from '../lib/database'
+import { DEFAULT_DB_SCHEDULE, dbScheduleToUi } from '@/lib/scheduleSettings'
 
 export default function Settings() {
   const { toast } = useToast();
@@ -58,7 +59,56 @@ export default function Settings() {
   // Database hooks for schedule
   const { data: scheduleSettings, isLoading: scheduleLoading } = useScheduleSettings();
   const updateScheduleMutation = useUpdateScheduleSettings();
-  
+  const [scheduleDraft, setScheduleDraft] = useState<ScheduleSettings | null>(null);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+
+  useEffect(() => {
+    if (!scheduleSettings) return;
+    if (!scheduleDirty) {
+      setScheduleDraft({ ...DEFAULT_DB_SCHEDULE, ...scheduleSettings });
+    }
+  }, [scheduleSettings, scheduleDirty]);
+
+  const patchScheduleDraft = (patch: Partial<ScheduleSettings>) => {
+    if (!canWrite) return;
+    setScheduleDraft((prev) => ({
+      ...DEFAULT_DB_SCHEDULE,
+      ...(prev || scheduleSettings || {}),
+      ...patch,
+    }));
+    setScheduleDirty(true);
+  };
+
+  const saveScheduleSettings = async () => {
+    if (!guardWrite()) return;
+    const payload = scheduleDraft || scheduleSettings;
+    if (!payload) return;
+    try {
+      const toSave: ScheduleSettings = {
+        ...DEFAULT_DB_SCHEDULE,
+        ...payload,
+        slot_duration: Number(payload.slot_duration) || 30,
+        appointment_duration: Number(payload.slot_duration) || Number(payload.appointment_duration) || 30,
+      };
+      await updateScheduleMutation.mutateAsync(toSave);
+      updateSettings({
+        ...settings,
+        scheduleSettings: dbScheduleToUi(toSave),
+      } as ClinicSettings);
+      setScheduleDirty(false);
+      toast({
+        title: "Horaires enregistrés",
+        description: "Les créneaux RDV utilisent maintenant ces paramètres.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erreur",
+        description: e?.message || "Impossible d'enregistrer les horaires",
+        variant: "destructive",
+      });
+    }
+  };
+
   // State for veterinarians
   const [showVetModal, setShowVetModal] = useState(false);
   const [editVet, setEditVet] = useState<VeterinarianSetting | null>(null);
@@ -123,20 +173,52 @@ export default function Settings() {
   };
 
   // Display preferences handler
-  const handleDisplayPreferenceChange = (section: keyof DisplayPreferences, value: 'table' | 'cards') => {
+  const DISPLAY_SECTION_LABELS: Record<keyof DisplayPreferences, string> = {
+    clients: "Clients",
+    pets: "Animaux",
+    consultations: "Consultations",
+    appointments: "Rendez-vous",
+    visits: "Visites",
+    prescriptions: "Ordonnances",
+    farms: "Fermes",
+    vaccinations: "Vaccinations",
+    antiparasitics: "Antiparasites",
+    history: "Historiques",
+  };
+
+  const displayOptionsFor = (section: keyof DisplayPreferences) => {
+    if (section === "appointments") {
+      return [
+        { value: "calendar", label: "Calendrier" },
+        { value: "list", label: "Liste" },
+        { value: "table", label: "Tableau" },
+        { value: "cards", label: "Cartes" },
+      ] as const;
+    }
+    return [
+      { value: "table", label: "Tableau" },
+      { value: "cards", label: "Cartes" },
+    ] as const;
+  };
+
+  const handleDisplayPreferenceChange = (
+    section: keyof DisplayPreferences,
+    value: DisplayPreferences[keyof DisplayPreferences]
+  ) => {
     if (!guardWrite()) return;
     const updatedPreferences = {
       ...settings.displayPreferences,
-      [section]: value
+      [section]: value,
     };
-    const updatedSettings = {
+    updateSettings({
       ...settings,
-      displayPreferences: updatedPreferences
-    };
-    updateSettings(updatedSettings);
-    toast({ 
-      title: 'Préférence d\'affichage mise à jour', 
-      description: `${section} s'affichera maintenant en ${value === 'table' ? 'tableau' : 'cartes'}` 
+      displayPreferences: updatedPreferences,
+    });
+    const optionLabel =
+      displayOptionsFor(section).find((o) => o.value === value)?.label?.toLowerCase() || value;
+    toast({
+      title: "Préférence d'affichage mise à jour",
+      description: `${DISPLAY_SECTION_LABELS[section]} s'affichera en ${optionLabel}.`,
     });
   };
 
@@ -587,23 +669,38 @@ export default function Settings() {
                         Choisissez comment vous souhaitez afficher les différentes sections par défaut.
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {Object.entries(settings.displayPreferences).map(([key, value]) => (
-                          <div key={key} className="space-y-2">
-                            <Label htmlFor={`${key}-display`}>{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
-                            <Select
-                              value={value}
-                              onValueChange={(newValue: 'table' | 'cards') => handleDisplayPreferenceChange(key as keyof DisplayPreferences, newValue)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="table">Tableau</SelectItem>
-                                <SelectItem value="cards">Cartes</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
+                        {(Object.keys(DISPLAY_SECTION_LABELS) as (keyof DisplayPreferences)[]).map((key) => {
+                          const value =
+                            settings.displayPreferences[key] ??
+                            (key === "appointments" ? "calendar" : key === "pets" || key === "farms" || key === "visits" || key === "history" ? "cards" : "table");
+                          const options = displayOptionsFor(key);
+                          return (
+                            <div key={key} className="space-y-2">
+                              <Label htmlFor={`${key}-display`}>{DISPLAY_SECTION_LABELS[key]}</Label>
+                              <Select
+                                value={value}
+                                disabled={!canWrite}
+                                onValueChange={(newValue) =>
+                                  handleDisplayPreferenceChange(
+                                    key,
+                                    newValue as DisplayPreferences[keyof DisplayPreferences]
+                                  )
+                                }
+                              >
+                                <SelectTrigger id={`${key}-display`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {options.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </CardContent>
@@ -648,47 +745,54 @@ export default function Settings() {
 
                 {/* Schedule Configuration */}
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
                     <CardTitle>Configuration des Horaires</CardTitle>
+                    {canWrite && (
+                      <Button
+                        onClick={saveScheduleSettings}
+                        disabled={!scheduleDirty || updateScheduleMutation.isPending || scheduleLoading}
+                        className="gap-2 shrink-0"
+                      >
+                        {updateScheduleMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        Enregistrer
+                      </Button>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {scheduleLoading ? (
+                    {scheduleLoading || !scheduleDraft ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
                     ) : (
                       <>
+                        {scheduleDirty && (
+                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                            Modifications non enregistrées — cliquez sur Enregistrer pour les appliquer aux rendez-vous.
+                          </p>
+                        )}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="workingHours">Heure d'ouverture</Label>
-                            <Input 
-                              id="workingHours" 
-                              type="time" 
-                              value={scheduleSettings?.opening_time || '08:00'}
-                              onChange={(e) => {
-                                if (scheduleSettings) {
-                                  updateScheduleMutation.mutate({
-                                    ...scheduleSettings,
-                                    opening_time: e.target.value
-                                  });
-                                }
-                              }}
+                            <Input
+                              id="workingHours"
+                              type="time"
+                              disabled={!canWrite}
+                              value={scheduleDraft.opening_time || '08:00'}
+                              onChange={(e) => patchScheduleDraft({ opening_time: e.target.value })}
                             />
                           </div>
                           <div>
                             <Label htmlFor="closingTime">Heure de fermeture</Label>
-                            <Input 
-                              id="closingTime" 
-                              type="time" 
-                              value={scheduleSettings?.closing_time || '18:00'}
-                              onChange={(e) => {
-                                if (scheduleSettings) {
-                                  updateScheduleMutation.mutate({
-                                    ...scheduleSettings,
-                                    closing_time: e.target.value
-                                  });
-                                }
-                              }}
+                            <Input
+                              id="closingTime"
+                              type="time"
+                              disabled={!canWrite}
+                              value={scheduleDraft.closing_time || '18:00'}
+                              onChange={(e) => patchScheduleDraft({ closing_time: e.target.value })}
                             />
                           </div>
                         </div>
@@ -698,52 +802,41 @@ export default function Settings() {
                           <div className="grid grid-cols-2 gap-4 mt-2">
                             <div>
                               <Label htmlFor="lunchStart" className="text-xs text-muted-foreground">Début de pause</Label>
-                              <Input 
-                                id="lunchStart" 
-                                type="time" 
-                                value={scheduleSettings?.lunch_break_start || '12:00'}
-                                onChange={(e) => {
-                                  if (scheduleSettings) {
-                                    updateScheduleMutation.mutate({
-                                      ...scheduleSettings,
-                                      lunch_break_start: e.target.value
-                                    });
-                                  }
-                                }}
+                              <Input
+                                id="lunchStart"
+                                type="time"
+                                disabled={!canWrite}
+                                value={scheduleDraft.lunch_break_start || '12:00'}
+                                onChange={(e) => patchScheduleDraft({ lunch_break_start: e.target.value })}
                               />
                             </div>
                             <div>
                               <Label htmlFor="lunchEnd" className="text-xs text-muted-foreground">Fin de pause</Label>
-                              <Input 
-                                id="lunchEnd" 
-                                type="time" 
-                                value={scheduleSettings?.lunch_break_end || '14:00'}
-                                onChange={(e) => {
-                                  if (scheduleSettings) {
-                                    updateScheduleMutation.mutate({
-                                      ...scheduleSettings,
-                                      lunch_break_end: e.target.value
-                                    });
-                                  }
-                                }}
+                              <Input
+                                id="lunchEnd"
+                                type="time"
+                                disabled={!canWrite}
+                                value={scheduleDraft.lunch_break_end || '14:00'}
+                                onChange={(e) => patchScheduleDraft({ lunch_break_end: e.target.value })}
                               />
                             </div>
                           </div>
                         </div>
 
                         <div>
-                          <Label>Durée des créneaux (minutes)</Label>
-                          <Input 
-                            type="number" 
-                            value={scheduleSettings?.slot_duration || 30}
-                            onChange={(e) => {
-                              if (scheduleSettings) {
-                                updateScheduleMutation.mutate({
-                                  ...scheduleSettings,
-                                  slot_duration: parseInt(e.target.value) || 30
-                                });
-                              }
-                            }}
+                          <Label htmlFor="slotDuration">Durée des créneaux (minutes)</Label>
+                          <Input
+                            id="slotDuration"
+                            type="number"
+                            min={5}
+                            step={5}
+                            disabled={!canWrite}
+                            value={scheduleDraft.slot_duration || 30}
+                            onChange={(e) =>
+                              patchScheduleDraft({
+                                slot_duration: parseInt(e.target.value, 10) || 30,
+                              })
+                            }
                             className="mt-2"
                           />
                         </div>
@@ -758,25 +851,22 @@ export default function Settings() {
                               { day: 'Jeudi', key: 'thursday' },
                               { day: 'Vendredi', key: 'friday' },
                               { day: 'Samedi', key: 'saturday' },
-                              { day: 'Dimanche', key: 'sunday' }
+                              { day: 'Dimanche', key: 'sunday' },
                             ].map((item) => {
-                              const isEnabled = scheduleSettings?.working_days?.includes(item.key) ?? true;
+                              const isEnabled = scheduleDraft.working_days?.includes(item.key) ?? false;
                               return (
                                 <div key={item.day} className="flex items-center justify-between">
                                   <Label htmlFor={item.day} className="text-sm">{item.day}</Label>
-                                  <Switch 
-                                    id={item.day} 
+                                  <Switch
+                                    id={item.day}
+                                    disabled={!canWrite}
                                     checked={isEnabled}
                                     onCheckedChange={(checked) => {
-                                      if (scheduleSettings) {
-                                        const workingDays = checked
-                                          ? [...(scheduleSettings.working_days || []), item.key]
-                                          : (scheduleSettings.working_days || []).filter(d => d !== item.key);
-                                        updateScheduleMutation.mutate({
-                                          ...scheduleSettings,
-                                          working_days: workingDays
-                                        });
-                                      }
+                                      const current = scheduleDraft.working_days || [];
+                                      const working_days = checked
+                                        ? Array.from(new Set([...current, item.key]))
+                                        : current.filter((d) => d !== item.key);
+                                      patchScheduleDraft({ working_days });
                                     }}
                                   />
                                 </div>

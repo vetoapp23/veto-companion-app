@@ -1,26 +1,30 @@
-import React, { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useEffect } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthRedirectProps {
   children: React.ReactNode;
   redirectTo?: string;
 }
 
-export function AuthRedirect({ children, redirectTo = '/dashboard' }: AuthRedirectProps) {
-  const { isAuthenticated, user } = useAuth();
+function safeRedirect(path: string | null, fallback: string) {
+  if (path && path.startsWith("/") && !path.startsWith("//")) return path;
+  return fallback;
+}
 
-  // Debug log auth state changes
+export function AuthRedirect({ children, redirectTo = "/dashboard" }: AuthRedirectProps) {
+  const { isAuthenticated, user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const target = safeRedirect(searchParams.get("redirect"), redirectTo);
+
   useEffect(() => {
-    console.log('🔍 AuthRedirect state:', { isAuthenticated, hasUser: !!user });
+    console.log("🔍 AuthRedirect state:", { isAuthenticated, hasUser: !!user });
   }, [isAuthenticated, user]);
 
-  // If user is authenticated, redirect immediately
   if (isAuthenticated && user) {
-    console.log('✅ User authenticated, redirecting to:', redirectTo);
-    return <Navigate to={redirectTo} replace />;
+    console.log("✅ User authenticated, redirecting to:", target);
+    return <Navigate to={target} replace />;
   }
 
-  // Show login form immediately if not authenticated (no loading state)
   return <>{children}</>;
 }

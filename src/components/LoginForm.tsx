@@ -9,7 +9,7 @@ import {
   Building2,
   UserPlus,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useGoogleLogin, useResetPassword, useLogin } from "@/hooks/useAuth";
 import { DemoLoginPanel } from "@/components/DemoLoginPanel";
 import heroImage from "@/assets/vet-hero.jpg";
@@ -24,6 +24,12 @@ export function LoginForm() {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [loginType, setLoginType] = useState<"admin" | "assistant">("admin");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = (() => {
+    const raw = searchParams.get("redirect") || "";
+    if (raw.startsWith("/") && !raw.startsWith("//")) return raw;
+    return "/dashboard";
+  })();
   const loginMutation = useLogin();
   const googleLoginMutation = useGoogleLogin();
   const resetPasswordMutation = useResetPassword();
@@ -39,7 +45,7 @@ export function LoginForm() {
 
     try {
       await loginMutation.mutateAsync({ email, password });
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo, { replace: true });
       window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur inattendue est survenue");
@@ -50,7 +56,7 @@ export function LoginForm() {
     setError("");
     try {
       await googleLoginMutation.mutateAsync();
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch {
       setError("Erreur lors de la connexion avec Google");
     }

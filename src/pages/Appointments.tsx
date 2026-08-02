@@ -78,8 +78,23 @@ export default function Appointments() {
   const [filterType, setFilterType] = useState("all");
   const [filterSpecies, setFilterSpecies] = useState("all");
   const [dateFilter, setDateFilter] = useState<ListDateFilterState>(DEFAULT_LIST_DATE_FILTER);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [displayMode, setDisplayMode] = useState<'cards' | 'table'>(currentView);
+  const initialViewMode: 'list' | 'calendar' =
+    currentView === 'calendar' ? 'calendar' : 'list';
+  const initialDisplayMode: 'cards' | 'table' =
+    currentView === 'cards' ? 'cards' : 'table';
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>(initialViewMode);
+  const [displayMode, setDisplayMode] = useState<'cards' | 'table'>(initialDisplayMode);
+
+  useEffect(() => {
+    if (currentView === 'calendar') {
+      setViewMode('calendar');
+    } else if (currentView === 'list' || currentView === 'table' || currentView === 'cards') {
+      setViewMode('list');
+      if (currentView === 'cards' || currentView === 'table') {
+        setDisplayMode(currentView);
+      }
+    }
+  }, [currentView]);
   
   // Delete confirmation modal state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

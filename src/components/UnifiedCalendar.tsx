@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, Heart, AlertTriangle, CheckCircle, ClipboardList } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useSettings } from "@/contexts/SettingsContext";
-import { generateTimeSlots } from "@/utils/scheduleUtils";
+import { generateTimeSlots, isWorkingDay } from "@/utils/scheduleUtils";
 import { parseLocalDateKey, toLocalDateKey } from "@/lib/dateLocal";
 import type { ClinicCalendarEvent } from "@/lib/clinicCalendar";
+import { useScheduleSettings } from "@/hooks/useAppSettings";
+import { dbScheduleToUi } from "@/lib/scheduleSettings";
 
 export type CalendarEvent = ClinicCalendarEvent;
 
@@ -83,7 +84,8 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
   icon = <Calendar className="h-5 w-5" />,
   occupiedSlots = [],
 }) => {
-  const { settings } = useSettings();
+  const { data: dbSchedule } = useScheduleSettings();
+  const scheduleSettings = useMemo(() => dbScheduleToUi(dbSchedule), [dbSchedule]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateKey(new Date()));
 
@@ -114,14 +116,19 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
     [occupiedSlots, selectedDate]
   );
 
+  const selectedIsWorkingDay = useMemo(
+    () => (selectedDate ? isWorkingDay(selectedDate, scheduleSettings) : false),
+    [selectedDate, scheduleSettings]
+  );
+
   const timeSlots = useMemo(() => {
-    if (!selectedDate || !showTimeSlots) return [];
-    const slots = generateTimeSlots(selectedDate, settings.scheduleSettings, []);
-    return slots.map((slot: any) => ({
+    if (!selectedDate || !showTimeSlots || !selectedIsWorkingDay) return [];
+    const slots = generateTimeSlots(selectedDate, scheduleSettings, []);
+    return slots.map((slot) => ({
       ...slot,
       available: !!slot.isAvailable && !busyForSelected.includes(slot.time),
     }));
-  }, [selectedDate, showTimeSlots, settings.scheduleSettings, busyForSelected]);
+  }, [selectedDate, showTimeSlots, scheduleSettings, busyForSelected, selectedIsWorkingDay]);
 
   const navigateMonth = (direction: "prev" | "next") => {
     const newDate = new Date(currentDate);
@@ -285,19 +292,28 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
             {showTimeSlots && (
               <div className="pt-2 border-t space-y-2">
                 <p className="text-sm font-medium">Créneaux</p>
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                  {timeSlots.map((slot: any) => (
-                    <Button
-                      key={slot.time}
-                      size="sm"
-                      variant={slot.available ? "outline" : "ghost"}
-                      disabled={!slot.available}
-                      onClick={() => onTimeSlotClick?.(selectedDate, slot.time)}
-                    >
-                      {slot.time}
-                    </Button>
-                  ))}
-                </div>
+                {!selectedIsWorkingDay ? (
+                  <p className="text-sm text-muted-foreground">
+                    Jour fermé — hors jours de travail configurés.
+                  </p>
+                ) : timeSlots.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun créneau configuré.</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {timeSlots.map((slot) => (
+                      <Button
+                        key={slot.time}
+                        size="sm"
+                        variant={slot.available ? "outline" : "ghost"}
+                        disabled={!slot.available}
+                        title={slot.isLunchBreak ? "Pause déjeuner" : undefined}
+                        onClick={() => onTimeSlotClick?.(selectedDate, slot.time)}
+                      >
+                        {slot.time}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

@@ -47,6 +47,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import AuthSettings from "./pages/AuthSettings";
 import { ResetPassword } from "./pages/ResetPassword";
+import ImportMedicalDossier from "./pages/ImportMedicalDossier";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { queryClient } from "@/lib/queryClient";
@@ -75,6 +76,8 @@ const App = () => (
                       />
                       <Route path="/register" element={<Register />} />
                       <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/import/dossier" element={<ImportMedicalDossier />} />
+                      <Route path="/import/dossier/:token" element={<ImportMedicalDossier />} />
                       <Route
                         path="/dashboard"
                         element={

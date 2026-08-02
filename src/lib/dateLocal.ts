@@ -78,7 +78,6 @@ export const LIST_DATE_PERIOD_OPTIONS: { value: ListDatePeriod; label: string }[
   { value: "today", label: "Aujourd'hui" },
   { value: "week", label: "Cette semaine" },
   { value: "month", label: "Ce mois" },
-  { value: "quarter", label: "Ce trimestre" },
   { value: "year", label: "Cette année" },
   { value: "range", label: "Plage personnalisée" },
 ];

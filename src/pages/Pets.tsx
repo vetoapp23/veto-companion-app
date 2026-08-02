@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Heart, User, Calendar, Stethoscope, Eye, Edit, Activity, Grid, List, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, Settings, FileText } from "lucide-react";
+import { Plus, Search, Heart, User, Calendar, Stethoscope, Eye, Edit, Activity, Grid, List, Loader2, AlertTriangle, CheckCircle, XCircle, Trash2, Settings, FileText, QrCode } from "lucide-react";
+import { Link } from "react-router-dom";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useToast } from "@/hooks/use-toast";
 import { NewPetModal } from "@/components/forms/NewPetModal";
@@ -448,13 +449,21 @@ const PetsContent = () => {
               Tableau
             </Button>
             {canWriteAnimals && (
-              <Button className="gap-2 rounded-full" onClick={() => {
-                if (!guardWriteAnimals()) return;
-                setShowPetModal(true);
-              }}>
-                <Plus className="h-4 w-4" />
-                Nouvel Animal
-              </Button>
+              <>
+                <Button variant="outline" className="gap-2 rounded-full" asChild>
+                  <Link to="/import/dossier">
+                    <QrCode className="h-4 w-4" />
+                    Importer dossier (QR)
+                  </Link>
+                </Button>
+                <Button className="gap-2 rounded-full" onClick={() => {
+                  if (!guardWriteAnimals()) return;
+                  setShowPetModal(true);
+                }}>
+                  <Plus className="h-4 w-4" />
+                  Nouvel Animal
+                </Button>
+              </>
             )}
           </>
         }

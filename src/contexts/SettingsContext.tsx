@@ -11,15 +11,20 @@ export interface FarmManagementSettings {
   defaultCoordinateFormat: string;
 }
 
+export type StandardDisplayMode = "table" | "cards";
+export type AppointmentDisplayMode = "calendar" | "list" | "table" | "cards";
+
 export interface DisplayPreferences {
-  clients: 'table' | 'cards';
-  pets: 'table' | 'cards';
-  consultations: 'table' | 'cards';
-  appointments: 'table' | 'cards';
-  prescriptions: 'table' | 'cards';
-  farms: 'table' | 'cards';
-  vaccinations: 'table' | 'cards';
-  antiparasitics: 'table' | 'cards';
+  clients: StandardDisplayMode;
+  pets: StandardDisplayMode;
+  consultations: StandardDisplayMode;
+  appointments: AppointmentDisplayMode;
+  visits: StandardDisplayMode;
+  prescriptions: StandardDisplayMode;
+  farms: StandardDisplayMode;
+  vaccinations: StandardDisplayMode;
+  antiparasitics: StandardDisplayMode;
+  history: StandardDisplayMode;
 }
 
 export interface ScheduleSettings {
@@ -103,14 +108,16 @@ const defaultFarmManagementSettings: FarmManagementSettings = {
 };
 
 const defaultDisplayPreferences: DisplayPreferences = {
-  clients: 'table',
-  pets: 'cards',
-  consultations: 'table',
-  appointments: 'table',
-  prescriptions: 'table',
-  farms: 'cards',
-  vaccinations: 'table',
-  antiparasitics: 'table'
+  clients: "table",
+  pets: "cards",
+  consultations: "table",
+  appointments: "calendar",
+  visits: "cards",
+  prescriptions: "table",
+  farms: "cards",
+  vaccinations: "table",
+  antiparasitics: "table",
+  history: "cards",
 };
 
 const defaultScheduleSettings: ScheduleSettings = {
@@ -118,7 +125,7 @@ const defaultScheduleSettings: ScheduleSettings = {
   closingTime: '18:00',
   slotDuration: 30,
   lunchBreakStart: '12:00',
-  lunchBreakEnd: '13:00',
+  lunchBreakEnd: '14:00',
   workingDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 };
 
@@ -183,10 +190,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             ...defaultFarmManagementSettings,
             ...parsedSettings.farmManagement
           },
-          displayPreferences: {
-            ...defaultDisplayPreferences,
-            ...parsedSettings.displayPreferences
-          },
+          displayPreferences: (() => {
+            const prev = parsedSettings.displayPreferences || {};
+            const merged = {
+              ...defaultDisplayPreferences,
+              ...prev,
+            };
+            // Migration anciennes prefs : RDV → Calendrier par défaut si Visites/Historiques absents
+            if (prev.visits == null && prev.history == null && prev.appointments === "table") {
+              merged.appointments = "calendar";
+            }
+            return merged;
+          })(),
           scheduleSettings: {
             ...defaultScheduleSettings,
             ...parsedSettings.scheduleSettings

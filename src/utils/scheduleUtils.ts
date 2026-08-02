@@ -1,6 +1,7 @@
-import { ScheduleSettings } from '@/contexts/SettingsContext';
-import { Appointment } from '@/contexts/ClientContext';
-import { toLocalDateKey } from '@/lib/dateLocal';
+import { ScheduleSettings } from "@/contexts/SettingsContext";
+import { Appointment } from "@/contexts/ClientContext";
+import { toLocalDateKey } from "@/lib/dateLocal";
+import { getWeekdayKey } from "@/lib/scheduleSettings";
 
 export interface TimeSlot {
   time: string;
@@ -15,6 +16,7 @@ export interface DaySlots {
 
 /**
  * Génère tous les créneaux horaires pour une date donnée
+ * (respecte ouverture / fermeture / durée / pause déjeuner)
  */
 export function generateTimeSlots(
   date: string,
@@ -22,37 +24,41 @@ export function generateTimeSlots(
   existingAppointments: Appointment[]
 ): TimeSlot[] {
   const slots: TimeSlot[] = [];
-  const { openingTime, closingTime, slotDuration, lunchBreakStart, lunchBreakEnd } = scheduleSettings;
-  
-  // Convertir les heures en minutes pour faciliter les calculs
+  const { openingTime, closingTime, slotDuration, lunchBreakStart, lunchBreakEnd } =
+    scheduleSettings;
+
+  const duration = Math.max(5, Number(slotDuration) || 30);
   const openingMinutes = timeToMinutes(openingTime);
   const closingMinutes = timeToMinutes(closingTime);
   const lunchStartMinutes = lunchBreakStart ? timeToMinutes(lunchBreakStart) : null;
   const lunchEndMinutes = lunchBreakEnd ? timeToMinutes(lunchBreakEnd) : null;
-  
-  // Générer les créneaux
-  for (let minutes = openingMinutes; minutes < closingMinutes; minutes += slotDuration) {
+
+  if (!(closingMinutes > openingMinutes)) return slots;
+
+  for (let minutes = openingMinutes; minutes < closingMinutes; minutes += duration) {
     const time = minutesToTime(minutes);
-    const isLunchBreak = lunchStartMinutes && lunchEndMinutes && 
-                         minutes >= lunchStartMinutes && minutes < lunchEndMinutes;
-    
-    // Vérifier si le créneau est déjà pris
-    const isBooked = existingAppointments.some(appointment => 
-      appointment.date === date && appointment.time === time
+    const isLunchBreak =
+      lunchStartMinutes != null &&
+      lunchEndMinutes != null &&
+      minutes >= lunchStartMinutes &&
+      minutes < lunchEndMinutes;
+
+    const isBooked = existingAppointments.some(
+      (appointment) => appointment.date === date && appointment.time === time
     );
-    
+
     slots.push({
       time,
       isAvailable: !isBooked && !isLunchBreak,
-      isLunchBreak: !!isLunchBreak
+      isLunchBreak: !!isLunchBreak,
     });
   }
-  
+
   return slots;
 }
 
 /**
- * Génère les créneaux pour une plage de dates
+ * Génère les créneaux pour une plage de dates (jours ouvrés uniquement)
  */
 export function generateDateRangeSlots(
   startDate: string,
@@ -63,87 +69,63 @@ export function generateDateRangeSlots(
   const days: DaySlots[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
     const dateStr = toLocalDateKey(date);
-    const dayName = date.toLocaleDateString('fr-FR', { weekday: 'long' }).toLowerCase();
-    
-    // Vérifier si c'est un jour de travail
-    if (scheduleSettings.workingDays.includes(dayName)) {
-      const appointmentsForDate = existingAppointments.filter(app => app.date === dateStr);
-      const slots = generateTimeSlots(dateStr, scheduleSettings, appointmentsForDate);
-      
-      days.push({
-        date: dateStr,
-        slots
-      });
-    }
+    if (!isWorkingDay(dateStr, scheduleSettings)) continue;
+
+    const appointmentsForDate = existingAppointments.filter((app) => app.date === dateStr);
+    days.push({
+      date: dateStr,
+      slots: generateTimeSlots(dateStr, scheduleSettings, appointmentsForDate),
+    });
   }
-  
+
   return days;
 }
 
-/**
- * Vérifie si un créneau est disponible
- */
 export function isSlotAvailable(
   date: string,
   time: string,
   scheduleSettings: ScheduleSettings,
   existingAppointments: Appointment[]
 ): boolean {
+  if (!isWorkingDay(date, scheduleSettings)) return false;
   const slots = generateTimeSlots(date, scheduleSettings, existingAppointments);
-  const slot = slots.find(s => s.time === time);
+  const slot = slots.find((s) => s.time === time);
   return slot ? slot.isAvailable : false;
 }
 
-/**
- * Convertit une heure (HH:MM) en minutes
- */
 function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
+  const [hours, minutes] = time.split(":").map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
 }
 
-/**
- * Convertit des minutes en heure (HH:MM)
- */
 function minutesToTime(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
 }
 
-/**
- * Formate une date pour l'affichage
- */
 export function formatDateForDisplay(date: string): string {
-  return new Date(date).toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  return new Date(date + "T12:00:00").toLocaleDateString("fr-FR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 }
 
-/**
- * Formate une heure pour l'affichage
- */
 export function formatTimeForDisplay(time: string): string {
   return time;
 }
 
-/**
- * Obtient le nom du jour en français
- */
 export function getDayName(date: string): string {
-  return new Date(date).toLocaleDateString('fr-FR', { weekday: 'long' });
+  return new Date(date + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long" });
 }
 
-/**
- * Vérifie si une date est un jour de travail
- */
+/** Jour ouvré selon workingDays (clés monday…sunday) */
 export function isWorkingDay(date: string, scheduleSettings: ScheduleSettings): boolean {
-  const dayName = getDayName(date).toLowerCase();
-  return scheduleSettings.workingDays.includes(dayName);
+  const key = getWeekdayKey(date);
+  return (scheduleSettings.workingDays || []).includes(key);
 }

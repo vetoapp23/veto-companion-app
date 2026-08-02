@@ -24,10 +24,10 @@ interface ListDateFilterProps {
   showAll?: boolean;
 }
 
-const PRESET_BUTTONS: { value: "today" | "month" | "quarter" | "year"; label: string }[] = [
+const PRESET_BUTTONS: { value: "today" | "week" | "month" | "year"; label: string }[] = [
   { value: "today", label: "Ce jour" },
+  { value: "week", label: "Cette semaine" },
   { value: "month", label: "Ce mois" },
-  { value: "quarter", label: "Ce trimestre" },
   { value: "year", label: "Cette année" },
 ];
 
@@ -40,7 +40,7 @@ export function ListDateFilter({
   title = "Période d'analyse",
   showAll = true,
 }: ListDateFilterProps) {
-  const selectPreset = (period: "today" | "month" | "quarter" | "year") => {
+  const selectPreset = (period: "today" | "week" | "month" | "year") => {
     const bounds = getBoundsForPeriod(period);
     onChange({ period, dateFrom: bounds.from, dateTo: bounds.to });
   };

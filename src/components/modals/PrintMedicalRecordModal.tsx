@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Printer, FileText, Download } from "lucide-react";
+import { Printer, FileText, Download, Loader2, QrCode } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml } from "@/lib/printWatermark";
@@ -27,6 +27,13 @@ import {
   buildAdministeredAntiparasiticRows,
   formatCertDate,
 } from "@/lib/vaccinationCertificate";
+import {
+  buildMedicalSharePayload,
+  buildTransferQrSectionHtml,
+  createMedicalShare,
+  medicalShareImportUrl,
+  qrCodeDataUrl,
+} from "@/lib/medicalShare";
 
 type SectionKey =
   | "identity"
@@ -86,6 +93,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const [sections, setSections] = useState<Record<SectionKey, boolean>>(TEMPLATES.complete);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [includeTransferQr, setIncludeTransferQr] = useState(false);
+  const [ownerConsent, setOwnerConsent] = useState(false);
+  const [expiresDays, setExpiresDays] = useState<"7" | "30" | "90">("30");
+  const [busy, setBusy] = useState(false);
 
   const applyTemplate = (t: Template) => {
     setTemplate(t);
@@ -123,7 +134,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     [antiparasitics, appointments, dateFrom, dateTo]
   );
 
-  const buildHtml = () => {
+  const buildHtml = async (transferQrHtml = "") => {
     if (!animal) return "";
 
     const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
@@ -315,6 +326,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       `);
     }
 
+    if (transferQrHtml) {
+      sectionsHtml.push(transferQrHtml);
+    }
+
     return buildReportDocument({
       title: `Dossier médical - ${animal.name}`,
       watermarkHtml: buildWatermarkHtml(isFree),
@@ -331,10 +346,47 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     });
   };
 
+  const resolveTransferQrHtml = async (): Promise<string> => {
+    if (!includeTransferQr || !animalId) return "";
+    if (!ownerConsent) {
+      throw new Error("Confirmez le consentement du propriétaire pour inclure le QR de transfert.");
+    }
+    const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
+    const consultationsInRange = consultations.filter((c: any) => inRange(c.consultation_date));
+    const payload = buildMedicalSharePayload({
+      clinicName: settings.clinicName,
+      owner: owner || null,
+      animal,
+      vaccinations: completedVaccinations as unknown as Array<Record<string, unknown>>,
+      antiparasitics: completedAntiparasitics as unknown as Array<Record<string, unknown>>,
+      consultations: consultationsInRange as unknown as Array<Record<string, unknown>>,
+      includeVaccinations: sections.vaccinations,
+      includeAntiparasitics: sections.antiparasitics,
+      includeConsultations: sections.consultations,
+    });
+    const share = await createMedicalShare({
+      animalId,
+      payload,
+      consent: true,
+      expiresDays: Number(expiresDays) || 30,
+      maxUses: 5,
+    });
+    const url = medicalShareImportUrl(share.token);
+    const qr = await qrCodeDataUrl(url, 280);
+    return buildTransferQrSectionHtml({
+      qrDataUrl: qr,
+      importUrl: url,
+      expiresAt: share.expires_at,
+    });
+  };
+
   const openPrintDialog = async () => {
-    const html = buildHtml();
-    if (!html) return;
+    if (!animal) return;
+    setBusy(true);
     try {
+      const transferQrHtml = await resolveTransferQrHtml();
+      const html = await buildHtml(transferQrHtml);
+      if (!html) return;
       await printHtml(html);
     } catch (e: any) {
       toast({
@@ -342,6 +394,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
         description: e?.message || "Autorisez les popups pour imprimer ou enregistrer en PDF.",
         variant: "destructive",
       });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -423,13 +477,81 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
             </div>
           </div>
 
+          <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+            <label className="flex items-start gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={includeTransferQr}
+                onCheckedChange={(v) => {
+                  const on = v === true;
+                  setIncludeTransferQr(on);
+                  if (!on) setOwnerConsent(false);
+                }}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="font-medium inline-flex items-center gap-1.5">
+                  <QrCode className="h-3.5 w-3.5" />
+                  Inclure un QR de transfert
+                </span>
+                <span className="block text-muted-foreground text-xs mt-0.5">
+                  Un autre véto pourra importer via Animaux → « Importer dossier (QR) »,
+                  ou en scannant le QR avec le téléphone (lien sous le code).
+                </span>
+              </span>
+            </label>
+
+            {includeTransferQr && (
+              <div className="space-y-3 pl-6">
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={ownerConsent}
+                    onCheckedChange={(v) => setOwnerConsent(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Le propriétaire autorise le partage de ces données médicales via ce lien.
+                  </span>
+                </label>
+                <div className="space-y-1.5 max-w-[200px]">
+                  <Label htmlFor="qr-expiry">Validité du lien</Label>
+                  <Select
+                    value={expiresDays}
+                    onValueChange={(v) => setExpiresDays(v as "7" | "30" | "90")}
+                  >
+                    <SelectTrigger id="qr-expiry">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7">7 jours</SelectItem>
+                      <SelectItem value="30">30 jours</SelectItem>
+                      <SelectItem value="90">90 jours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button variant="outline" onClick={handleDownloadPdf} className="gap-2">
-              <Download className="h-4 w-4" /> Télécharger PDF
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+              Annuler
             </Button>
-            <Button onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" /> Imprimer
+            <Button
+              variant="outline"
+              onClick={() => void handleDownloadPdf()}
+              className="gap-2"
+              disabled={busy || (includeTransferQr && !ownerConsent)}
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Télécharger PDF
+            </Button>
+            <Button
+              onClick={handlePrint}
+              className="gap-2"
+              disabled={busy || (includeTransferQr && !ownerConsent)}
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+              Imprimer
             </Button>
           </div>
         </div>
