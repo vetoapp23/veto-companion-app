@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useClients } from '@/contexts/ClientContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { useAppLocale } from '@/i18n/useAppLocale';
 
 interface ConfirmVaccinationReminderModalProps {
   open: boolean;
@@ -21,6 +23,9 @@ export function ConfirmVaccinationReminderModal({
 }: ConfirmVaccinationReminderModalProps) {
   const { confirmVaccinationReminder, calculateDueDateFromProtocol } = useClients();
   const { toast } = useToast();
+  const { t } = useTranslation('medical');
+  const { t: tc } = useTranslation('common');
+  const { bcp47 } = useAppLocale();
   
   const [formData, setFormData] = useState({
     datePerformed: format(new Date(), 'yyyy-MM-dd'),
@@ -35,19 +40,18 @@ export function ConfirmVaccinationReminderModal({
     
     if (!formData.veterinarian) {
       toast({
-        title: "Erreur",
-        description: "Le nom du vétérinaire est requis",
+        title: tc('error'),
+        description: t('confirmReminder.vetRequired'),
         variant: "destructive"
       });
       return;
     }
 
-    // Calculer la nouvelle date de rappel si pas fournie
     let newNextDueDate = formData.newNextDueDate;
     if (!newNextDueDate && vaccination) {
       const calculatedDate = calculateDueDateFromProtocol(
         vaccination.vaccineName,
-        'chien', // TODO: récupérer l'espèce du pet
+        'chien',
         formData.datePerformed
       );
       newNextDueDate = calculatedDate || '';
@@ -63,11 +67,10 @@ export function ConfirmVaccinationReminderModal({
 
     if (result) {
       toast({
-        title: "Rappel confirmé",
-        description: `Le rappel de ${vaccination.vaccineName} a été confirmé et enregistré`,
+        title: t('confirmReminder.confirmedTitle'),
+        description: t('confirmReminder.confirmedBodyFull', { name: vaccination.vaccineName }),
       });
       
-      // Reset form
       setFormData({
         datePerformed: format(new Date(), 'yyyy-MM-dd'),
         veterinarian: '',
@@ -93,24 +96,26 @@ export function ConfirmVaccinationReminderModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Confirmer le rappel de vaccination</DialogTitle>
+          <DialogTitle>{t('confirmReminder.modalTitle')}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
           <div className="bg-muted/50 p-3 rounded-lg">
-            <h4 className="font-medium text-sm mb-2">Vaccination à confirmer :</h4>
+            <h4 className="font-medium text-sm mb-2">{t('confirmReminder.vaccinationLabel')}</h4>
             <p className="text-sm text-muted-foreground">
-              <strong>{vaccination.vaccineName}</strong> pour {vaccination.petName}
+              <strong>{vaccination.vaccineName}</strong> {t('confirmReminder.forPet', { petName: vaccination.petName })}
             </p>
             <p className="text-sm text-muted-foreground">
-              Rappel prévu le : {new Date(vaccination.nextDueDate).toLocaleDateString('fr-FR')}
+              {t('confirmReminder.scheduledOn', {
+                date: new Date(vaccination.nextDueDate).toLocaleDateString(bcp47),
+              })}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="datePerformed">Date d'administration *</Label>
+                <Label htmlFor="datePerformed">{t('confirmReminder.adminDate')} *</Label>
                 <Input
                   id="datePerformed"
                   name="datePerformed"
@@ -121,62 +126,61 @@ export function ConfirmVaccinationReminderModal({
                 />
               </div>
               <div>
-                <Label htmlFor="veterinarian">Vétérinaire *</Label>
+                <Label htmlFor="veterinarian">{t('confirmReminder.vetName')} *</Label>
                 <Input
                   id="veterinarian"
                   name="veterinarian"
                   value={formData.veterinarian}
                   onChange={handleChange}
-                  placeholder="Nom du vétérinaire"
+                  placeholder={t('confirmReminder.vetPlaceholder')}
                   required
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="batchNumber">Numéro de lot</Label>
+              <Label htmlFor="batchNumber">{t('confirmReminder.batchNumber')}</Label>
               <Input
                 id="batchNumber"
                 name="batchNumber"
                 value={formData.batchNumber}
                 onChange={handleChange}
-                placeholder="Numéro de lot du vaccin"
+                placeholder={t('confirmReminder.batchPlaceholder')}
               />
             </div>
 
             <div>
-              <Label htmlFor="newNextDueDate">Nouvelle date de rappel</Label>
+              <Label htmlFor="newNextDueDate">{t('confirmReminder.nextBooster')}</Label>
               <Input
                 id="newNextDueDate"
                 name="newNextDueDate"
                 type="date"
                 value={formData.newNextDueDate}
                 onChange={handleChange}
-                placeholder="Date du prochain rappel"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Laissez vide pour utiliser la date calculée selon le protocole
+                {t('confirmReminder.nextBoosterHint')}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{tc('notes')}</Label>
               <Textarea
                 id="notes"
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                placeholder="Notes sur l'administration du vaccin"
+                placeholder={t('confirmReminder.adminNotesPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Annuler
+                {tc('cancel')}
               </Button>
               <Button type="submit">
-                Confirmer le rappel
+                {t('confirmReminder.confirmButton')}
               </Button>
             </div>
           </form>

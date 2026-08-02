@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAllUsers } from "@/hooks/useSuperAdminData";
 import { adminUpdateUser } from "@/lib/superAdmin";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { statusBadge } from "./Overview";
@@ -15,6 +16,8 @@ const USER_ROLES = ["assistant", "admin", "super_admin"];
 const PAGE_SIZE = 30;
 
 export default function SuperAdminUsers() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { data: users = [], isLoading, refetch } = useAllUsers();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -41,7 +44,7 @@ export default function SuperAdminUsers() {
 
   const update = async (id: string, patch: any, label: string) => {
     try {
-      if (patch.role === "super_admin" && !confirm("Promouvoir cet utilisateur en super_admin ?")) {
+      if (patch.role === "super_admin" && !confirm(t("superAdmin.users.promoteConfirm"))) {
         return;
       }
       await adminUpdateUser(id, patch);
@@ -49,7 +52,7 @@ export default function SuperAdminUsers() {
       qc.invalidateQueries({ queryKey: ["super-admin"] });
       refetch();
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -60,7 +63,7 @@ export default function SuperAdminUsers() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9"
-            placeholder="Email / nom / clinique"
+            placeholder={t("superAdmin.users.searchPlaceholder")}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -71,14 +74,14 @@ export default function SuperAdminUsers() {
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous statuts</SelectItem>
+            <SelectItem value="all">{t("superAdmin.users.allStatuses")}</SelectItem>
             {USER_STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(0); }}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous rôles</SelectItem>
+            <SelectItem value="all">{t("superAdmin.users.allRoles")}</SelectItem>
             {USER_ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -89,19 +92,19 @@ export default function SuperAdminUsers() {
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40 text-left">
               <tr>
-                <th className="p-3">Utilisateur</th>
-                <th className="p-3">Clinique</th>
-                <th className="p-3">Rôle</th>
-                <th className="p-3">Statut</th>
-                <th className="p-3">Actions</th>
+                <th className="p-3">{t("superAdmin.users.user")}</th>
+                <th className="p-3">{t("superAdmin.users.clinic")}</th>
+                <th className="p-3">{t("superAdmin.users.role")}</th>
+                <th className="p-3">{t("superAdmin.users.status")}</th>
+                <th className="p-3">{t("superAdmin.users.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Chargement…</td></tr>
+                <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">{t("superAdmin.users.loading")}</td></tr>
               )}
               {!isLoading && slice.length === 0 && (
-                <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Aucun utilisateur</td></tr>
+                <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">{t("superAdmin.users.empty")}</td></tr>
               )}
               {slice.map((u: any) => (
                 <tr key={u.id} className="border-b hover:bg-muted/20">

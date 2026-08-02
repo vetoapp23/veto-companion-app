@@ -27,8 +27,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
 import { matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 const Consultations = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
   const { data: consultations = [], isLoading } = useConsultations();
   const { data: prescriptions = [] } = usePrescriptions();
   const createConsultationMutation = useCreateConsultation();
@@ -106,8 +111,8 @@ const Consultations = () => {
       
       if (result.success) {
         toast({
-          title: "Succès",
-          description: `La consultation a été supprimée avec succès.`,
+          title: t("consultations.deleted"),
+          description: t("consultations.deleted"),
         });
         
         // Manually refetch data after successful delete
@@ -121,16 +126,16 @@ const Consultations = () => {
       deleteConsultationMutation.mutate(consultationToDelete.id, {
         onSuccess: () => {
           toast({
-            title: "Succès",
-            description: `La consultation a été supprimée avec succès.`,
+            title: t("consultations.deleted"),
+            description: t("consultations.deleted"),
           });
           setShowDeleteAlert(false);
           setConsultationToDelete(null);
         },
         onError: (error) => {
           toast({
-            title: "Erreur",
-            description: `Impossible de supprimer la consultation: ${error.message}`,
+            title: tc("error"),
+            description: `${t("consultations.cannotDelete")}: ${error.message}`,
             variant: "destructive",
           });
           setShowDeleteAlert(false);
@@ -139,8 +144,8 @@ const Consultations = () => {
       });
     } catch (error: any) {
       toast({
-        title: "Erreur",
-        description: `Erreur inattendue: ${error.message || "Erreur inconnue"}`,
+        title: tc("error"),
+        description: `${tc("unexpectedError")} ${error.message || tc("unknown")}`,
         variant: "destructive",
       });
       setShowDeleteAlert(false);
@@ -159,7 +164,7 @@ const Consultations = () => {
       symptoms: "",
       diagnosis: "",
       treatment: "",
-      notes: `Suivi de la consultation du ${new Date(consultation.consultation_date).toLocaleDateString('fr-FR')}`,
+      notes: t("consultations.followUpNote", { date: new Date(consultation.consultation_date).toLocaleDateString(bcp47) }),
       status: "scheduled"
     });
     setShowNewConsultation(true);
@@ -168,7 +173,7 @@ const Consultations = () => {
   const handleViewPrescriptions = (consultation: any) => {
     const consultationPrescriptions = getPrescriptionsForConsultation(consultation.id);
     setSelectedConsultationPrescriptions(consultationPrescriptions);
-    setSelectedAnimalName(consultation.animal?.name || 'Animal inconnu');
+    setSelectedAnimalName(consultation.animal?.name || t("consultations.unknownPet"));
     setShowPrescriptionDetails(true);
   };
 
@@ -176,8 +181,8 @@ const Consultations = () => {
     <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
       <AppPageHeader
         icon={FileText}
-        title="Consultations"
-        description="Gérez et consultez tous les dossiers médicaux"
+        title={t("consultations.title")}
+        description={t("consultations.description")}
         actions={
           <>
             <div className="flex border rounded-full p-1 bg-muted/50">
@@ -207,7 +212,7 @@ const Consultations = () => {
               }}
             >
               <Plus className="h-4 w-4" />
-              Nouvelle Consultation
+              {t("consultations.new")}
             </Button>
             )}
           </>
@@ -218,13 +223,13 @@ const Consultations = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
         <Search className="h-4 sm:h-5 w-4 sm:w-5" />
-        Rechercher et filtrer
+        {tc("searchAndFilter")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-4">
         <Input 
-          placeholder="Rechercher par client, animal, symptômes ou diagnostic..."
+          placeholder={t("consultations.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-full sm:max-w-md"
@@ -240,15 +245,15 @@ const Consultations = () => {
 
       <div className="space-y-4">
       <h3 className="text-base sm:text-lg font-semibold">
-        Consultations récentes ({filteredConsultations.length})
+        {t("consultations.title")} ({filteredConsultations.length})
       </h3>
       
       {filteredConsultations.length === 0 ? (
         <Card>
         <CardContent className="p-6 sm:p-8 text-center text-muted-foreground">
           <FileText className="h-10 sm:h-12 w-10 sm:w-12 mx-auto mb-4 text-muted-foreground/50" />
-          <p className="text-sm sm:text-base">Aucune consultation trouvée</p>
-          <p className="text-xs sm:text-sm">Commencez par créer votre première consultation</p>
+          <p className="text-sm sm:text-base">{t("consultations.empty")}</p>
+          <p className="text-xs sm:text-sm">{t("consultations.emptyHint")}</p>
         </CardContent>
         </Card>
       ) : viewMode === 'cards' ? (
@@ -259,13 +264,13 @@ const Consultations = () => {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div className="space-y-2">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <h4 className="text-base sm:text-lg font-semibold">{consultation.animal?.name || 'Animal inconnu'}</h4>
-              <Badge variant="secondary" className="w-fit">Consultation</Badge>
+              <h4 className="text-base sm:text-lg font-semibold">{consultation.animal?.name || t("consultations.unknownPet")}</h4>
+              <Badge variant="secondary" className="w-fit">{t("consultations.title")}</Badge>
               {(consultation.visit_id) && (
-                <Badge variant="outline" className="w-fit">Visite liée</Badge>
+                <Badge variant="outline" className="w-fit">{t("consultations.linkedVisit")}</Badge>
               )}
               <span className="text-xs sm:text-sm text-muted-foreground">
-                {new Date(consultation.consultation_date).toLocaleDateString('fr-FR')}
+                {new Date(consultation.consultation_date).toLocaleDateString(bcp47)}
               </span>
               </div>
               
@@ -298,14 +303,14 @@ const Consultations = () => {
             <div className="space-y-2">
               {consultation.symptoms && (
               <>
-                <h5 className="font-medium text-sm sm:text-base">Symptômes:</h5>
+                <h5 className="font-medium text-sm sm:text-base">{t("consultations.clinical.symptoms")}:</h5>
                 <p className="text-xs sm:text-sm">{consultation.symptoms}</p>
               </>
               )}
               
               {consultation.diagnosis && (
               <>
-                <h5 className="font-medium text-sm sm:text-base">Diagnostic:</h5>
+                <h5 className="font-medium text-sm sm:text-base">{t("consultations.clinical.diagnosis")}:</h5>
                 <p className="text-xs sm:text-sm">{consultation.diagnosis}</p>
               </>
               )}
@@ -314,7 +319,7 @@ const Consultations = () => {
             <div className="space-y-2">
               {consultation.treatment && (
               <>
-                <h5 className="font-medium text-sm sm:text-base">Traitement:</h5>
+                <h5 className="font-medium text-sm sm:text-base">{t("consultations.clinical.treatment")}:</h5>
                 <p className="text-xs sm:text-sm">{consultation.treatment}</p>
               </>
               )}
@@ -325,7 +330,7 @@ const Consultations = () => {
                 <>
                 <h5 className="font-medium flex items-center gap-1 text-sm sm:text-base">
                   <Pill className="h-3 sm:h-4 w-3 sm:w-4" />
-                  Prescriptions ({consultationPrescriptions.length}):
+                  {t("consultations.prescription.title")} ({consultationPrescriptions.length}):
                 </h5>
                 <div className="space-y-1">
                   {consultationPrescriptions.map((prescription: any) => (
@@ -336,12 +341,12 @@ const Consultations = () => {
                     Prescription #{prescription.id.slice(-8)}
                     </div>
                     <div className="text-blue-600 text-xs">
-                    {new Date(prescription.prescription_date).toLocaleDateString('fr-FR')} - 
+                    {new Date(prescription.prescription_date).toLocaleDateString(bcp47)} - 
                     Status: {prescription.status}
                     </div>
                     {prescription.medications && prescription.medications.length > 0 && (
                     <div className="mt-1">
-                      <div className="text-xs font-medium text-blue-700">Médicaments:</div>
+                      <div className="text-xs font-medium text-blue-700">{t("consultations.medications")}:</div>
                       {prescription.medications.map((med: any, idx: number) => (
                       <div key={idx} className="text-xs text-blue-600 ml-2">
                         • {med.medication_name} {med.dosage && `- ${med.dosage}`} {med.quantity && `(${med.quantity})`}
@@ -366,7 +371,7 @@ const Consultations = () => {
             
             {consultation.notes && (
             <div className="space-y-2">
-              <h5 className="font-medium text-sm sm:text-base">Notes:</h5>
+              <h5 className="font-medium text-sm sm:text-base">{t("consultations.notes")}:</h5>
               <p className="text-xs sm:text-sm bg-muted p-2 sm:p-3 rounded">{consultation.notes}</p>
             </div>
             )}
@@ -374,7 +379,7 @@ const Consultations = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-2 border-t gap-2">
             <span className="text-xs sm:text-sm text-muted-foreground">
               <Calendar className="h-3 w-3 inline mr-1" />
-              {consultation.followUp ? `Suivi: ${consultation.followUp}` : 'Aucun suivi prévu'}
+              {consultation.followUp ? t("consultations.followUp", { date: consultation.followUp }) : t("consultations.noFollowUp")}
             </span>
             
             <div className="flex flex-wrap gap-2">
@@ -388,7 +393,7 @@ const Consultations = () => {
               className="gap-1 text-xs sm:text-sm"
               >
               <Edit className="h-3 w-3" />
-              Modifier
+              {tc("edit")}
               </Button>
               <Button 
               size="sm" 
@@ -397,7 +402,7 @@ const Consultations = () => {
               className="gap-1 text-xs sm:text-sm"
               >
               <Pill className="h-3 w-3" />
-              Prescription
+              {t("consultations.prescription.title")}
               </Button>
               <Button 
               size="sm" 
@@ -406,14 +411,14 @@ const Consultations = () => {
               className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
               >
               <Trash2 className="h-3 w-3" />
-              Supprimer
+              {tc("delete")}
               </Button>
               <Button 
               size="sm"
               onClick={() => handleNewFollowUp(consultation as Consultation)}
               className="text-xs sm:text-sm"
               >
-              Nouveau suivi
+              {t("consultations.newFollowUp")}
               </Button>
               </>
               )}
@@ -430,13 +435,13 @@ const Consultations = () => {
           <Table>
             <TableHeader>
             <TableRow>
-              <TableHead className="text-xs sm:text-sm">Animal / Client</TableHead>
-              <TableHead className="text-xs sm:text-sm">Date</TableHead>
-              <TableHead className="text-xs sm:text-sm">Symptômes</TableHead>
-              <TableHead className="text-xs sm:text-sm">Diagnostic</TableHead>
-              <TableHead className="text-xs sm:text-sm">Température</TableHead>
-              <TableHead className="text-xs sm:text-sm">Prescriptions</TableHead>
-              <TableHead className="text-xs sm:text-sm">Actions</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.columns.pet")} / {t("consultations.columns.client")}</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.columns.date")}</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.clinical.symptoms")}</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.columns.diagnosis")}</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.clinical.vitals")}</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.prescription.title")}</TableHead>
+              <TableHead className="text-xs sm:text-sm">{t("consultations.columns.actions")}</TableHead>
             </TableRow>
             </TableHeader>
             <TableBody>
@@ -449,7 +454,7 @@ const Consultations = () => {
                 </div>
               </TableCell>
               <TableCell className="text-xs sm:text-sm">
-                {new Date(consultation.consultation_date).toLocaleDateString('fr-FR')}
+                {new Date(consultation.consultation_date).toLocaleDateString(bcp47)}
               </TableCell>
               <TableCell className="text-xs sm:text-sm">
                 <div className="max-w-xs truncate">
@@ -472,7 +477,7 @@ const Consultations = () => {
                   <div 
                     className="flex items-center gap-2 cursor-pointer p-1 rounded transition-colors w-fit"
                     onClick={() => handleViewPrescriptions(consultation)}
-                    title="Cliquer pour voir les détails des prescriptions"
+                    title={t("consultations.prescriptionTooltip")}
                   >
                     <Badge variant="outline" className="text-xs">
                     {consultationPrescriptions.length} prescription{consultationPrescriptions.length > 1 ? 's' : ''}
@@ -482,7 +487,7 @@ const Consultations = () => {
                   
                   </div>
                 ) : (
-                  <span className="text-muted-foreground text-xs">Aucune</span>
+                  <span className="text-muted-foreground text-xs">{tc("none")}</span>
                 );
                 })()}
               </TableCell>
@@ -495,7 +500,7 @@ const Consultations = () => {
                   size="sm" 
                   variant="outline"
                   onClick={() => handleEditConsultation(consultation as Consultation)}
-                  title="Modifier"
+                  title={t("consultations.tooltips.edit")}
                 >
                   <Edit className="h-3 w-3" />
                 </Button>
@@ -503,7 +508,7 @@ const Consultations = () => {
                   size="sm" 
                   variant="default"
                   onClick={() => handleNewPrescription(consultation as Consultation)}
-                  title="Nouvelle Prescription"
+                  title={t("consultations.prescription.new")}
                 >
                   <Pill className="h-3 w-3" />
                 </Button>
@@ -512,7 +517,7 @@ const Consultations = () => {
                   variant="outline"
                   onClick={() => handleDeleteConsultation(consultation as Consultation)}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  title="Supprimer"
+                  title={t("consultations.tooltips.delete")}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
@@ -579,7 +584,7 @@ const Consultations = () => {
         Prescriptions pour {selectedAnimalName}
       </DialogTitle>
       <DialogDescription className="text-sm">
-        Détails des {selectedConsultationPrescriptions.length} prescription{selectedConsultationPrescriptions.length > 1 ? 's' : ''} associée{selectedConsultationPrescriptions.length > 1 ? 's' : ''} à cette consultation
+        {t("consultations.prescriptionDetailsTitle", { count: selectedConsultationPrescriptions.length })}
       </DialogDescription>
         </DialogHeader>
 
@@ -611,7 +616,7 @@ const Consultations = () => {
           }}
         >
           <Edit className="h-4 w-4 mr-1" />
-          Modifier
+          {tc("edit")}
         </Button>
         )}
         <PrescriptionPrint
@@ -621,9 +626,9 @@ const Consultations = () => {
         </div>
         </div>
         <div className="text-xs sm:text-sm text-muted-foreground">
-        Date: {new Date(prescription.prescription_date).toLocaleDateString('fr-FR')} à {new Date(prescription.prescription_date).toLocaleTimeString('fr-FR')}
+        Date: {new Date(prescription.prescription_date).toLocaleDateString(bcp47)} à {new Date(prescription.prescription_date).toLocaleTimeString(bcp47)}
         {prescription.valid_until && (
-          <span className="ml-0 sm:ml-4 block sm:inline">Valide jusqu'au: {new Date(prescription.valid_until).toLocaleDateString('fr-FR')}</span>
+          <span className="ml-0 sm:ml-4 block sm:inline">Valide jusqu'au: {new Date(prescription.valid_until).toLocaleDateString(bcp47)}</span>
         )}
         </div>
         </CardHeader>
@@ -632,7 +637,7 @@ const Consultations = () => {
         {/* Diagnosis */}
         {prescription.diagnosis && (
         <div>
-          <h4 className="font-medium text-sm mb-1">Diagnostic:</h4>
+          <h4 className="font-medium text-sm mb-1">{t("consultations.clinical.diagnosis")}:</h4>
           <p className="text-sm bg-muted p-2 rounded">{prescription.diagnosis}</p>
         </div>
         )}
@@ -640,17 +645,17 @@ const Consultations = () => {
         {/* Medications */}
         {prescription.medications && prescription.medications.length > 0 && (
         <div>
-          <h4 className="font-medium text-sm mb-2">Médicaments ({prescription.medications.length}):</h4>
+          <h4 className="font-medium text-sm mb-2">{t("consultations.medications")} ({prescription.medications.length}):</h4>
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
         {prescription.medications.map((med: any, medIndex: number) => (
           <div key={medIndex} className="bg-muted p-3 rounded-lg">
           <div className="font-medium text-sm">{med.medication_name}</div>
           <div className="text-xs space-y-1 mt-1">
-          {med.dosage && <div>Dosage: {med.dosage}</div>}
-          {med.frequency && <div>Fréquence: {med.frequency}</div>}
-          {med.duration && <div>Durée: {med.duration}</div>}
-          {med.quantity && <div>Quantité: {med.quantity}</div>}
-          {med.route && <div>Voie: {med.route}</div>}
+          {med.dosage && <div>{t("consultations.dosage")}: {med.dosage}</div>}
+          {med.frequency && <div>{t("consultations.frequency")}: {med.frequency}</div>}
+          {med.duration && <div>{t("consultations.duration")}: {med.duration}</div>}
+          {med.quantity && <div>{t("consultations.quantity")}: {med.quantity}</div>}
+          {med.route && <div>{t("consultations.route")}: {med.route}</div>}
           </div>
           {med.instructions && (
           <div className="mt-2 text-xs bg-background p-2 rounded border">
@@ -667,7 +672,7 @@ const Consultations = () => {
         {/* Notes */}
         {prescription.notes && (
         <div>
-          <h4 className="font-medium text-sm mb-1">Notes:</h4>
+          <h4 className="font-medium text-sm mb-1">{t("consultations.notes")}:</h4>
           <p className="text-sm bg-muted p-2 rounded">{prescription.notes}</p>
         </div>
         )}
@@ -676,9 +681,9 @@ const Consultations = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 text-xs text-muted-foreground pt-2 border-t">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <span>Renouvellements: {prescription.refill_count || 0}</span>
-        <span>Créée le: {new Date(prescription.created_at).toLocaleDateString('fr-FR')}</span>
+        <span>{t("consultations.createdAt")}: {new Date(prescription.created_at).toLocaleDateString(bcp47)}</span>
         {prescription.updated_at !== prescription.created_at && (
-          <span>Modifiée le: {new Date(prescription.updated_at).toLocaleDateString('fr-FR')}</span>
+          <span>{t("consultations.updatedAt")}: {new Date(prescription.updated_at).toLocaleDateString(bcp47)}</span>
         )}
         </div>
         <PrescriptionPrint
@@ -692,7 +697,7 @@ const Consultations = () => {
       {selectedConsultationPrescriptions.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
         <Pill className="h-10 sm:h-12 w-10 sm:w-12 mx-auto mb-4 text-muted-foreground/50" />
-        <p className="text-sm">Aucune prescription trouvée pour cette consultation</p>
+        <p className="text-sm">{t("consultations.noPrescriptions")}</p>
         </div>
       )}
         </div>
@@ -703,27 +708,27 @@ const Consultations = () => {
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogTitle>{t("consultations.deleteConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette consultation pour{' '}
+              {t("consultations.deleteConfirmBody")} {' '}
               <strong>{consultationToDelete?.animal?.name || 'cet animal'}</strong> ?
               <br />
               <span className="text-sm text-muted-foreground mt-2 block">
-                Date: {consultationToDelete && new Date(consultationToDelete.consultation_date).toLocaleDateString('fr-FR')}
+                {t("consultations.columns.date")}: {consultationToDelete && new Date(consultationToDelete.consultation_date).toLocaleDateString(bcp47)}
               </span>
               <br />
-              Cette action est irréversible et supprimera également toutes les prescriptions associées.
+              {tc("cannotUndo")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setConsultationToDelete(null)}>
-              Annuler
+              {tc("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDeleteConsultation}
               className="bg-red-600 hover:bg-red-700"
             >
-              Supprimer
+              {tc("delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

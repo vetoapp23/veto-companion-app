@@ -18,10 +18,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, Save, Download } from "lucide-react";
 import { planBadge, statusBadge } from "./Overview";
+import { useTranslation } from "react-i18next";
 
 const SUB_STATUSES = ["active", "trialing", "past_due", "canceled", "suspended"];
 
 export default function SuperAdminOrgDetail() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { orgId } = useParams<{ orgId: string }>();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -58,14 +61,14 @@ export default function SuperAdminOrgDetail() {
   };
 
   if (detail.isLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Chargement de la fiche…</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t("superAdmin.orgDetail.loading")}</div>;
   }
   if (!org) {
     return (
       <div className="p-8 text-center space-y-3">
-        <p>Clinique introuvable</p>
+        <p>{t("superAdmin.orgDetail.notFound")}</p>
         <Button asChild variant="outline">
-          <Link to="/super-admin/organizations">Retour</Link>
+          <Link to="/super-admin/organizations">{tc("back")}</Link>
         </Button>
       </div>
     );
@@ -86,11 +89,11 @@ export default function SuperAdminOrgDetail() {
           ? new Date(f.current_period_end).toISOString()
           : null,
       });
-      toast({ title: "Abonnement mis à jour" });
+      toast({ title: t("superAdmin.orgDetail.subscriptionUpdated") });
       qc.invalidateQueries({ queryKey: ["super-admin"] });
       detail.refetch();
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -101,10 +104,10 @@ export default function SuperAdminOrgDetail() {
     try {
       await addSupportNote(org.id, note.trim());
       setNote("");
-      toast({ title: "Note ajoutée" });
+      toast({ title: t("superAdmin.orgDetail.noteAdded") });
       detail.refetch();
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -114,7 +117,7 @@ export default function SuperAdminOrgDetail() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/super-admin/organizations">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+              <ArrowLeft className="h-4 w-4 mr-1" /> {tc("back")}
             </Link>
           </Button>
           <div>
@@ -268,7 +271,7 @@ export default function SuperAdminOrgDetail() {
               />
             </div>
             <div className="flex items-center justify-between rounded border p-2">
-              <Label>Annuler en fin de période</Label>
+              <Label>{t("superAdmin.orgDetail.cancelAtPeriodEnd")}</Label>
               <Switch
                 checked={!!f.cancel_at_period_end}
                 onCheckedChange={(c) => setForm({ ...f, cancel_at_period_end: c })}
@@ -276,7 +279,7 @@ export default function SuperAdminOrgDetail() {
             </div>
             <Button onClick={saveSub} disabled={saving} className="rounded-full gap-1">
               <Save className="h-4 w-4" />
-              {saving ? "Enregistrement…" : "Enregistrer l'abonnement"}
+              {saving ? t("superAdmin.orgDetail.savingSubscription") : t("superAdmin.orgDetail.saveSubscription")}
             </Button>
           </CardContent>
         </Card>

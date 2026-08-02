@@ -7,6 +7,8 @@ import { calculateAge, formatDate } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { useUpdateAnimal } from "@/hooks/useDatabase";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 interface PetViewModalProps {
   open: boolean;
@@ -20,6 +22,9 @@ interface PetViewModalProps {
 export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, onDelete }: PetViewModalProps) {
   const updateAnimalMutation = useUpdateAnimal();
   const { toast } = useToast();
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   // Initialize preview with existing photo on open
   useEffect(() => {
@@ -34,7 +39,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
     if (!file || !pet) return;
     const animalId = pet.dbId || (typeof pet.id === "string" ? pet.id : null);
     if (!animalId) {
-      toast({ title: "Erreur", description: "Identifiant animal introuvable", variant: "destructive" });
+      toast({ title: tc("error"), description: t("pets.animalIdNotFound"), variant: "destructive" });
       return;
     }
     const reader = new FileReader();
@@ -46,11 +51,11 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
           id: animalId,
           data: { photo_url: dataUrl },
         });
-        toast({ title: "Photo enregistrée" });
+        toast({ title: t("pets.photoSaved") });
       } catch (err) {
         toast({
-          title: "Erreur",
-          description: err instanceof Error ? err.message : "Impossible d'enregistrer la photo",
+          title: tc("error"),
+          description: err instanceof Error ? err.message : t("pets.photoSaveError"),
           variant: "destructive",
         });
       }
@@ -60,11 +65,18 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
 
   if (!pet) return null;
 
+  const statusLabel =
+    pet.status === "healthy"
+      ? t("pets.statusHealthy")
+      : pet.status === "treatment"
+        ? t("pets.statusTreatment")
+        : t("pets.statusUrgent");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Profil Animal</DialogTitle>
+          <DialogTitle>{t("pets.profileTitle")}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -88,7 +100,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera className="h-4 w-4" />
-                  {photoPreview ? 'Changer photo' : 'Ajouter photo'}
+                  {photoPreview ? t("pets.changePhoto") : t("pets.addPhoto")}
                 </Button>
                 {photoPreview && (
                   <Button
@@ -100,7 +112,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                       updatePet(pet.id, { photo: undefined });
                     }}
                   >
-                    Supprimer photo
+                    {t("pets.removePhoto")}
                   </Button>
                 )}
                 <input
@@ -124,35 +136,34 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                     'bg-destructive text-destructive-foreground'
                   }
                 >
-                  {pet.status === 'healthy' ? 'En bonne santé' : 
-                   pet.status === 'treatment' ? 'En traitement' : 'Urgent'}
+                  {statusLabel}
                 </Badge>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="font-medium">Type:</span>
+                  <span className="font-medium">{t("pets.typeLabel")}</span>
                   <p className="text-muted-foreground">{pet.type}</p>
                 </div>
                 <div>
-                  <span className="font-medium">Race:</span>
-                  <p className="text-muted-foreground">{pet.breed || 'Non spécifiée'}</p>
+                  <span className="font-medium">{t("pets.breedLabel")}</span>
+                  <p className="text-muted-foreground">{pet.breed || t("pets.breedNotSpecified")}</p>
                 </div>
                 <div>
-                  <span className="font-medium">Âge:</span>
+                  <span className="font-medium">{t("pets.ageLabel")}</span>
                   <p className="text-muted-foreground">
                   {pet.birthDate ? (
                     <>
                       {calculateAge(pet.birthDate)}
                       <br />
-                      <span className="text-xs">Né(e) le {formatDate(pet.birthDate)}</span>
+                      <span className="text-xs">{t("pets.bornOn", { date: formatDate(pet.birthDate) })}</span>
                     </>
-                  ) : 'Non spécifié'}
+                  ) : t("pets.notSpecified")}
                 </p>
                 </div>
                 <div>
-                  <span className="font-medium">Poids:</span>
-                  <p className="text-muted-foreground">{pet.weight || 'Non spécifié'}</p>
+                  <span className="font-medium">{t("pets.weightLabel")}</span>
+                  <p className="text-muted-foreground">{pet.weight || t("pets.notSpecified")}</p>
                 </div>
               </div>
             </div>
@@ -161,21 +172,21 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <span className="font-medium">Couleur:</span>
-                <p className="text-muted-foreground">{pet.color || 'Non spécifiée'}</p>
+                <span className="font-medium">{t("pets.colorLabel")}</span>
+                <p className="text-muted-foreground">{pet.color || t("pets.breedNotSpecified")}</p>
               </div>
               
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <span className="font-medium">Propriétaire:</span>
+                  <span className="font-medium">{t("pets.ownerLabelShort")}</span>
                   <p className="text-muted-foreground">{pet.owner}</p>
                 </div>
               </div>
               
               {pet.microchip && (
                 <div>
-                  <span className="font-medium">Puce électronique:</span>
+                  <span className="font-medium">{t("pets.microchipLabel")}</span>
                   <p className="text-muted-foreground font-mono">{pet.microchip}</p>
                 </div>
               )}
@@ -186,8 +197,8 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <span className="font-medium">Dernière visite:</span>
-                    <p className="text-muted-foreground">{new Date(pet.lastVisit).toLocaleDateString('fr-FR')}</p>
+                    <span className="font-medium">{t("pets.lastVisitLabel")}</span>
+                    <p className="text-muted-foreground">{new Date(pet.lastVisit).toLocaleDateString(bcp47)}</p>
                   </div>
                 </div>
               )}
@@ -196,8 +207,8 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <span className="font-medium">Prochain RDV:</span>
-                    <p className="text-muted-foreground">{new Date(pet.nextAppointment).toLocaleDateString('fr-FR')}</p>
+                    <span className="font-medium">{t("pets.nextAppointmentLabel")}</span>
+                    <p className="text-muted-foreground">{new Date(pet.nextAppointment).toLocaleDateString(bcp47)}</p>
                   </div>
                 </div>
               )}
@@ -206,7 +217,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
           
           {pet.vaccinations && pet.vaccinations.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-semibold">Vaccinations</h3>
+              <h3 className="font-semibold">{t("pets.vaccinationsHeading")}</h3>
               <div className="flex gap-2 flex-wrap">
                 {pet.vaccinations.map((vacc, index) => (
                   <Badge key={index} variant="outline">
@@ -219,7 +230,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
           
           {pet.medicalNotes && (
             <div className="space-y-2">
-              <h3 className="font-semibold">Notes médicales</h3>
+              <h3 className="font-semibold">{t("pets.medicalNotes")}</h3>
               <p className="text-muted-foreground p-3 bg-muted/30 rounded-lg">{pet.medicalNotes}</p>
             </div>
           )}
@@ -229,7 +240,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
             
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Fermer
+                {tc("close")}
               </Button>
               {onDelete && (
                 <Button 
@@ -241,12 +252,12 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                   className="text-destructive hover:text-destructive-foreground hover:bg-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Supprimer
+                  {tc("delete")}
                 </Button>
               )}
               <Button onClick={onEdit} className="gap-2">
                 <Edit className="h-4 w-4" />
-                Modifier
+                {tc("edit")}
               </Button>
             </div>
           </div>

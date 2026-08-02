@@ -12,6 +12,7 @@ import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Client, CreateClientData } from "@/lib/database";
+import { useTranslation } from "react-i18next";
 
 interface NewClientModalProps {
   open: boolean;
@@ -21,6 +22,8 @@ interface NewClientModalProps {
 }
 
 export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const createClientMutation = useCreateClient();
   const { toast } = useToast();
   const { enforce } = useQuotaCheck();
@@ -82,8 +85,8 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
     // Validation
     if (!formData.first_name?.trim() || !formData.last_name?.trim()) {
       toast({
-        title: "Champs requis manquants",
-        description: "Veuillez renseigner le prénom et le nom du client.",
+        title: t("clients.fieldsRequired"),
+        description: t("clients.fieldsRequiredBody"),
         variant: "destructive",
       });
       return;
@@ -91,8 +94,8 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
 
     if (!formData.phone?.trim()) {
       toast({
-        title: "Téléphone requis",
-        description: "Veuillez renseigner un numéro de téléphone pour contacter le client.",
+        title: t("clients.phoneRequired"),
+        description: t("clients.phoneRequiredBody"),
         variant: "destructive",
       });
       return;
@@ -101,8 +104,8 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
     // Validate email format if provided
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       toast({
-        title: "Email invalide",
-        description: "Veuillez saisir une adresse email valide (ex: exemple@email.com).",
+        title: t("clients.emailInvalid"),
+        description: t("clients.emailInvalidBody"),
         variant: "destructive",
       });
       return;
@@ -111,8 +114,8 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
     // Validate phone format (basic check)
     if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
       toast({
-        title: "Téléphone invalide",
-        description: "Le numéro de téléphone ne doit contenir que des chiffres et symboles (+, -, espaces).",
+        title: t("clients.phoneInvalid"),
+        description: t("clients.phoneInvalidBody"),
         variant: "destructive",
       });
       return;
@@ -122,8 +125,8 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
     const validClientTypes = ['particulier', 'eleveur', 'ferme'];
     if (!validClientTypes.includes(formData.client_type)) {
       toast({
-        title: "Type de client invalide",
-        description: "Le type de client sélectionné n'est pas valide. Veuillez sélectionner Particulier, Éleveur ou Ferme.",
+        title: t("clients.typeInvalid"),
+        description: t("clients.typeInvalidBody"),
         variant: "destructive",
       });
       return;
@@ -133,8 +136,10 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
       const created = await createClientMutation.mutateAsync(formData);
       
       toast({
-        title: "✓ Client ajouté avec succès",
-        description: `${formData.first_name} ${formData.last_name} a été enregistré dans votre base de données.`,
+        title: t("clients.addedSuccess"),
+        description: t("clients.addedSuccessBody", {
+          name: `${formData.first_name} ${formData.last_name}`,
+        }),
       });
       
       // Reset form
@@ -158,22 +163,22 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
       console.error("Client creation error:", error);
       
       // Handle specific error types
-      let errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
+      let errorMessage = tc("unexpectedError");
       
       if (error?.code === '23514' || error?.message?.includes('client_type_check')) {
-        errorMessage = "Type de client invalide. Seuls Particulier, Éleveur et Ferme sont acceptés. Veuillez contacter le support si le problème persiste.";
+        errorMessage = t("clients.typeInvalidDb");
       } else if (error?.message?.includes("duplicate") || error?.message?.includes("unique")) {
-        errorMessage = "Ce client existe déjà dans votre base de données. Vérifiez le nom et le téléphone.";
+        errorMessage = t("clients.duplicateClient");
       } else if (error?.message?.includes("network") || error?.message?.includes("fetch")) {
-        errorMessage = "Problème de connexion. Vérifiez votre connexion internet et réessayez.";
+        errorMessage = tc("connectionProblem");
       } else if (error?.message?.includes("permission") || error?.message?.includes("authorized")) {
-        errorMessage = "Vous n'avez pas les permissions nécessaires pour ajouter un client.";
+        errorMessage = t("clients.noPermissionAdd");
       } else if (error?.message) {
-        errorMessage = `Erreur: ${error.message}`;
+        errorMessage = `${tc("error")}: ${error.message}`;
       }
       
       toast({
-        title: "⚠ Impossible d'ajouter le client",
+        title: t("clients.cannotAdd"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -184,16 +189,16 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Nouveau Client</DialogTitle>
+          <DialogTitle>{t("clients.new")}</DialogTitle>
           <DialogDescription>
-            Ajoutez un nouveau client à votre base de données.
+            {t("clients.newDesc")}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="first_name">Prénom *</Label>
+              <Label htmlFor="first_name">{t("clients.firstName")}</Label>
               <Input
                 id="first_name"
                 value={formData.first_name}
@@ -202,7 +207,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="last_name">Nom *</Label>
+              <Label htmlFor="last_name">{t("clients.lastName")}</Label>
               <Input
                 id="last_name"
                 value={formData.last_name}
@@ -214,7 +219,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{tc("email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -223,7 +228,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone *</Label>
+              <Label htmlFor="phone">{tc("phone")} *</Label>
               <Input
                 id="phone"
                 value={formData.phone || ""}
@@ -234,7 +239,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="address">Adresse</Label>
+            <Label htmlFor="address">{tc("address")}</Label>
             <Input
               id="address"
               value={formData.address || ""}
@@ -244,7 +249,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="city">Ville</Label>
+              <Label htmlFor="city">{tc("city")}</Label>
               <Input
                 id="city"
                 value={formData.city || ""}
@@ -252,7 +257,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="postal_code">Code postal</Label>
+              <Label htmlFor="postal_code">{t("clients.postalCode")}</Label>
               <Input
                 id="postal_code"
                 value={formData.postal_code || ""}
@@ -262,44 +267,44 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="mobile_phone">Téléphone portable</Label>
+            <Label htmlFor="mobile_phone">{t("clients.mobilePhone")}</Label>
             <Input
               id="mobile_phone"
               value={formData.mobile_phone || ""}
               onChange={handleChange}
-              placeholder="Numéro de téléphone portable"
+              placeholder={t("clients.mobilePhonePlaceholder")}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="client_type">Type de client *</Label>
+            <Label htmlFor="client_type">{t("clients.clientType")}</Label>
             {typesLoading ? (
               <div className="flex items-center gap-2 p-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement des types...
+                {t("clients.loadingTypes")}
               </div>
             ) : clientTypes.length === 0 ? (
               <div className="space-y-2">
                 <div className="p-3 border border-orange-200 bg-orange-50 rounded-md">
                   <p className="text-sm text-orange-800 font-medium">
-                    ⚠️ Aucun type de client configuré
+                    ⚠️ {t("clients.noTypesConfigured")}
                   </p>
                   <p className="text-xs text-orange-700 mt-1">
-                    Veuillez d'abord créer des types de clients dans les paramètres.
+                    {t("clients.noTypesConfiguredBody")}
                   </p>
                   <Link 
                     to="/settings" 
                     className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 mt-2 font-medium"
                     onClick={() => onOpenChange(false)}
                   >
-                    → Aller aux Paramètres
+                    → {t("clients.goToSettings")}
                   </Link>
                 </div>
               </div>
             ) : (
               <Select value={formData.client_type} onValueChange={(value) => handleSelectChange('client_type', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
+                  <SelectValue placeholder={t("clients.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {clientTypes.map((type) => {
@@ -320,22 +325,22 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes || ""}
               onChange={handleChange}
-              placeholder="Notes additionnelles..."
+              placeholder={t("clients.notesPlaceholder")}
             />
           </div>
           
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={createClientMutation.isPending}>
               {createClientMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Ajouter Client
+              {t("clients.new")}
             </Button>
           </div>
         </form>

@@ -1,6 +1,7 @@
 import React from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import {
   type PermissionKey,
   userHasPermission,
@@ -94,13 +95,14 @@ export const useRoleCheck = () => {
 export const useWriteAccess = (permission: PermissionKey) => {
   const { canEdit } = useRoleCheck();
   const { toast } = useToast();
+  const { t } = useTranslation("settings");
   const canWrite = canEdit(permission);
 
   const guardWrite = (): boolean => {
     if (canWrite) return true;
     toast({
-      title: "Modification interdite",
-      description: "Votre compte est en consultation seule sur ce module. Demandez au vétérinaire d'élargir vos droits.",
+      title: t("roleGuard.forbiddenTitle"),
+      description: t("roleGuard.forbiddenBody"),
       variant: "destructive",
     });
     return false;

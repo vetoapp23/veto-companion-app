@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,8 @@ interface FarmEditModalProps {
 }
 
 const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { updateFarm } = useClients();
   const { settings } = useSettings();
   const { toast } = useToast();
@@ -74,9 +77,9 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Erreur de configuration</DialogTitle>
+            <DialogTitle>{t("farms.ui.configErrorTitle")}</DialogTitle>
             <DialogDescription>
-              Les paramètres de gestion des fermes ne sont pas configurés. Veuillez recharger la page ou vérifier les paramètres.
+              {t("farms.ui.configErrorDesc")}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -167,8 +170,8 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
   const addAnimalDetail = () => {
     if (!currentAnimalDetail.category) {
       toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner une catégorie d'animal",
+        title: tc("error"),
+        description: t("farms.ui.selectCategoryError"),
         variant: "destructive"
       });
       return;
@@ -216,8 +219,8 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
     
     if (!formData.name || !formData.owner || !formData.address || !formData.types?.length) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
+        title: tc("error"),
+        description: t("farms.ui.requiredFieldsError"),
         variant: "destructive"
       });
       return;
@@ -237,8 +240,8 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
     updateFarm(farm.id, updatedFarm);
     
     toast({
-      title: "Succès",
-      description: "Exploitation mise à jour avec succès"
+      title: tc("success"),
+      description: t("farms.ui.farmUpdatedSuccess")
     });
     
     onOpenChange(false);
@@ -250,9 +253,9 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier l'Exploitation</DialogTitle>
+          <DialogTitle>{t("farms.editFarm")}</DialogTitle>
           <DialogDescription>
-            Modifiez les informations de l'exploitation agricole
+            {t("farms.ui.editFarmDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -260,47 +263,47 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Informations générales */}
           <Card>
             <CardHeader>
-              <CardTitle>Informations générales</CardTitle>
+              <CardTitle>{t("farms.ui.generalInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Nom de l'exploitation *</Label>
+                <Label htmlFor="name">{t("farms.farmName")}</Label>
                 <Input
                   id="name"
                   value={formData.name || ""}
                   onChange={(e) => handleChange("name", e.target.value)}
-                  placeholder="Nom de l'exploitation"
+                  placeholder={t("farms.ui.farmNamePlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="owner">Propriétaire *</Label>
+                <Label htmlFor="owner">{t("farms.owner")}</Label>
                 <Input
                   id="owner"
                   value={formData.owner || ""}
                   onChange={(e) => handleChange("owner", e.target.value)}
-                  placeholder="Nom du propriétaire"
+                  placeholder={t("farms.ui.ownerNamePlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="ownerIdNumber">N° pièce d'identité du propriétaire</Label>
+                <Label htmlFor="ownerIdNumber">{t("farms.ui.ownerIdNumber")}</Label>
                 <Input
                   id="ownerIdNumber"
                   value={formData.ownerIdNumber || ""}
                   onChange={(e) => handleChange("ownerIdNumber", e.target.value)}
-                  placeholder="Numéro de carte d'identité, passeport, etc."
+                  placeholder={t("farms.ui.ownerIdPlaceholder")}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="address">Adresse *</Label>
+                <Label htmlFor="address">{tc("address")} *</Label>
                 <Input
                   id="address"
                   value={formData.address || ""}
                   onChange={(e) => handleChange("address", e.target.value)}
-                  placeholder="Adresse complète"
+                  placeholder={t("farms.ui.fullAddressPlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="latitude">Latitude</Label>
+                <Label htmlFor="latitude">{t("farms.ui.latitude")}</Label>
                 <Input
                   id="latitude"
                   type="number"
@@ -311,7 +314,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                 />
               </div>
               <div>
-                <Label htmlFor="longitude">Longitude</Label>
+                <Label htmlFor="longitude">{t("farms.ui.longitude")}</Label>
                 <Input
                   id="longitude"
                   type="number"
@@ -322,32 +325,32 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Téléphone</Label>
+                <Label htmlFor="phone">{tc("phone")}</Label>
                 <Input
                   id="phone"
                   value={formData.phone || ""}
                   onChange={(e) => handleChange("phone", e.target.value)}
-                  placeholder="Téléphone"
+                  placeholder={tc("phone")}
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{tc("email")}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email || ""}
                   onChange={(e) => handleChange("email", e.target.value)}
-                  placeholder="Email"
+                  placeholder={tc("email")}
                 />
               </div>
               <div>
-                <Label htmlFor="veterinarian">Vétérinaire responsable</Label>
+                <Label htmlFor="veterinarian">{t("farms.ui.responsibleVet")}</Label>
                 <Select 
                   value={formData.veterinarian || ""} 
                   onValueChange={(value) => handleChange("veterinarian", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un vétérinaire" />
+                    <SelectValue placeholder={t("farms.ui.selectVet")} />
                   </SelectTrigger>
                   <SelectContent>
                     {veterinarians.filter(v => v.is_active).map((vet) => (
@@ -359,15 +362,15 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="status">Statut</Label>
+                <Label htmlFor="status">{tc("status")}</Label>
                 <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="attention">Attention</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="active">{t("farms.farmStatus.active")}</SelectItem>
+                    <SelectItem value="attention">{t("farms.farmStatus.attention")}</SelectItem>
+                    <SelectItem value="urgent">{t("farms.farmStatus.urgent")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -377,7 +380,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Types d'élevage */}
           <Card>
             <CardHeader>
-              <CardTitle>Types d'élevage *</CardTitle>
+              <CardTitle>{t("farms.farmTypesMulti")} *</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -398,16 +401,16 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Détails du cheptel */}
           <Card>
             <CardHeader>
-              <CardTitle>Détails du cheptel</CardTitle>
+              <CardTitle>{t("farms.ui.herdDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Ajout d'une nouvelle catégorie */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
                 <div>
-                  <Label>Catégorie</Label>
+                  <Label>{t("farms.ui.category")}</Label>
                   <Select value={currentAnimalDetail.category} onValueChange={(value) => setCurrentAnimalDetail(prev => ({ ...prev, category: value }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <SelectValue placeholder={t("farms.ui.selectPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
                       {settings.farmManagement.animalCategories.map((category) => (
@@ -417,7 +420,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                   </Select>
                 </div>
                 <div>
-                  <Label>Mâles</Label>
+                  <Label>{t("farms.ui.males")}</Label>
                   <Input
                     type="number"
                     value={currentAnimalDetail.maleCount}
@@ -426,7 +429,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                   />
                 </div>
                 <div>
-                  <Label>Femelles</Label>
+                  <Label>{t("farms.ui.females")}</Label>
                   <Input
                     type="number"
                     value={currentAnimalDetail.femaleCount}
@@ -436,7 +439,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                 </div>
                 <div className="flex items-end">
                   <Button type="button" onClick={addAnimalDetail} className="w-full">
-                    Ajouter
+                    {tc("add")}
                   </Button>
                 </div>
               </div>
@@ -444,7 +447,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
               {/* Races pour la catégorie actuelle */}
               {currentAnimalDetail.category && (
                 <div className="p-4 border rounded-lg">
-                  <Label>Races pour {currentAnimalDetail.category}</Label>
+                  <Label>{t("farms.ui.breedsForCategory", { category: currentAnimalDetail.category })}</Label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                     {settings.farmManagement.breedsByCategory[currentAnimalDetail.category]?.map((breed) => (
                       <div key={breed} className="flex items-center space-x-2">
@@ -469,18 +472,18 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
               {/* Résumé du cheptel configuré */}
               {formData.animalDetails && formData.animalDetails.length > 0 && (
                 <div className="p-4 border rounded-lg">
-                  <Label>Cheptel configuré</Label>
+                  <Label>{t("farms.ui.configuredHerd")}</Label>
                   <div className="mt-2 space-y-2">
                     {formData.animalDetails.map((detail, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <span>
                           <Badge variant="secondary">{detail.category}</Badge>
                           <span className="ml-2">
-                            {detail.maleCount} mâles, {detail.femaleCount} femelles
+                            {t("farms.ui.herdSummary", { males: detail.maleCount, females: detail.femaleCount })}
                           </span>
                           {detail.breeds.length > 0 && (
                             <span className="ml-2 text-sm text-gray-600">
-                              Races: {detail.breeds.join(", ")}
+                              {t("farms.ui.breedsLabel", { breeds: detail.breeds.join(", ") })}
                             </span>
                           )}
                         </span>
@@ -490,7 +493,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
                           size="sm"
                           onClick={() => removeAnimalDetail(index)}
                         >
-                          Supprimer
+                          {tc("delete")}
                         </Button>
                       </div>
                     ))}
@@ -503,45 +506,45 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Informations administratives */}
           <Card>
             <CardHeader>
-              <CardTitle>Informations administratives</CardTitle>
+              <CardTitle>{t("farms.ui.adminInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="registrationNumber">Numéro d'immatriculation</Label>
+                <Label htmlFor="registrationNumber">{t("farms.ui.registrationImm")}</Label>
                 <Input
                   id="registrationNumber"
                   value={formData.registrationNumber || ""}
                   onChange={(e) => handleChange("registrationNumber", e.target.value)}
-                  placeholder="Numéro d'immatriculation"
+                  placeholder={t("farms.ui.registrationPlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="surfaceArea">Surface (hectares)</Label>
+                <Label htmlFor="surfaceArea">{t("farms.surfaceHa")}</Label>
                 <Input
                   id="surfaceArea"
                   type="number"
                   step="0.1"
                   value={formData.surfaceArea || ""}
                   onChange={(e) => handleChange("surfaceArea", parseFloat(e.target.value) || 0)}
-                  placeholder="Surface en hectares"
+                  placeholder={t("farms.ui.surfacePlaceholder")}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="buildingDetails">Détails des bâtiments</Label>
+                <Label htmlFor="buildingDetails">{t("farms.ui.buildingDetails")}</Label>
                 <Textarea
                   id="buildingDetails"
                   value={formData.buildingDetails || ""}
                   onChange={(e) => handleChange("buildingDetails", e.target.value)}
-                  placeholder="Description des bâtiments, étables, etc."
+                  placeholder={t("farms.ui.buildingPlaceholder")}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="equipmentDetails">Équipements</Label>
+                <Label htmlFor="equipmentDetails">{t("farms.ui.equipmentDetails")}</Label>
                 <Textarea
                   id="equipmentDetails"
                   value={formData.equipmentDetails || ""}
                   onChange={(e) => handleChange("equipmentDetails", e.target.value)}
-                  placeholder="Liste des équipements disponibles"
+                  placeholder={t("farms.ui.equipmentPlaceholder")}
                 />
               </div>
             </CardContent>
@@ -550,7 +553,7 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Certifications */}
           <Card>
             <CardHeader>
-              <CardTitle>Certifications</CardTitle>
+              <CardTitle>{t("farms.certifications")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -571,43 +574,43 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Assurance et contact d'urgence */}
           <Card>
             <CardHeader>
-              <CardTitle>Assurance et contact d'urgence</CardTitle>
+              <CardTitle>{t("farms.ui.insuranceEmergency")}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="insuranceDetails">Détails de l'assurance</Label>
+                <Label htmlFor="insuranceDetails">{t("farms.ui.insuranceDetails")}</Label>
                 <Input
                   id="insuranceDetails"
                   value={formData.insuranceDetails || ""}
                   onChange={(e) => handleChange("insuranceDetails", e.target.value)}
-                  placeholder="Compagnie d'assurance et numéro de police"
+                  placeholder={t("farms.ui.insurancePlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyName">Nom du contact d'urgence</Label>
+                <Label htmlFor="emergencyName">{t("farms.ui.emergencyName")}</Label>
                 <Input
                   id="emergencyName"
                   value={formData.emergencyContact?.name || ""}
                   onChange={(e) => handleChange("emergencyContact.name", e.target.value)}
-                  placeholder="Nom du contact"
+                  placeholder={t("farms.ui.emergencyContactNamePlaceholder")}
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyPhone">Téléphone d'urgence</Label>
+                <Label htmlFor="emergencyPhone">{t("farms.ui.emergencyPhone")}</Label>
                 <Input
                   id="emergencyPhone"
                   value={formData.emergencyContact?.phone || ""}
                   onChange={(e) => handleChange("emergencyContact.phone", e.target.value)}
-                  placeholder="Téléphone"
+                  placeholder={tc("phone")}
                 />
               </div>
               <div>
-                <Label htmlFor="emergencyRelation">Relation</Label>
+                <Label htmlFor="emergencyRelation">{t("farms.ui.emergencyRelation")}</Label>
                 <Input
                   id="emergencyRelation"
                   value={formData.emergencyContact?.relation || ""}
                   onChange={(e) => handleChange("emergencyContact.relation", e.target.value)}
-                  placeholder="Relation (époux, fils, etc.)"
+                  placeholder={t("farms.ui.emergencyRelationPlaceholder")}
                 />
               </div>
             </CardContent>
@@ -616,13 +619,13 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Gestion des photos */}
           <Card>
             <CardHeader>
-              <CardTitle>Photos de l'exploitation</CardTitle>
+              <CardTitle>{t("farms.farmPhotos")}</CardTitle>
             </CardHeader>
             <CardContent>
               <FarmPhotoManager
                 photos={formData.photos || []}
                 onPhotosChange={(photos) => handleChange("photos", photos)}
-                farmName={formData.name || "Exploitation"}
+                farmName={formData.name || t("farms.title")}
               />
             </CardContent>
           </Card>
@@ -630,13 +633,13 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle>Notes complémentaires</CardTitle>
+              <CardTitle>{t("farms.ui.complementaryNotes")}</CardTitle>
             </CardHeader>
             <CardContent>
               <Textarea
                 value={formData.notes || ""}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Notes additionnelles sur l'exploitation..."
+                placeholder={t("farms.ui.notesPlaceholder")}
                 rows={3}
               />
             </CardContent>
@@ -644,10 +647,10 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
 
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
-              Mettre à jour l'exploitation
+              {t("farms.ui.updateFarmBtn")}
             </Button>
           </div>
         </form>

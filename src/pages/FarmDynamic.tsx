@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,8 @@ interface FarmIntervention {
 }
 
 const FarmPage = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -102,7 +105,7 @@ const FarmPage = () => {
       const mappedFarms = data.map((farm: any) => ({
         id: farm.id,
         name: farm.farm_name,
-        owner: farm.client_id || 'Non spécifié',
+        owner: farm.client_id || t("farms.ui.notSpecified"),
         address: farm.address || '',
         phone: farm.phone || '',
         email: farm.email || '',
@@ -125,8 +128,8 @@ const FarmPage = () => {
     } catch (error) {
       console.error('Error fetching farms:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les exploitations",
+        title: tc("error"),
+        description: t("farms.ui.loadError"),
         variant: "destructive",
       });
     } finally {
@@ -195,12 +198,12 @@ const FarmPage = () => {
   };
 
   const interventionTypeLabels: Record<string, string> = {
-    vaccination: "Vaccination",
-    controle: "Contrôle sanitaire",
-    urgence: "Urgence",
-    chirurgie: "Chirurgie",
-    prevention: "Prévention",
-    consultation: "Consultation"
+    vaccination: t("farms.types.vaccination"),
+    controle: t("farms.types.controle"),
+    urgence: t("farms.types.urgence"),
+    chirurgie: t("farms.types.chirurgie"),
+    prevention: t("farms.types.prevention"),
+    consultation: t("farms.types.consultation")
   };
 
   const handleViewFarm = (farm: Farm) => {
@@ -214,7 +217,7 @@ const FarmPage = () => {
   };
 
   const handleDeleteFarm = async (farmId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette exploitation ?")) {
+    if (!confirm(t("farms.ui.deleteFarmConfirm"))) {
       return;
     }
     
@@ -227,16 +230,16 @@ const FarmPage = () => {
       if (error) throw error;
 
       toast({
-        title: "Succès",
-        description: "Exploitation supprimée avec succès",
+        title: tc("success"),
+        description: t("farms.ui.farmDeletedSuccess"),
       });
       
       fetchFarms();
     } catch (error) {
       console.error('Error deleting farm:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'exploitation",
+        title: tc("error"),
+        description: t("farms.ui.deleteFarmError"),
         variant: "destructive",
       });
     }
@@ -248,7 +251,7 @@ const FarmPage = () => {
   };
 
   const handleDeleteIntervention = async (interventionId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette intervention ?")) {
+    if (!confirm(t("farms.ui.deleteInterventionConfirm"))) {
       return;
     }
     
@@ -261,16 +264,16 @@ const FarmPage = () => {
       if (error) throw error;
 
       toast({
-        title: "Succès",
-        description: "Intervention supprimée avec succès",
+        title: tc("success"),
+        description: t("farms.ui.interventionDeletedSuccess"),
       });
       
       fetchFarmInterventions();
     } catch (error) {
       console.error('Error deleting intervention:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'intervention",
+        title: tc("error"),
+        description: t("farms.ui.deleteInterventionError"),
         variant: "destructive",
       });
     }
@@ -281,7 +284,7 @@ const FarmPage = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Chargement...</p>
+          <p className="mt-2 text-muted-foreground">{tc("loading")}</p>
         </div>
       </div>
     );
@@ -292,14 +295,14 @@ const FarmPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des Fermes</h1>
+          <h1 className="text-3xl font-bold">{t("farms.managementTitle")}</h1>
           <p className="text-muted-foreground mt-1">
-            {filteredFarms.length} exploitation(s) • {farmInterventions.length} intervention(s)
+            {t("farms.ui.headerStats", { farms: filteredFarms.length, interventions: farmInterventions.length })}
           </p>
         </div>
         <Button onClick={() => setShowNewFarmModal(true)} size="lg">
           <Plus className="mr-2 h-5 w-5" />
-          Nouvelle Ferme
+          {t("farms.newFarm")}
         </Button>
       </div>
 
@@ -310,7 +313,7 @@ const FarmPage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Rechercher par nom, propriétaire ou type..."
+                placeholder={t("farms.ui.searchExtendedPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -318,10 +321,10 @@ const FarmPage = () => {
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Type d'élevage" />
+                <SelectValue placeholder={t("farms.ui.farmTypeFilter")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
+                <SelectItem value="all">{t("farms.allTypes")}</SelectItem>
                 {farmTypes.map(type => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
@@ -352,11 +355,11 @@ const FarmPage = () => {
         <TabsList>
           <TabsTrigger value="exploitations">
             <Tractor className="mr-2 h-4 w-4" />
-            Exploitations
+            {t("farms.ui.tabFarms")}
           </TabsTrigger>
           <TabsTrigger value="interventions">
             <Stethoscope className="mr-2 h-4 w-4" />
-            Interventions
+            {t("farms.ui.tabInterventions")}
           </TabsTrigger>
         </TabsList>
 
@@ -365,13 +368,13 @@ const FarmPage = () => {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Tractor className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucune exploitation trouvée</h3>
+                <h3 className="text-lg font-semibold mb-2">{t("farms.ui.noFarmFound")}</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  Commencez par ajouter votre première exploitation agricole
+                  {t("farms.ui.noFarmFoundHint")}
                 </p>
                 <Button onClick={() => setShowNewFarmModal(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Ferme
+                  {t("farms.newFarm")}
                 </Button>
               </CardContent>
             </Card>
@@ -388,10 +391,10 @@ const FarmPage = () => {
                         </CardTitle>
                         <div className="flex gap-2 mt-2">
                           <Badge className={statusStyles[farm.status]}>
-                            {farm.status === 'active' ? 'Actif' : farm.status === 'attention' ? 'Attention' : 'Urgent'}
+                            {farm.status === 'active' ? t("farms.farmStatus.active") : farm.status === 'attention' ? t("farms.farmStatus.attention") : t("farms.farmStatus.urgent")}
                           </Badge>
                           <Badge className={healthStyles[farm.healthStatus]}>
-                            {farm.healthStatus === 'good' ? 'Bonne santé' : farm.healthStatus === 'attention' ? 'À surveiller' : 'Problème'}
+                            {farm.healthStatus === 'good' ? t("farms.healthStatusLabels.good") : farm.healthStatus === 'attention' ? t("farms.healthStatusLabels.attention") : t("farms.healthStatusLabels.poor")}
                           </Badge>
                         </div>
                       </div>
@@ -430,7 +433,7 @@ const FarmPage = () => {
                     
                     <div className="pt-2 border-t">
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Animaux</span>
+                        <span className="text-muted-foreground">{t("farms.ui.animalsLabel")}</span>
                         <span className="font-semibold">{farm.animalCount}</span>
                       </div>
                     </div>
@@ -455,12 +458,12 @@ const FarmPage = () => {
                   <table className="w-full">
                     <thead className="border-b">
                       <tr className="text-left text-sm text-muted-foreground">
-                        <th className="p-4">Nom</th>
-                        <th className="p-4">Propriétaire</th>
-                        <th className="p-4">Type</th>
-                        <th className="p-4">Animaux</th>
-                        <th className="p-4">Statut</th>
-                        <th className="p-4">Actions</th>
+                        <th className="p-4">{t("farms.ui.colName")}</th>
+                        <th className="p-4">{t("farms.ui.colOwner")}</th>
+                        <th className="p-4">{t("farms.ui.colType")}</th>
+                        <th className="p-4">{t("farms.ui.colAnimals")}</th>
+                        <th className="p-4">{t("farms.ui.colStatus")}</th>
+                        <th className="p-4">{t("farms.ui.colActions")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -486,7 +489,7 @@ const FarmPage = () => {
                           <td className="p-4">
                             <div className="flex gap-1">
                               <Badge className={statusStyles[farm.status]} variant="secondary">
-                                {farm.status === 'active' ? 'Actif' : farm.status === 'attention' ? 'Attention' : 'Urgent'}
+                                {farm.status === 'active' ? t("farms.farmStatus.active") : farm.status === 'attention' ? t("farms.farmStatus.attention") : t("farms.farmStatus.urgent")}
                               </Badge>
                             </div>
                           </td>
@@ -515,10 +518,10 @@ const FarmPage = () => {
 
         <TabsContent value="interventions" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Interventions vétérinaires</h2>
+            <h2 className="text-2xl font-bold">{t("farms.ui.veterinaryInterventions")}</h2>
             <Button onClick={() => setShowNewInterventionModal(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Intervention
+              {t("farms.newIntervention")}
             </Button>
           </div>
 
@@ -526,13 +529,13 @@ const FarmPage = () => {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Stethoscope className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucune intervention enregistrée</h3>
+                <h3 className="text-lg font-semibold mb-2">{t("farms.ui.noInterventionsRecorded")}</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  Commencez par enregistrer votre première intervention
+                  {t("farms.ui.noInterventionsHint")}
                 </p>
                 <Button onClick={() => setShowNewInterventionModal(true)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Intervention
+                  {t("farms.newIntervention")}
                 </Button>
               </CardContent>
             </Card>
@@ -545,7 +548,7 @@ const FarmPage = () => {
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-lg">{farm?.name || 'Ferme inconnue'}</CardTitle>
+                          <CardTitle className="text-lg">{farm?.name || t("farms.farmNotFound")}</CardTitle>
                           <Badge className="mt-2" variant="secondary">
                             {interventionTypeLabels[intervention.intervention_type] || intervention.intervention_type}
                           </Badge>
@@ -567,7 +570,7 @@ const FarmPage = () => {
                       </div>
                       {intervention.animal_count && (
                         <div className="text-sm">
-                          <span className="text-muted-foreground">Animaux traités: </span>
+                          <span className="text-muted-foreground">{t("farms.animalsConcerned")}: </span>
                           <span className="font-semibold">{intervention.animal_count}</span>
                         </div>
                       )}
@@ -576,7 +579,7 @@ const FarmPage = () => {
                       )}
                       {intervention.cost && (
                         <div className="text-sm font-semibold pt-2 border-t">
-                          Coût: {intervention.cost} MAD
+                          {t("farms.cost", { currency: "MAD" })}: {intervention.cost}
                         </div>
                       )}
                     </CardContent>

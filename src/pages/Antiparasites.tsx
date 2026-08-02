@@ -45,7 +45,6 @@ import {
   List,
 } from 'lucide-react';
 import { format, addDays, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AppPageHeader } from '@/components/AppPageHeader';
@@ -57,6 +56,8 @@ import CertificateAntiparasiticPrintDynamic from '@/components/CertificateAntipa
 import type { Antiparasitic, Appointment } from '@/lib/database';
 import { syncRemindersAfterAdministered } from '@/lib/medicalDoseSync';
 import { useWriteAccess } from '@/components/RoleGuard';
+import { useTranslation } from 'react-i18next';
+import { useAppLocale } from '@/i18n/useAppLocale';
 import {
   buildAntiparasiticCertificateRows,
   buildAntiparasiticNotes,
@@ -101,16 +102,11 @@ const getStatusIcon = (status: DoseListStatus) => {
   }
 };
 
-const getStatusLabel = (status: DoseListStatus) => {
-  switch (status) {
-    case 'administered': return 'Administré';
-    case 'overdue': return 'En retard';
-    case 'planned': return 'Planifié';
-    default: return status;
-  }
-};
-
 export default function Antiparasites() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { dateFns } = useAppLocale();
+  const getStatusLabel = (status: DoseListStatus) => t(`antiparasites.status.${status}`);
   const { currentView } = useDisplayPreference('antiparasitics');
   const { data: antiparasitics = [], isLoading: isLoadingAntiparasitics } = useAntiparasitics();
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
@@ -183,10 +179,10 @@ export default function Antiparasites() {
     for (const animalId of animalIds) {
       const animal = animals.find((a) => a.id === animalId);
       const client = clients.find((c) => c.id === animal?.client_id);
-      const petName = animal?.name || 'Animal inconnu';
+      const petName = animal?.name || t("antiparasites.unknownPet");
       const clientName = client
         ? `${client.first_name} ${client.last_name}`
-        : 'Client inconnu';
+        : t("antiparasites.unknownClient");
 
       const animalTreatments = byAnimal.get(animalId) || [];
       const animalApts = aptsByAnimal.get(animalId) || [];
@@ -225,6 +221,7 @@ export default function Antiparasites() {
     appointmentsLoading,
     animalsLoading,
     clientsLoading,
+    t,
   ]);
 
   const stats = useMemo(() => {
@@ -240,13 +237,13 @@ export default function Antiparasites() {
     }).length;
 
     const parasiteTypes = unifiedDoses.reduce((acc, dose) => {
-      const type = dose.vaccineType || 'Non spécifié';
+      const type = dose.vaccineType || t("antiparasites.notSpecified");
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
     return { total, administered, overdue, planned, upcoming, parasiteTypes };
-  }, [unifiedDoses]);
+  }, [unifiedDoses, t]);
 
   const filteredDoses = useMemo(() => {
     return unifiedDoses.filter((dose) => {
@@ -286,15 +283,15 @@ export default function Antiparasites() {
     try {
       await deleteAntiparasitic.mutateAsync(antiparasiticToDelete.id);
       toast({
-        title: 'Succès',
-        description: 'Le traitement antiparasitaire a été supprimé.',
+        title: t("antiparasites.deletedTitle"),
+        description: t("antiparasites.deletedBody"),
       });
       setShowDeleteConfirm(false);
       setAntiparasiticToDelete(null);
     } catch {
       toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer le traitement.',
+        title: tc("error"),
+        description: t("antiparasites.cannotDelete"),
         variant: 'destructive',
       });
     }
@@ -319,7 +316,7 @@ export default function Antiparasites() {
         const notes = buildAntiparasiticNotes({
           doseLabel: dose.doseLabel,
           plannedReminders: [],
-          userNotes: 'Marqué fait depuis la liste Antiparasites',
+          userNotes: t("antiparasites.markDoneNote"),
         });
         await createAntiparasitic.mutateAsync({
           animal_id: dose.animalId,
@@ -350,15 +347,15 @@ export default function Antiparasites() {
       }
 
       toast({
-        title: 'Traitement administré',
-        description: `${dose.vaccineName} · ${dose.doseLabel} — même ligne mise à jour.`,
+        title: t("antiparasites.treatmentAdministeredTitle"),
+        description: t("antiparasites.treatmentAdministeredBody"),
       });
       setShowAntiparasiticDetails(false);
       setSelectedDose(null);
     } catch (e: any) {
       toast({
-        title: 'Impossible de marquer fait',
-        description: e?.message || 'Erreur lors de l’enregistrement.',
+        title: t("antiparasites.cannotMarkDone"),
+        description: e?.message || t("antiparasites.cannotMarkDoneBody"),
         variant: 'destructive',
       });
     } finally {
@@ -388,7 +385,7 @@ export default function Antiparasites() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Chargement des traitements antiparasitaires...</span>
+        <span className="ml-2">{t("antiparasites.loading")}</span>
       </div>
     );
   }
@@ -397,8 +394,8 @@ export default function Antiparasites() {
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <AppPageHeader
         icon={Bug}
-        title="Antiparasites"
-        description="Suivi et planification des traitements antiparasitaires"
+        title={t("antiparasites.title")}
+        description={t("antiparasites.description")}
         actions={
           <>
             {canWrite && (
@@ -411,7 +408,7 @@ export default function Antiparasites() {
               className="gap-2 rounded-full"
             >
               <Shield className="h-4 w-4" />
-              Protocoles
+              {t("antiparasites.tabs.protocols")}
             </Button>
             )}
             {canWrite && (
@@ -423,7 +420,7 @@ export default function Antiparasites() {
               className="gap-2 rounded-full"
             >
               <Plus className="h-4 w-4" />
-              Nouveau traitement
+              {t("antiparasites.new")}
             </Button>
             )}
           </>
@@ -435,7 +432,7 @@ export default function Antiparasites() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total</p>
+                <p className="text-sm text-gray-600">{t("antiparasites.kpi.total")}</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <Package className="h-8 w-8 text-blue-500" />
@@ -447,7 +444,7 @@ export default function Antiparasites() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Administrés</p>
+                <p className="text-sm text-gray-600">{t("antiparasites.kpi.administered")}</p>
                 <p className="text-2xl font-bold text-green-600">{stats.administered}</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
@@ -459,7 +456,7 @@ export default function Antiparasites() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">En retard</p>
+                <p className="text-sm text-gray-600">{t("antiparasites.kpi.overdue")}</p>
                 <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -471,7 +468,7 @@ export default function Antiparasites() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Prochaines 30j</p>
+                <p className="text-sm text-gray-600">{t("antiparasites.kpi.next30")}</p>
                 <p className="text-2xl font-bold text-orange-600">{stats.upcoming}</p>
               </div>
               <Calendar className="h-8 w-8 text-orange-500" />
@@ -483,7 +480,7 @@ export default function Antiparasites() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Planifiés</p>
+                <p className="text-sm text-gray-600">{t("antiparasites.kpi.planned")}</p>
                 <p className="text-2xl font-bold text-blue-600">{stats.planned}</p>
               </div>
               <Clock className="h-8 w-8 text-blue-500" />
@@ -498,7 +495,7 @@ export default function Antiparasites() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Rechercher par animal, client ou produit..."
+                placeholder={t("antiparasites.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -508,22 +505,22 @@ export default function Antiparasites() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrer par statut" />
+                  <SelectValue placeholder={t("antiparasites.filterStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="administered">Administrés</SelectItem>
-                  <SelectItem value="planned">Planifiés</SelectItem>
-                  <SelectItem value="overdue">En retard</SelectItem>
+                  <SelectItem value="all">{t("antiparasites.filters.allStatuses")}</SelectItem>
+                  <SelectItem value="administered">{t("antiparasites.status.administered")}</SelectItem>
+                  <SelectItem value="planned">{t("antiparasites.status.planned")}</SelectItem>
+                  <SelectItem value="overdue">{t("antiparasites.status.overdue")}</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={parasiteFilter} onValueChange={setParasiteFilter}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrer par parasite" />
+                  <SelectValue placeholder={t("antiparasites.filterParasite")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les parasites</SelectItem>
+                  <SelectItem value="all">{t("antiparasites.filters.allParasites")}</SelectItem>
                   {availableParasiteTypes.map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
@@ -532,10 +529,10 @@ export default function Antiparasites() {
 
               <Select value={speciesFilter} onValueChange={setSpeciesFilter}>
                 <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrer par espèce" />
+                  <SelectValue placeholder={t("antiparasites.filterSpecies")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes espèces</SelectItem>
+                  <SelectItem value="all">{t("antiparasites.filters.allSpecies")}</SelectItem>
                   {animalSpecies.map((species) => (
                     <SelectItem key={species} value={species}>
                       {species}
@@ -559,15 +556,15 @@ export default function Antiparasites() {
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="overview" className="flex items-center gap-2 flex-1 sm:flex-none">
             <List className="h-4 w-4" />
-            Vue d'ensemble
+            {t("antiparasites.tabs.overview")}
           </TabsTrigger>
           <TabsTrigger value="protocols" className="flex items-center gap-2 flex-1 sm:flex-none">
             <Shield className="h-4 w-4" />
-            Protocoles
+            {t("antiparasites.tabs.protocols")}
           </TabsTrigger>
           <TabsTrigger value="statistics" className="flex items-center gap-2 flex-1 sm:flex-none">
             <TrendingUp className="h-4 w-4" />
-            Statistiques
+            {t("antiparasites.statistics.title")}
           </TabsTrigger>
         </TabsList>
 
@@ -575,10 +572,10 @@ export default function Antiparasites() {
           <Card>
             <CardHeader>
               <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <span>Doses antiparasitaires ({filteredDoses.length})</span>
+                <span>{t("antiparasites.title")} ({filteredDoses.length})</span>
                 <Button variant="outline" size="sm" onClick={exportData}>
                   <Download className="h-4 w-4 mr-1" />
-                  Export
+                  {t("antiparasites.export")}
                 </Button>
               </CardTitle>
             </CardHeader>
@@ -586,19 +583,19 @@ export default function Antiparasites() {
               {filteredDoses.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Bug className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>Aucun traitement antiparasitaire trouvé</p>
+                  <p>{t("antiparasites.empty")}</p>
                 </div>
               ) : currentView === 'table' ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Animal</TableHead>
-                        <TableHead>Produit</TableHead>
-                        <TableHead>Dose</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>{t("antiparasites.columns.pet")}</TableHead>
+                        <TableHead>{t("antiparasites.columns.product")}</TableHead>
+                        <TableHead>{t("antiparasites.treatmentDetails.dosage")}</TableHead>
+                        <TableHead>{t("antiparasites.columns.date")}</TableHead>
+                        <TableHead>{t("antiparasites.columns.status")}</TableHead>
+                        <TableHead>{t("antiparasites.columns.actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -626,7 +623,7 @@ export default function Antiparasites() {
                             )}
                           </TableCell>
                           <TableCell>{dose.doseLabel}</TableCell>
-                          <TableCell>{format(parseISO(dose.date), 'dd/MM/yyyy')}</TableCell>
+                          <TableCell>{format(parseISO(dose.date), 'dd/MM/yyyy', { locale: dateFns })}</TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(dose.listStatus)}>
                               <div className="flex items-center gap-1">
@@ -653,7 +650,7 @@ export default function Antiparasites() {
                                   size="sm"
                                   disabled={markingDoneId === dose.rowKey}
                                   onClick={() => handleMarkDone(dose)}
-                                  title="Marquer fait"
+                                  title={t("antiparasites.markDone")}
                                 >
                                   {markingDoneId === dose.rowKey ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -668,7 +665,7 @@ export default function Antiparasites() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => openEditAntiparasitic(dose.treatmentRecord!)}
-                                    title="Modifier"
+                                    title={t("antiparasites.editTitle")}
                                   >
                                     <Edit className="h-4 w-4" />
                                   </Button>
@@ -723,11 +720,11 @@ export default function Antiparasites() {
                             <span>{dose.doseLabel}</span>
                           </div>
                           {dose.vaccineType && (
-                            <div><span className="font-medium">Parasite:</span> {dose.vaccineType}</div>
+                            <div><span className="font-medium">{t("antiparasites.parasiteLabel")}:</span> {dose.vaccineType}</div>
                           )}
                           <div className="flex items-center gap-2 text-gray-600">
                             <Calendar className="h-4 w-4" />
-                            <span>{format(parseISO(dose.date), 'dd/MM/yyyy', { locale: fr })}</span>
+                            <span>{format(parseISO(dose.date), 'dd/MM/yyyy', { locale: dateFns })}</span>
                           </div>
                           {dose.administeredBy && (
                             <div className="flex items-center gap-2 text-gray-600">
@@ -748,14 +745,14 @@ export default function Antiparasites() {
                             }}
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Détails
+                            {tc("details")}
                           </Button>
                           {canWrite && dose.listStatus !== 'administered' && (
                             <Button
                               size="sm"
                               disabled={markingDoneId === dose.rowKey}
                               onClick={() => handleMarkDone(dose)}
-                              title="Marquer fait"
+                              title={t("antiparasites.markDone")}
                             >
                               {markingDoneId === dose.rowKey ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -770,7 +767,7 @@ export default function Antiparasites() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => openEditAntiparasitic(dose.treatmentRecord!)}
-                                title="Modifier"
+                                title={t("antiparasites.editTitle")}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -797,7 +794,7 @@ export default function Antiparasites() {
           <Card>
             <CardHeader>
               <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <span>Protocoles antiparasitaires ({protocols.length})</span>
+                <span>{t("antiparasites.protocolsTitle")} ({protocols.length})</span>
                 {canWrite && (
                 <Button
                   onClick={() => {
@@ -808,7 +805,7 @@ export default function Antiparasites() {
                   className="gap-2 w-full sm:w-auto"
                 >
                   <Plus className="h-4 w-4" />
-                  Nouveau protocole
+                  {t("antiparasites.createProtocol")}
                 </Button>
                 )}
               </CardTitle>
@@ -841,12 +838,12 @@ export default function Antiparasites() {
                         </div>
                         <h4 className="font-medium mb-2">{protocol.product_name}</h4>
                         <div className="space-y-1 text-sm text-gray-600">
-                          <div><span className="font-medium">Parasite:</span> {protocol.parasite_type}</div>
+                          <div><span className="font-medium">{t("antiparasites.parasiteLabel")}:</span> {protocol.parasite_type}</div>
                           {protocol.active_ingredient && (
-                            <div><span className="font-medium">Principe actif:</span> {protocol.active_ingredient}</div>
+                            <div><span className="font-medium">{t("antiparasites.treatmentDetails.activeIngredient")}:</span> {protocol.active_ingredient}</div>
                           )}
                           {protocol.frequency && (
-                            <div><span className="font-medium">Fréquence:</span> {protocol.frequency}</div>
+                            <div>{t("antiparasites.protocolMeta.frequency", { frequency: protocol.frequency })}</div>
                           )}
                         </div>
                       </CardContent>
@@ -858,7 +855,7 @@ export default function Antiparasites() {
               {protocols.length === 0 && !isLoadingProtocols && (
                 <div className="text-center py-8 text-gray-500">
                   <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>Aucun protocole configuré</p>
+                  <p>{t("antiparasites.emptyProtocols")}</p>
                 </div>
               )}
             </CardContent>
@@ -871,7 +868,7 @@ export default function Antiparasites() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Répartition par type de parasite
+                  {t("antiparasites.statistics.byParasite")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -891,7 +888,7 @@ export default function Antiparasites() {
                     </div>
                   ))}
                   {Object.keys(stats.parasiteTypes).length === 0 && (
-                    <p className="text-sm text-muted-foreground">Aucune donnée</p>
+                    <p className="text-sm text-muted-foreground">{tc("noData")}</p>
                   )}
                 </div>
               </CardContent>
@@ -899,28 +896,28 @@ export default function Antiparasites() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Résumé des doses</CardTitle>
+                <CardTitle>{t("antiparasites.statistics.doseSummary")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span>Total</span>
+                    <span>{t("antiparasites.kpi.total")}</span>
                     <span className="font-bold">{stats.total}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Administrés</span>
+                    <span>{t("antiparasites.kpi.administered")}</span>
                     <span className="font-bold text-green-600">{stats.administered}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Planifiés</span>
+                    <span>{t("antiparasites.kpi.planned")}</span>
                     <span className="font-bold text-blue-600">{stats.planned}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>En retard</span>
+                    <span>{t("antiparasites.kpi.overdue")}</span>
                     <span className="font-bold text-red-600">{stats.overdue}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>Prochaines 30 jours</span>
+                    <span>{t("antiparasites.kpi.next30")}</span>
                     <span className="font-bold text-orange-600">{stats.upcoming}</span>
                   </div>
                 </div>
@@ -957,33 +954,33 @@ export default function Antiparasites() {
       <Dialog open={showAntiparasiticDetails} onOpenChange={setShowAntiparasiticDetails}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Détails de la dose</DialogTitle>
+            <DialogTitle>{t("antiparasites.treatmentDetails.title")}</DialogTitle>
           </DialogHeader>
           {selectedDose && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="font-medium">Animal:</p>
+                  <p className="font-medium">{t("antiparasites.columns.pet")}:</p>
                   <p>{selectedDose.petName}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Client:</p>
+                  <p className="font-medium">{t("antiparasites.columns.client")}:</p>
                   <p>{selectedDose.clientName}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Produit:</p>
+                  <p className="font-medium">{t("antiparasites.treatmentDetails.product")}:</p>
                   <p>{selectedDose.vaccineName}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Dose:</p>
+                  <p className="font-medium">{t("antiparasites.treatmentDetails.dosage")}:</p>
                   <p>{selectedDose.doseLabel}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Date:</p>
-                  <p>{format(parseISO(selectedDose.date), 'dd/MM/yyyy', { locale: fr })}</p>
+                  <p className="font-medium">{t("antiparasites.treatmentDetails.date")}:</p>
+                  <p>{format(parseISO(selectedDose.date), 'dd/MM/yyyy', { locale: dateFns })}</p>
                 </div>
                 <div>
-                  <p className="font-medium">Statut:</p>
+                  <p className="font-medium">{t("antiparasites.columns.status")}:</p>
                   <Badge className={getStatusColor(selectedDose.listStatus)}>
                     <div className="flex items-center gap-1">
                       {getStatusIcon(selectedDose.listStatus)}
@@ -993,20 +990,20 @@ export default function Antiparasites() {
                 </div>
                 {selectedDose.vaccineType && (
                   <div>
-                    <p className="font-medium">Parasite:</p>
+                    <p className="font-medium">{t("antiparasites.parasiteLabel")}:</p>
                     <p>{selectedDose.vaccineType}</p>
                   </div>
                 )}
                 {selectedDose.administeredBy && (
                   <div>
-                    <p className="font-medium">Administré par:</p>
+                    <p className="font-medium">{t("antiparasites.status.administered")}:</p>
                     <p>{selectedDose.administeredBy}</p>
                   </div>
                 )}
               </div>
               {selectedDose.notes && (
                 <div>
-                  <p className="font-medium">Notes:</p>
+                  <p className="font-medium">{t("antiparasites.treatmentDetails.notes")}:</p>
                   <p className="text-gray-600">{selectedDose.notes}</p>
                 </div>
               )}
@@ -1021,7 +1018,7 @@ export default function Antiparasites() {
                     ) : (
                       <CheckCircle className="h-4 w-4 mr-2" />
                     )}
-                    Marquer fait
+                    {t("antiparasites.markDone")}
                   </Button>
                 )}
                 {canWrite && selectedDose.treatmentRecord && (
@@ -1030,7 +1027,7 @@ export default function Antiparasites() {
                     onClick={() => openEditAntiparasitic(selectedDose.treatmentRecord!)}
                   >
                     <Edit className="h-4 w-4 mr-2" />
-                    Modifier
+                    {tc("edit")}
                   </Button>
                 )}
                 <CertificateAntiparasiticPrintDynamic animalId={selectedDose.animalId} />
@@ -1043,21 +1040,20 @@ export default function Antiparasites() {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("antiparasites.deleteConfirmTitle")}</DialogTitle>
           </DialogHeader>
           {antiparasiticToDelete && (
             <div className="space-y-4">
               <p className="text-gray-600">
-                Êtes-vous sûr de vouloir supprimer le traitement{' '}
-                <strong>{antiparasiticToDelete.product_name}</strong> ?
+                {t("antiparasites.deleteConfirmBody")}
               </p>
-              <p className="text-sm text-red-600">Cette action est irréversible.</p>
+              <p className="text-sm text-red-600">{tc("cannotUndo")}</p>
               <div className="flex flex-col sm:flex-row justify-end gap-2">
                 <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-full sm:w-auto">
-                  Annuler
+                  {tc("cancel")}
                 </Button>
                 <Button variant="destructive" onClick={confirmDeleteAntiparasitic} className="w-full sm:w-auto">
-                  Supprimer
+                  {t("antiparasites.deleteConfirmAction")}
                 </Button>
               </div>
             </div>

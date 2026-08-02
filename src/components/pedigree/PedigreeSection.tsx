@@ -8,6 +8,7 @@ import { Award, Save } from "lucide-react";
 import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { usePedigree, useUpsertPedigree, type Pedigree } from "@/hooks/usePedigree";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface PedigreeSectionProps {
   animalId: string;
@@ -18,6 +19,8 @@ const empty: Pedigree = {
 };
 
 export function PedigreeSection({ animalId }: PedigreeSectionProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { data: settings } = useOrgSettings();
   const { data: pedigree } = usePedigree(animalId);
   const upsert = useUpsertPedigree();
@@ -36,9 +39,16 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
   const handleSave = async () => {
     try {
       await upsert.mutateAsync({ ...form, animal_id: animalId });
-      toast({ title: "✓ Pédigrée enregistré", description: "Les informations ont été sauvegardées." });
+      toast({
+        title: t("pedigreeSection.saved"),
+        description: t("pedigreeSection.savedBody"),
+      });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message ?? "Sauvegarde impossible", variant: "destructive" });
+      toast({
+        title: tc("error"),
+        description: e?.message ?? t("pedigreeSection.saveImpossible"),
+        variant: "destructive",
+      });
     }
   };
 
@@ -55,27 +65,27 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-1">
-          <Label className="text-xs">Nom</Label>
+          <Label className="text-xs">{t("pedigreeSection.name")}</Label>
           <Input
             value={(form[`${prefix}_name` as keyof Pedigree] as string) || ""}
             onChange={(e) => update(`${prefix}_name` as keyof Pedigree, e.target.value)}
-            placeholder="Nom du parent"
+            placeholder={t("pedigreeSection.parentNamePlaceholder")}
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Race</Label>
+          <Label className="text-xs">{t("pedigreeSection.breed")}</Label>
           <Input
             value={(form[`${prefix}_breed` as keyof Pedigree] as string) || ""}
             onChange={(e) => update(`${prefix}_breed` as keyof Pedigree, e.target.value)}
-            placeholder="Race"
+            placeholder={t("pedigreeSection.breedPlaceholder")}
           />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">N° enregistrement</Label>
+          <Label className="text-xs">{t("pedigreeSection.regNumberShort")}</Label>
           <Input
             value={(form[`${prefix}_registration` as keyof Pedigree] as string) || ""}
             onChange={(e) => update(`${prefix}_registration` as keyof Pedigree, e.target.value)}
-            placeholder="LOF, pedigree…"
+            placeholder={t("pedigreeSection.regNumberPlaceholder")}
           />
         </div>
       </CardContent>
@@ -101,12 +111,12 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
         <Input
           value={(form[`${prefix}_name` as keyof Pedigree] as string) || ""}
           onChange={(e) => update(`${prefix}_name` as keyof Pedigree, e.target.value)}
-          placeholder="Nom"
+          placeholder={t("pedigreeSection.name")}
         />
         <Input
           value={(form[`${prefix}_breed` as keyof Pedigree] as string) || ""}
           onChange={(e) => update(`${prefix}_breed` as keyof Pedigree, e.target.value)}
-          placeholder="Race"
+          placeholder={t("pedigreeSection.breed")}
         />
       </CardContent>
     </Card>
@@ -117,36 +127,36 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Award className="h-4 w-4" /> Informations générales du pédigrée
+            <Award className="h-4 w-4" /> {t("pedigreeSection.generalInfo")}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-xs">N° d'enregistrement</Label>
+            <Label className="text-xs">{t("pedigreeSection.registrationNumber")}</Label>
             <Input
               value={form.registration_number || ""}
               onChange={(e) => update("registration_number", e.target.value)}
-              placeholder="Ex : LOF 12345/0"
+              placeholder={t("pedigreeSection.registrationPlaceholder")}
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Origine du pédigrée</Label>
+            <Label className="text-xs">{t("pedigreeSection.origin")}</Label>
             <Input
               value={form.pedigree_origin || ""}
               onChange={(e) => update("pedigree_origin", e.target.value)}
-              placeholder="Ex : LOF, FCI, élevage…"
+              placeholder={t("pedigreeSection.originPlaceholder")}
             />
           </div>
           <div className="space-y-1 md:col-span-2">
-            <Label className="text-xs">Titres / Champions</Label>
+            <Label className="text-xs">{t("pedigreeSection.titles")}</Label>
             <Input
               value={form.titles || ""}
               onChange={(e) => update("titles", e.target.value)}
-              placeholder="Champion de France, BIS…"
+              placeholder={t("pedigreeSection.titlesPlaceholder")}
             />
           </div>
           <div className="space-y-1 md:col-span-2">
-            <Label className="text-xs">Notes</Label>
+            <Label className="text-xs">{tc("notes")}</Label>
             <Textarea
               value={form.notes || ""}
               onChange={(e) => update("notes", e.target.value)}
@@ -157,18 +167,18 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ParentCard title="Père" prefix="father" />
-        <ParentCard title="Mère" prefix="mother" />
+        <ParentCard title={t("pedigreeSection.sire")} prefix="father" />
+        <ParentCard title={t("pedigreeSection.dam")} prefix="mother" />
       </div>
 
       {depth === "grandparents" && (
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-muted-foreground">Grands-parents</h4>
+          <h4 className="text-sm font-semibold text-muted-foreground">{t("pedigreeSection.grandparents")}</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <GrandparentCard title="Grand-père paternel" prefix="paternal_grandfather" />
-            <GrandparentCard title="Grand-mère paternelle" prefix="paternal_grandmother" />
-            <GrandparentCard title="Grand-père maternel" prefix="maternal_grandfather" />
-            <GrandparentCard title="Grand-mère maternelle" prefix="maternal_grandmother" />
+            <GrandparentCard title={t("pedigreeSection.paternalGrandfather")} prefix="paternal_grandfather" />
+            <GrandparentCard title={t("pedigreeSection.paternalGrandmother")} prefix="paternal_grandmother" />
+            <GrandparentCard title={t("pedigreeSection.maternalGrandfather")} prefix="maternal_grandfather" />
+            <GrandparentCard title={t("pedigreeSection.maternalGrandmother")} prefix="maternal_grandmother" />
           </div>
         </div>
       )}
@@ -176,7 +186,7 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={upsert.isPending} className="gap-2">
           <Save className="h-4 w-4" />
-          {upsert.isPending ? "Sauvegarde..." : "Enregistrer le pédigrée"}
+          {upsert.isPending ? t("pedigreeSection.saving") : t("pedigreeSection.savePedigree")}
         </Button>
       </div>
     </div>

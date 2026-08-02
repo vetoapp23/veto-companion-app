@@ -3,10 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Users, TrendingUp } from 'lucide-react';
 import { useClients, useAnimals } from '@/hooks/useDatabase';
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ClientGrowthChart() {
   const { data: clients = [] } = useClients();
   const { data: pets = [] } = useAnimals();
+  const { t } = useTranslation("app");
+  const { bcp47 } = useAppLocale();
 
   // Générer les données de croissance des 6 derniers mois
   const generateGrowthData = () => {
@@ -42,7 +46,7 @@ export function ClientGrowthChart() {
       }).length;
       
       data.push({
-        month: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        month: date.toLocaleDateString(bcp47, { month: 'short' }),
         newClients,
         newPets,
         totalClients: totalClientsAtMonth,
@@ -58,7 +62,7 @@ export function ClientGrowthChart() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">Croissance des Clients</CardTitle>
+        <CardTitle className="text-base font-medium">{t("charts.clientGrowth.title")}</CardTitle>
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" />
           <TrendingUp className="h-4 w-4 text-blue-600" />
@@ -88,9 +92,9 @@ export function ClientGrowthChart() {
                 }}
                 formatter={(value: number, name: string) => [
                   value,
-                  name === 'newClients' ? 'Nouveaux Clients' : 
-                  name === 'newPets' ? 'Nouveaux Animaux' :
-                  name === 'totalClients' ? 'Total Clients' : 'Total Animaux'
+                  name === 'newClients' ? t("charts.clientGrowth.newClients") : 
+                  name === 'newPets' ? t("charts.clientGrowth.newPets") :
+                  name === 'totalClients' ? t("charts.clientGrowth.totalClients") : t("charts.clientGrowth.totalPets")
                 ]}
               />
               <Area
@@ -117,11 +121,11 @@ export function ClientGrowthChart() {
         <div className="flex items-center justify-between mt-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-muted-foreground">Nouveaux Clients</span>
+            <span className="text-muted-foreground">{t("charts.clientGrowth.newClients")}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-            <span className="text-muted-foreground">Nouveaux Animaux</span>
+            <span className="text-muted-foreground">{t("charts.clientGrowth.newPets")}</span>
           </div>
         </div>
       </CardContent>

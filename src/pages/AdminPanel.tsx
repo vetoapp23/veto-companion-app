@@ -32,6 +32,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import UserManagement from '@/components/UserManagement';
+import { useTranslation } from 'react-i18next';
 
 interface UserProfile {
   id: string;
@@ -76,6 +77,8 @@ interface AdminStats {
 
 const AdminPanel: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation('settings');
+  const { t: tc } = useTranslation('common');
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -106,8 +109,8 @@ const AdminPanel: React.FC = () => {
     // Check if user is admin
     if (user?.profile?.role !== 'admin') {
       toast({
-        title: 'Accès refusé',
-        description: 'Vous n\'avez pas les permissions pour accéder au panneau d\'administration.',
+        title: t('adminPanel.denied'),
+        description: t('adminPanel.deniedBody'),
         variant: 'destructive',
       });
       return;
@@ -176,8 +179,8 @@ const AdminPanel: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: 'Succès',
-        description: 'Utilisateur approuvé avec succès.',
+        title: tc('success'),
+        description: t('adminPanel.toast.approveSuccess'),
       });
 
       fetchUsers();
@@ -185,8 +188,8 @@ const AdminPanel: React.FC = () => {
     } catch (error) {
       console.error('Error approving user:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'approuver l\'utilisateur.',
+        title: tc('error'),
+        description: t('adminPanel.toast.approveError'),
         variant: 'destructive',
       });
     }
@@ -203,8 +206,8 @@ const AdminPanel: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: 'Succès',
-        description: 'Utilisateur rejeté avec succès.',
+        title: tc('success'),
+        description: t('adminPanel.toast.rejectSuccess'),
       });
 
       setRejectionReason('');
@@ -213,8 +216,8 @@ const AdminPanel: React.FC = () => {
     } catch (error) {
       console.error('Error rejecting user:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de rejeter l\'utilisateur.',
+        title: tc('error'),
+        description: t('adminPanel.toast.rejectError'),
         variant: 'destructive',
       });
     }
@@ -231,8 +234,8 @@ const AdminPanel: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: 'Succès',
-        description: 'Permissions mises à jour avec succès.',
+        title: tc('success'),
+        description: t('adminPanel.toast.permissionsSuccess'),
       });
 
       setShowPermissionsModal(false);
@@ -240,8 +243,8 @@ const AdminPanel: React.FC = () => {
     } catch (error) {
       console.error('Error updating permissions:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de mettre à jour les permissions.',
+        title: tc('error'),
+        description: t('adminPanel.toast.permissionsError'),
         variant: 'destructive',
       });
     }
@@ -260,8 +263,8 @@ const AdminPanel: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: 'Succès',
-        description: 'Utilisateur suspendu avec succès.',
+        title: tc('success'),
+        description: t('adminPanel.toast.suspendSuccess'),
       });
 
       fetchUsers();
@@ -269,8 +272,8 @@ const AdminPanel: React.FC = () => {
     } catch (error) {
       console.error('Error suspending user:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de suspendre l\'utilisateur.',
+        title: tc('error'),
+        description: t('adminPanel.toast.suspendError'),
         variant: 'destructive',
       });
     }
@@ -278,10 +281,10 @@ const AdminPanel: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      'pending': { color: 'bg-yellow-100 text-yellow-800', label: 'En attente', icon: Clock },
-      'approved': { color: 'bg-green-100 text-green-800', label: 'Approuvé', icon: CheckCircle },
-      'rejected': { color: 'bg-red-100 text-red-800', label: 'Rejeté', icon: XCircle },
-      'suspended': { color: 'bg-gray-100 text-gray-800', label: 'Suspendu', icon: AlertTriangle }
+      'pending': { color: 'bg-yellow-100 text-yellow-800', label: t('adminPanel.pending'), icon: Clock },
+      'approved': { color: 'bg-green-100 text-green-800', label: t('adminPanel.approved'), icon: CheckCircle },
+      'rejected': { color: 'bg-red-100 text-red-800', label: t('adminPanel.rejected'), icon: XCircle },
+      'suspended': { color: 'bg-gray-100 text-gray-800', label: t('adminPanel.suspended'), icon: AlertTriangle }
     };
     
     const badge = badges[status as keyof typeof badges] || { 
@@ -302,8 +305,8 @@ const AdminPanel: React.FC = () => {
 
   const getRoleBadge = (role: string) => {
     const badges = {
-      'admin': { color: 'bg-purple-100 text-purple-800', label: 'Administrateur' },
-      'assistant': { color: 'bg-blue-100 text-blue-800', label: 'Assistant' }
+      'admin': { color: 'bg-purple-100 text-purple-800', label: t('adminPanel.roleAdmin') },
+      'assistant': { color: 'bg-blue-100 text-blue-800', label: t('adminPanel.roleAssistant') }
     };
     
     const badge = badges[role as keyof typeof badges] || { 
@@ -327,7 +330,7 @@ const AdminPanel: React.FC = () => {
   });
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Chargement...</div>;
+    return <div className="flex justify-center items-center h-64">{t('adminPanel.loading')}</div>;
   }
 
   if (user?.profile?.role !== 'admin') {
@@ -336,7 +339,7 @@ const AdminPanel: React.FC = () => {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Vous n'avez pas les permissions pour accéder au panneau d'administration.
+            {t('adminPanel.deniedBody')}
           </AlertDescription>
         </Alert>
       </div>
@@ -346,14 +349,14 @@ const AdminPanel: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Panneau d'Administration</h1>
+        <h1 className="text-2xl font-bold">{t('adminPanel.title')}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="approvals">Approbations en attente</TabsTrigger>
-          <TabsTrigger value="users">Assistants</TabsTrigger>
-          <TabsTrigger value="activity">Activité</TabsTrigger>
+          <TabsTrigger value="approvals">{t('adminPanel.tabs.approvals')}</TabsTrigger>
+          <TabsTrigger value="users">{t('adminPanel.tabs.users')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('adminPanel.tabs.activity')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="approvals" className="space-y-4">
@@ -366,7 +369,7 @@ const AdminPanel: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Rechercher un utilisateur..."
+                  placeholder={t('adminPanel.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
@@ -375,25 +378,25 @@ const AdminPanel: React.FC = () => {
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-48">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrer par statut" />
+                  <SelectValue placeholder={t('adminPanel.filterByStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="pending">En attente</SelectItem>
-                  <SelectItem value="approved">Approuvés</SelectItem>
-                  <SelectItem value="rejected">Rejetés</SelectItem>
-                  <SelectItem value="suspended">Suspendus</SelectItem>
+                  <SelectItem value="all">{t('adminPanel.allStatuses')}</SelectItem>
+                  <SelectItem value="pending">{t('adminPanel.pending')}</SelectItem>
+                  <SelectItem value="approved">{t('adminPanel.approved')}</SelectItem>
+                  <SelectItem value="rejected">{t('adminPanel.rejected')}</SelectItem>
+                  <SelectItem value="suspended">{t('adminPanel.suspended')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger className="w-48">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrer par rôle" />
+                  <SelectValue placeholder={t('adminPanel.filterByRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous les rôles</SelectItem>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="assistant">Assistant</SelectItem>
+                  <SelectItem value="all">{t('adminPanel.allRoles')}</SelectItem>
+                  <SelectItem value="admin">{t('adminPanel.roleAdmin')}</SelectItem>
+                  <SelectItem value="assistant">{t('adminPanel.roleAssistant')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -405,12 +408,12 @@ const AdminPanel: React.FC = () => {
                 <table className="w-full">
                   <thead className="border-b">
                     <tr className="text-left">
-                      <th className="p-4">Utilisateur</th>
-                      <th className="p-4">Rôle</th>
-                      <th className="p-4">Statut</th>
-                      <th className="p-4">Inscrit le</th>
-                      <th className="p-4">Dernière connexion</th>
-                      <th className="p-4">Actions</th>
+                      <th className="p-4">{t('adminPanel.columns.user')}</th>
+                      <th className="p-4">{t('adminPanel.columns.role')}</th>
+                      <th className="p-4">{t('adminPanel.columns.status')}</th>
+                      <th className="p-4">{t('adminPanel.columns.registeredAt')}</th>
+                      <th className="p-4">{t('adminPanel.columns.lastLogin')}</th>
+                      <th className="p-4">{t('adminPanel.columns.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -434,7 +437,7 @@ const AdminPanel: React.FC = () => {
                         <td className="p-4">
                           {userProfile.last_login 
                             ? new Date(userProfile.last_login).toLocaleDateString()
-                            : 'Jamais'
+                            : t('adminPanel.never')
                           }
                         </td>
                         <td className="p-4">
@@ -447,18 +450,18 @@ const AdminPanel: React.FC = () => {
                                   onClick={() => handleApproveUser(userProfile.id)}
                                 >
                                   <UserCheck className="h-4 w-4 mr-1" />
-                                  Approuver
+                                  {t('adminPanel.approve')}
                                 </Button>
                                 <Button 
                                   size="sm" 
                                   variant="outline"
                                   onClick={() => {
-                                    const reason = prompt('Raison du rejet:');
+                                    const reason = prompt(t('adminPanel.rejectReasonPrompt'));
                                     if (reason) handleRejectUser(userProfile.id, reason);
                                   }}
                                 >
                                   <UserX className="h-4 w-4 mr-1" />
-                                  Rejeter
+                                  {t('adminPanel.reject')}
                                 </Button>
                               </>
                             )}
@@ -475,7 +478,7 @@ const AdminPanel: React.FC = () => {
                                   }}
                                 >
                                   <Edit className="h-4 w-4 mr-1" />
-                                  Permissions
+                                  {t('adminPanel.permissions')}
                                 </Button>
                                 <Button 
                                   size="sm" 
@@ -483,7 +486,7 @@ const AdminPanel: React.FC = () => {
                                   onClick={() => handleSuspendUser(userProfile.id)}
                                 >
                                   <AlertTriangle className="h-4 w-4 mr-1" />
-                                  Suspendre
+                                  {t('adminPanel.suspend')}
                                 </Button>
                               </>
                             )}
@@ -497,7 +500,7 @@ const AdminPanel: React.FC = () => {
                               }}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              Voir
+                              {t('adminPanel.view')}
                             </Button>
                           </div>
                         </td>
@@ -511,7 +514,7 @@ const AdminPanel: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
-          <h2 className="text-lg font-semibold">Journal d'activité</h2>
+          <h2 className="text-lg font-semibold">{t('adminPanel.activityLog')}</h2>
           
           <Card>
             <CardContent className="p-0">
@@ -519,11 +522,11 @@ const AdminPanel: React.FC = () => {
                 <table className="w-full">
                   <thead className="border-b">
                     <tr className="text-left">
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Utilisateur</th>
-                      <th className="p-4">Action</th>
-                      <th className="p-4">Ressource</th>
-                      <th className="p-4">Détails</th>
+                      <th className="p-4">{t('adminPanel.columns.date')}</th>
+                      <th className="p-4">{t('adminPanel.columns.user')}</th>
+                      <th className="p-4">{t('adminPanel.columns.action')}</th>
+                      <th className="p-4">{t('adminPanel.columns.resource')}</th>
+                      <th className="p-4">{t('adminPanel.columns.details')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -562,7 +565,7 @@ const AdminPanel: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl mx-4">
             <CardHeader>
-              <CardTitle>Gérer les permissions - {selectedUser.full_name}</CardTitle>
+              <CardTitle>{t('adminPanel.managePermissions', { name: selectedUser.full_name })}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4">
@@ -591,12 +594,12 @@ const AdminPanel: React.FC = () => {
                     setSelectedUser(null);
                   }}
                 >
-                  Annuler
+                  {tc('cancel')}
                 </Button>
                 <Button 
                   onClick={() => handleUpdatePermissions(selectedUser.id, userPermissions)}
                 >
-                  Sauvegarder
+                  {tc('save')}
                 </Button>
               </div>
             </CardContent>
@@ -609,39 +612,39 @@ const AdminPanel: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <Card className="w-full max-w-2xl mx-4">
             <CardHeader>
-              <CardTitle>Détails de l'utilisateur</CardTitle>
+              <CardTitle>{t('adminPanel.userDetails')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Nom complet</Label>
-                  <p className="font-medium">{selectedUser.full_name || 'Non renseigné'}</p>
+                  <Label>{t('adminPanel.fullName')}</Label>
+                  <p className="font-medium">{selectedUser.full_name || t('adminPanel.notProvided')}</p>
                 </div>
                 <div>
-                  <Label>Email</Label>
+                  <Label>{t('adminPanel.email')}</Label>
                   <p className="font-medium">{selectedUser.email}</p>
                 </div>
                 <div>
-                  <Label>Nom d'utilisateur</Label>
+                  <Label>{t('adminPanel.username')}</Label>
                   <p className="font-medium">{selectedUser.username}</p>
                 </div>
                 <div>
-                  <Label>Rôle</Label>
+                  <Label>{t('adminPanel.columns.role')}</Label>
                   <div>{getRoleBadge(selectedUser.role)}</div>
                 </div>
                 <div>
-                  <Label>Statut</Label>
+                  <Label>{t('adminPanel.columns.status')}</Label>
                   <div>{getStatusBadge(selectedUser.status)}</div>
                 </div>
                 <div>
-                  <Label>Date d'inscription</Label>
+                  <Label>{t('adminPanel.registeredDate')}</Label>
                   <p className="font-medium">{new Date(selectedUser.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
               
               {selectedUser.rejection_reason && (
                 <div>
-                  <Label>Raison du rejet</Label>
+                  <Label>{t('adminPanel.rejectionReason')}</Label>
                   <p className="text-red-600">{selectedUser.rejection_reason}</p>
                 </div>
               )}
@@ -654,7 +657,7 @@ const AdminPanel: React.FC = () => {
                     setSelectedUser(null);
                   }}
                 >
-                  Fermer
+                  {tc('close')}
                 </Button>
               </div>
             </CardContent>

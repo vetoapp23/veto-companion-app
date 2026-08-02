@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Stethoscope, Users, Calendar } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { NewClientModal } from "@/components/forms/NewClientModal";
 import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
 import { NewPetModal } from "@/components/forms/NewPetModal";
@@ -17,6 +18,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { AdminOnly, WriteGuard } from "./RoleGuard";
 
 export function HeroSection() {
+  const { t } = useTranslation("app");
   const { data: clients = [] } = useClients();
   const { data: pets = [] } = useAnimals();
   const { data: consultations = [] } = useConsultations();
@@ -28,10 +30,10 @@ export function HeroSection() {
   const clinicName = settings.clinicName?.trim();
   const greeting =
     activeVets.length === 1
-      ? `Bienvenue ${activeVets[0].name}`
+      ? t("dashboard.welcomeNamed", { name: activeVets[0].name })
       : clinicName
-        ? `Bienvenue à ${clinicName}`
-        : "Bienvenue";
+        ? t("dashboard.welcomeClinic", { clinic: clinicName })
+        : t("dashboard.welcome");
   const [showClientModal, setShowClientModal] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showPetModal, setShowPetModal] = useState(false);
@@ -57,11 +59,11 @@ export function HeroSection() {
     .reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
   const stats = [
-    { value: totalClients, label: "Clients" },
-    { value: totalPets, label: "Animaux" },
-    { value: consultationsToday, label: "Consult. aujourd'hui" },
-    { value: totalVaccinations, label: "Vaccinations" },
-    { value: totalAntiparasitics, label: "Antiparasit." },
+    { value: totalClients, label: t("dashboard.statClients") },
+    { value: totalPets, label: t("dashboard.statPets") },
+    { value: consultationsToday, label: t("dashboard.statConsultToday") },
+    { value: totalVaccinations, label: t("dashboard.statVaccinations") },
+    { value: totalAntiparasitics, label: t("dashboard.statAntiparasitics") },
   ];
 
   return (
@@ -72,7 +74,7 @@ export function HeroSection() {
             <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#5eead4" }}>
               <Stethoscope className="h-4 w-4" />
               <span className="font-display tracking-wide uppercase text-[11px] md:text-xs opacity-90">
-                Espace clinique
+                {t("dashboard.clinicSpace")}
               </span>
             </div>
             <div>
@@ -83,7 +85,7 @@ export function HeroSection() {
               </p>
             </div>
             <p className="hidden md:block text-sm md:text-base max-w-2xl" style={{ color: "rgba(244,251,249,0.75)" }}>
-              Clients, animaux, rendez-vous et consultations — tout synchronisé.
+              {t("dashboard.heroSub")}
             </p>
           </div>
 
@@ -95,7 +97,7 @@ export function HeroSection() {
                 onClick={() => setShowClientModal(true)}
               >
                 <Users className="h-4 w-4" />
-                Nouveau client
+                {t("dashboard.newClient")}
               </Button>
             </WriteGuard>
             <WriteGuard permission="can_manage_animals">
@@ -106,7 +108,7 @@ export function HeroSection() {
                 onClick={() => setShowPetModal(true)}
               >
                 <Stethoscope className="h-4 w-4" />
-                Animal
+                {t("dashboard.newPet")}
               </Button>
             </WriteGuard>
             <WriteGuard permission="can_manage_appointments">
@@ -117,7 +119,7 @@ export function HeroSection() {
                 onClick={() => setShowAppointmentModal(true)}
               >
                 <Calendar className="h-4 w-4" />
-                RDV
+                {t("dashboard.newAppointmentShort")}
               </Button>
             </WriteGuard>
             <WriteGuard permission="can_create_consultations">
@@ -128,7 +130,7 @@ export function HeroSection() {
                 onClick={() => setShowConsultationModal(true)}
               >
                 <Stethoscope className="h-4 w-4" />
-                Consultation
+                {t("dashboard.newConsultation")}
               </Button>
             </WriteGuard>
           </div>
@@ -145,7 +147,7 @@ export function HeroSection() {
                 <div className="app-stat-value text-lg md:text-xl">
                   {monthRevenue.toFixed(0)} {settings.currency || "MAD"}
                 </div>
-                <div className="app-stat-label">Revenus mois</div>
+                <div className="app-stat-label">{t("dashboard.statMonthRevenue")}</div>
               </div>
             </AdminOnly>
           </div>

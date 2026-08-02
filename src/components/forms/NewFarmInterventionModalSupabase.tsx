@@ -17,6 +17,7 @@ import { ensureVisitServiceForFarmIntervention } from "@/lib/farmInterventionVis
 import BatchEditorDialog from "@/components/forms/BatchEditorDialog";
 import { ChipNumbersField } from "@/components/forms/ChipNumbersField";
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
+import { useTranslation } from "react-i18next";
 
 interface NewFarmInterventionModalSupabaseProps {
   open: boolean;
@@ -49,6 +50,9 @@ const NewFarmInterventionModalSupabase = ({
   preferServiceId,
   onCreated,
 }: NewFarmInterventionModalSupabaseProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: tm } = useTranslation("medical");
   const { user } = useAuth();
   const { toast } = useToast();
   const isEdit = !!intervention?.id;
@@ -204,7 +208,7 @@ const NewFarmInterventionModalSupabase = ({
       setFormData((p) => ({ ...p, photos: [...p.photos, ...out] }));
       if (addedBytes > 0) recordStorageChange("farm", addedBytes, out.length);
     } catch (err: any) {
-      toast({ title: "Erreur photo", description: err?.message || "Impossible de traiter les images", variant: "destructive" });
+      toast({ title: t("farms.photoError"), description: err?.message || tm("alerts.cannotProcessImages"), variant: "destructive" });
     } finally {
       setPhotoBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -221,13 +225,13 @@ const NewFarmInterventionModalSupabase = ({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!formData.farm_id) return toast({ title: "Sélectionnez une exploitation", variant: "destructive" });
-    if (!formData.intervention_type) return toast({ title: "Type d'intervention requis", variant: "destructive" });
+    if (!formData.farm_id) return toast({ title: t("farms.selectFarmRequired"), variant: "destructive" });
+    if (!formData.intervention_type) return toast({ title: t("farms.interventionTypeRequired"), variant: "destructive" });
 
     setLoading(true);
     try {
       const { data: profile } = await supabase.from("user_profiles").select("organization_id").eq("id", user.id).single();
-      if (!profile?.organization_id) throw new Error("Organisation introuvable");
+      if (!profile?.organization_id) throw new Error(t("farms.orgNotFound"));
 
       const insertData: any = {
         farm_id: formData.farm_id,
@@ -283,7 +287,7 @@ const NewFarmInterventionModalSupabase = ({
         } catch (err) { console.warn("health event auto-create failed", err); }
       }
 
-      toast({ title: isEdit ? "✓ Intervention mise à jour" : "✓ Intervention créée" });
+      toast({ title: isEdit ? t("farms.interventionUpdated") : t("farms.interventionCreated") });
 
       // Sync visite d'élevage (même exploitation / même jour ou visite workspace)
       let linkedVisitId: string | null = null;
@@ -306,8 +310,8 @@ const NewFarmInterventionModalSupabase = ({
           linkedVisitId = linked?.visitId || null;
           if (linked && !preferVisitId) {
             toast({
-              title: "Visite d'élevage synchronisée",
-              description: "L'intervention est liée à une visite (journal / CA).",
+              title: t("farms.visitSynced"),
+              description: t("farms.visitSyncedBody"),
             });
           }
         } catch (syncErr) {
@@ -324,7 +328,7 @@ const NewFarmInterventionModalSupabase = ({
       }
       onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message || "Échec", variant: "destructive" });
+      toast({ title: tc("error"), description: err.message || tc("somethingWentWrong"), variant: "destructive" });
     } finally { setLoading(false); }
   };
 
@@ -333,24 +337,24 @@ const NewFarmInterventionModalSupabase = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Modifier l'intervention" : "Nouvelle intervention"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("farms.editIntervention") : t("farms.newIntervention")}</DialogTitle>
           <DialogDescription>
-            Intervention vétérinaire {farmName && `· ${farmName}`}
+            {t("farms.interventionVeterinary")} {farmName && `· ${farmName}`}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={submit} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Exploitation *</Label>
+              <Label>{t("farms.selectFarm")} *</Label>
               <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={formData.farm_id} onChange={(e) => set("farm_id", e.target.value)} disabled={!!farmId}>
-                <option value="">Sélectionner une exploitation</option>
+                <option value="">{t("farms.selectFarm")}</option>
                 {farms.map((f) => <option key={f.id} value={f.id}>{f.farm_name}</option>)}
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Lot / troupeau</Label>
+              <Label>{t("farms.batchHerd")}</Label>
               <div className="flex gap-2">
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -358,7 +362,7 @@ const NewFarmInterventionModalSupabase = ({
                   onChange={(e) => set("batch_id", e.target.value)}
                   disabled={!formData.farm_id}
                 >
-                  <option value="">— Toute l'exploitation —</option>
+                  <option value="">{t("farms.wholeFarm")}</option>
                   {batches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name} ({b.animal_count})</option>
                   ))}
@@ -370,82 +374,82 @@ const NewFarmInterventionModalSupabase = ({
                   className="shrink-0"
                   disabled={!formData.farm_id}
                   onClick={() => setShowBatchModal(true)}
-                  title="Nouveau troupeau"
-                  aria-label="Ajouter un nouveau troupeau"
+                  title={t("farms.newHerd")}
+                  aria-label={t("farms.newHerd")}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Absent de la liste ? Cliquez sur + pour créer un lot / troupeau.
+                {t("farms.batchMissingHint")}
               </p>
             </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Date *</Label>
+              <Label>{tc("date")} *</Label>
               <Input type="date" value={formData.intervention_date} onChange={(e) => set("intervention_date", e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label>Type d'intervention *</Label>
+              <Label>{t("farms.interventionType")}</Label>
               <ComboboxFreeText
                 value={formData.intervention_type}
                 onChange={(v) => set("intervention_type", v)}
                 options={config.interventionTypes}
                 category="farm_intervention_type"
-                placeholder="Vaccination, traitement…"
+                placeholder={t("farms.interventionTypePlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Nature</Label>
+              <Label>{t("farms.protocolNature")}</Label>
               <ComboboxFreeText
                 value={formData.protocol_type}
                 onChange={(v) => set("protocol_type", v)}
                 options={PROTOCOL_TYPES}
                 category="farm_protocol_type"
-                placeholder="Curatif, préventif…"
+                placeholder={t("farms.protocolTypePlaceholder")}
               />
             </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Animaux concernés (effectif)</Label>
+              <Label>{t("farms.affectedCount")}</Label>
               <Input type="number" min={0} value={formData.affected_count} onChange={(e) => set("affected_count", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Coût (MAD)</Label>
+              <Label>{t("farms.cost", { currency: "MAD" })}</Label>
               <Input type="number" step="0.01" min={0} value={formData.cost} onChange={(e) => set("cost", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Prochaine visite</Label>
+              <Label>{t("farms.nextVisit")}</Label>
               <Input type="date" value={formData.next_visit_date} onChange={(e) => set("next_visit_date", e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Description</Label>
+            <Label>{tc("description")}</Label>
             <Textarea rows={2} value={formData.description} onChange={(e) => set("description", e.target.value)} />
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Diagnostic</Label>
+              <Label>{tm("forms.diagnosisLabel")}</Label>
               <Textarea rows={2} value={formData.diagnosis} onChange={(e) => set("diagnosis", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Traitement</Label>
+              <Label>{tm("forms.treatmentShort")}</Label>
               <Textarea rows={2} value={formData.treatment} onChange={(e) => set("treatment", e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Médicaments utilisés</Label>
+            <Label>{t("farms.medicationsUsed")}</Label>
             <div className="flex gap-2">
               <Input value={medicationInput} onChange={(e) => setMedicationInput(e.target.value)}
-                placeholder="Nom du médicament"
+                placeholder={t("farms.medicationNamePlaceholder")}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMedication(); } }} />
-              <Button type="button" variant="outline" onClick={addMedication}>Ajouter</Button>
+              <Button type="button" variant="outline" onClick={addMedication}>{tc("add")}</Button>
             </div>
             {formData.medications_used.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
@@ -462,8 +466,8 @@ const NewFarmInterventionModalSupabase = ({
           <ChipNumbersField
             value={formData.chip_numbers}
             onChange={(chips) => set("chip_numbers", chips)}
-            label="Numéros de puces concernés"
-            hint="Animaux traités lors de cette intervention. Collez plusieurs numéros séparés par virgule ou espace."
+            label={t("farms.chipNumbersConcerned")}
+            hint={t("farms.chipNumbersHint")}
           />
           {formData.batch_id &&
             (batches.find((b) => b.id === formData.batch_id)?.chip_numbers?.length ?? 0) > 0 && (
@@ -473,17 +477,17 @@ const NewFarmInterventionModalSupabase = ({
               className="h-auto p-0 text-xs"
               onClick={importChipsFromBatch}
             >
-              Importer les puces du lot sélectionné
+              {t("farms.importChipsFromBatch")}
             </Button>
           )}
 
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{tc("notes")}</Label>
             <Textarea rows={2} value={formData.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <Label>Photos de l'intervention</Label>
+            <Label>{t("farms.interventionPhotos")}</Label>
             <div className="flex flex-wrap gap-2">
               {formData.photos.map((src, i) => (
                 <div key={i} className="relative h-20 w-20 rounded overflow-hidden border">
@@ -492,7 +496,7 @@ const NewFarmInterventionModalSupabase = ({
                     type="button"
                     onClick={() => removePhoto(i)}
                     className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-bl px-1"
-                    aria-label="Supprimer la photo"
+                    aria-label={tc("delete")}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -505,7 +509,7 @@ const NewFarmInterventionModalSupabase = ({
                 className="h-20 w-20 rounded border border-dashed flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-accent disabled:opacity-50"
               >
                 {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 mb-1" />}
-                {photoBusy ? "…" : "Ajouter"}
+                {photoBusy ? "…" : tc("add")}
               </button>
               <input
                 ref={fileRef}
@@ -518,15 +522,15 @@ const NewFarmInterventionModalSupabase = ({
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Photos compressées automatiquement. Plusieurs images possibles (lésions, site, matériel…).
+              {t("farms.photosCompressHint")}
             </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>{tc("cancel")}</Button>
             <Button type="submit" disabled={loading || photoBusy}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isEdit ? "Enregistrer" : "Créer l'intervention"}
+              {isEdit ? tc("save") : t("farms.createIntervention")}
             </Button>
           </div>
         </form>

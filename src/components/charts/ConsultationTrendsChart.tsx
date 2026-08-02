@@ -3,9 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Stethoscope, TrendingUp } from 'lucide-react';
 import { useConsultations } from '@/hooks/useDatabase';
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ConsultationTrendsChart() {
   const { data: consultations = [] } = useConsultations();
+  const { t } = useTranslation("app");
+  const { bcp47 } = useAppLocale();
 
   // Générer les données des 12 derniers mois
   const generateTrendsData = () => {
@@ -28,7 +32,7 @@ export function ConsultationTrendsChart() {
       const averageRevenue = monthConsultations.length > 0 ? totalRevenue / monthConsultations.length : 0;
       
       data.push({
-        month: date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
+        month: date.toLocaleDateString(bcp47, { month: 'short', year: '2-digit' }),
         consultations: monthConsultations.length,
         revenue: Math.round(totalRevenue),
         averageRevenue: Math.round(averageRevenue)
@@ -43,7 +47,7 @@ export function ConsultationTrendsChart() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">Tendances des Consultations</CardTitle>
+        <CardTitle className="text-base font-medium">{t("charts.consultationTrends.title")}</CardTitle>
         <div className="flex items-center gap-2">
           <Stethoscope className="h-4 w-4 text-muted-foreground" />
           <TrendingUp className="h-4 w-4 text-blue-600" />
@@ -73,8 +77,8 @@ export function ConsultationTrendsChart() {
                 }}
                 formatter={(value: number, name: string) => [
                   name === 'consultations' ? value : `${value} €`,
-                  name === 'consultations' ? 'Consultations' : 
-                  name === 'revenue' ? 'Revenus' : 'Revenu moyen'
+                  name === 'consultations' ? t("charts.consultationTrends.consultations") : 
+                  name === 'revenue' ? t("charts.consultationTrends.revenue") : t("charts.consultationTrends.averageRevenue")
                 ]}
               />
               <Area
@@ -92,7 +96,7 @@ export function ConsultationTrendsChart() {
         <div className="flex items-center justify-between mt-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-muted-foreground">Nombre de consultations</span>
+            <span className="text-muted-foreground">{t("charts.consultationTrends.consultations")}</span>
           </div>
         </div>
       </CardContent>

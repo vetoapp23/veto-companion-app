@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useStock } from "@/hooks/useStock";
+import { useTranslation } from "react-i18next";
 
 interface NewStockItemModalProps {
   open: boolean;
@@ -15,31 +16,23 @@ interface NewStockItemModalProps {
   editingItem?: any | null;
 }
 
-// Simple categories matching the old UI
-const categories = [
-  { value: 'medication', label: 'Médicaments' },
-  { value: 'vaccine', label: 'Vaccins' },
-  { value: 'consumable', label: 'Consommables' },
-  { value: 'equipment', label: 'Équipement' },
-  { value: 'supplement', label: 'Suppléments' }
-];
-
-// Simple units
-const units = [
-  { value: 'unit', label: 'Unité' },
-  { value: 'box', label: 'Boîte' },
-  { value: 'vial', label: 'Flacon' },
-  { value: 'bottle', label: 'Bouteille' },
-  { value: 'pack', label: 'Paquet' },
-  { value: 'kg', label: 'Kilogramme' },
-  { value: 'g', label: 'Gramme' },
-  { value: 'ml', label: 'Millilitre' },
-  { value: 'l', label: 'Litre' }
-];
+const CATEGORY_KEYS = ['medication', 'vaccine', 'consumable', 'equipment', 'supplement'] as const;
+const UNIT_KEYS = ['unit', 'box', 'vial', 'bottle', 'pack', 'kg', 'g', 'ml', 'l'] as const;
 
 export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockItemModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { addStockItem: addStockItemRaw, updateStockItem: updateStockItemRaw, stockItems: rawStockItems } = useStock();
   const { toast } = useToast();
+
+  const categories = useMemo(
+    () => CATEGORY_KEYS.map((value) => ({ value, label: t(`stock.categories.${value}`) })),
+    [t]
+  );
+  const units = useMemo(
+    () => UNIT_KEYS.map((value) => ({ value, label: t(`stock.units.${value}`) })),
+    [t]
+  );
 
   const [formData, setFormData] = useState({
     name: '',
@@ -59,7 +52,6 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     notes: ''
   });
 
-  // Helper function to find database item ID from compatibility ID
   const findDatabaseItemId = (compatibilityId: number): string | null => {
     const dbItem = rawStockItems.find(item => 
       parseInt(item.id.replace(/-/g, '').slice(0, 8), 16) === compatibilityId
@@ -67,12 +59,10 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     return dbItem?.id || null;
   };
 
-  // Wrapper functions for database operations
   const updateStockItem = async (compatibilityId: number, updates: any) => {
     const dbId = findDatabaseItemId(compatibilityId);
     if (!dbId) return null;
     
-    // Convert UI updates to database format
     const dbUpdates: any = {};
     if (updates.currentStock !== undefined) dbUpdates.current_quantity = updates.currentStock;
     if (updates.minimumStock !== undefined) dbUpdates.minimum_quantity = updates.minimumStock;
@@ -92,7 +82,6 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
   };
 
   const addStockItem = async (itemData: any) => {
-    // Convert UI item to database format
     const dbItemData = {
       name: itemData.name,
       category: itemData.category,
@@ -113,7 +102,6 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     return await addStockItemRaw(dbItemData);
   };
 
-  // Reset form when modal opens/closes or editing item changes
   useEffect(() => {
     if (editingItem) {
       setFormData({
@@ -159,8 +147,8 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     
     if (!formData.name.trim()) {
       toast({
-        title: "Erreur",
-        description: "Le nom de l'élément est requis.",
+        title: tc("error"),
+        description: t("stock.itemNameRequired"),
         variant: "destructive",
       });
       return;
@@ -168,8 +156,8 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
 
     if (!formData.currentStock || !formData.minimumStock || !formData.purchasePrice || !formData.sellingPrice) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs requis.",
+        title: tc("error"),
+        description: t("stock.fillRequired"),
         variant: "destructive",
       });
       return;
@@ -201,22 +189,22 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
       if (editingItem) {
         await updateStockItem(editingItem.id, itemData);
         toast({
-          title: "Élément modifié",
-          description: `"${formData.name}" a été modifié avec succès.`,
+          title: t("stock.itemUpdated"),
+          description: t("stock.itemUpdatedBody", { name: formData.name }),
         });
       } else {
         await addStockItem(itemData);
         toast({
-          title: "Élément ajouté",
-          description: `"${formData.name}" a été ajouté au stock.`,
+          title: t("stock.itemAdded"),
+          description: t("stock.itemAddedBody", { name: formData.name }),
         });
       }
       
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Une erreur s'est produite lors de la sauvegarde.",
+        title: tc("error"),
+        description: t("stock.saveError"),
         variant: "destructive",
       });
     }
@@ -227,32 +215,31 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingItem ? 'Modifier l\'élément de stock' : 'Nouvel élément de stock'}
+            {editingItem ? t("stock.editItem") : t("stock.newItem")}
           </DialogTitle>
           <p className="text-sm text-gray-600">
-            Ajoutez un nouvel élément à votre inventaire.
+            {t("stock.newItemDesc")}
           </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Informations de base */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informations de base</h3>
+            <h3 className="text-lg font-medium">{t("stock.basicInfo")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Nom de l'élément *</Label>
+                <Label htmlFor="name">{t("stock.itemName")}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  placeholder="ex: Amoxicilline 500mg"
+                  placeholder={t("stock.itemNamePlaceholder")}
                   required
                 />
               </div>
               
               <div>
-                <Label htmlFor="category">Catégorie *</Label>
+                <Label htmlFor="category">{t("stock.category")} *</Label>
                 <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
                   <SelectTrigger>
                     <SelectValue />
@@ -269,7 +256,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
             </div>
 
             <div>
-              <Label htmlFor="manufacturer">Fabricant</Label>
+              <Label htmlFor="manufacturer">{t("stock.colManufacturer")}</Label>
               <Input
                 id="manufacturer"
                 value={formData.manufacturer}
@@ -279,13 +266,12 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
             </div>
           </div>
 
-          {/* Informations techniques */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informations techniques</h3>
+            <h3 className="text-lg font-medium">{t("stock.technicalInfo")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="batchNumber">Numéro de lot</Label>
+                <Label htmlFor="batchNumber">{t("stock.batchNumber")}</Label>
                 <Input
                   id="batchNumber"
                   value={formData.batchNumber}
@@ -295,7 +281,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
               </div>
               
               <div>
-                <Label htmlFor="dosage">Dosage</Label>
+                <Label htmlFor="dosage">{t("stock.dosage")}</Label>
                 <Input
                   id="dosage"
                   value={formData.dosage}
@@ -305,7 +291,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
               </div>
               
               <div>
-                <Label htmlFor="unit">Unité</Label>
+                <Label htmlFor="unit">{tc("unit")}</Label>
                 <Select value={formData.unit} onValueChange={(value) => setFormData({...formData, unit: value})}>
                   <SelectTrigger>
                     <SelectValue />
@@ -322,13 +308,12 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
             </div>
           </div>
 
-          {/* Gestion du stock */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Gestion du stock</h3>
+            <h3 className="text-lg font-medium">{t("stock.stockManagement")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="currentStock">Stock actuel *</Label>
+                <Label htmlFor="currentStock">{t("stock.currentStock")}</Label>
                 <Input
                   id="currentStock"
                   type="number"
@@ -340,7 +325,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
               </div>
               
               <div>
-                <Label htmlFor="minimumStock">Stock minimum *</Label>
+                <Label htmlFor="minimumStock">{t("stock.minimumStock")}</Label>
                 <Input
                   id="minimumStock"
                   type="number"
@@ -352,7 +337,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
               </div>
               
               <div>
-                <Label htmlFor="maximumStock">Stock maximum</Label>
+                <Label htmlFor="maximumStock">{t("stock.maximumStock")}</Label>
                 <Input
                   id="maximumStock"
                   type="number"
@@ -365,7 +350,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="purchasePrice">Prix d'achat (MAD) *</Label>
+                <Label htmlFor="purchasePrice">{t("stock.purchasePrice", { currency: "MAD" })}</Label>
                 <Input
                   id="purchasePrice"
                   type="number"
@@ -373,16 +358,16 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
                   min="0"
                   value={formData.purchasePrice}
                   onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})}
-                  placeholder="Prix d'achat au fournisseur"
+                  placeholder={t("stock.purchasePricePlaceholder")}
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  La valeur totale sera calculée automatiquement : Prix d'achat × Stock actuel
+                  {t("stock.purchasePriceHint")}
                 </p>
               </div>
               
               <div>
-                <Label htmlFor="sellingPrice">Prix de vente (MAD) *</Label>
+                <Label htmlFor="sellingPrice">{t("stock.sellingPrice", { currency: "MAD" })}</Label>
                 <Input
                   id="sellingPrice"
                   type="number"
@@ -390,20 +375,19 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
                   min="0"
                   value={formData.sellingPrice}
                   onChange={(e) => setFormData({...formData, sellingPrice: e.target.value})}
-                  placeholder="Prix de vente au client"
+                  placeholder={t("stock.sellingPricePlaceholder")}
                   required
                 />
               </div>
             </div>
           </div>
 
-          {/* Informations supplémentaires */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informations supplémentaires</h3>
+            <h3 className="text-lg font-medium">{t("stock.additionalInfo")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="expirationDate">Date d'expiration</Label>
+                <Label htmlFor="expirationDate">{t("stock.expirationDate")}</Label>
                 <Input
                   id="expirationDate"
                   type="date"
@@ -413,33 +397,33 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
               </div>
               
               <div>
-                <Label htmlFor="supplier">Fournisseur</Label>
+                <Label htmlFor="supplier">{t("stock.supplier")}</Label>
                 <Input
                   id="supplier"
                   value={formData.supplier}
                   onChange={(e) => setFormData({...formData, supplier: e.target.value})}
-                  placeholder="Nom du fournisseur"
+                  placeholder={t("stock.supplierPlaceholder")}
                 />
               </div>
               
               <div>
-                <Label htmlFor="location">Emplacement</Label>
+                <Label htmlFor="location">{t("stock.colLocation")}</Label>
                 <Input
                   id="location"
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  placeholder="ex: Armoire A - Étagère 1"
+                  placeholder={t("stock.locationPlaceholder")}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{tc("notes")}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                placeholder="Notes additionnelles..."
+                placeholder={t("stock.notesPlaceholder")}
                 rows={3}
               />
             </div>
@@ -447,10 +431,10 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
-              {editingItem ? 'Modifier' : 'Ajouter'}
+              {editingItem ? tc("edit") : tc("add")}
             </Button>
           </div>
         </form>

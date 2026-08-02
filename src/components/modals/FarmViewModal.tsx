@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,8 @@ interface FarmViewModalProps {
 }
 
 const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: FarmViewModalProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { getFarmInterventionsByFarmId } = useClients();
   
   if (!farm) return null;
@@ -50,12 +53,12 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
             {getStatusIcon(farm.status)}
             {farm.name}
             <Badge className={statusStyles[farm.status]}>
-              {farm.status === 'active' ? 'Actif' : 
-               farm.status === 'attention' ? 'Attention' : 'Urgent'}
+              {farm.status === 'active' ? t("farms.farmStatus.active") : 
+               farm.status === 'attention' ? t("farms.farmStatus.attention") : t("farms.farmStatus.urgent")}
             </Badge>
           </DialogTitle>
           <DialogDescription>
-            Détails complets de l'exploitation agricole
+            {t("farms.ui.viewFarmDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -65,17 +68,17 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5" />
-                Informations Générales
+                {t("farms.ui.generalInfoTitle")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Propriétaire</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.owner")}</p>
                   <p className="font-medium">{farm.owner}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Types d'élevage</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.print.labels.farmTypes")}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {farm.types?.map((type) => (
                       <Badge key={type} variant="secondary">{type}</Badge>
@@ -83,19 +86,19 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Nombre total d'animaux</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.totalAnimals")}</p>
                   <p className="font-medium">{farm.totalAnimals}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Vétérinaire</p>
-                  <p className="font-medium">{farm.veterinarian || 'Non assigné'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.veterinarian")}</p>
+                  <p className="font-medium">{farm.veterinarian || t("farms.ui.notAssigned")}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Dernière visite</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.lastVisit")}</p>
                   <p className="font-medium">{formatDate(farm.lastVisit)}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Date de création</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.createdAt")}</p>
                   <p className="font-medium">{formatDate(farm.createdAt)}</p>
                 </div>
               </div>
@@ -103,14 +106,14 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
               <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                   <MapPin className="h-3 w-3" />
-                  Adresse
+                  {tc("address")}
                 </p>
                 <p className="font-medium">{farm.address}</p>
               </div>
 
               {farm.coordinates && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Coordonnées GPS</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.gpsCoordinates")}</p>
                   <p className="font-mono text-sm">
                     {farm.coordinates.latitude.toFixed(4)}, {farm.coordinates.longitude.toFixed(4)}
                   </p>
@@ -121,16 +124,16 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                 <div>
                   <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                     <Phone className="h-3 w-3" />
-                    Téléphone
+                    {tc("phone")}
                   </p>
-                  <p className="font-medium">{farm.phone || 'Non renseigné'}</p>
+                  <p className="font-medium">{farm.phone || t("farms.ui.notProvided")}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                     <Mail className="h-3 w-3" />
-                    Email
+                    {tc("email")}
                   </p>
-                  <p className="font-medium">{farm.email || 'Non renseigné'}</p>
+                  <p className="font-medium">{farm.email || t("farms.ui.notProvided")}</p>
                 </div>
               </div>
             </CardContent>
@@ -142,7 +145,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users2 className="h-5 w-5" />
-                  Détails du Cheptel
+                  {t("farms.ui.herdDetailsTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -152,19 +155,19 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                       <div className="flex items-center justify-between mb-2">
                         <Badge variant="secondary">{detail.category}</Badge>
                         <span className="text-sm font-medium">
-                          Total: {detail.maleCount + detail.femaleCount} animaux
+                          {t("farms.ui.totalAnimalsCount", { count: detail.maleCount + detail.femaleCount })}
                         </span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Mâles:</span> {detail.maleCount}
+                          <span className="text-muted-foreground">{t("farms.ui.males")}:</span> {detail.maleCount}
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Femelles:</span> {detail.femaleCount}
+                          <span className="text-muted-foreground">{t("farms.ui.females")}:</span> {detail.femaleCount}
                         </div>
                         {detail.breeds.length > 0 && (
                           <div className="md:col-span-3">
-                            <span className="text-muted-foreground">Races:</span> {detail.breeds.join(", ")}
+                            <span className="text-muted-foreground">{t("farms.ui.breedsTitle")}:</span> {detail.breeds.join(", ")}
                           </div>
                         )}
                       </div>
@@ -181,33 +184,33 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  Informations Administratives
+                  {t("farms.ui.adminInfoTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {farm.registrationNumber && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">N° d'immatriculation</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.registrationImm")}</p>
                       <p className="font-medium">{farm.registrationNumber}</p>
                     </div>
                   )}
                   {farm.surfaceArea && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Surface</p>
-                      <p className="font-medium">{farm.surfaceArea} hectares</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.surfaceLabel")}</p>
+                      <p className="font-medium">{farm.surfaceArea} {t("farms.ui.hectaresUnit")}</p>
                     </div>
                   )}
                 </div>
                 {farm.buildingDetails && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Bâtiments</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.buildings")}</p>
                     <p className="font-medium">{farm.buildingDetails}</p>
                   </div>
                 )}
                 {farm.equipmentDetails && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Équipements</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.equipment")}</p>
                     <p className="font-medium">{farm.equipmentDetails}</p>
                   </div>
                 )}
@@ -221,7 +224,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Certifications
+                  {t("farms.certifications")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -240,28 +243,28 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Assurance et Contact d'Urgence
+                  {t("farms.ui.insuranceEmergencyTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {farm.insuranceDetails && (
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Assurance</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.insurance")}</p>
                     <p className="font-medium">{farm.insuranceDetails}</p>
                   </div>
                 )}
                 {farm.emergencyContact && farm.emergencyContact.name && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Contact d'urgence</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.emergencyContact")}</p>
                       <p className="font-medium">{farm.emergencyContact.name}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
+                      <p className="text-sm font-medium text-muted-foreground">{tc("phone")}</p>
                       <p className="font-medium">{farm.emergencyContact.phone}</p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Relation</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t("farms.ui.emergencyRelation")}</p>
                       <p className="font-medium">{farm.emergencyContact.relation}</p>
                     </div>
                   </div>
@@ -274,7 +277,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
           {farm.notes && (
             <Card>
               <CardHeader>
-                <CardTitle>Notes</CardTitle>
+                <CardTitle>{tc("notes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm">{farm.notes}</p>
@@ -285,7 +288,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
           {/* Détails du cheptel calculé depuis la ferme */}
           <Card>
             <CardHeader>
-              <CardTitle>Détails du Cheptel</CardTitle>
+              <CardTitle>{t("farms.ui.herdDetailsTitle")}</CardTitle>
             </CardHeader>
             <CardContent>
               {farm.animalDetails && farm.animalDetails.length > 0 ? (
@@ -296,20 +299,20 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                         <h4 className="font-semibold text-lg">{detail.category}</h4>
                         <div className="flex gap-2">
                           <Badge variant="secondary">
-                            {detail.maleCount + detail.femaleCount} animaux
+                            {t("farms.ui.totalAnimalsCount", { count: detail.maleCount + detail.femaleCount })}
                           </Badge>
                           <Badge variant="outline">
-                            {detail.maleCount} mâles
+                            {t("farms.ui.males")}: {detail.maleCount}
                           </Badge>
                           <Badge variant="outline">
-                            {detail.femaleCount} femelles
+                            {t("farms.ui.females")}: {detail.femaleCount}
                           </Badge>
                         </div>
                       </div>
                       
                       {detail.breeds && detail.breeds.length > 0 && (
                         <div className="mb-2">
-                          <span className="text-sm font-medium text-muted-foreground">Races: </span>
+                          <span className="text-sm font-medium text-muted-foreground">{t("farms.ui.breedsTitle")}: </span>
                           {detail.breeds.map((breed, breedIndex) => (
                             <Badge key={breedIndex} variant="outline" className="mr-1 text-xs">
                               {breed}
@@ -320,7 +323,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                       
                       {detail.ageGroups && detail.ageGroups.length > 0 && (
                         <div>
-                          <span className="text-sm font-medium text-muted-foreground">Groupes d'âge: </span>
+                          <span className="text-sm font-medium text-muted-foreground">{t("farms.ui.ageGroups")} </span>
                           {detail.ageGroups.map((ageGroup, ageIndex) => (
                             <Badge key={ageIndex} variant="outline" className="mr-1 text-xs">
                               {ageGroup}
@@ -332,7 +335,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">Aucun détail de cheptel configuré pour cette exploitation</p>
+                <p className="text-muted-foreground">{t("farms.ui.noHerdDetails")}</p>
               )}
             </CardContent>
           </Card>
@@ -340,7 +343,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
           {/* Gestion des photos de l'exploitation */}
           <Card>
             <CardHeader>
-              <CardTitle>Photos de l'exploitation</CardTitle>
+              <CardTitle>{t("farms.farmPhotos")}</CardTitle>
             </CardHeader>
             <CardContent>
               {farm.photos && farm.photos.length > 0 ? (
@@ -360,9 +363,9 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                             variant="secondary" 
                             className="text-xs bg-black/70 text-white border-0"
                           >
-                            {photo.category === 'cheptel' ? 'Cheptel' :
-                             photo.category === 'batiments' ? 'Bâtiments' :
-                             photo.category === 'equipements' ? 'Équipements' : 'Général'}
+                            {photo.category === 'cheptel' ? t("farms.ui.photoCategories.cheptel") :
+                             photo.category === 'batiments' ? t("farms.ui.photoCategories.batiments") :
+                             photo.category === 'equipements' ? t("farms.ui.photoCategories.equipements") : t("farms.ui.photoCategories.general")}
                           </Badge>
                         </div>
                       </div>
@@ -379,9 +382,9 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
               ) : (
                 <div className="text-center py-8">
                   <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Aucune photo ajoutée</p>
+                  <p className="text-muted-foreground">{t("farms.ui.noPhotos")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Les photos peuvent être ajoutées lors de la modification de l'exploitation
+                    {t("farms.ui.photosEditHint")}
                   </p>
                 </div>
               )}
@@ -400,7 +403,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
             <TabsContent value="interventions" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Interventions vétérinaires</CardTitle>
+                  <CardTitle>{t("farms.ui.veterinaryInterventions")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {interventions.length > 0 ? (
@@ -418,7 +421,7 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">Aucune intervention enregistrée pour cette exploitation</p>
+                    <p className="text-muted-foreground">{t("farms.ui.noInterventionsForFarm")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -428,10 +431,10 @@ const FarmViewModal = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: 
 
         <div className="flex justify-end space-x-2 pt-4">
           <Button onClick={onNewIntervention} variant="outline">
-            Nouvelle Intervention
+            {t("farms.newIntervention")}
           </Button>
           <Button onClick={onEdit}>
-            Modifier
+            {tc("edit")}
           </Button>
         </div>
       </DialogContent>

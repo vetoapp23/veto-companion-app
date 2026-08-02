@@ -17,6 +17,7 @@ import { FARM_TYPE_CONFIGS, DEFAULT_FARM_TYPE_KEYS, getFarmTypeConfig, normalize
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 import { NewClientModal } from "@/components/forms/NewClientModal";
 import type { Client } from "@/lib/database";
+import { useTranslation } from "react-i18next";
 
 interface NewFarmModalProps {
   open: boolean;
@@ -25,6 +26,8 @@ interface NewFarmModalProps {
 }
 
 const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const { data: clients = [] } = useClients();
   const { data: farmSettings } = useFarmManagementSettings();
@@ -156,11 +159,11 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data.farm_name.trim()) {
-      toast({ title: "Erreur", description: "Nom de l'exploitation requis", variant: "destructive" });
+      toast({ title: tc("error"), description: t("farms.farmNameRequired"), variant: "destructive" });
       return;
     }
     if (!data.client_id) {
-      toast({ title: "Erreur", description: "Propriétaire requis", variant: "destructive" });
+      toast({ title: tc("error"), description: t("farms.ownerRequired"), variant: "destructive" });
       return;
     }
     const coords = data.coordinates.trim();
@@ -190,14 +193,14 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     try {
       if (farm?.id) {
         await updateFarm.mutateAsync({ id: farm.id, data: payload });
-        toast({ title: "✓ Exploitation modifiée" });
+        toast({ title: t("farms.farmUpdated") });
       } else {
         await createFarm.mutateAsync(payload as any);
-        toast({ title: "✓ Exploitation créée" });
+        toast({ title: t("farms.farmCreated") });
       }
       onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message || "Échec", variant: "destructive" });
+      toast({ title: tc("error"), description: err.message || tc("somethingWentWrong"), variant: "destructive" });
     }
   };
 
@@ -206,24 +209,24 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{farm ? "Modifier l'exploitation" : "Nouvelle exploitation"}</DialogTitle>
+          <DialogTitle>{farm ? t("farms.editFarm") : t("farms.newFarm")}</DialogTitle>
           <DialogDescription>
-            Formulaire adaptatif selon le type d'élevage. Champs personnalisables via Paramètres.
+            {t("farms.farmDesc")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-6">
           {/* Identification */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Identification</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("farms.identification")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Nom de l'exploitation *</Label>
+                  <Label>{t("farms.farmName")}</Label>
                   <Input value={data.farm_name} onChange={(e) => set("farm_name", e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Propriétaire *</Label>
+                  <Label>{t("farms.owner")}</Label>
                   <div className="flex gap-2">
                     <select
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -231,7 +234,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                       onChange={(e) => set("client_id", e.target.value)}
                       required
                     >
-                      <option value="">Sélectionner un client</option>
+                      <option value="">{t("farms.selectOwner")}</option>
                       {clients.map((c: any) => (
                         <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
                       ))}
@@ -242,24 +245,24 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                       variant="outline"
                       className="shrink-0"
                       onClick={() => setShowClientModal(true)}
-                      title="Nouveau propriétaire"
-                      aria-label="Ajouter un nouveau propriétaire"
+                      title={t("farms.newOwner")}
+                      aria-label={t("farms.newOwner")}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Absent de la liste ? Cliquez sur + pour créer le propriétaire.
+                    {t("farms.ownerHint")}
                   </p>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Types d'élevage (multi-sélection)</Label>
+                <Label>{t("farms.farmTypesMulti")}</Label>
                 <div className="flex flex-wrap gap-2">
-                  {farmTypeLabels.map((t) => (
-                    <label key={t} className={`flex items-center gap-2 text-sm cursor-pointer border rounded-md px-2 py-1 ${data.farm_types.includes(t) ? "bg-primary/10 border-primary" : ""}`}>
-                      <Checkbox checked={data.farm_types.includes(t)} onCheckedChange={() => toggleType(t)} />
-                      <span>{t}</span>
+                  {farmTypeLabels.map((ft) => (
+                    <label key={ft} className={`flex items-center gap-2 text-sm cursor-pointer border rounded-md px-2 py-1 ${data.farm_types.includes(ft) ? "bg-primary/10 border-primary" : ""}`}>
+                      <Checkbox checked={data.farm_types.includes(ft)} onCheckedChange={() => toggleType(ft)} />
+                      <span>{ft}</span>
                     </label>
                   ))}
                 </div>
@@ -267,36 +270,36 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                   <ComboboxFreeText
                     value=""
                     onChange={(v) => v && !data.farm_types.includes(v) && toggleType(v)}
-                    options={farmTypeLabels.filter((t) => !data.farm_types.includes(t))}
+                    options={farmTypeLabels.filter((ft) => !data.farm_types.includes(ft))}
                     category="farm_type"
-                    placeholder="+ Ajouter un type personnalisé…"
+                    placeholder={t("farms.addCustomType")}
                   />
                 </div>
                 {data.farm_types.length > 1 && (
                   <p className="text-xs text-muted-foreground">
-                    Exploitation multi-types : les lots préciseront leur type spécifique.
+                    {t("farms.multiTypeHint")}
                   </p>
                 )}
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Type de production principal</Label>
+                  <Label>{t("farms.productionType")}</Label>
                   <ComboboxFreeText
                     value={data.production_type}
                     onChange={(v) => set("production_type", v)}
                     options={config.productionTypes}
                     category="production_type"
-                    placeholder="Lait, viande, mixte…"
+                    placeholder={t("farms.productionPlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Mode de logement</Label>
+                  <Label>{t("farms.housingType")}</Label>
                   <ComboboxFreeText
                     value={data.housing_type}
                     onChange={(v) => set("housing_type", v)}
                     options={config.housingTypes}
                     category="housing_type"
-                    placeholder="Stabulation, plein air…"
+                    placeholder={t("farms.housingPlaceholder")}
                   />
                 </div>
               </div>
@@ -306,11 +309,11 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                   <Input type="number" min={0} value={data.herd_size} onChange={(e) => set("herd_size", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Surface (hectares)</Label>
+                  <Label>{t("farms.surfaceHa")}</Label>
                   <Input type="number" step="0.1" min={0} value={data.surface_hectares} onChange={(e) => set("surface_hectares", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>N° d'enregistrement</Label>
+                  <Label>{t("farms.registrationNumber")}</Label>
                   <Input value={data.registration_number} onChange={(e) => set("registration_number", e.target.value)} />
                 </div>
               </div>
@@ -321,39 +324,39 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
           {data.farm_types.length > 1 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Détails par type d'élevage</CardTitle>
+                <CardTitle className="text-base">{t("farms.detailsByType")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {data.farm_types.map((t) => {
-                  const cfg = getFarmTypeConfig(t);
-                  const cur = data.per_type[t] || {};
+                {data.farm_types.map((ft) => {
+                  const cfg = getFarmTypeConfig(ft);
+                  const cur = data.per_type[ft] || {};
                   const upd = (patch: any) =>
-                    setData((p) => ({ ...p, per_type: { ...p.per_type, [t]: { ...cur, ...patch } } }));
+                    setData((p) => ({ ...p, per_type: { ...p.per_type, [ft]: { ...cur, ...patch } } }));
                   return (
-                    <div key={t} className="border rounded-md p-3 space-y-3">
+                    <div key={ft} className="border rounded-md p-3 space-y-3">
                       <div className="flex items-center justify-between">
-                        <Badge variant="secondary">{t}</Badge>
+                        <Badge variant="secondary">{ft}</Badge>
                         <span className="text-xs text-muted-foreground">{cfg.label}</span>
                       </div>
                       <div className="grid md:grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Production</Label>
+                          <Label className="text-xs">{t("farms.production")}</Label>
                           <ComboboxFreeText
                             value={cur.production_type || ""}
                             onChange={(v) => upd({ production_type: v })}
                             options={cfg.productionTypes}
                             category="production_type"
-                            placeholder="Lait, viande…"
+                            placeholder={t("farms.productionPlaceholder")}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Logement</Label>
+                          <Label className="text-xs">{t("farms.housing")}</Label>
                           <ComboboxFreeText
                             value={cur.housing_type || ""}
                             onChange={(v) => upd({ housing_type: v })}
                             options={cfg.housingTypes}
                             category="housing_type"
-                            placeholder="Stabulation…"
+                            placeholder={t("farms.housingPlaceholder")}
                           />
                         </div>
                         <div className="space-y-1">
@@ -366,7 +369,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs">Notes</Label>
+                        <Label className="text-xs">{tc("notes")}</Label>
                         <Textarea rows={2} value={cur.notes || ""} onChange={(e) => upd({ notes: e.target.value })} />
                       </div>
                     </div>
@@ -378,27 +381,27 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
 
           {/* Localisation & contact */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Localisation & contact</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("farms.locationContact")}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Adresse</Label>
+                <Label>{tc("address")}</Label>
                 <Textarea rows={2} value={data.address} onChange={(e) => set("address", e.target.value)} />
               </div>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Coordonnées GPS (optionnel)</Label>
+                  <Label>{t("farms.gpsOptional")}</Label>
                   <Input
-                    placeholder="lat, lng — ex: 33.57, -7.59"
+                    placeholder={t("farms.gpsPlaceholder")}
                     value={data.coordinates}
                     onChange={(e) => set("coordinates", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Téléphone</Label>
+                  <Label>{tc("phone")}</Label>
                   <Input value={data.phone} onChange={(e) => set("phone", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
+                  <Label>{tc("email")}</Label>
                   <Input type="email" value={data.email} onChange={(e) => set("email", e.target.value)} />
                 </div>
               </div>
@@ -407,7 +410,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
 
           {/* Certifications */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Certifications</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("farms.certifications")}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {certificationOptions.map((c) => (
@@ -431,7 +434,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
 
           {/* Photos de l'exploitation */}
           <Card>
-            <CardHeader><CardTitle className="text-base">Photos de l'exploitation</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{t("farms.farmPhotos")}</CardTitle></CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {data.photos.map((src, i) => (
@@ -445,7 +448,7 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
                 ))}
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="h-24 w-24 rounded border border-dashed flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-accent">
-                  <Upload className="h-4 w-4 mb-1" /> Ajouter
+                  <Upload className="h-4 w-4 mb-1" /> {tc("add")}
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onPhotoFiles} />
               </div>
@@ -454,15 +457,15 @@ const NewFarmModal = ({ open, onOpenChange, farm }: NewFarmModalProps) => {
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{tc("notes")}</Label>
             <Textarea rows={3} value={data.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>{tc("cancel")}</Button>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {farm ? "Enregistrer" : "Créer l'exploitation"}
+              {farm ? tc("save") : t("farms.createFarm")}
             </Button>
           </DialogFooter>
         </form>

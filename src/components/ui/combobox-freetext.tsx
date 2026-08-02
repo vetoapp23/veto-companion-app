@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAddCustomValue, useCustomValues } from "@/hooks/useCustomValues";
+import { useTranslation } from "react-i18next";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 
 interface ComboboxFreeTextProps {
   value: string;
@@ -29,11 +31,14 @@ export function ComboboxFreeText({
   onChange,
   options,
   category,
-  placeholder = "Sélectionner...",
-  emptyText = "Aucun résultat",
+  placeholder,
+  emptyText,
   disabled,
   className,
 }: ComboboxFreeTextProps) {
+  const { t, i18n } = useTranslation("common");
+  const resolvedPlaceholder = placeholder ?? t("selectEllipsis");
+  const resolvedEmptyText = emptyText ?? t("noResults");
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const { data: customValues = [] } = useCustomValues(category ?? "__none__");
@@ -43,8 +48,10 @@ export function ComboboxFreeText({
     const set = new Map<string, string>();
     for (const o of options) if (o) set.set(o.toLowerCase(), o);
     if (category) for (const c of customValues) set.set(c.value.toLowerCase(), c.value);
-    return Array.from(set.values()).sort((a, b) => a.localeCompare(b, "fr"));
-  }, [options, customValues, category]);
+    return Array.from(set.values()).sort((a, b) =>
+      a.localeCompare(b, getBcp47Locale(i18n.language))
+    );
+  }, [options, customValues, category, i18n.language]);
 
   const filtered = React.useMemo(() => {
     if (!query) return merged;
@@ -89,7 +96,7 @@ export function ComboboxFreeText({
           className={cn("w-full justify-between font-normal", className)}
         >
           <span className={cn(!value && "text-muted-foreground")}>
-            {value || placeholder}
+            {value || resolvedPlaceholder}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -97,7 +104,7 @@ export function ComboboxFreeText({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Tapez pour rechercher ou créer..."
+            placeholder={t("searchOrCreate")}
             value={query}
             onValueChange={setQuery}
             onKeyDown={(e) => {
@@ -109,7 +116,7 @@ export function ComboboxFreeText({
           />
           <CommandList>
             <CommandEmpty>
-              <div className="p-2 text-sm text-muted-foreground">{emptyText}</div>
+              <div className="p-2 text-sm text-muted-foreground">{resolvedEmptyText}</div>
             </CommandEmpty>
             <CommandGroup>
               {filtered.map((opt) => (
@@ -130,7 +137,7 @@ export function ComboboxFreeText({
               {query.trim() && !exists && (
                 <CommandItem onSelect={handleAdd} className="text-primary">
                   <Plus className="mr-2 h-4 w-4" />
-                  Ajouter « {query.trim()} »
+                  {t("addQuoted", { value: query.trim() })}
                 </CommandItem>
               )}
             </CommandGroup>

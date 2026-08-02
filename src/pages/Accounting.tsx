@@ -27,7 +27,8 @@ import {
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { useAppLocale } from '@/i18n/useAppLocale';
 
 // UI-compatible AccountingEntry interface
 export interface AccountingEntry {
@@ -76,6 +77,9 @@ const ACCOUNTING_SUGGESTIONS: { monthly: AccountingSuggestion[]; annual: Account
 };
 
 const Accounting: React.FC = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { dateFns } = useAppLocale();
   const { 
     revenues,
     expenses,
@@ -336,7 +340,7 @@ const Accounting: React.FC = () => {
   };
 
   const handleDeleteEntry = async (entryId: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette entrée ?')) {
+    if (window.confirm(t('accounting.confirmDeleteEntry'))) {
       const entry = accountingEntries.find(e => e.id === entryId);
       if (entry) {
         if (entry.type === 'revenue') {
@@ -414,7 +418,7 @@ const Accounting: React.FC = () => {
   };
 
   const handleDeleteSuggestion = (suggestion: AccountingSuggestion) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette suggestion ?')) {
+    if (window.confirm(t('accounting.deleteSuggestionConfirm'))) {
       const updatedSuggestions = { ...customSuggestions };
       const category = suggestion.frequency;
       updatedSuggestions[category] = updatedSuggestions[category].filter(s => s !== suggestion);
@@ -455,10 +459,10 @@ const Accounting: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Calculator className="h-8 w-8" />
-            Gestion Comptable
+            {t("accounting.title")}
           </h1>
           <p className="text-muted-foreground">
-            Suivi des recettes et charges de votre clinique vétérinaire
+            {t("accounting.description")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -466,16 +470,16 @@ const Accounting: React.FC = () => {
             <DialogTrigger asChild>
               <Button onClick={() => { setEditingEntry(null); setFormData({ type: 'revenue', frequency: 'occasional', description: '', amount: '', date: '', source: 'other', notes: '' }); }}>
                 <Plus className="h-4 w-4 mr-2" />
-                Ajouter une entrée
+                {t("accounting.newEntry")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingEntry ? 'Modifier l\'entrée comptable' : 'Ajouter une entrée comptable'}
+                  {editingEntry ? t("accounting.form.editEntry") : t("accounting.form.addEntry")}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingEntry ? 'Modifiez les informations de cette entrée.' : 'Ajoutez une nouvelle recette ou charge manuelle.'}
+                  {editingEntry ? t("accounting.form.editEntryDesc") : t("accounting.form.addEntryDesc")}
                 </DialogDescription>
               </DialogHeader>
               
@@ -485,7 +489,7 @@ const Accounting: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Lightbulb className="h-4 w-4 text-yellow-600" />
-                      <Label className="text-sm font-medium">Suggestions prédéfinies</Label>
+                    <Label className="text-sm font-medium">{t("accounting.suggestions.title")}</Label>
                     </div>
                     <Button
                       variant="ghost"
@@ -569,20 +573,20 @@ const Accounting: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="type">{t("accounting.form.type")}</Label>
                     <Select value={formData.type} onValueChange={(value: 'revenue' | 'expense') => setFormData({ ...formData, type: value })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="revenue">Recette</SelectItem>
-                        <SelectItem value="expense">Charge</SelectItem>
+                        <SelectItem value="revenue">{t("accounting.revenue")}</SelectItem>
+                        <SelectItem value="expense">{t("accounting.expenses")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   <div>
-                    <Label htmlFor="frequency">Fréquence</Label>
+                    <Label htmlFor="frequency">{t("accounting.suggestions.frequency")}</Label>
                     <Select value={formData.frequency} onValueChange={(value: 'monthly' | 'annual' | 'occasional') => setFormData({ ...formData, frequency: value })}>
                       <SelectTrigger>
                         <SelectValue />
@@ -597,18 +601,18 @@ const Accounting: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">{t("accounting.form.description")}</Label>
                   <Input
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Ex: Salaire employé, Loyer, etc."
+                    placeholder={t("accounting.form.descriptionPlaceholder")}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="amount">Montant ({settings.currency})</Label>
+                    <Label htmlFor="amount">{t("accounting.form.amount")} ({settings.currency})</Label>
                     <Input
                       id="amount"
                       type="number"
@@ -620,7 +624,7 @@ const Accounting: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="date">Date</Label>
+                    <Label htmlFor="date">{t("accounting.form.date")}</Label>
                     <Input
                       id="date"
                       type="date"
@@ -631,7 +635,7 @@ const Accounting: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="source">Source</Label>
+                    <Label htmlFor="source">{t("accounting.form.source")}</Label>
                   <Select value={formData.source} onValueChange={(value) => setFormData({ ...formData, source: value })}>
                     <SelectTrigger>
                       <SelectValue />
@@ -639,7 +643,7 @@ const Accounting: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="salary">Salaire</SelectItem>
                       <SelectItem value="rent">Loyer</SelectItem>
-                      <SelectItem value="tax">Impôts</SelectItem>
+                      <SelectItem value="tax">{t("accounting.form.categoryTax")}</SelectItem>
                       <SelectItem value="insurance">Assurance</SelectItem>
                       <SelectItem value="other">Autre</SelectItem>
                     </SelectContent>
@@ -647,21 +651,21 @@ const Accounting: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Notes (optionnel)</Label>
+                    <Label htmlFor="notes">{t("accounting.form.notes")} ({tc("optional")})</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Informations supplémentaires..."
+                    placeholder={t("accounting.form.notesPlaceholder")}
                   />
                 </div>
 
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsAddEntryModalOpen(false)}>
-                    Annuler
+                    {tc("cancel")}
                   </Button>
                   <Button onClick={handleAddEntry}>
-                    {editingEntry ? 'Modifier' : 'Ajouter'}
+                    {editingEntry ? tc("edit") : tc("add")}
                   </Button>
                 </div>
               </div>
@@ -675,7 +679,7 @@ const Accounting: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Période d'analyse
+            {t("accounting.periods.custom")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -686,33 +690,33 @@ const Accounting: React.FC = () => {
                 onClick={() => handlePeriodChange('day')}
                 size="sm"
               >
-                Ce jour
+                {t("accounting.periods.today")}
               </Button>
               <Button
                 variant={selectedPeriod === 'week' ? 'default' : 'outline'}
                 onClick={() => handlePeriodChange('week')}
                 size="sm"
               >
-                Cette semaine
+                {t("accounting.periods.week")}
               </Button>
               <Button
                 variant={selectedPeriod === 'month' ? 'default' : 'outline'}
                 onClick={() => handlePeriodChange('month')}
                 size="sm"
               >
-                Ce mois
+                {t("accounting.periods.month")}
               </Button>
               <Button
                 variant={selectedPeriod === 'year' ? 'default' : 'outline'}
                 onClick={() => handlePeriodChange('year')}
                 size="sm"
               >
-                Cette année
+                {t("accounting.periods.year")}
               </Button>
             </div>
             
             <div className="flex gap-2 items-center">
-              <Label htmlFor="startDate">Du</Label>
+              <Label htmlFor="startDate">{tc("from")}</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -720,7 +724,7 @@ const Accounting: React.FC = () => {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-40"
               />
-              <Label htmlFor="endDate">Au</Label>
+              <Label htmlFor="endDate">{tc("to")}</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -738,7 +742,7 @@ const Accounting: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Recettes</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("accounting.totalRevenue")}</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -757,7 +761,7 @@ const Accounting: React.FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Charges</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("accounting.totalExpenses")}</CardTitle>
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -768,7 +772,7 @@ const Accounting: React.FC = () => {
                 <div>Achats stock: {formatCurrency(summary.expenseBreakdown.stockPurchases)}</div>
                 <div>Salaires: {formatCurrency(summary.expenseBreakdown.salaries)}</div>
                 <div>Loyer: {formatCurrency(summary.expenseBreakdown.rent)}</div>
-                <div>Impôts: {formatCurrency(summary.expenseBreakdown.taxes)}</div>
+                <div>{t("accounting.kpi.taxes")}: {formatCurrency(summary.expenseBreakdown.taxes)}</div>
                 <div>Autres: {formatCurrency(summary.expenseBreakdown.other)}</div>
               </div>
             </CardContent>
@@ -776,7 +780,7 @@ const Accounting: React.FC = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Résultat Net</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("accounting.netResult")}</CardTitle>
               <DollarSign className="h-4 w-4" />
             </CardHeader>
             <CardContent>
@@ -784,7 +788,7 @@ const Accounting: React.FC = () => {
                 {formatCurrency(summary.netIncome)}
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                {summary.netIncome >= 0 ? 'Bénéfice' : 'Perte'}
+                {summary.netIncome >= 0 ? t("accounting.kpi.profit") : t("accounting.kpi.loss")}
               </div>
             </CardContent>
           </Card>
@@ -794,8 +798,8 @@ const Accounting: React.FC = () => {
       {/* Onglets pour les entrées comptables et la configuration */}
       <Tabs defaultValue="entries" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="entries">Entrées Comptables</TabsTrigger>
-          <TabsTrigger value="configuration">Configuration</TabsTrigger>
+          <TabsTrigger value="entries">{t("accounting.journal.title")}</TabsTrigger>
+          <TabsTrigger value="configuration">{t("accounting.suggestions.title")}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="entries">
@@ -803,7 +807,7 @@ const Accounting: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Entrées comptables automatiques et manuelles
+                {t("accounting.journal.title")}
               </CardTitle>
               <CardDescription>
                 Entrées générées automatiquement (consultations, vaccinations, etc.) et entrées manuelles ajoutées
@@ -813,22 +817,22 @@ const Accounting: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Fréquence</TableHead>
-                <TableHead>Montant</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t("accounting.journal.date")}</TableHead>
+                <TableHead>{t("accounting.form.type")}</TableHead>
+                <TableHead>{t("accounting.journal.description")}</TableHead>
+                <TableHead>{t("accounting.journal.source")}</TableHead>
+                <TableHead>{t("accounting.suggestions.frequency")}</TableHead>
+                <TableHead>{t("accounting.form.amount")}</TableHead>
+                <TableHead>{tc("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEntries.map((entry) => (
                 <TableRow key={entry.id}>
-                  <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                  <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy', { locale: dateFns })}</TableCell>
                   <TableCell>
                     <Badge variant={entry.type === 'revenue' ? 'default' : 'destructive'}>
-                      {entry.type === 'revenue' ? 'Recette' : 'Charge'}
+                      {entry.type === 'revenue' ? t("accounting.revenue") : t("accounting.expenses")}
                     </Badge>
                   </TableCell>
                   <TableCell>{entry.description}</TableCell>
@@ -876,7 +880,7 @@ const Accounting: React.FC = () => {
           
           {filteredEntries.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              Aucune entrée comptable pour cette période
+              {t("accounting.emptyJournal")}
             </div>
           )}
             </CardContent>
@@ -888,7 +892,7 @@ const Accounting: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lightbulb className="h-5 w-5" />
-                Configuration des Suggestions
+                {t("accounting.suggestions.title")}
               </CardTitle>
               <CardDescription>
                 Configurez les suggestions prédéfinies pour faciliter la saisie des charges et recettes
@@ -896,10 +900,10 @@ const Accounting: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Suggestions Mensuelles</h3>
+                <h3 className="text-lg font-medium">{t("accounting.frequencies.monthly")}</h3>
                 <Button onClick={() => { setEditingSuggestion(null); setSuggestionFormData({ description: '', amount: '', type: 'expense', frequency: 'monthly', source: 'other' }); setIsConfigModalOpen(true); }}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
+                  {tc("add")}
                 </Button>
               </div>
               
@@ -923,10 +927,10 @@ const Accounting: React.FC = () => {
               </div>
               
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Suggestions Annuelles</h3>
+                <h3 className="text-lg font-medium">{t("accounting.frequencies.yearly")}</h3>
                 <Button onClick={() => { setEditingSuggestion(null); setSuggestionFormData({ description: '', amount: '', type: 'expense', frequency: 'annual', source: 'other' }); setIsConfigModalOpen(true); }}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
+                  {tc("add")}
                 </Button>
               </div>
               
@@ -950,10 +954,10 @@ const Accounting: React.FC = () => {
               </div>
               
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Suggestions Occasionnelles</h3>
+                <h3 className="text-lg font-medium">{t("accounting.suggestions.title")}</h3>
                 <Button onClick={() => { setEditingSuggestion(null); setSuggestionFormData({ description: '', amount: '', type: 'expense', frequency: 'occasional', source: 'other' }); setIsConfigModalOpen(true); }}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
+                  {tc("add")}
                 </Button>
               </div>
               
@@ -985,17 +989,17 @@ const Accounting: React.FC = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingSuggestion ? 'Modifier la suggestion' : 'Ajouter une suggestion'}
+              {editingSuggestion ? t("accounting.suggestions.edit") : t("accounting.suggestions.add")}
             </DialogTitle>
             <DialogDescription>
-              {editingSuggestion ? 'Modifiez les informations de cette suggestion.' : 'Ajoutez une nouvelle suggestion prédéfinie.'}
+              {editingSuggestion ? t("accounting.suggestions.editDesc") : t("accounting.suggestions.addDesc")}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="suggestion-type">Type</Label>
+                <Label htmlFor="suggestion-type">{t("accounting.form.type")}</Label>
                 <Select value={suggestionFormData.type} onValueChange={(value: 'revenue' | 'expense') => setSuggestionFormData({ ...suggestionFormData, type: value })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1008,7 +1012,7 @@ const Accounting: React.FC = () => {
               </div>
               
               <div>
-                <Label htmlFor="suggestion-frequency">Fréquence</Label>
+                <Label htmlFor="suggestion-frequency">{t("accounting.suggestions.frequency")}</Label>
                 <Select value={suggestionFormData.frequency} onValueChange={(value: 'monthly' | 'annual' | 'occasional') => setSuggestionFormData({ ...suggestionFormData, frequency: value })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1023,18 +1027,18 @@ const Accounting: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="suggestion-description">Description</Label>
+              <Label htmlFor="suggestion-description">{t("accounting.form.description")}</Label>
               <Input
                 id="suggestion-description"
                 value={suggestionFormData.description}
                 onChange={(e) => setSuggestionFormData({ ...suggestionFormData, description: e.target.value })}
-                placeholder="Ex: Salaire employé, Loyer, etc."
+                placeholder={t("accounting.form.descriptionPlaceholder")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="suggestion-amount">Montant ({settings.currency})</Label>
+                <Label htmlFor="suggestion-amount">{t("accounting.form.amount")} ({settings.currency})</Label>
                 <Input
                   id="suggestion-amount"
                   type="number"
@@ -1046,7 +1050,7 @@ const Accounting: React.FC = () => {
               </div>
               
               <div>
-                <Label htmlFor="suggestion-source">Source</Label>
+                <Label htmlFor="suggestion-source">{t("accounting.form.source")}</Label>
                 <Select value={suggestionFormData.source} onValueChange={(value) => setSuggestionFormData({ ...suggestionFormData, source: value })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1054,7 +1058,7 @@ const Accounting: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="salary">Salaire</SelectItem>
                     <SelectItem value="rent">Loyer</SelectItem>
-                    <SelectItem value="tax">Impôts</SelectItem>
+                    <SelectItem value="tax">{t("accounting.form.categoryTax")}</SelectItem>
                     <SelectItem value="insurance">Assurance</SelectItem>
                     <SelectItem value="other">Autre</SelectItem>
                   </SelectContent>
@@ -1064,10 +1068,10 @@ const Accounting: React.FC = () => {
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsConfigModalOpen(false)}>
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button onClick={handleAddSuggestion}>
-                {editingSuggestion ? 'Modifier' : 'Ajouter'}
+                {editingSuggestion ? tc("edit") : tc("add")}
               </Button>
             </div>
           </div>

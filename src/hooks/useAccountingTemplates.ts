@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 export type TemplateType = 'revenue' | 'expense';
 export type TemplateFrequency = 'monthly' | 'annual' | 'occasional';
@@ -59,6 +60,8 @@ const DEFAULT_TEMPLATES: Omit<AccountingTemplate, 'id' | 'user_id' | 'created_at
 export const useAccountingTemplates = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('app');
+  const { t: tc } = useTranslation('common');
   const [templates, setTemplates] = useState<AccountingTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,7 +157,7 @@ export const useAccountingTemplates = () => {
           .single();
         if (error) throw error;
         await fetchTemplates();
-        toast({ title: 'Succès', description: 'Configuration mise à jour' });
+        toast({ title: tc('success'), description: t('accounting.templates.configUpdated') });
         return data as AccountingTemplate;
       }
 
@@ -165,15 +168,15 @@ export const useAccountingTemplates = () => {
         .single();
       if (error) throw error;
       await fetchTemplates();
-      toast({ title: 'Succès', description: 'Configuration enregistrée' });
+      toast({ title: tc('success'), description: t('accounting.templates.configSaved') });
       return data as AccountingTemplate;
     } catch (e: any) {
       console.error('addTemplate error', e);
       const msg =
         e?.code === '23505'
-          ? 'Cette configuration existe déjà'
-          : e?.message || "Impossible d'enregistrer la configuration";
-      toast({ title: 'Erreur', description: msg, variant: 'destructive' });
+          ? t('accounting.templates.configExists')
+          : e?.message || t('accounting.templates.cannotSaveConfig');
+      toast({ title: tc('error'), description: msg, variant: 'destructive' });
       return null;
     }
   };
@@ -187,10 +190,10 @@ export const useAccountingTemplates = () => {
       if (error) throw error;
       await fetchTemplates();
       if (!opts?.silent) {
-        toast({ title: 'Succès', description: 'Suggestion modifiée' });
+        toast({ title: tc('success'), description: t('accounting.templates.suggestionUpdated') });
       }
     } catch (e: any) {
-      toast({ title: 'Erreur', description: 'Impossible de modifier la suggestion', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('accounting.templates.cannotUpdateSuggestion'), variant: 'destructive' });
     }
   };
 
@@ -202,9 +205,9 @@ export const useAccountingTemplates = () => {
         .eq('id', id);
       if (error) throw error;
       await fetchTemplates();
-      toast({ title: 'Succès', description: 'Suggestion supprimée' });
+      toast({ title: tc('success'), description: t('accounting.templates.suggestionDeleted') });
     } catch (e: any) {
-      toast({ title: 'Erreur', description: 'Impossible de supprimer la suggestion', variant: 'destructive' });
+      toast({ title: tc('error'), description: t('accounting.templates.cannotDeleteSuggestion'), variant: 'destructive' });
     }
   };
 

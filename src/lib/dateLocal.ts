@@ -1,5 +1,8 @@
 /** Local-timezone date helpers — avoid UTC off-by-one from toISOString().split('T')[0] */
 
+import i18n from "@/i18n";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
+
 export function toLocalDateKey(input: Date | string | null | undefined): string {
   if (!input) return "";
   const d = typeof input === "string" ? new Date(input) : input;
@@ -40,14 +43,18 @@ export function localDateTimeToISO(dateKey: string, timeKey: string): string {
   return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, 0, 0).toISOString();
 }
 
+function currentBcp47(): string {
+  return getBcp47Locale(i18n.language);
+}
+
 export function formatLocalDate(input: Date | string): string {
   const d = typeof input === "string" ? new Date(input) : input;
-  return d.toLocaleDateString("fr-FR");
+  return d.toLocaleDateString(currentBcp47());
 }
 
 export function formatLocalTime(input: Date | string): string {
   const d = typeof input === "string" ? new Date(input) : input;
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString(currentBcp47(), { hour: "2-digit", minute: "2-digit" });
 }
 
 // ─── Filtres de période pour listes (visites, RDV, consultations…) ─────────
@@ -73,14 +80,25 @@ export const DEFAULT_LIST_DATE_FILTER: ListDateFilterState = {
   dateTo: "",
 };
 
-export const LIST_DATE_PERIOD_OPTIONS: { value: ListDatePeriod; label: string }[] = [
-  { value: "all", label: "Toutes les dates" },
-  { value: "today", label: "Aujourd'hui" },
-  { value: "week", label: "Cette semaine" },
-  { value: "month", label: "Ce mois" },
-  { value: "year", label: "Cette année" },
-  { value: "range", label: "Plage personnalisée" },
-];
+const LIST_DATE_PERIOD_I18N: Record<ListDatePeriod, { ns: "common" | "settings"; key: string }> = {
+  all: { ns: "common", key: "allDates" },
+  today: { ns: "common", key: "today" },
+  week: { ns: "settings", key: "datePeriods.thisWeek" },
+  month: { ns: "settings", key: "datePeriods.thisMonth" },
+  quarter: { ns: "settings", key: "datePeriods.thisQuarter" },
+  year: { ns: "settings", key: "datePeriods.thisYear" },
+  range: { ns: "common", key: "customRange" },
+};
+
+export function getListDatePeriodOptions(): { value: ListDatePeriod; label: string }[] {
+  return (Object.keys(LIST_DATE_PERIOD_I18N) as ListDatePeriod[]).map((value) => {
+    const { ns, key } = LIST_DATE_PERIOD_I18N[value];
+    return { value, label: i18n.t(key, { ns }) };
+  });
+}
+
+/** @deprecated Use getListDatePeriodOptions() for UI labels */
+export const LIST_DATE_PERIOD_OPTIONS = getListDatePeriodOptions();
 
 /** Plage par défaut (30 derniers jours) pour le mode « range ». */
 export function defaultRangeForPeriod(): { dateFrom: string; dateTo: string } {
@@ -165,4 +183,3 @@ export function matchesListDateFilter(
   if (!key) return false;
   return key >= bounds.from && key <= bounds.to;
 }
-

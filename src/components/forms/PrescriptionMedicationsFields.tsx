@@ -10,9 +10,8 @@ import {
   isPrescriptionStockCategory,
 } from "@/lib/prescriptionStock";
 import type { StockItem } from "@/lib/database";
-
-const DEFAULT_ROUTES = ["oral", "injectable", "topique", "intraveineuse", "intramusculaire", "sous-cutanée"];
-const DEFAULT_FREQUENCIES = ["1x/jour", "2x/jour", "3x/jour", "1x/semaine", "selon besoin"];
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
 export type PrescriptionMedDraft = {
   medication_name: string;
@@ -59,6 +58,26 @@ export function PrescriptionMedicationsFields({
   stockItems,
   editMode = false,
 }: Props) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+
+  const defaultRoutes = [
+    "oral",
+    t("prescriptionMeds.routesList.injectable"),
+    t("prescriptionMeds.routesList.topical"),
+    t("prescriptionMeds.routes.iv"),
+    t("prescriptionMeds.routes.im"),
+    t("prescriptionMeds.routes.sc"),
+  ];
+
+  const defaultFrequencies = [
+    t("prescriptionMeds.freq.onceDaily"),
+    t("prescriptionMeds.freq.twiceDaily"),
+    t("prescriptionMeds.freqList.threeDaily"),
+    t("prescriptionMeds.freqList.onceWeekly"),
+    t("prescriptionMeds.freq.asNeeded"),
+  ];
+
   const availableMedications = stockItems.filter(
     (item) => isPrescriptionStockCategory(item.category) && item.active
   );
@@ -86,11 +105,11 @@ export function PrescriptionMedicationsFields({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {availableMedications.length} produit(s) disponibles dans le catalogue stock
+          {t("prescriptionMeds.productsAvailable", { count: availableMedications.length })}
         </p>
         <Button type="button" onClick={addMed} size="sm" variant="outline">
           <Plus className="h-4 w-4 mr-2" />
-          Ajouter
+          {tc("add")}
         </Button>
       </div>
 
@@ -105,7 +124,6 @@ export function PrescriptionMedicationsFields({
             ? medication.unit_price
             : catalogPrice;
         const lineTotal = unitPrice * (Number(medication.quantity) || 1);
-        /** Déjà vendu (édition) : garder les contrôles même si stock à 0 */
         const saleControlsEnabled = canSell || medication.sold_by_clinic;
 
         return (
@@ -114,7 +132,9 @@ export function PrescriptionMedicationsFields({
             className="rounded-lg border border-border bg-muted/40 p-4 space-y-3"
           >
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">Médicament {index + 1}</h4>
+              <h4 className="text-sm font-medium">
+                {t("prescriptionMeds.medicationN", { n: index + 1 })}
+              </h4>
               {medications.length > 1 && (
                 <Button
                   type="button"
@@ -130,7 +150,7 @@ export function PrescriptionMedicationsFields({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               <div className="md:col-span-2 lg:col-span-1">
-                <Label>Médicament *</Label>
+                <Label>{t("prescriptionMeds.medicationRequired")}</Label>
                 <ComboboxFreeText
                   value={medication.medication_name}
                   onChange={(val) => {
@@ -142,51 +162,53 @@ export function PrescriptionMedicationsFields({
                   }}
                   options={availableMedications.map((i) => i.name)}
                   category="medication_name"
-                  placeholder="Catalogue ou saisie libre..."
+                  placeholder={t("prescriptionMeds.cataloguePlaceholder")}
                 />
                 {stockMatch ? (
                   <p className="text-xs text-muted-foreground mt-1">
                     {stockMatch.description ? `${stockMatch.description} — ` : ""}
-                    Stock: {qty} {stockMatch.unit}
-                    {qty <= 0 ? " (rupture)" : ""}
-                    {catalogPrice > 0 ? ` · Catalogue: ${catalogPrice.toFixed(2)} MAD` : ""}
+                    {t("prescriptionMeds.stockInfo", { qty, unit: stockMatch.unit })}
+                    {qty <= 0 ? t("prescriptionMeds.outOfStockShort") : ""}
+                    {catalogPrice > 0
+                      ? t("prescriptionMeds.catalogPrice", { price: catalogPrice.toFixed(2) })
+                      : ""}
                   </p>
                 ) : medication.medication_name.trim() ? (
-                  <p className="text-xs text-muted-foreground mt-1">Hors catalogue — prescription seule</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t("prescriptionMeds.offCatalog")}</p>
                 ) : null}
               </div>
 
               <div>
-                <Label>Dosage</Label>
+                <Label>{t("prescriptionMeds.dosageLabel")}</Label>
                 <Input
                   value={medication.dosage || ""}
                   onChange={(e) => updateMed(index, { dosage: e.target.value })}
-                  placeholder="ex: 5mg"
+                  placeholder={t("prescriptionMeds.dosagePlaceholder")}
                 />
               </div>
 
               <div>
-                <Label>Fréquence</Label>
+                <Label>{t("prescriptionMeds.frequencyLabel")}</Label>
                 <ComboboxFreeText
                   value={medication.frequency || ""}
                   onChange={(val) => updateMed(index, { frequency: val })}
-                  options={DEFAULT_FREQUENCIES}
+                  options={defaultFrequencies}
                   category="frequency"
-                  placeholder="ex: 2x/jour"
+                  placeholder={t("prescriptionMeds.frequencyPlaceholder")}
                 />
               </div>
 
               <div>
-                <Label>Durée</Label>
+                <Label>{t("prescriptionMeds.durationLabel")}</Label>
                 <Input
                   value={medication.duration || ""}
                   onChange={(e) => updateMed(index, { duration: e.target.value })}
-                  placeholder="ex: 7 jours"
+                  placeholder={t("prescriptionMeds.durationPlaceholder")}
                 />
               </div>
 
               <div>
-                <Label>Quantité</Label>
+                <Label>{t("prescriptionMeds.quantityLabel")}</Label>
                 <Input
                   type="number"
                   min={1}
@@ -198,23 +220,23 @@ export function PrescriptionMedicationsFields({
               </div>
 
               <div>
-                <Label>Voie</Label>
+                <Label>{t("prescriptionMeds.routeLabel")}</Label>
                 <ComboboxFreeText
                   value={medication.route || "oral"}
                   onChange={(val) => updateMed(index, { route: val })}
-                  options={DEFAULT_ROUTES}
+                  options={defaultRoutes}
                   category="administration_route"
-                  placeholder="Voie"
+                  placeholder={t("prescriptionMeds.routePlaceholder")}
                 />
               </div>
             </div>
 
             <div>
-              <Label>Instructions</Label>
+              <Label>{t("prescriptionMeds.instructionsLabel")}</Label>
               <Textarea
                 value={medication.instructions || ""}
                 onChange={(e) => updateMed(index, { instructions: e.target.value })}
-                placeholder="Instructions particulières..."
+                placeholder={t("prescriptionMeds.instructionsPlaceholder")}
                 className="h-16"
               />
             </div>
@@ -238,18 +260,18 @@ export function PrescriptionMedicationsFields({
                   />
                   <div className="space-y-0.5">
                     <Label htmlFor={`consult-sold-${index}`} className="text-sm font-medium cursor-pointer">
-                      Vendu par le cabinet
+                      {t("prescriptionMeds.soldByClinic")}
                     </Label>
                     <p className="text-xs text-muted-foreground">
                       {editMode
                         ? medication.sold_by_clinic
-                          ? "Vente déjà enregistrée — prix et infos conservés."
+                          ? t("prescriptionMeds.saleRecordedEdit")
                           : canSell
-                            ? "Cochez si délivré ici (stock non recalculé à la modification)."
-                            : "Rupture de stock — ordonnance seule."
+                            ? t("prescriptionMeds.saleEditHint")
+                            : t("prescriptionMeds.outOfStockRxOnly")
                         : canSell
-                          ? "Déduit du stock à l'enregistrement de l'ordonnance."
-                          : "Rupture de stock — ordonnance seule possible."}
+                          ? t("prescriptionMeds.deductOnSave")
+                          : t("prescriptionMeds.outOfStockRxOnlyCreate")}
                     </p>
                   </div>
                 </div>
@@ -257,7 +279,7 @@ export function PrescriptionMedicationsFields({
                 {showPrice && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
                     <div>
-                      <Label htmlFor={`unit-price-${index}`}>Prix unitaire (MAD)</Label>
+                      <Label htmlFor={`unit-price-${index}`}>{t("prescriptionMeds.unitPriceMad")}</Label>
                       <Input
                         id={`unit-price-${index}`}
                         type="number"
@@ -272,15 +294,18 @@ export function PrescriptionMedicationsFields({
                         }}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Modifiable — catalogue: {catalogPrice.toFixed(2)} MAD
+                        {t("prescriptionMeds.catalogPriceHint", { price: catalogPrice.toFixed(2) })}
                       </p>
                     </div>
                     <div className="flex flex-col justify-end">
                       <p className="text-sm font-medium">
-                        Total ligne: {lineTotal.toFixed(2)} MAD
+                        {t("prescriptionMeds.lineTotal", { total: lineTotal.toFixed(2) })}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {Number(medication.quantity) || 1} × {unitPrice.toFixed(2)}
+                        {t("prescriptionMeds.lineCalc", {
+                          qty: Number(medication.quantity) || 1,
+                          price: unitPrice.toFixed(2),
+                        })}
                       </p>
                     </div>
                   </div>
@@ -311,7 +336,10 @@ export function buildPrescriptionMedPayload(
       const wantsSale = Boolean(stockMatch && med.sold_by_clinic);
       if (wantsSale && qtyAvailable < Number(med.quantity || 1)) {
         throw new Error(
-          `Stock insuffisant pour ${med.medication_name.trim()} (disponible: ${qtyAvailable})`
+          i18n.t("medical:prescriptionMeds.insufficientStockFor", {
+            name: med.medication_name.trim(),
+            qty: qtyAvailable,
+          })
         );
       }
       const soldByClinic = wantsSale && qtyAvailable > 0;

@@ -38,8 +38,9 @@ import {
 } from 'lucide-react';
 import { AppPageHeader } from '@/components/AppPageHeader';
 import { useWriteAccess } from '@/components/RoleGuard';
+import { useTranslation } from 'react-i18next';
 import { format, isWithinInterval, startOfDay, endOfDay, addDays, isSameDay } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useAppLocale } from '@/i18n/useAppLocale';
 import { NewStockItemModal } from '@/components/forms/NewStockItemModal';
 import { StockMovementModal } from '@/components/forms/StockMovementModal';
 
@@ -119,6 +120,9 @@ const units = [
 ];
 
 export default function Stock() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { dateFns } = useAppLocale();
   const { 
     stockItems: rawStockItems,
     loading,
@@ -132,6 +136,16 @@ export default function Stock() {
   } = useStock();
   const { toast } = useToast();
   const { canWrite, guardWrite } = useWriteAccess("can_manage_stock");
+  const categoryLabel = (category?: string | null) => {
+    const key = normalizeCategory(category);
+    return t(`stock.categories.${key}`, {
+      defaultValue: getCategoryConfig(category).label,
+    });
+  };
+  const unitLabel = (unit: string) =>
+    t(`stock.units.${unit}`, {
+      defaultValue: units.find((entry) => entry.value === unit)?.label || unit,
+    });
   
   // State for forcing refresh
   const [refreshKey, setRefreshKey] = useState(0);
@@ -328,13 +342,13 @@ export default function Stock() {
 
       setEditingField(null);
       toast({
-        title: "Stock mis à jour",
-        description: "L'élément de stock a été mis à jour avec succès.",
+        title: t("stock.updated"),
+        description: t("stock.updatedBody"),
       });
     } catch (err: any) {
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible de mettre à jour le stock",
+        title: tc("error"),
+        description: err?.message || t("stock.cannotUpdate"),
         variant: "destructive",
       });
     }
@@ -359,11 +373,11 @@ export default function Stock() {
     const dbItem = findDatabaseItem(item.id);
     if (!dbItem) return;
 
-    if (confirm(`Êtes-vous sûr de vouloir supprimer "${item.name}" du stock ?`)) {
+    if (confirm(t("stock.deleteConfirm", { name: item.name }))) {
       await deleteStockItem(dbItem.id);
       toast({
-        title: "Élément supprimé",
-        description: `"${item.name}" a été supprimé du stock.`,
+        title: t("stock.deleted"),
+        description: t("stock.deletedBody", { name: item.name }),
       });
     }
   };
@@ -393,22 +407,38 @@ export default function Stock() {
     return `"${str.replace(/"/g, '""')}"`;
   };
 
+  const stockCsvHeaders = {
+    name: t("stock.csvHeaders.name"),
+    category: t("stock.csvHeaders.category"),
+    manufacturer: t("stock.csvHeaders.manufacturer"),
+    batchNumber: t("stock.batchNumber"),
+    dosage: t("stock.dosage"),
+    unit: t("stock.units.unit"),
+    stock: t("stock.csvHeaders.stock"),
+    minimumStock: t("stock.minimumStock"),
+    purchasePrice: t("stock.csvHeaders.purchasePrice"),
+    sellingPrice: t("stock.csvHeaders.sellingPrice"),
+    expiration: t("stock.csvHeaders.expiration"),
+    supplier: t("stock.supplier"),
+    location: t("stock.csvHeaders.location"),
+    notes: tc("notes"),
+  };
   const STOCK_CSV_HEADERS = [
-    'Nom',
-    'Catégorie',
+    stockCsvHeaders.name,
+    stockCsvHeaders.category,
     'Sous-catégorie',
-    'Fabricant',
-    'Numéro de lot',
-    'Dosage',
-    'Unité',
-    'Stock actuel',
-    'Stock minimum',
-    "Prix d'achat",
-    'Prix de vente',
-    "Date d'expiration",
-    'Fournisseur',
-    'Emplacement',
-    'Notes',
+    stockCsvHeaders.manufacturer,
+    stockCsvHeaders.batchNumber,
+    stockCsvHeaders.dosage,
+    stockCsvHeaders.unit,
+    stockCsvHeaders.stock,
+    stockCsvHeaders.minimumStock,
+    stockCsvHeaders.purchasePrice,
+    stockCsvHeaders.sellingPrice,
+    stockCsvHeaders.expiration,
+    stockCsvHeaders.supplier,
+    stockCsvHeaders.location,
+    stockCsvHeaders.notes,
     'Code-barres',
     'SKU',
   ];
@@ -443,8 +473,8 @@ export default function Stock() {
     downloadCsvFile(`stock_${new Date().toISOString().split('T')[0]}.csv`, csvContent);
     
     toast({
-      title: "Export réussi",
-      description: "Le fichier CSV a été téléchargé avec succès.",
+      title: t("stock.exportSuccess"),
+      description: t("stock.exportSuccessBody"),
     });
   };
 
@@ -465,13 +495,21 @@ export default function Stock() {
         const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
         
         // Vérifier les en-têtes requis
-        const requiredHeaders = ['Nom', 'Catégorie', 'Unité', 'Stock actuel', 'Stock minimum', "Prix d'achat", 'Prix de vente'];
+        const requiredHeaders = [
+          stockCsvHeaders.name,
+          stockCsvHeaders.category,
+          stockCsvHeaders.unit,
+          stockCsvHeaders.stock,
+          stockCsvHeaders.minimumStock,
+          stockCsvHeaders.purchasePrice,
+          stockCsvHeaders.sellingPrice,
+        ];
         const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
         
         if (missingHeaders.length > 0) {
           toast({
-            title: "Erreur d'import",
-            description: `En-têtes manquants: ${missingHeaders.join(', ')}`,
+            title: t("stock.importError"),
+            description: t("stock.importMissingHeaders", { headers: missingHeaders.join(', ') }),
             variant: "destructive"
           });
           return;
@@ -493,32 +531,32 @@ export default function Stock() {
             });
 
             // Validation des données
-            if (!row['Nom'] || !row['Catégorie'] || !row['Unité']) {
+            if (!row[stockCsvHeaders.name] || !row[stockCsvHeaders.category] || !row[stockCsvHeaders.unit]) {
               errorCount++;
               continue;
             }
 
             // Vérifier si la catégorie est valide
             const validCategories = Object.keys(categoryConfig);
-            if (!validCategories.includes(row['Catégorie'])) {
+            if (!validCategories.includes(row[stockCsvHeaders.category])) {
               errorCount++;
               continue;
             }
 
             const newItem = {
-              name: row['Nom'],
-              category: row['Catégorie'] as any,
-              description: row['Notes'] || '',
-              unit: row['Unité'] as any,
-              current_quantity: parseInt(row['Stock actuel']) || 0,
-              minimum_quantity: parseInt(row['Stock minimum']) || 0,
+              name: row[stockCsvHeaders.name],
+              category: row[stockCsvHeaders.category] as any,
+              description: row[stockCsvHeaders.notes] || '',
+              unit: row[stockCsvHeaders.unit] as any,
+              current_quantity: parseInt(row[stockCsvHeaders.stock]) || 0,
+              minimum_quantity: parseInt(row[stockCsvHeaders.minimumStock]) || 0,
               maximum_quantity: 0,
-              unit_cost: parseFloat(row['Prix d\'achat']) || 0,
-              selling_price: parseFloat(row['Prix de vente']) || 0,
-              expiration_date: row['Date d\'expiration'] || null,
-              supplier: row['Fournisseur'] || '',
-              location: row['Emplacement'] || '',
-              batch_number: row['Numéro de lot'] || '',
+              unit_cost: parseFloat(row[stockCsvHeaders.purchasePrice]) || 0,
+              selling_price: parseFloat(row[stockCsvHeaders.sellingPrice]) || 0,
+              expiration_date: row[stockCsvHeaders.expiration] || null,
+              supplier: row[stockCsvHeaders.supplier] || '',
+              location: row[stockCsvHeaders.location] || '',
+              batch_number: row[stockCsvHeaders.batchNumber] || '',
               active: true
             };
 
@@ -531,14 +569,17 @@ export default function Stock() {
         }
 
         toast({
-          title: "Import terminé",
-          description: `${successCount} éléments importés avec succès${errorCount > 0 ? `, ${errorCount} erreurs` : ''}.`,
+          title: t("stock.importDone"),
+          description: t("stock.importDoneBody", {
+            success: successCount,
+            errors: errorCount > 0 ? t("stock.importErrorsSuffix", { count: errorCount }) : "",
+          }),
         });
 
       } catch (error) {
         toast({
-          title: "Erreur d'import",
-          description: "Impossible de lire le fichier CSV.",
+          title: t("stock.importError"),
+          description: t("stock.importReadError"),
           variant: "destructive"
         });
       }
@@ -573,8 +614,8 @@ export default function Stock() {
     downloadCsvFile('gabarit_import_stock.csv', templateContent);
     
     toast({
-      title: "Gabarit téléchargé",
-      description: "Le fichier gabarit a été téléchargé avec succès (UTF-8 pour Excel).",
+      title: t("stock.templateDownloaded"),
+      description: t("stock.templateDownloadedBody"),
     });
   };
 
@@ -584,7 +625,7 @@ export default function Stock() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">Chargement du stock...</p>
+            <p className="text-gray-500">{tc("loading")}</p>
           </div>
         </div>
       </div>
@@ -595,8 +636,8 @@ export default function Stock() {
     <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
       <AppPageHeader
         icon={Package}
-        title="Stock"
-        description="Gérez votre inventaire de médicaments, vaccins et consommables"
+        title={t("stock.title")}
+        description={t("stock.description")}
         actions={
           <>
             <Button
@@ -606,7 +647,7 @@ export default function Stock() {
               size="sm"
             >
               <Download className="h-3 sm:h-4 w-3 sm:w-4" />
-              Exporter CSV
+              {t("stock.exportCsv")}
             </Button>
             {canWrite && (
               <div className="relative">
@@ -620,7 +661,7 @@ export default function Stock() {
                 <Button variant="outline" className="gap-2 text-xs sm:text-sm rounded-full" size="sm" asChild>
                   <label htmlFor="import-file" className="cursor-pointer">
                     <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
-                    Importer CSV
+                    {t("stock.importCsv")}
                   </label>
                 </Button>
               </div>
@@ -632,7 +673,7 @@ export default function Stock() {
               size="sm"
             >
               <FileSpreadsheet className="h-3 sm:h-4 w-3 sm:w-4" />
-              Gabarit
+              {t("stock.template")}
             </Button>
             {canWrite && (
               <Button
@@ -641,7 +682,7 @@ export default function Stock() {
                 onClick={() => setShowNewItemModal(true)}
               >
                 <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
-                Nouvel Élément
+                {t("stock.new")}
               </Button>
             )}
           </>
@@ -654,7 +695,7 @@ export default function Stock() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Éléments</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("stock.kpi.totalItems")}</p>
                 <p className="text-xl sm:text-2xl font-bold">{stats.totalItems}</p>
               </div>
               <Package className="h-6 sm:h-8 w-6 sm:w-8 text-muted-foreground" />
@@ -666,7 +707,7 @@ export default function Stock() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Valeur Totale</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("stock.kpi.totalValue")}</p>
                 <p className="text-xl sm:text-2xl font-bold">{stats.totalValue.toFixed(2)} MAD</p>
               </div>
               <DollarSign className="h-6 sm:h-8 w-6 sm:w-8 text-green-600" />
@@ -678,7 +719,7 @@ export default function Stock() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Stock Bas</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("stock.kpi.lowStock")}</p>
                 <p className="text-xl sm:text-2xl font-bold text-orange-600">{stats.lowStockItems}</p>
               </div>
               <AlertTriangle className="h-6 sm:h-8 w-6 sm:w-8 text-orange-600" />
@@ -690,7 +731,7 @@ export default function Stock() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Expirés</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("stock.badges.expired")}</p>
                 <p className="text-xl sm:text-2xl font-bold text-red-600">{stats.expiredItems}</p>
               </div>
               <XCircle className="h-6 sm:h-8 w-6 sm:w-8 text-red-600" />
@@ -702,7 +743,7 @@ export default function Stock() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Expirent Bientôt</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("stock.kpi.expiring")}</p>
                 <p className="text-xl sm:text-2xl font-bold text-yellow-600">{stats.expiringSoonItems}</p>
               </div>
               <Clock className="h-6 sm:h-8 w-6 sm:w-8 text-yellow-600" />
@@ -716,14 +757,14 @@ export default function Stock() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Filter className="h-4 sm:h-5 w-4 sm:w-5" />
-            Rechercher et filtrer
+            {t("stock.searchAndFilter")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
             <div className="flex-1 min-w-[250px] sm:min-w-[300px]">
               <Input 
-                placeholder="Rechercher par nom, fabricant, lot..."
+                placeholder={t("stock.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full"
@@ -732,15 +773,15 @@ export default function Stock() {
             
             <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Catégorie" />
+                <SelectValue placeholder={t("stock.category")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les catégories</SelectItem>
+                <SelectItem value="all">{t("stock.filters.allCategories")}</SelectItem>
                 {canonicalCategories.map((key) => {
                   const config = categoryConfig[key];
                   return (
                     <SelectItem key={key} value={key}>
-                      {config.icon} {config.label}
+                      {config.icon} {categoryLabel(key)}
                     </SelectItem>
                   );
                 })}
@@ -749,26 +790,26 @@ export default function Stock() {
             
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Statut" />
+                <SelectValue placeholder={t("stock.statusFilter")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="active">Actifs</SelectItem>
-                <SelectItem value="low_stock">Stock bas</SelectItem>
-                <SelectItem value="expired">Expirés</SelectItem>
-                <SelectItem value="expiring_soon">Expirent bientôt</SelectItem>
+                <SelectItem value="all">{t("stock.filters.allStatuses")}</SelectItem>
+                <SelectItem value="active">{tc("active")}</SelectItem>
+                <SelectItem value="low_stock">{t("stock.filters.lowStock")}</SelectItem>
+                <SelectItem value="expired">{t("stock.badges.expired")}</SelectItem>
+                <SelectItem value="expiring_soon">{t("stock.filters.expiringSoon")}</SelectItem>
               </SelectContent>
             </Select>
             
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Trier par" />
+                <SelectValue placeholder={t("stock.sortBy")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">Nom</SelectItem>
-                <SelectItem value="currentStock">Stock actuel</SelectItem>
-                <SelectItem value="totalValue">Valeur totale</SelectItem>
-                <SelectItem value="expirationDate">Date d'expiration</SelectItem>
+                <SelectItem value="name">{t("stock.colName")}</SelectItem>
+                <SelectItem value="currentStock">{t("stock.colStock")}</SelectItem>
+                <SelectItem value="totalValue">{t("stock.colTotalValue")}</SelectItem>
+                <SelectItem value="expirationDate">{t("stock.colExpiration")}</SelectItem>
               </SelectContent>
             </Select>
             
@@ -789,23 +830,23 @@ export default function Stock() {
       {/* Tableau de stock */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Inventaire ({filteredItems.length} éléments)</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">{t("stock.inventoryCount", { count: filteredItems.length })}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[150px]">Nom</TableHead>
-                  <TableHead className="min-w-[120px]">Catégorie</TableHead>
-                  <TableHead className="min-w-[100px] hidden sm:table-cell">Fabricant</TableHead>
-                  <TableHead className="min-w-[100px]">Stock</TableHead>
-                  <TableHead className="min-w-[100px] hidden md:table-cell">Prix d'achat</TableHead>
-                  <TableHead className="min-w-[100px] hidden md:table-cell">Prix de vente</TableHead>
-                  <TableHead className="min-w-[100px] hidden lg:table-cell">Valeur totale</TableHead>
-                  <TableHead className="min-w-[100px] hidden md:table-cell">Expiration</TableHead>
-                  <TableHead className="min-w-[120px] hidden lg:table-cell">Emplacement</TableHead>
-                  <TableHead className="min-w-[120px]">Actions</TableHead>
+                  <TableHead className="min-w-[150px]">{t("stock.colName")}</TableHead>
+                  <TableHead className="min-w-[120px]">{t("stock.colCategory")}</TableHead>
+                  <TableHead className="min-w-[100px] hidden sm:table-cell">{t("stock.colManufacturer")}</TableHead>
+                  <TableHead className="min-w-[100px]">{t("stock.colStock")}</TableHead>
+                  <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colPurchasePrice")}</TableHead>
+                  <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colSellingPrice")}</TableHead>
+                  <TableHead className="min-w-[100px] hidden lg:table-cell">{t("stock.colTotalValue")}</TableHead>
+                  <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colExpiration")}</TableHead>
+                  <TableHead className="min-w-[120px] hidden lg:table-cell">{t("stock.colLocation")}</TableHead>
+                  <TableHead className="min-w-[120px]">{tc("actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -824,7 +865,7 @@ export default function Stock() {
                           <div className="font-medium text-sm sm:text-base">{item.name}</div>
                           {item.batchNumber && (
                             <div className="text-xs sm:text-sm text-muted-foreground">
-                              Lot: {item.batchNumber}
+                              {t("stock.batchLabel")}: {item.batchNumber}
                             </div>
                           )}
                           {item.dosage && (
@@ -837,7 +878,7 @@ export default function Stock() {
                       
                       <TableCell>
                         <Badge className={`${cat.color} text-xs sm:text-sm`}>
-                          {cat.icon} {cat.label}
+                          {cat.icon} {categoryLabel(item.category)}
                         </Badge>
                         {item.subcategory && (
                           <div className="text-xs sm:text-sm text-muted-foreground mt-1">
@@ -860,7 +901,7 @@ export default function Stock() {
                       <TableCell>
                         <div className="space-y-1">
                           <div className={`font-medium text-sm sm:text-base ${isLowStock ? 'text-orange-600' : ''}`}>
-                            {item.currentStock} {units.find(u => u.value === item.unit)?.label || item.unit}
+                            {item.currentStock} {unitLabel(item.unit)}
                           </div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
                             Min: {item.minimumStock}
@@ -868,7 +909,7 @@ export default function Stock() {
                           <div className="flex items-center gap-2">
                             {isLowStock && (
                               <Badge variant="destructive" className="text-xs">
-                                Stock bas
+                                {t("stock.badges.lowStock")}
                               </Badge>
                             )}
                             {item.lastUpdated && new Date(item.lastUpdated).getTime() > Date.now() - 24 * 60 * 60 * 1000 && (
@@ -958,16 +999,16 @@ export default function Stock() {
                         {item.expirationDate ? (
                           <div className="space-y-1">
                             <div className={`text-xs sm:text-sm ${isExpired ? 'text-red-600 font-medium' : isExpiringSoon ? 'text-yellow-600 font-medium' : ''}`}>
-                              {format(new Date(item.expirationDate), 'dd/MM/yyyy', { locale: fr })}
+                              {format(new Date(item.expirationDate), 'dd/MM/yyyy', { locale: dateFns })}
                             </div>
                             {isExpired && (
                               <Badge variant="destructive" className="text-xs">
-                                Expiré
+                                {t("stock.badges.expired")}
                               </Badge>
                             )}
                             {isExpiringSoon && !isExpired && (
                               <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
-                                Expire bientôt
+                                {t("stock.badges.expiringSoon")}
                               </Badge>
                             )}
                           </div>
@@ -1047,8 +1088,8 @@ export default function Stock() {
           {filteredItems.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Package className="h-8 sm:h-12 w-8 sm:w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm sm:text-base">Aucun élément trouvé</p>
-              <p className="text-xs sm:text-sm">Ajustez vos filtres ou ajoutez de nouveaux éléments</p>
+              <p className="text-sm sm:text-base">{t("stock.empty")}</p>
+              <p className="text-xs sm:text-sm">{t("stock.emptyFilterHint")}</p>
             </div>
           )}
         </CardContent>
@@ -1059,7 +1100,7 @@ export default function Stock() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Clock className="h-4 sm:h-5 w-4 sm:w-5" />
-            Historique des Mouvements ({stockMovements.length})
+            {t("stock.movementHistory")} ({stockMovements.length})
           </CardTitle>
           <div className="text-xs sm:text-sm text-muted-foreground">
             Derniers mouvements de stock (prescriptions, achats, ajustements)
@@ -1069,7 +1110,7 @@ export default function Stock() {
           {stockMovements.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Clock className="h-8 sm:h-12 w-8 sm:w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm sm:text-base">Aucun mouvement de stock enregistré</p>
+              <p className="text-sm sm:text-base">{t("stock.emptyMovementHistory")}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1078,18 +1119,18 @@ export default function Stock() {
                 .slice(0, 20) // Afficher les 20 derniers mouvements
                 .map((movement) => {
                   const movementTypeConfig = {
-                    in: { label: 'Entrée', color: 'text-green-600', icon: '↗️' },
+                    in: { label: t("stock.movement.types.in"), color: 'text-green-600', icon: '↗️' },
                     out: { 
-                      label: movement.reason === 'Prescription médicale' ? 'Prescription' : 'Sortie', 
+                      label: movement.reason === 'Prescription médicale' ? t("consultations.prescription.title") : t("stock.movement.types.out"),
                       color: movement.reason === 'Prescription médicale' ? 'text-orange-600' : 'text-red-600',
                       icon: movement.reason === 'Prescription médicale' ? '💊' : '↘️' 
                     },
-                    adjustment: { label: 'Ajustement', color: 'text-blue-600', icon: '⚖️' },
-                    transfer: { label: 'Transfert', color: 'text-purple-600', icon: '↔️' }
+                    adjustment: { label: t("stock.movement.types.adjustment"), color: 'text-blue-600', icon: '⚖️' },
+                    transfer: { label: t("stock.movement.types.transfer"), color: 'text-purple-600', icon: '↔️' }
                   };
                   
                   const config = movementTypeConfig[movement.type as keyof typeof movementTypeConfig]
-                    ?? { label: movement.type || 'Mouvement', color: 'text-gray-600', icon: '📦' };
+                    ?? { label: movement.type || t("stock.movement.title"), color: 'text-gray-600', icon: '📦' };
                   
                   return (
                     <div key={movement.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-muted/50 gap-2 sm:gap-4">
@@ -1098,7 +1139,7 @@ export default function Stock() {
                         <div>
                           <div className="font-medium text-sm sm:text-base">{movement.itemName}</div>
                           <div className="text-xs sm:text-sm text-muted-foreground">
-                            {movement.reason} • {movement.performedBy || 'Non spécifié'}
+                            {movement.reason} • {movement.performedBy || tc("notSpecified")}
                           </div>
                           {movement.reference && (
                             <div className="text-xs text-muted-foreground">
@@ -1112,7 +1153,7 @@ export default function Stock() {
                           {movement.type === 'in' ? '+' : movement.type === 'out' ? '-' : ''}{movement.quantity}
                         </div>
                         <div className="text-xs sm:text-sm text-muted-foreground">
-                          {format(new Date(movement.date), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                          {format(new Date(movement.date), 'dd/MM/yyyy HH:mm', { locale: dateFns })}
                         </div>
                       </div>
                     </div>

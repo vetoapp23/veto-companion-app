@@ -11,25 +11,28 @@ import {
   Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const links = [
-  { to: "/super-admin", end: true, label: "Vue d'ensemble", icon: LayoutDashboard },
-  { to: "/super-admin/organizations", label: "Cliniques", icon: Building2 },
-  { to: "/super-admin/users", label: "Utilisateurs", icon: Users },
-  { to: "/super-admin/plans", label: "Plans", icon: Package },
-  { to: "/super-admin/billing", label: "Billing", icon: CreditCard },
-  { to: "/super-admin/audit", label: "Audit", icon: ScrollText },
-  { to: "/super-admin/system", label: "Système", icon: Settings2 },
-];
+import { useTranslation } from "react-i18next";
 
 export default function SuperAdminLayout() {
+  const { t } = useTranslation("settings");
+
+  const links = [
+    { to: "/super-admin", end: true, label: t("superAdmin.nav.overview"), icon: LayoutDashboard },
+    { to: "/super-admin/organizations", label: t("superAdmin.nav.organizations"), icon: Building2 },
+    { to: "/super-admin/users", label: t("superAdmin.nav.users"), icon: Users },
+    { to: "/super-admin/plans", label: t("superAdmin.nav.plans"), icon: Package },
+    { to: "/super-admin/billing", label: t("superAdmin.nav.billing"), icon: CreditCard },
+    { to: "/super-admin/audit", label: t("superAdmin.nav.audit"), icon: ScrollText },
+    { to: "/super-admin/system", label: t("superAdmin.nav.system"), icon: Settings2 },
+  ];
+
   return (
     <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 max-w-7xl">
       <AppPageHeader
         icon={Shield}
-        eyebrow="Plateforme"
-        title="Console Super Admin"
-        description="Pilotage multi-tenant : cliniques, abonnements, support, audit et santé système."
+        eyebrow={t("superAdmin.layout.eyebrow")}
+        title={t("superAdmin.layout.title")}
+        description={t("superAdmin.layout.description")}
       />
 
       <nav className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">

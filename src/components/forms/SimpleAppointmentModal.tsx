@@ -11,6 +11,7 @@ import { useClients, useAnimals, useCreateAppointment, type Client, type Animal 
 import { useAppointmentTypes } from "@/hooks/useAppSettings";
 import { NewClientModal } from "./NewClientModal";
 import { localDateTimeToISO, todayLocalKey } from "@/lib/dateLocal";
+import { useTranslation } from "react-i18next";
 
 interface SimpleAppointmentModalProps {
   open: boolean;
@@ -26,6 +27,8 @@ export function SimpleAppointmentModal({
   prefillDate,
   prefillTime,
 }: SimpleAppointmentModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
   const createAppointment = useCreateAppointment();
@@ -75,8 +78,8 @@ export function SimpleAppointmentModal({
 
     if (!formData.clientId || !formData.date || !formData.time) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir le client, la date et l'heure",
+        title: tc("error"),
+        description: t("appointments.fillClientDateTime"),
         variant: "destructive",
       });
       return;
@@ -97,16 +100,16 @@ export function SimpleAppointmentModal({
       });
 
       toast({
-        title: "Succès",
-        description: "Rendez-vous créé avec succès",
+        title: tc("success"),
+        description: t("appointments.createdSimple"),
       });
 
       onOpenChange(false);
     } catch (error) {
       console.error("Error creating appointment:", error);
       toast({
-        title: "Erreur",
-        description: "Impossible de créer le rendez-vous",
+        title: tc("error"),
+        description: t("appointments.cannotCreate"),
         variant: "destructive",
       });
     }
@@ -129,25 +132,25 @@ export function SimpleAppointmentModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Nouveau Rendez-vous
+              {t("appointments.new")}
             </DialogTitle>
             <DialogDescription>
-              Créer un nouveau rendez-vous pour un client (animal optionnel)
+              {t("appointments.newDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="client">Client *</Label>
+              <Label htmlFor="client">{tc("client")} *</Label>
               <div className="flex gap-2">
                 <Select value={formData.clientId} onValueChange={handleClientChange}>
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Sélectionner un client" />
+                    <SelectValue placeholder={t("visits.selectClient")} />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.length === 0 ? (
                       <SelectItem value="__none__" disabled>
-                        Aucun client — créez-en un avec +
+                        {t("appointments.noClientsCreate")}
                       </SelectItem>
                     ) : (
                       clients.map((client) => (
@@ -167,8 +170,8 @@ export function SimpleAppointmentModal({
                   variant="outline"
                   className="shrink-0"
                   onClick={() => setShowClientModal(true)}
-                  title="Nouveau client"
-                  aria-label="Ajouter un nouveau client"
+                  title={t("visits.newClient")}
+                  aria-label={t("visits.newClient")}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -176,7 +179,7 @@ export function SimpleAppointmentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="animal">Animal (optionnel)</Label>
+              <Label htmlFor="animal">{t("appointments.animalOptional")}</Label>
               <Select
                 value={formData.animalId || "__none__"}
                 onValueChange={(value) =>
@@ -191,13 +194,13 @@ export function SimpleAppointmentModal({
                   <SelectValue
                     placeholder={
                       formData.clientId
-                        ? "Sélectionner un animal (optionnel)"
-                        : "Sélectionner d'abord un client"
+                        ? t("appointments.selectAnimalOptional")
+                        : t("appointments.selectClientFirst")
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Aucun animal</SelectItem>
+                  <SelectItem value="__none__">{t("appointments.noAnimal")}</SelectItem>
                   {availableAnimals.map((animal: Animal) => (
                     <SelectItem key={animal.id} value={animal.id}>
                       <div className="flex items-center gap-2">
@@ -212,7 +215,7 @@ export function SimpleAppointmentModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="date">{tc("date")} *</Label>
                 <Input
                   id="date"
                   type="date"
@@ -222,7 +225,7 @@ export function SimpleAppointmentModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Heure *</Label>
+                <Label htmlFor="time">{tc("time")} *</Label>
                 <Input
                   id="time"
                   type="time"
@@ -233,7 +236,7 @@ export function SimpleAppointmentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Type de rendez-vous</Label>
+              <Label htmlFor="type">{t("appointments.appointmentType")}</Label>
               <Select
                 value={formData.appointmentType}
                 onValueChange={(value) =>
@@ -254,10 +257,10 @@ export function SimpleAppointmentModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optionnel)</Label>
+              <Label htmlFor="notes">{t("appointments.notesOptional")}</Label>
               <Textarea
                 id="notes"
-                placeholder="Notes additionnelles sur le rendez-vous..."
+                placeholder={t("appointments.notesPlaceholder")}
                 value={formData.notes}
                 onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                 rows={3}
@@ -266,10 +269,12 @@ export function SimpleAppointmentModal({
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={createAppointment.isPending}>
-                {createAppointment.isPending ? "Création..." : "Créer le rendez-vous"}
+                {createAppointment.isPending
+                  ? t("appointments.creating")
+                  : t("appointments.createAppointment")}
               </Button>
             </div>
           </form>

@@ -1,0 +1,684 @@
+{
+  "page": {
+    "title": "Settings",
+    "description": "Configure your clinic, team, and display preferences"
+  },
+  "tabs": {
+    "appSettings": "Application settings",
+    "general": "General settings",
+    "data": "Data configuration"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Choose the interface language.",
+    "fr": "Français",
+    "en": "English",
+    "es": "Español",
+    "updated": "Language updated"
+  },
+  "clinic": {
+    "title": "Clinic settings",
+    "logo": "Clinic logo",
+    "name": "Clinic name",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "website": "Website",
+    "currency": "Currency",
+    "save": "Save",
+    "saved": "Settings saved",
+    "savedBody": "Clinic information updated."
+  },
+  "servicePrices": {
+    "title": "Service prices",
+    "description": "Default amounts suggested when adding a service to a visit (editable line by line afterwards).",
+    "reset": "Reset",
+    "save": "Save",
+    "resetToast": "Prices reset",
+    "resetBody": "Software catalogue defaults restored.",
+    "savedToast": "Prices saved",
+    "savedBody": "New amounts apply to upcoming services."
+  },
+  "theme": {
+    "title": "Application theme",
+    "description": "Choose the app theme for visual comfort.",
+    "label": "Theme",
+    "light": "Light mode",
+    "dark": "Dark mode",
+    "updated": "Theme updated",
+    "changedTo": "Theme changed to {{mode}}"
+  },
+  "display": {
+    "title": "Display preferences",
+    "description": "Choose how each section should display by default.",
+    "sections": {
+      "clients": "Clients",
+      "pets": "Patients",
+      "consultations": "Consultations",
+      "appointments": "Appointments",
+      "visits": "Visits",
+      "prescriptions": "Prescriptions",
+      "farms": "Farms",
+      "vaccinations": "Vaccinations",
+      "antiparasitics": "Antiparasitics",
+      "history": "History"
+    },
+    "modes": {
+      "calendar": "Calendar",
+      "list": "List",
+      "table": "Table",
+      "cards": "Cards"
+    },
+    "updated": "Display preference updated",
+    "updatedBody": "{{section}} will display as {{mode}}."
+  },
+  "schedule": {
+    "title": "Schedule configuration",
+    "save": "Save",
+    "saved": "Schedule saved",
+    "savedBody": "Appointment slots now use these settings.",
+    "unsavedWarning": "Unsaved changes — click Save to apply them to appointments.",
+    "openingTime": "Opening time",
+    "closingTime": "Closing time",
+    "lunchPeriod": "Lunch break",
+    "lunchStart": "Break start",
+    "lunchEnd": "Break end",
+    "slotDuration": "Slot duration (minutes)",
+    "workingDays": "Working days",
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    }
+  },
+  "veterinarians": {
+    "title": "Veterinarians",
+    "add": "Add",
+    "empty": "No veterinarian configured",
+    "saved": "Veterinarian saved",
+    "deleted": "Veterinarian deleted",
+    "nameTitleRequired": "Name and title required",
+    "deleteConfirm": "Delete this veterinarian?",
+    "editTitle": "Edit veterinarian",
+    "newTitle": "New veterinarian",
+    "dialogDesc": "Name, title, specialty, contact",
+    "fullName": "Full name *",
+    "titleLabel": "Title *",
+    "specialty": "Specialty",
+    "phone": "Phone",
+    "email": "Email",
+    "update": "Update",
+    "create": "Create"
+  },
+  "farmsConfig": {
+    "title": "Farm management",
+    "farmTypeAdded": "Type added",
+    "farmTypeAddedBody": "{{type}} was added to farm types",
+    "farmTypeDeleted": "Type deleted",
+    "farmTypeDeletedBody": "{{type}} was deleted",
+    "categoryAdded": "Category added",
+    "categoryAddedBody": "{{category}} was added",
+    "categoryDeleted": "Category deleted",
+    "categoryDeletedBody": "{{category}} and its breeds were deleted",
+    "breedAdded": "Breed added",
+    "breedAddedBody": "{{breed}} was added to {{category}}",
+    "breedDeleted": "Breed deleted",
+    "breedDeletedBody": "{{breed}} was removed from {{category}}",
+    "certificationAdded": "Certification added",
+    "certificationAddedBody": "{{type}} was added",
+    "certificationDeleted": "Certification deleted",
+    "certificationDeletedBody": "{{type}} was deleted",
+    "farmTypes": "Farming types",
+    "noFarmTypes": "No farming type configured",
+    "animalCategories": "Animal categories",
+    "noCategories": "No category configured",
+    "breedsFor": "Breeds — {{category}}",
+    "noBreedsFor": "No breed configured for {{category}}",
+    "noBreedsHint": "No breeds configured. Add animal categories first.",
+    "certifications": "Certifications",
+    "noCertifications": "No certification configured",
+    "addFarmTypeTitle": "Add a farming type",
+    "addFarmTypeDesc": "Add a new farm production type",
+    "farmTypeLabel": "Farming type *",
+    "farmTypePlaceholder": "e.g. Dairy, Beef, Poultry...",
+    "pressEnterHint": "Press Enter or click Add",
+    "addCategoryTitle": "Add an animal category",
+    "addCategoryDesc": "Add a new livestock animal category",
+    "categoryLabel": "Category *",
+    "categoryPlaceholder": "e.g. Cattle, Sheep, Goats, Poultry...",
+    "breedsAutoHint": "A breeds section will be created automatically",
+    "addBreedTitle": "Add a breed",
+    "addBreedDesc": "Add a breed for category: {{category}}",
+    "breedLabel": "Breed name *",
+    "breedPlaceholder": "e.g. Holstein, Timahdit, Draa...",
+    "addBreedBtn": "Breed",
+    "addCertificationTitle": "Add a certification",
+    "addCertificationDesc": "Add a new agricultural certification type",
+    "certificationLabel": "Certification type *",
+    "certificationPlaceholder": "e.g. Organic, Label Rouge, PDO, PGI..."
+  },
+  "readOnly": {
+    "title": "Read-only",
+    "description": "Contact a veterinarian to change settings."
+  },
+  "errors": {
+    "generic": "Error"
+  },
+  "permissions": {
+    "levels": {
+      "none": "None",
+      "read": "View",
+      "write": "Edit",
+      "noneHint": "Hidden",
+      "readHint": "Read-only",
+      "writeHint": "Create / edit / delete"
+    },
+    "groups": {
+      "clinical": "Care & records",
+      "farm": "Livestock",
+      "admin": "Administration (sensitive)"
+    },
+    "presets": {
+      "clinical": "Clinical access",
+      "readonly": "Read-only",
+      "frontDesk": "Front desk",
+      "extended": "Extended"
+    },
+    "presetDescriptions": {
+      "clinical": "Full edit access to clinical modules",
+      "readonly": "View records without creating or editing",
+      "frontDesk": "Edit clients, patients and appointments; clinical acts read-only",
+      "extended": "Clinical + livestock + inventory (no accounting or settings)"
+    },
+    "modules": {
+      "clients": {
+        "label": "Clients",
+        "description": "Client records and contacts"
+      },
+      "animals": {
+        "label": "Patients",
+        "description": "Companion animals / patients"
+      },
+      "appointments": {
+        "label": "Appointments",
+        "description": "Calendar and appointments"
+      },
+      "visits": {
+        "label": "Visits",
+        "description": "Visits and services"
+      },
+      "consultations": {
+        "label": "Consultations",
+        "description": "Consultation records"
+      },
+      "prescriptions": {
+        "label": "Prescriptions",
+        "description": "Medical prescriptions"
+      },
+      "vaccinations": {
+        "label": "Vaccinations",
+        "description": "Vaccines and boosters"
+      },
+      "antiparasitics": {
+        "label": "Antiparasitics",
+        "description": "Antiparasitic treatments"
+      },
+      "farms": {
+        "label": "Farms / Livestock",
+        "description": "Holdings and interventions"
+      },
+      "stock": {
+        "label": "Inventory",
+        "description": "Stock and movements"
+      },
+      "accounting": {
+        "label": "Accounting",
+        "description": "Billing and cash"
+      },
+      "settings": {
+        "label": "Settings",
+        "description": "Clinic configuration"
+      },
+      "team": {
+        "label": "Team",
+        "description": "Members and permissions"
+      },
+      "history": {
+        "label": "History",
+        "description": "Consolidated medical history"
+      }
+    }
+  },
+  "themeToggle": {
+    "toDark": "Enable dark mode",
+    "toLight": "Enable light mode"
+  },
+  "planGate": {
+    "title": "Feature not included in your plan",
+    "body": "This feature requires a higher subscription. See plans to upgrade.",
+    "bodyFeature": "{{feature}} is not available on your current plan ({{planCode}}). Upgrade to a higher plan to access it.",
+    "seePlans": "View plans",
+    "features": {
+      "farms": "Livestock / Farms",
+      "accounting": "Accounting",
+      "stock": "Inventory",
+      "team": "Team"
+    }
+  },
+  "roleGuard": {
+    "forbiddenTitle": "Edit not allowed",
+    "forbiddenBody": "Your account is view-only. Contact a veterinarian to change data."
+  },
+  "inviteCode": {
+    "title": "Invitation code",
+    "description": "Share this code with your veterinary assistants",
+    "copied": "Code copied!",
+    "copiedBody": "The invitation code has been copied to the clipboard",
+    "yourCode": "Your code",
+    "howToInvite": "How to invite an assistant?",
+    "hideInstructions": "Hide instructions",
+    "steps": {
+      "1": "Share this code with your assistant",
+      "2": "They create a VetoCrm account",
+      "3": "They enter the invite code",
+      "4": "They appear in your team",
+      "5": "You assign their permissions"
+    }
+  },
+  "adminPanel": {
+    "denied": "Access denied",
+    "deniedBody": "You do not have permission to access the administration panel.",
+    "title": "Administration panel",
+    "loading": "Loading…",
+    "searchPlaceholder": "Search a user…",
+    "never": "Never",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "suspended": "Suspended",
+    "tabs": {
+      "approvals": "Pending approvals",
+      "users": "Assistants",
+      "activity": "Activity"
+    },
+    "filterByStatus": "Filter by status",
+    "filterByRole": "Filter by role",
+    "allStatuses": "All statuses",
+    "allRoles": "All roles",
+    "roleAdmin": "Administrator",
+    "roleAssistant": "Assistant",
+    "columns": {
+      "user": "User",
+      "role": "Role",
+      "status": "Status",
+      "registeredAt": "Registered",
+      "lastLogin": "Last login",
+      "actions": "Actions",
+      "date": "Date",
+      "action": "Action",
+      "resource": "Resource",
+      "details": "Details"
+    },
+    "approve": "Approve",
+    "reject": "Reject",
+    "permissions": "Permissions",
+    "suspend": "Suspend",
+    "view": "View",
+    "rejectReasonPrompt": "Rejection reason:",
+    "activityLog": "Activity log",
+    "managePermissions": "Manage permissions — {{name}}",
+    "userDetails": "User details",
+    "fullName": "Full name",
+    "email": "Email",
+    "username": "Username",
+    "registeredDate": "Registration date",
+    "rejectionReason": "Rejection reason",
+    "notProvided": "Not provided",
+    "toast": {
+      "approveSuccess": "User approved successfully.",
+      "approveError": "Unable to approve user.",
+      "rejectSuccess": "User rejected successfully.",
+      "rejectError": "Unable to reject user.",
+      "permissionsSuccess": "Permissions updated successfully.",
+      "permissionsError": "Unable to update permissions.",
+      "suspendSuccess": "User suspended successfully.",
+      "suspendError": "Unable to suspend user."
+    }
+  },
+  "resetPassword": {
+    "invalidLink": "Invalid link",
+    "invalidLinkBody": "This reset link is invalid or has expired.",
+    "verifyingLink": "Verifying reset link…",
+    "setNewPassword": "Set a new password",
+    "requiredFields": "Required fields",
+    "fillAllFields": "Please fill in all fields",
+    "passwordMismatch": "Passwords do not match",
+    "invalidPassword": "Invalid password",
+    "passwordUpdated": "Password updated",
+    "passwordUpdatedBody": "Your password has been reset successfully.",
+    "updateButton": "Update password",
+    "updating": "Updating…",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordPlaceholder": "Your new password",
+    "confirmPlaceholder": "Confirm your new password",
+    "passwordRequirements": "Password must be at least 8 characters with uppercase, lowercase, a digit and a special character.",
+    "verifyError": "Error verifying the reset link",
+    "updateError": "An error occurred while updating the password",
+    "backToLogin": "Back to login",
+    "rules": {
+      "minLength": "Password must be at least 8 characters",
+      "uppercase": "Password must contain at least one uppercase letter",
+      "lowercase": "Password must contain at least one lowercase letter",
+      "digit": "Password must contain at least one digit",
+      "special": "Password must contain at least one special character"
+    }
+  },
+  "datePeriods": {
+    "all": "All dates",
+    "today": "Today",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "thisYear": "This year",
+    "thisQuarter": "This quarter",
+    "custom": "Custom range"
+  },
+  "superAdmin": {
+    "layout": {
+      "eyebrow": "Platform",
+      "title": "Super Admin console",
+      "description": "Multi-tenant control: clinics, subscriptions, support, audit and system health."
+    },
+    "nav": {
+      "overview": "Overview",
+      "organizations": "Clinics",
+      "users": "Users",
+      "plans": "Plans",
+      "billing": "Billing",
+      "audit": "Audit",
+      "system": "System"
+    },
+    "overview": {
+      "refresh": "Refresh",
+      "clinics": "Clinics",
+      "clinicsSub": "{{paid}} paid · {{free}} free",
+      "users": "Users",
+      "usersSub": "{{pending}} pending",
+      "clientsTotal": "Clients (total)",
+      "animals": "Patients",
+      "storage": "Storage",
+      "clientLimits": "Client limits",
+      "clientLimitsSub": "clinics at cap",
+      "estimatedMrr": "Estimated MRR",
+      "mrrHint": "Based on plan pricing (monthly MAD)",
+      "pastDue": "Past-due payments",
+      "trialsEnding": "Trials ≤ 7 d",
+      "planDistribution": "Distribution by plan",
+      "manageClinics": "Manage clinics",
+      "approveUsers": "Approve users"
+    },
+    "orgDetail": {
+      "loading": "Loading clinic details…",
+      "notFound": "Clinic not found",
+      "subscriptionUpdated": "Subscription updated",
+      "noteAdded": "Note added",
+      "cancelAtPeriodEnd": "Cancel at period end",
+      "saveSubscription": "Save subscription",
+      "savingSubscription": "Saving…",
+      "supportNotes": "Support notes",
+      "noNotes": "No notes",
+      "recentAudit": "Recent audit",
+      "noEvents": "No events",
+      "clientSupport": "Client support",
+      "exportJson": "Export JSON",
+      "impersonate": "Impersonate"
+    },
+    "plans": {
+      "newPlan": "New plan",
+      "editPlan": "Edit {{name}}",
+      "saved": "Plan saved",
+      "loading": "Loading…",
+      "code": "Code",
+      "name": "Name",
+      "storage": "Storage",
+      "users": "Users",
+      "clients": "Clients",
+      "animals": "Animals",
+      "priceMadMonth": "Price MAD/month",
+      "active": "Active",
+      "confirmDelete": "Delete this plan?",
+      "confirmDeleteNamed": "Delete plan {{code}}?"
+    },
+    "system": {
+      "saved": "System settings saved",
+      "health": "Health",
+      "checking": "Checking…",
+      "maintenance": "Maintenance mode",
+      "enableMaintenance": "Enable maintenance (blocks everyone except super_admin)",
+      "message": "Message",
+      "defaultMaintenanceMsg": "Maintenance in progress. Please try again soon.",
+      "featureFlags": "Feature flags",
+      "newBillingUi": "New billing UI (preview)",
+      "supportEmail": "Support email",
+      "save": "Save",
+      "saving": "Saving…",
+      "saveSystem": "Save system settings",
+      "forceReadOnly": "Global read-only",
+      "blockRegistrations": "Block registrations",
+      "support": "Support",
+      "supportEmailHint": "Email broadcasts / GDPR exports can use this address and the `send-email` edge function."
+    },
+    "users": {
+      "searchPlaceholder": "Email / name / clinic",
+      "allStatuses": "All statuses",
+      "allRoles": "All roles",
+      "user": "User",
+      "clinic": "Clinic",
+      "role": "Role",
+      "status": "Status",
+      "actions": "Actions",
+      "loading": "Loading…",
+      "empty": "No users",
+      "promoteConfirm": "Promote this user to super_admin?"
+    },
+    "organizations": {
+      "searchPlaceholder": "Search (name / code)",
+      "allPlans": "All plans",
+      "allStatuses": "All statuses",
+      "plan": "Plan",
+      "status": "Status",
+      "clinic": "Clinic",
+      "users": "Users",
+      "clients": "Clients",
+      "animals": "Patients",
+      "storage": "Storage",
+      "actions": "Actions",
+      "loading": "Loading…",
+      "empty": "No organizations",
+      "view": "Details",
+      "mb": "MB",
+      "pagination": "{{count}} clinic · page {{page}}/{{pageCount}}",
+      "pagination_plural": "{{count}} clinics · page {{page}}/{{pageCount}}"
+    }
+  },
+  "storageUsage": {
+    "title": "Storage & subscription",
+    "loading": "Loading…",
+    "recomputed": "✓ Storage recalculated",
+    "photosUsed": "Photo storage used",
+    "usedAutoCompress": "{{percent}}% used · auto-compression enabled",
+    "quotaExceeded": "Quota exceeded",
+    "quotaExceededBody": "Delete photos or upgrade your plan to keep adding more.",
+    "almostFull": "Storage almost full",
+    "almostFullBody": "Little space left. Consider archiving or increasing your quota.",
+    "clients": "Clients",
+    "animals": "Animals",
+    "users": "Users",
+    "upgrade": "Upgrade to a paid plan",
+    "manage": "Manage",
+    "recompute": "Recalculate",
+    "currentPack": "Current plan:",
+    "changePack": "Change plan"
+  },
+  "management": {
+    "title": "Settings management",
+    "description": "Configure values used throughout the application",
+    "restoreDefaults": "Restore default values",
+    "restoring": "Restoring...",
+    "categories": "Categories",
+    "addSetting": "Add a setting",
+    "newSetting": "New setting",
+    "settingName": "Setting name",
+    "settingDescPlaceholder": "Setting description",
+    "valuesCommaSeparated": "Values (comma-separated)",
+    "emptyCategory": "No settings configured for this category.",
+    "emptyCategoryHint": "Click “Restore default values” to get started.",
+    "addValuePlaceholder": "Add a value...",
+    "readyTitle": "Settings ready",
+    "readyBody": "Default values have been loaded. You can edit or restore them anytime.",
+    "restoreConfirm": "Restore all default values? Your current customizations will be overwritten.",
+    "restoredTitle": "Values restored",
+    "restoredBody": "All settings have been reset to defaults",
+    "restoreError": "Unable to restore default settings",
+    "savedTitle": "Setting saved",
+    "savedBody": "Setting {{key}} has been updated",
+    "saveError": "Unable to save the setting",
+    "deleteConfirm": "Are you sure you want to delete setting {{key}}?",
+    "deletedTitle": "Setting deleted",
+    "deletedBody": "Setting {{key}} has been deleted",
+    "deleteError": "Unable to delete the setting",
+    "valueAddedTitle": "✓ Value added",
+    "valueAddedBody": "The value has been added and saved",
+    "valueRemovedTitle": "✓ Value removed",
+    "valueRemovedBody": "The value has been removed and changes saved",
+    "valueSaveError": "Unable to save the value",
+    "changesSaveError": "Unable to save changes",
+    "nameRequired": "Setting name is required",
+    "customDesc": "Custom setting {{key}}",
+    "configDesc": "Configuration {{key}} for {{category}}",
+    "addedTitle": "Setting added",
+    "addedBody": "Setting {{key}} has been created",
+    "createError": "Unable to create the setting",
+    "cat": {
+      "animals": "Animals",
+      "animalsDesc": "Species, breeds and colors configuration",
+      "clients": "Clients",
+      "clientsDesc": "Client types and related settings",
+      "consultations": "Consultations",
+      "consultationsDesc": "Available consultation types",
+      "appointments": "Appointments",
+      "appointmentsDesc": "Appointment types and configurations",
+      "medications": "Medications",
+      "medicationsDesc": "Medication categories",
+      "vaccinations": "Vaccinations",
+      "vaccinationsDesc": "Available vaccination types",
+      "parasites": "Parasites",
+      "parasitesDesc": "Parasite types and treatments",
+      "farms": "Farms",
+      "farmsDesc": "Farm types and configurations",
+      "payments": "Payments",
+      "paymentsDesc": "Accepted payment methods"
+    },
+    "valuesLabel": "Values",
+    "keyPlaceholder": "e.g. types, categories...",
+    "valuesExamplePlaceholder": "Value1, Value2, Value3..."
+  },
+  "authSettings": {
+    "title": "Sign-in settings",
+    "description": "Manage your security and session preferences",
+    "security": {
+      "title": "Security",
+      "twoFactor": "Two-factor authentication",
+      "twoFactorDesc": "Add an extra layer of account protection",
+      "sessionTimeout": "Session timeout (minutes)",
+      "passwordExpiry": "Password expiry (days)",
+      "loginNotifications": "Sign-in notifications",
+      "loginNotificationsDesc": "Get alerts for new sign-ins to your clinic account",
+      "deviceTracking": "Device tracking",
+      "deviceTrackingDesc": "Monitor devices signed in to your account",
+      "autoLogout": "Automatic sign-out",
+      "autoLogoutDesc": "Sign out after a period of inactivity",
+      "save": "Save security settings",
+      "savedTitle": "Security settings saved",
+      "savedBody": "Your security settings have been updated."
+    },
+    "activeSessions": {
+      "title": "Active sessions",
+      "current": "Current",
+      "lastActive": "Last activity: {{time}}",
+      "terminate": "End session",
+      "terminateAll": "End all other sessions",
+      "terminatedTitle": "Session ended",
+      "terminatedBody": "The session was closed successfully.",
+      "allTerminatedTitle": "All other sessions ended",
+      "allTerminatedBody": "All other sessions have been closed.",
+      "now": "Just now",
+      "hoursAgo": "{{count}} hours ago",
+      "locationRabat": "Rabat, Morocco"
+    },
+    "session": {
+      "title": "Session management",
+      "rememberMe": "Remember me",
+      "rememberMeDesc": "Stay signed in between visits",
+      "autoLogin": "Automatic sign-in",
+      "autoLoginDesc": "Sign in automatically when the app starts",
+      "sessionDuration": "Session duration (hours)",
+      "maxConcurrent": "Maximum concurrent sessions",
+      "save": "Save session settings",
+      "savedTitle": "Session settings saved",
+      "savedBody": "Your session settings have been updated."
+    },
+    "notifications": {
+      "title": "Security notifications",
+      "loginAlerts": "Sign-in alerts",
+      "loginAlertsDesc": "Notify you of new sign-ins",
+      "securityAlerts": "Security alerts",
+      "securityAlertsDesc": "Notify you of security-related events",
+      "deviceAlerts": "Device alerts",
+      "deviceAlertsDesc": "Notify you when a new device signs in",
+      "email": "Email notifications",
+      "emailDesc": "Receive alerts by email",
+      "sms": "SMS notifications",
+      "smsDesc": "Receive alerts by SMS",
+      "push": "Push notifications",
+      "pushDesc": "Receive push alerts",
+      "save": "Save notification settings",
+      "savedTitle": "Notification settings saved",
+      "savedBody": "Your notification settings have been updated."
+    },
+    "privacy": {
+      "title": "Privacy",
+      "savedTitle": "Privacy settings saved",
+      "savedBody": "Your privacy settings have been updated."
+    },
+    "display": {
+      "title": "Display",
+      "savedTitle": "Display settings saved",
+      "savedBody": "Your display settings have been updated."
+    },
+    "options": {
+      "minutes15": "15 minutes",
+      "minutes30": "30 minutes",
+      "hours1": "1 hour",
+      "hours2": "2 hours",
+      "hours4": "4 hours",
+      "hours8": "8 hours",
+      "hours12": "12 hours",
+      "hours24": "24 hours",
+      "days30": "30 days",
+      "days60": "60 days",
+      "days90": "90 days",
+      "months6": "6 months",
+      "year1": "1 year",
+      "session1": "1 session",
+      "sessions2": "2 sessions",
+      "sessions3": "3 sessions",
+      "sessions5": "5 sessions",
+      "sessions10": "10 sessions"
+    }
+  }
+}

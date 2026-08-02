@@ -2,21 +2,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Stethoscope, Plus, Eye, Edit, FileText, Calendar, User, Heart, TrendingUp, Clock, Activity, DollarSign } from "lucide-react";
+import { Stethoscope, Plus, Edit, Calendar, User, Heart, TrendingUp, DollarSign } from "lucide-react";
 import { useState } from "react";
 import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import { ConsultationEditModalNew } from "@/components/modals/ConsultationEditModalNew";
 import { ConsultationPrint } from "@/components/ConsultationPrint";
 import { useConsultations, useClients, useAnimals } from "@/hooks/useDatabase";
-import { Consultation } from "@/lib/database";
-import { useSettings } from "@/contexts/SettingsContext";
-import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 
 export function ConsultationsOverview() {
+  const { t, i18n } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { data: consultations = [] } = useConsultations();
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
-  const { settings } = useSettings();
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<any>(null);
@@ -75,9 +75,9 @@ export function ConsultationsOverview() {
 
   const getStatusText = (consultation: any) => {
     const consultationDate = new Date(consultation.consultation_date).toISOString().split('T')[0];
-    if (consultationDate === today) return "Aujourd'hui";
-    if (consultationDate < today) return "Terminée";
-    return "À venir";
+    if (consultationDate === today) return t("dashboard.consultationsOverview.statusToday");
+    if (consultationDate < today) return t("dashboard.consultationsOverview.statusDone");
+    return t("dashboard.consultationsOverview.statusUpcoming");
   };
 
   const getConsultationDetails = (consultation: any) => {
@@ -85,12 +85,12 @@ export function ConsultationsOverview() {
     const client = consultation.client || clients.find(c => c.id === consultation.client_id);
     
     return {
-      animalName: animal?.name || 'Animal inconnu',
-      animalSpecies: animal?.species || 'Inconnu',
-      animalBreed: animal?.breed || 'Non spécifiée',
-      clientName: client ? `${client.first_name} ${client.last_name}` : 'Client inconnu',
-      clientPhone: client?.phone || 'Non spécifié',
-      clientCity: client?.address || 'Non spécifiée'
+      animalName: animal?.name || t("dashboard.consultationsOverview.unknownAnimal"),
+      animalSpecies: animal?.species || t("dashboard.consultationsOverview.unknown"),
+      animalBreed: animal?.breed || tc("notSpecified"),
+      clientName: client ? `${client.first_name} ${client.last_name}` : t("dashboard.consultationsOverview.unknownClient"),
+      clientPhone: client?.phone || tc("notSpecified"),
+      clientCity: client?.address || tc("notSpecified")
     };
   };
 
@@ -101,11 +101,11 @@ export function ConsultationsOverview() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Stethoscope className="h-5 w-5" />
-              Consultations Récentes
+              {t("dashboard.consultationsOverview.title")}
             </CardTitle>
             <Button size="sm" className="gap-2" onClick={() => setShowConsultationModal(true)}>
               <Plus className="h-4 w-4" />
-              Nouveau
+              {tc("new")}
             </Button>
           </div>
         </CardHeader>
@@ -114,11 +114,11 @@ export function ConsultationsOverview() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold text-primary">{totalConsultations}</div>
-              <div className="text-sm text-muted-foreground">Total</div>
+              <div className="text-sm text-muted-foreground">{tc("total")}</div>
             </div>
             <div className="text-center p-3 bg-muted rounded-lg">
               <div className="text-2xl font-bold text-green-600">{consultationsToday}</div>
-              <div className="text-sm text-muted-foreground">Aujourd'hui</div>
+              <div className="text-sm text-muted-foreground">{tc("today")}</div>
             </div>
           </div>
 
@@ -126,7 +126,7 @@ export function ConsultationsOverview() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-blue-600" />
-              <span>+{consultationsThisMonth} ce mois</span>
+              <span>{t("dashboard.consultationsOverview.thisMonth", { count: consultationsThisMonth })}</span>
               {changePercentage !== 0 && (
                 <Badge variant={changePercentage > 0 ? "default" : "destructive"} className="text-xs">
                   {changePercentage > 0 ? '+' : ''}{changePercentage}%
@@ -135,18 +135,18 @@ export function ConsultationsOverview() {
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-600" />
-              <span>~{estimatedRevenue}€ ce mois</span>
+              <span>{t("dashboard.consultationsOverview.estRevenue", { amount: estimatedRevenue })}</span>
             </div>
           </div>
 
           {/* Recent Consultations List */}
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-muted-foreground">Dernières consultations</h4>
+            <h4 className="font-medium text-sm text-muted-foreground">{t("dashboard.consultationsOverview.recentList")}</h4>
           {recentConsultations.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Stethoscope className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p>Aucune consultation enregistrée</p>
-              <p className="text-sm">Commencez par créer votre première consultation</p>
+              <p>{t("dashboard.consultationsOverview.empty")}</p>
+              <p className="text-sm">{t("dashboard.consultationsOverview.emptyHint")}</p>
             </div>
           ) : (
             recentConsultations.map((consultation) => {
@@ -181,7 +181,7 @@ export function ConsultationsOverview() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3 flex-shrink-0" />
-                          <span>{new Date(consultation.consultation_date).toLocaleDateString('fr-FR')}</span>
+                          <span>{new Date(consultation.consultation_date).toLocaleDateString(getBcp47Locale(i18n.language))}</span>
                         </div>
                       </div>
                     </div>

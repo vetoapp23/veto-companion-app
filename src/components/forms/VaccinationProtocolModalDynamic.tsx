@@ -12,6 +12,7 @@ import { useCreateVaccinationProtocol, useUpdateVaccinationProtocol } from '@/ho
 import type { VaccinationProtocol, BoosterScheduleEntry } from '@/lib/database';
 import BoosterScheduleEditor from './BoosterScheduleEditor';
 import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
+import { useTranslation } from 'react-i18next';
 
 interface VaccinationProtocolModalProps {
   children?: React.ReactNode;
@@ -28,11 +29,12 @@ export default function VaccinationProtocolModal({
   open,
   onOpenChange
 }: VaccinationProtocolModalProps) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   const createProtocolMutation = useCreateVaccinationProtocol();
   const updateProtocolMutation = useUpdateVaccinationProtocol();
   const { toast } = useToast();
   
-  // Dynamic settings
   const { data: animalSpecies = [], isLoading: speciesLoading } = useAnimalSpecies();
   const { data: vaccinationTypes = [], isLoading: typesLoading } = useVaccinationTypes();
   
@@ -40,7 +42,6 @@ export default function VaccinationProtocolModal({
   const modalOpen = open !== undefined ? open : internalOpen;
   const setModalOpen = onOpenChange || setInternalOpen;
 
-  // Form state
   const [formData, setFormData] = useState({
     species: protocol?.species || '',
     vaccineName: protocol?.vaccine_name || '',
@@ -54,7 +55,7 @@ export default function VaccinationProtocolModal({
   const [boosterSchedule, setBoosterSchedule] = useState<BoosterScheduleEntry[]>(
     protocol?.booster_schedule && protocol.booster_schedule.length > 0
       ? protocol.booster_schedule
-      : [{ label: '1ère dose', offset_days: 0 }]
+      : [{ label: t("forms.firstDoseLabel"), offset_days: 0 }]
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -62,8 +63,8 @@ export default function VaccinationProtocolModal({
     
     if (!formData.species || !formData.vaccineName || !formData.vaccineType) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
+        title: tc("error"),
+        description: t("alerts.fillRequiredFields"),
         variant: "destructive"
       });
       return;
@@ -87,8 +88,8 @@ export default function VaccinationProtocolModal({
       if (mode === 'create') {
         await createProtocolMutation.mutateAsync(protocolData);
         toast({
-          title: "Protocole créé",
-          description: `Le protocole ${formData.vaccineName} a été créé avec succès`
+          title: t("alerts.protocolCreated"),
+          description: t("alerts.protocolCreatedBody", { name: formData.vaccineName })
         });
       } else if (protocol) {
         await updateProtocolMutation.mutateAsync({
@@ -96,12 +97,11 @@ export default function VaccinationProtocolModal({
           data: protocolData
         });
         toast({
-          title: "Protocole modifié",
-          description: `Le protocole ${formData.vaccineName} a été modifié avec succès`
+          title: t("alerts.protocolUpdated"),
+          description: t("alerts.protocolUpdatedBody", { name: formData.vaccineName })
         });
       }
 
-      // Reset form only for create mode
       if (mode === 'create') {
         setFormData({
           species: '',
@@ -119,10 +119,10 @@ export default function VaccinationProtocolModal({
     } catch (error: any) {
       console.error("Protocol save error:", error);
       toast({
-        title: "Erreur",
+        title: tc("error"),
         description:
           error?.message ||
-          `Impossible de ${mode === "create" ? "créer" : "modifier"} le protocole`,
+          (mode === "create" ? t("alerts.cannotCreateProtocol") : t("alerts.cannotEditProtocol")),
         variant: "destructive",
       });
     }
@@ -134,7 +134,7 @@ export default function VaccinationProtocolModal({
         {children || (
           <Button className="gap-2">
             <Plus className="h-4 w-4" />
-            {mode === 'create' ? 'Nouveau Protocole' : 'Modifier'}
+            {mode === 'create' ? t("forms.newProtocolShort") : tc("edit")}
           </Button>
         )}
       </DialogTrigger>
@@ -142,18 +142,17 @@ export default function VaccinationProtocolModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            {mode === 'create' ? 'Nouveau Protocole Vaccinal' : 'Modifier le Protocole'}
+            {mode === 'create' ? t("forms.newVaccinationProtocol") : t("forms.editVaccinationProtocol")}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Species and Vaccine Name */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="species">Espèce *</Label>
+              <Label htmlFor="species">{t("forms.speciesRequired")}</Label>
               <Select value={formData.species} onValueChange={(value) => setFormData({...formData, species: value})}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionnez l'espèce" />
+                  <SelectValue placeholder={t("forms.selectSpecies")} />
                 </SelectTrigger>
                 <SelectContent>
                   {animalSpecies.map((species) => (
@@ -165,86 +164,80 @@ export default function VaccinationProtocolModal({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vaccineName">Nom du vaccin *</Label>
+              <Label htmlFor="vaccineName">{t("forms.vaccineNameRequired")}</Label>
               <Input
                 id="vaccineName"
                 value={formData.vaccineName}
                 onChange={(e) => setFormData({...formData, vaccineName: e.target.value})}
-                placeholder="ex: DHPP, Rage, FVRCP..."
+                placeholder={t("forms.vaccineNameEx")}
                 required
               />
             </div>
           </div>
 
-          {/* Vaccine Type and Age Recommendation */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="vaccineType">Type de vaccin *</Label>
+              <Label htmlFor="vaccineType">{t("forms.vaccineTypeRequired")}</Label>
               <ComboboxFreeText
                 value={formData.vaccineType}
                 onChange={(value) => setFormData({ ...formData, vaccineType: value })}
                 options={vaccinationTypes}
                 category="vaccine_type"
-                placeholder="Sélectionnez ou tapez un type..."
-                emptyText="Aucun type trouvé. Tapez pour en ajouter un."
+                placeholder={t("forms.vaccineTypePlaceholder")}
+                emptyText={t("forms.noTypeFound")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ageRecommendation">Âge recommandé</Label>
+              <Label htmlFor="ageRecommendation">{t("forms.recommendedAge")}</Label>
               <Input
                 id="ageRecommendation"
                 value={formData.ageRecommendation}
                 onChange={(e) => setFormData({...formData, ageRecommendation: e.target.value})}
-                placeholder="ex: 8 semaines, 3 mois..."
+                placeholder={t("forms.recommendedAgeEx")}
               />
             </div>
           </div>
 
-          {/* Frequency and Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="frequency">Fréquence</Label>
+              <Label htmlFor="frequency">{t("forms.frequency")}</Label>
               <Input
                 id="frequency"
                 value={formData.frequency}
                 onChange={(e) => setFormData({...formData, frequency: e.target.value})}
-                placeholder="ex: Annuelle, Tous les 3 ans..."
+                placeholder={t("forms.frequencyEx")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="durationDays">Durée (jours)</Label>
+              <Label htmlFor="durationDays">{t("forms.durationDays")}</Label>
               <Input
                 id="durationDays"
                 type="number"
                 value={formData.durationDays}
                 onChange={(e) => setFormData({...formData, durationDays: e.target.value})}
-                placeholder="ex: 365, 1095..."
+                placeholder={t("forms.durationDaysEx")}
                 min="1"
               />
             </div>
           </div>
 
-          {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              placeholder="Informations complémentaires sur le protocole..."
+              placeholder={t("forms.protocolNotesVacPlaceholder")}
               rows={3}
             />
           </div>
 
-          {/* Booster Schedule */}
           <BoosterScheduleEditor
             value={boosterSchedule}
             onChange={setBoosterSchedule}
-            description="Définissez chaque dose (1ère injection, rappels...) avec son décalage en jours depuis la 1ère dose."
+            description={t("forms.doseScheduleDesc")}
           />
 
-
-          {/* Active Status */}
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
@@ -253,21 +246,20 @@ export default function VaccinationProtocolModal({
               onChange={(e) => setFormData({...formData, active: e.target.checked})}
               className="rounded"
             />
-            <Label htmlFor="active">Protocole actif</Label>
+            <Label htmlFor="active">{t("forms.protocolActive")}</Label>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               type="submit" 
               disabled={createProtocolMutation.isPending || updateProtocolMutation.isPending}
             >
               {(createProtocolMutation.isPending || updateProtocolMutation.isPending) 
-                ? (mode === 'create' ? 'Création...' : 'Modification...') 
-                : (mode === 'create' ? 'Créer le protocole' : 'Modifier le protocole')
+                ? (mode === 'create' ? t("forms.creating") : t("forms.editing")) 
+                : (mode === 'create' ? t("forms.createProtocol") : t("forms.editProtocolBtn"))
               }
             </Button>
           </div>

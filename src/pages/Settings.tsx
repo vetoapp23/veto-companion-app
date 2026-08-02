@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,11 @@ import { UserProfile } from "@/components/UserProfile";
 import { User } from "lucide-react";
 import { SettingsManagement } from "@/components/SettingsManagement";
 import { StorageUsageCard } from "@/components/StorageUsageCard";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   VISIT_SERVICE_CATALOG,
+  getVisitServiceDescription,
+  getVisitServiceLabel,
   getCatalogDefaultPrices,
 } from "@/lib/visitCatalog";
 import { 
@@ -40,6 +44,9 @@ import type {
 import { DEFAULT_DB_SCHEDULE, dbScheduleToUi } from '@/lib/scheduleSettings'
 
 export default function Settings() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
+  const { t: tm } = useTranslation("medical");
   const { toast } = useToast();
   const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
@@ -97,13 +104,13 @@ export default function Settings() {
       } as ClinicSettings);
       setScheduleDirty(false);
       toast({
-        title: "Horaires enregistrés",
-        description: "Les créneaux RDV utilisent maintenant ces paramètres.",
+        title: t("schedule.saved"),
+        description: t("schedule.savedBody"),
       });
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: e?.message || "Impossible d'enregistrer les horaires",
+        title: t("errors.generic"),
+        description: e?.message || t("errors.generic"),
         variant: "destructive",
       });
     }
@@ -158,7 +165,7 @@ export default function Settings() {
 
   const saveSettings = () => {
     if (!guardWrite()) return;
-    toast({ title: 'Paramètres sauvegardés', description: 'Informations de la clinique mises à jour.' });
+    toast({ title: t("clinic.saved"), description: t("clinic.savedBody") });
   };
 
   // Logo handler
@@ -173,31 +180,31 @@ export default function Settings() {
   };
 
   // Display preferences handler
-  const DISPLAY_SECTION_LABELS: Record<keyof DisplayPreferences, string> = {
-    clients: "Clients",
-    pets: "Animaux",
-    consultations: "Consultations",
-    appointments: "Rendez-vous",
-    visits: "Visites",
-    prescriptions: "Ordonnances",
-    farms: "Fermes",
-    vaccinations: "Vaccinations",
-    antiparasitics: "Antiparasites",
-    history: "Historiques",
-  };
+  const DISPLAY_SECTION_KEYS: (keyof DisplayPreferences)[] = [
+    "clients",
+    "pets",
+    "consultations",
+    "appointments",
+    "visits",
+    "prescriptions",
+    "farms",
+    "vaccinations",
+    "antiparasitics",
+    "history",
+  ];
 
   const displayOptionsFor = (section: keyof DisplayPreferences) => {
     if (section === "appointments") {
       return [
-        { value: "calendar", label: "Calendrier" },
-        { value: "list", label: "Liste" },
-        { value: "table", label: "Tableau" },
-        { value: "cards", label: "Cartes" },
+        { value: "calendar", label: t("display.modes.calendar") },
+        { value: "list", label: t("display.modes.list") },
+        { value: "table", label: t("display.modes.table") },
+        { value: "cards", label: t("display.modes.cards") },
       ] as const;
     }
     return [
-      { value: "table", label: "Tableau" },
-      { value: "cards", label: "Cartes" },
+      { value: "table", label: t("display.modes.table") },
+      { value: "cards", label: t("display.modes.cards") },
     ] as const;
   };
 
@@ -215,10 +222,13 @@ export default function Settings() {
       displayPreferences: updatedPreferences,
     });
     const optionLabel =
-      displayOptionsFor(section).find((o) => o.value === value)?.label?.toLowerCase() || value;
+      displayOptionsFor(section).find((o) => o.value === value)?.label || value;
     toast({
-      title: "Préférence d'affichage mise à jour",
-      description: `${DISPLAY_SECTION_LABELS[section]} s'affichera en ${optionLabel}.`,
+      title: t("display.updated"),
+      description: t("display.updatedBody", {
+        section: t(`display.sections.${section}`),
+        mode: optionLabel,
+      }),
     });
   };
 
@@ -254,7 +264,7 @@ export default function Settings() {
   const saveVet = () => {
     if (!guardWrite()) return;
     if (!vetForm.name || !vetForm.title) {
-      toast({ title: 'Erreur', description: 'Nom et titre requis', variant: 'destructive' });
+      toast({ title: t("errors.generic"), description: t("veterinarians.nameTitleRequired"), variant: 'destructive' });
       return;
     }
     
@@ -289,16 +299,16 @@ export default function Settings() {
     }
     
     updateVeterinarianMutation.mutate(updatedVets);
-    toast({ title: 'Vétérinaire enregistré' });
+    toast({ title: t("veterinarians.saved") });
     setShowVetModal(false);
   };
 
   const deleteVet = (id: string) => {
     if (!guardWrite()) return;
-    if (!confirm('Supprimer ce vétérinaire ?')) return;
+    if (!confirm(t("veterinarians.deleteConfirm"))) return;
     const updatedVets = dbVeterinarians.filter(v => v.id !== id);
     updateVeterinarianMutation.mutate(updatedVets);
-    toast({ title: 'Vétérinaire supprimé' });
+    toast({ title: t("veterinarians.deleted") });
   };
 
   // Farm management handlers
@@ -310,7 +320,7 @@ export default function Settings() {
       farm_types: [...farmSettings.farm_types, type.trim()]
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Type ajouté', description: `${type} a été ajouté aux types d'élevage` });
+    toast({ title: t("farmsConfig.farmTypeAdded"), description: t("farmsConfig.farmTypeAddedBody", { type }) });
     setShowFarmTypeModal(false);
     setNewFarmType('');
   };
@@ -323,7 +333,7 @@ export default function Settings() {
       farm_types: farmSettings.farm_types.filter(t => t !== type)
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Type supprimé', description: `${type} a été supprimé` });
+    toast({ title: t("farmsConfig.farmTypeDeleted"), description: t("farmsConfig.farmTypeDeletedBody", { type }) });
   };
 
   const addAnimalCategory = (category: string) => {
@@ -338,7 +348,7 @@ export default function Settings() {
       }
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Catégorie ajoutée', description: `${category} a été ajoutée` });
+    toast({ title: t("farmsConfig.categoryAdded"), description: t("farmsConfig.categoryAddedBody", { category }) });
     setShowCategoryModal(false);
     setNewCategory('');
   };
@@ -353,7 +363,7 @@ export default function Settings() {
       breeds_by_category: remainingBreeds
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Catégorie supprimée', description: `${category} et ses races ont été supprimés` });
+    toast({ title: t("farmsConfig.categoryDeleted"), description: t("farmsConfig.categoryDeletedBody", { category }) });
   };
 
   const addBreedToCategory = (category: string, breed: string) => {
@@ -367,7 +377,7 @@ export default function Settings() {
       }
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Race ajoutée', description: `${breed} a été ajoutée à ${category}` });
+    toast({ title: t("farmsConfig.breedAdded"), description: t("farmsConfig.breedAddedBody", { breed, category }) });
     setShowBreedModal(false);
     setNewBreed('');
     setSelectedCategory('');
@@ -384,7 +394,7 @@ export default function Settings() {
       }
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Race supprimée', description: `${breed} a été supprimée de ${category}` });
+    toast({ title: t("farmsConfig.breedDeleted"), description: t("farmsConfig.breedDeletedBody", { breed, category }) });
   };
 
   const addCertificationType = (type: string) => {
@@ -395,7 +405,7 @@ export default function Settings() {
       certification_types: [...farmSettings.certification_types, type.trim()]
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Certification ajoutée', description: `${type} a été ajoutée` });
+    toast({ title: t("farmsConfig.certificationAdded"), description: t("farmsConfig.certificationAddedBody", { type }) });
     setShowCertificationModal(false);
     setNewCertification('');
   };
@@ -408,23 +418,23 @@ export default function Settings() {
       certification_types: farmSettings.certification_types.filter(t => t !== type)
     };
     updateFarmMutation.mutate(updated);
-    toast({ title: 'Certification supprimée', description: `${type} a été supprimée` });
+    toast({ title: t("farmsConfig.certificationDeleted"), description: t("farmsConfig.certificationDeletedBody", { type }) });
   };
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8">
       <AppPageHeader
         icon={Cog}
-        title="Paramètres"
-        description="Configurez votre clinique, l’équipe et les préférences d’affichage"
+        title={t("page.title")}
+        description={t("page.description")}
       />
 
       {!canWrite && (
         <Alert>
           <Shield className="h-4 w-4" />
-          <AlertTitle>Lecture seule</AlertTitle>
+          <AlertTitle>{t("readOnly.title")}</AlertTitle>
           <AlertDescription>
-            Contactez un vétérinaire pour modifier les paramètres.
+            {t("readOnly.description")}
           </AlertDescription>
         </Alert>
       )}
@@ -432,7 +442,7 @@ export default function Settings() {
       {/* Tab Navigation */}
       <Card>
         <CardHeader>
-          <CardTitle>Paramètres de l'application</CardTitle>
+          <CardTitle>{t("tabs.appSettings")}</CardTitle>
           <div className="flex items-center gap-4 mt-8 pt-8">
             <Button
               variant={activeTab === 'general' ? 'default' : 'outline'}
@@ -440,7 +450,7 @@ export default function Settings() {
               className="flex items-center gap-2"
             >
               <Settings2 className="h-4 w-4" />
-              Paramètres généraux
+              {t("tabs.general")}
             </Button>
             <Button
               variant={activeTab === 'data' ? 'default' : 'outline'}
@@ -448,7 +458,7 @@ export default function Settings() {
               className="flex items-center gap-2"
             >
               <Shield className="h-4 w-4" />
-              Configuration des données
+              {t("tabs.data")}
             </Button>
           </div>
         </CardHeader>
@@ -459,47 +469,60 @@ export default function Settings() {
           ) : (
             <div className="grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-8">
+                {/* Language */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("language.title")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {t("language.description")}
+                    </p>
+                    <LanguageSwitcher />
+                  </CardContent>
+                </Card>
+
                 {/* Subscription & storage usage */}
                 <StorageUsageCard />
                 {/* Clinic Settings */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Paramètres de la Clinique</CardTitle>
+                    <CardTitle>{t("clinic.title")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="logo">Logo de la clinique</Label>
+                        <Label htmlFor="logo">{t("clinic.logo")}</Label>
                         <Input id="logo" type="file" accept="image/*" onChange={handleLogoChange} disabled={!canWrite} />
                         {settings.logo && <img src={settings.logo} alt="Logo" className="h-24 mt-2" />}
                       </div>
                       <div>
-                        <Label htmlFor="clinicName">Nom de la clinique</Label>
+                        <Label htmlFor="clinicName">{t("clinic.name")}</Label>
                         <Input id="clinicName" value={settings.clinicName} onChange={e => handleSettingsChange('clinicName', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
-                        <Label htmlFor="address">Adresse</Label>
+                        <Label htmlFor="address">{t("clinic.address")}</Label>
                         <Input id="address" value={settings.address} onChange={e => handleSettingsChange('address', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
-                        <Label htmlFor="phone">Téléphone</Label>
+                        <Label htmlFor="phone">{t("clinic.phone")}</Label>
                         <Input id="phone" value={settings.phone} onChange={e => handleSettingsChange('phone', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t("clinic.email")}</Label>
                         <Input id="email" type="email" value={settings.email} onChange={e => handleSettingsChange('email', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
-                        <Label htmlFor="website">Site web</Label>
+                        <Label htmlFor="website">{t("clinic.website")}</Label>
                         <Input id="website" value={settings.website} onChange={e => handleSettingsChange('website', e.target.value)} disabled={!canWrite} />
                       </div>
                       <div>
-                        <Label htmlFor="currency">Devise</Label>
+                        <Label htmlFor="currency">{t("clinic.currency")}</Label>
                         <Input id="currency" value={settings.currency} onChange={e => handleSettingsChange('currency', e.target.value)} disabled={!canWrite} />
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {canWrite && <Button onClick={saveSettings}>Enregistrer</Button>}
+                      {canWrite && <Button onClick={saveSettings}>{t("clinic.save")}</Button>}
                     </div>
                   </CardContent>
                 </Card>
@@ -509,13 +532,12 @@ export default function Settings() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Banknote className="h-5 w-5" />
-                      Prix des prestations
+                      {t("servicePrices.title")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      Montants proposés par défaut lors de l&apos;ajout d&apos;une prestation
-                      à une visite (modifiables ensuite ligne par ligne).
+                      {t("servicePrices.description")}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {VISIT_SERVICE_CATALOG.map((def) => {
@@ -535,10 +557,10 @@ export default function Settings() {
                                 htmlFor={`price-${def.code}`}
                                 className="text-sm font-medium"
                               >
-                                {def.label}
+                                {getVisitServiceLabel(def, tm)}
                               </Label>
                               <p className="text-[11px] text-muted-foreground truncate">
-                                {def.description}
+                                {getVisitServiceDescription(def, tm)}
                               </p>
                             </div>
                             <div className="w-28 shrink-0">
@@ -593,24 +615,24 @@ export default function Settings() {
                                 defaultConsultationPrice: defaults.consultation ?? 150,
                               });
                               toast({
-                                title: "Prix réinitialisés",
-                                description: "Valeurs catalogue du logiciel restaurées.",
+                                title: t("servicePrices.resetToast"),
+                                description: t("servicePrices.resetBody"),
                               });
                             }}
                           >
                             <RotateCcw className="h-4 w-4" />
-                            Réinitialiser
+                            {t("servicePrices.reset")}
                           </Button>
                           <Button
                             onClick={() => {
                               if (!guardWrite()) return;
                               toast({
-                                title: "Prix enregistrés",
-                                description: "Les nouveaux montants s'appliquent aux prochaines prestations.",
+                                title: t("servicePrices.savedToast"),
+                                description: t("servicePrices.savedBody"),
                               });
                             }}
                           >
-                            Enregistrer
+                            {t("servicePrices.save")}
                           </Button>
                         </>
                       )}
@@ -621,18 +643,18 @@ export default function Settings() {
                 {/* Theme Settings */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Thème de l'application</CardTitle>
+                    <CardTitle>{t("theme.title")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">
-                        Choisissez le thème de l'application pour votre confort visuel.
+                        {t("theme.description")}
                       </p>
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                          <Label htmlFor="theme-select">Thème</Label>
+                          <Label htmlFor="theme-select">{t("theme.label")}</Label>
                           <p className="text-sm text-muted-foreground">
-                            {theme === 'light' ? 'Mode clair' : 'Mode sombre'}
+                            {theme === 'light' ? t("theme.light") : t("theme.dark")}
                           </p>
                         </div>
                         <Select
@@ -640,8 +662,10 @@ export default function Settings() {
                           onValueChange={(value: 'light' | 'dark') => {
                             setTheme(value);
                             toast({
-                              title: 'Thème mis à jour',
-                              description: `Thème changé en mode ${value === 'light' ? 'clair' : 'sombre'}`,
+                              title: t("theme.updated"),
+                              description: t("theme.changedTo", {
+                                mode: value === 'light' ? t("theme.light") : t("theme.dark"),
+                              }),
                             });
                           }}
                         >
@@ -649,8 +673,8 @@ export default function Settings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="light">Mode clair</SelectItem>
-                            <SelectItem value="dark">Mode sombre</SelectItem>
+                            <SelectItem value="light">{t("theme.light")}</SelectItem>
+                            <SelectItem value="dark">{t("theme.dark")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -661,22 +685,22 @@ export default function Settings() {
                 {/* Display Preferences */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Préférences d'affichage</CardTitle>
+                    <CardTitle>{t("display.title")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <p className="text-sm text-muted-foreground">
-                        Choisissez comment vous souhaitez afficher les différentes sections par défaut.
+                        {t("display.description")}
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {(Object.keys(DISPLAY_SECTION_LABELS) as (keyof DisplayPreferences)[]).map((key) => {
+                        {DISPLAY_SECTION_KEYS.map((key) => {
                           const value =
                             settings.displayPreferences[key] ??
                             (key === "appointments" ? "calendar" : key === "pets" || key === "farms" || key === "visits" || key === "history" ? "cards" : "table");
                           const options = displayOptionsFor(key);
                           return (
                             <div key={key} className="space-y-2">
-                              <Label htmlFor={`${key}-display`}>{DISPLAY_SECTION_LABELS[key]}</Label>
+                              <Label htmlFor={`${key}-display`}>{t(`display.sections.${key}`)}</Label>
                               <Select
                                 value={value}
                                 disabled={!canWrite}
@@ -709,16 +733,16 @@ export default function Settings() {
                 {/* Veterinarians */}
                 <Card>
                   <CardHeader className="flex justify-between items-center">
-                    <CardTitle>Vétérinaires</CardTitle>
+                    <CardTitle>{t("veterinarians.title")}</CardTitle>
                     {canWrite && (
                       <Button onClick={openNewVet} className="gap-2">
-                        <Plus className="h-4 w-4" /> Ajouter
+                        <Plus className="h-4 w-4" /> {t("veterinarians.add")}
                       </Button>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {vets.length === 0 ? (
-                      <p className="text-muted-foreground">Aucun vétérinaire configuré</p>
+                      <p className="text-muted-foreground">{t("veterinarians.empty")}</p>
                     ) : (
                       vets.map(v => (
                         <div key={v.id} className="flex justify-between items-center p-2 border rounded">
@@ -746,7 +770,7 @@ export default function Settings() {
                 {/* Schedule Configuration */}
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-                    <CardTitle>Configuration des Horaires</CardTitle>
+                    <CardTitle>{t("schedule.title")}</CardTitle>
                     {canWrite && (
                       <Button
                         onClick={saveScheduleSettings}
@@ -758,7 +782,7 @@ export default function Settings() {
                         ) : (
                           <Save className="h-4 w-4" />
                         )}
-                        Enregistrer
+                        {t("schedule.save")}
                       </Button>
                     )}
                   </CardHeader>
@@ -771,12 +795,12 @@ export default function Settings() {
                       <>
                         {scheduleDirty && (
                           <p className="text-xs text-amber-700 dark:text-amber-300">
-                            Modifications non enregistrées — cliquez sur Enregistrer pour les appliquer aux rendez-vous.
+                            {t("schedule.unsavedWarning")}
                           </p>
                         )}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="workingHours">Heure d'ouverture</Label>
+                            <Label htmlFor="workingHours">{t("schedule.openingTime")}</Label>
                             <Input
                               id="workingHours"
                               type="time"
@@ -786,7 +810,7 @@ export default function Settings() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="closingTime">Heure de fermeture</Label>
+                            <Label htmlFor="closingTime">{t("schedule.closingTime")}</Label>
                             <Input
                               id="closingTime"
                               type="time"
@@ -798,10 +822,10 @@ export default function Settings() {
                         </div>
 
                         <div>
-                          <Label>Période déjeuner</Label>
+                          <Label>{t("schedule.lunchPeriod")}</Label>
                           <div className="grid grid-cols-2 gap-4 mt-2">
                             <div>
-                              <Label htmlFor="lunchStart" className="text-xs text-muted-foreground">Début de pause</Label>
+                              <Label htmlFor="lunchStart" className="text-xs text-muted-foreground">{t("schedule.lunchStart")}</Label>
                               <Input
                                 id="lunchStart"
                                 type="time"
@@ -811,7 +835,7 @@ export default function Settings() {
                               />
                             </div>
                             <div>
-                              <Label htmlFor="lunchEnd" className="text-xs text-muted-foreground">Fin de pause</Label>
+                              <Label htmlFor="lunchEnd" className="text-xs text-muted-foreground">{t("schedule.lunchEnd")}</Label>
                               <Input
                                 id="lunchEnd"
                                 type="time"
@@ -824,7 +848,7 @@ export default function Settings() {
                         </div>
 
                         <div>
-                          <Label htmlFor="slotDuration">Durée des créneaux (minutes)</Label>
+                          <Label htmlFor="slotDuration">{t("schedule.slotDuration")}</Label>
                           <Input
                             id="slotDuration"
                             type="number"
@@ -842,23 +866,23 @@ export default function Settings() {
                         </div>
 
                         <div>
-                          <Label className="mb-3 block">Jours de travail</Label>
+                          <Label className="mb-3 block">{t("schedule.workingDays")}</Label>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {[
-                              { day: 'Lundi', key: 'monday' },
-                              { day: 'Mardi', key: 'tuesday' },
-                              { day: 'Mercredi', key: 'wednesday' },
-                              { day: 'Jeudi', key: 'thursday' },
-                              { day: 'Vendredi', key: 'friday' },
-                              { day: 'Samedi', key: 'saturday' },
-                              { day: 'Dimanche', key: 'sunday' },
+                              { dayKey: 'monday', key: 'monday' },
+                              { dayKey: 'tuesday', key: 'tuesday' },
+                              { dayKey: 'wednesday', key: 'wednesday' },
+                              { dayKey: 'thursday', key: 'thursday' },
+                              { dayKey: 'friday', key: 'friday' },
+                              { dayKey: 'saturday', key: 'saturday' },
+                              { dayKey: 'sunday', key: 'sunday' },
                             ].map((item) => {
                               const isEnabled = scheduleDraft.working_days?.includes(item.key) ?? false;
                               return (
-                                <div key={item.day} className="flex items-center justify-between">
-                                  <Label htmlFor={item.day} className="text-sm">{item.day}</Label>
+                                <div key={item.key} className="flex items-center justify-between">
+                                  <Label htmlFor={item.key} className="text-sm">{t(`schedule.days.${item.dayKey}`)}</Label>
                                   <Switch
-                                    id={item.day}
+                                    id={item.key}
                                     disabled={!canWrite}
                                     checked={isEnabled}
                                     onCheckedChange={(checked) => {
@@ -882,7 +906,7 @@ export default function Settings() {
                 {/* Farm Management / Gestion des Exploitations */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Gestion des Exploitations</CardTitle>
+                    <CardTitle>{t("farmsConfig.title")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {farmLoading ? (
@@ -894,7 +918,7 @@ export default function Settings() {
                         {/* Farm Types */}
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <Label>Types d'élevage</Label>
+                            <Label>{t("farmsConfig.farmTypes")}</Label>
                             {canWrite && (
                               <Button 
                                 size="sm" 
@@ -902,7 +926,7 @@ export default function Settings() {
                                 className="gap-2"
                                 onClick={() => setShowFarmTypeModal(true)}
                               >
-                                <Plus className="h-3 w-3" /> Ajouter
+                                <Plus className="h-3 w-3" /> {t("veterinarians.add")}
                               </Button>
                             )}
                           </div>
@@ -919,7 +943,7 @@ export default function Settings() {
                               </Badge>
                             ))}
                             {(farmSettings?.farm_types || []).length === 0 && (
-                              <p className="text-sm text-muted-foreground">Aucun type d'élevage configuré</p>
+                              <p className="text-sm text-muted-foreground">{t("farmsConfig.noFarmTypes")}</p>
                             )}
                           </div>
                         </div>
@@ -927,7 +951,7 @@ export default function Settings() {
                         {/* Animal Categories */}
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <Label>Catégories d'animaux</Label>
+                            <Label>{t("farmsConfig.animalCategories")}</Label>
                             {canWrite && (
                               <Button 
                                 size="sm" 
@@ -935,7 +959,7 @@ export default function Settings() {
                                 className="gap-2"
                                 onClick={() => setShowCategoryModal(true)}
                               >
-                                <Plus className="h-3 w-3" /> Ajouter
+                                <Plus className="h-3 w-3" /> {t("veterinarians.add")}
                               </Button>
                             )}
                           </div>
@@ -952,7 +976,7 @@ export default function Settings() {
                               </Badge>
                             ))}
                             {(farmSettings?.animal_categories || []).length === 0 && (
-                              <p className="text-sm text-muted-foreground">Aucune catégorie configurée</p>
+                              <p className="text-sm text-muted-foreground">{t("farmsConfig.noCategories")}</p>
                             )}
                           </div>
                         </div>
@@ -962,7 +986,7 @@ export default function Settings() {
                           Object.entries(farmSettings.breeds_by_category).map(([category, breeds]) => (
                             <div key={category}>
                               <div className="flex items-center justify-between mb-3">
-                                <Label>{category}</Label>
+                                <Label>{t("farmsConfig.breedsFor", { category })}</Label>
                                 {canWrite && (
                                   <Button 
                                     size="sm" 
@@ -973,7 +997,7 @@ export default function Settings() {
                                       setShowBreedModal(true);
                                     }}
                                   >
-                                    <Plus className="h-3 w-3" /> Race
+                                    <Plus className="h-3 w-3" /> {t("farmsConfig.addBreedBtn")}
                                   </Button>
                                 )}
                               </div>
@@ -990,21 +1014,21 @@ export default function Settings() {
                                   </Badge>
                                 ))}
                                 {(breeds || []).length === 0 && (
-                                  <p className="text-sm text-muted-foreground">Aucune race configurée pour {category}</p>
+                                  <p className="text-sm text-muted-foreground">{t("farmsConfig.noBreedsFor", { category })}</p>
                                 )}
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="text-sm text-muted-foreground">
-                            Aucune race configurée. Ajoutez des catégories d'animaux d'abord.
+                            {t("farmsConfig.noBreedsHint")}
                           </div>
                         )}
 
                         {/* Certifications */}
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <Label>Types de certifications</Label>
+                            <Label>{t("farmsConfig.certifications")}</Label>
                             {canWrite && (
                               <Button 
                                 size="sm" 
@@ -1012,7 +1036,7 @@ export default function Settings() {
                                 className="gap-2"
                                 onClick={() => setShowCertificationModal(true)}
                               >
-                                <Plus className="h-3 w-3" /> Ajouter
+                                <Plus className="h-3 w-3" /> {t("veterinarians.add")}
                               </Button>
                             )}
                           </div>
@@ -1029,7 +1053,7 @@ export default function Settings() {
                               </Badge>
                             ))}
                             {(farmSettings?.certification_types || []).length === 0 && (
-                              <p className="text-sm text-muted-foreground">Aucune certification configurée</p>
+                              <p className="text-sm text-muted-foreground">{t("farmsConfig.noCertifications")}</p>
                             )}
                           </div>
                         </div>
@@ -1052,12 +1076,12 @@ export default function Settings() {
       <Dialog open={showVetModal} onOpenChange={setShowVetModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editVet ? 'Modifier vétérinaire' : 'Nouveau vétérinaire'}</DialogTitle>
-            <DialogDescription>Nom, titre, spécialité, contact</DialogDescription>
+            <DialogTitle>{editVet ? t("veterinarians.editTitle") : t("veterinarians.newTitle")}</DialogTitle>
+            <DialogDescription>{t("veterinarians.dialogDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="vetName">Nom complet *</Label>
+              <Label htmlFor="vetName">{t("veterinarians.fullName")}</Label>
               <Input 
                 id="vetName" 
                 value={vetForm.name} 
@@ -1065,7 +1089,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <Label htmlFor="vetTitle">Titre *</Label>
+              <Label htmlFor="vetTitle">{t("veterinarians.titleLabel")}</Label>
               <Input 
                 id="vetTitle" 
                 value={vetForm.title} 
@@ -1073,7 +1097,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <Label htmlFor="vetSpec">Spécialité</Label>
+              <Label htmlFor="vetSpec">{t("veterinarians.specialty")}</Label>
               <Input 
                 id="vetSpec" 
                 value={vetForm.specialty} 
@@ -1081,7 +1105,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <Label htmlFor="vetPhone">Téléphone</Label>
+              <Label htmlFor="vetPhone">{t("veterinarians.phone")}</Label>
               <Input 
                 id="vetPhone" 
                 value={vetForm.phone} 
@@ -1089,7 +1113,7 @@ export default function Settings() {
               />
             </div>
             <div>
-              <Label htmlFor="vetEmail">Email</Label>
+              <Label htmlFor="vetEmail">{t("veterinarians.email")}</Label>
               <Input 
                 id="vetEmail" 
                 type="email" 
@@ -1099,10 +1123,10 @@ export default function Settings() {
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setShowVetModal(false)}>
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button onClick={saveVet}>
-                {editVet ? 'Mettre à jour' : 'Créer'}
+                {editVet ? t("veterinarians.update") : t("veterinarians.create")}
               </Button>
             </div>
           </div>
@@ -1113,17 +1137,17 @@ export default function Settings() {
       <Dialog open={showFarmTypeModal} onOpenChange={setShowFarmTypeModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajouter un type d'élevage</DialogTitle>
+            <DialogTitle>{t("farmsConfig.addFarmTypeTitle")}</DialogTitle>
             <DialogDescription>
-              Ajoutez un nouveau type d'exploitation agricole
+              {t("farmsConfig.addFarmTypeDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="farmType">Type d'élevage *</Label>
+              <Label htmlFor="farmType">{t("farmsConfig.farmTypeLabel")}</Label>
               <Input 
                 id="farmType"
-                placeholder="Ex: Laitière, Viande, Avicole..."
+                placeholder={t("farmsConfig.farmTypePlaceholder")}
                 value={newFarmType}
                 onChange={e => setNewFarmType(e.target.value)}
                 onKeyDown={e => {
@@ -1133,7 +1157,7 @@ export default function Settings() {
                 }}
               />
               <p className="text-sm text-muted-foreground">
-                Appuyez sur Entrée ou cliquez sur Ajouter
+                {t("farmsConfig.pressEnterHint")}
               </p>
             </div>
           </div>
@@ -1145,14 +1169,14 @@ export default function Settings() {
                 setNewFarmType('');
               }}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               onClick={() => addFarmType(newFarmType)}
               disabled={!newFarmType.trim()}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter
+              {t("veterinarians.add")}
             </Button>
           </div>
         </DialogContent>
@@ -1162,17 +1186,17 @@ export default function Settings() {
       <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajouter une catégorie d'animaux</DialogTitle>
+            <DialogTitle>{t("farmsConfig.addCategoryTitle")}</DialogTitle>
             <DialogDescription>
-              Ajoutez une nouvelle catégorie d'animaux d'élevage
+              {t("farmsConfig.addCategoryDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="animalCategory">Catégorie *</Label>
+              <Label htmlFor="animalCategory">{t("farmsConfig.categoryLabel")}</Label>
               <Input 
                 id="animalCategory"
-                placeholder="Ex: Bovin, Ovin, Caprin, Volaille..."
+                placeholder={t("farmsConfig.categoryPlaceholder")}
                 value={newCategory}
                 onChange={e => setNewCategory(e.target.value)}
                 onKeyDown={e => {
@@ -1182,7 +1206,7 @@ export default function Settings() {
                 }}
               />
               <p className="text-sm text-muted-foreground">
-                Une section pour les races sera créée automatiquement
+                {t("farmsConfig.breedsAutoHint")}
               </p>
             </div>
           </div>
@@ -1194,14 +1218,14 @@ export default function Settings() {
                 setNewCategory('');
               }}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               onClick={() => addAnimalCategory(newCategory)}
               disabled={!newCategory.trim()}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter
+              {t("veterinarians.add")}
             </Button>
           </div>
         </DialogContent>
@@ -1211,17 +1235,17 @@ export default function Settings() {
       <Dialog open={showBreedModal} onOpenChange={setShowBreedModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajouter une race</DialogTitle>
+            <DialogTitle>{t("farmsConfig.addBreedTitle")}</DialogTitle>
             <DialogDescription>
-              Ajouter une race pour la catégorie: <strong>{selectedCategory}</strong>
+              {t("farmsConfig.addBreedDesc", { category: selectedCategory })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="breed">Nom de la race *</Label>
+              <Label htmlFor="breed">{t("farmsConfig.breedLabel")}</Label>
               <Input 
                 id="breed"
-                placeholder="Ex: Holstein, Timahdit, Drâa..."
+                placeholder={t("farmsConfig.breedPlaceholder")}
                 value={newBreed}
                 onChange={e => setNewBreed(e.target.value)}
                 onKeyDown={e => {
@@ -1241,14 +1265,14 @@ export default function Settings() {
                 setSelectedCategory('');
               }}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               onClick={() => addBreedToCategory(selectedCategory, newBreed)}
               disabled={!newBreed.trim()}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter
+              {t("veterinarians.add")}
             </Button>
           </div>
         </DialogContent>
@@ -1258,17 +1282,17 @@ export default function Settings() {
       <Dialog open={showCertificationModal} onOpenChange={setShowCertificationModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajouter une certification</DialogTitle>
+            <DialogTitle>{t("farmsConfig.addCertificationTitle")}</DialogTitle>
             <DialogDescription>
-              Ajoutez un nouveau type de certification agricole
+              {t("farmsConfig.addCertificationDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="certification">Type de certification *</Label>
+              <Label htmlFor="certification">{t("farmsConfig.certificationLabel")}</Label>
               <Input 
                 id="certification"
-                placeholder="Ex: Bio, Label Rouge, AOC, IGP..."
+                placeholder={t("farmsConfig.certificationPlaceholder")}
                 value={newCertification}
                 onChange={e => setNewCertification(e.target.value)}
                 onKeyDown={e => {
@@ -1287,14 +1311,14 @@ export default function Settings() {
                 setNewCertification('');
               }}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               onClick={() => addCertificationType(newCertification)}
               disabled={!newCertification.trim()}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter
+              {t("veterinarians.add")}
             </Button>
           </div>
         </DialogContent>

@@ -28,6 +28,7 @@ import {
   findMatchingReminderAppointment,
 } from '@/lib/vaccinationCertificate';
 import { localDateTimeToISO } from '@/lib/dateLocal';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_ROUTES_ANTIPARASITIC = ['spot_on', 'oral', 'injection', 'spray', 'collier', 'shampoing'];
 
@@ -55,6 +56,8 @@ export default function NewAntiparasiticModalDynamic({
   onCreated,
   onUpdated,
 }: NewAntiparasiticModalDynamicProps) {
+  const { t } = useTranslation('medical');
+  const { t: tc } = useTranslation('common');
   const { data: animals } = useAnimals();
   const { data: clients } = useClients();
   const createAntiparasitic = useCreateAntiparasitic();
@@ -82,7 +85,7 @@ export default function NewAntiparasiticModalDynamic({
     administeredBy: '',
     effectivenessRating: 'none',
     notes: '',
-    doseLabel: '1er traitement',
+    doseLabel: t('forms.firstTreatmentLabel'),
   });
 
   const [selectedAnimal, setSelectedAnimal] = useState<any>(null);
@@ -146,7 +149,7 @@ export default function NewAntiparasiticModalDynamic({
       administeredBy: editingAntiparasitic.administered_by || '',
       effectivenessRating: editingAntiparasitic.effectiveness_rating?.toString() || 'none',
       notes: parsed.freeNotes || '',
-      doseLabel: parsed.doseLabel || '1er traitement',
+      doseLabel: parsed.doseLabel || t('forms.firstTreatmentLabel'),
     });
     setPlannedDoses([]);
     setAppliedProtocolId(null);
@@ -172,17 +175,17 @@ export default function NewAntiparasiticModalDynamic({
     const fromSchedule =
       schedule.length > 0
         ? buildPlanFromSchedule(base, schedule)
-        : [{ label: '1er traitement', date: base }];
+        : [{ label: t('forms.firstTreatmentLabel'), date: base }];
     const plan = ensureFutureReminders(base, fromSchedule, protocol.duration_days);
     setPlannedDoses(plan);
     setDoseConfirmed(false);
     const futureCount = plan.filter((d) => d.date > base).length;
     toast({
-      title: 'Protocole appliqué',
+      title: t('alerts.protocolApplied'),
       description:
         futureCount > 0
-          ? `Calendrier prêt (${futureCount} rappel(s)). Confirmez si le traitement du jour a été fait.`
-          : `Le protocole ${protocol.product_name} a été appliqué. Confirmez l’administration.`,
+          ? t('alerts.protocolTreatmentCalendarReady', { count: futureCount })
+          : t('alerts.protocolAppliedConfirm', { name: protocol.product_name }),
     });
   };
 
@@ -196,7 +199,7 @@ export default function NewAntiparasiticModalDynamic({
     const fromSchedule =
       schedule.length > 0
         ? buildPlanFromSchedule(base, schedule)
-        : [{ label: '1er traitement', date: base }];
+        : [{ label: t('forms.firstTreatmentLabel'), date: base }];
     setPlannedDoses(ensureFutureReminders(base, fromSchedule, protocol.duration_days));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.treatmentDate]);
@@ -205,19 +208,19 @@ export default function NewAntiparasiticModalDynamic({
     setPlannedDoses((prev) => {
       if (prev.length === 0) {
         return [
-          { label: '1er traitement', date: formData.treatmentDate },
+          { label: t('forms.firstTreatmentLabel'), date: formData.treatmentDate },
           {
-            label: 'Rappel 1',
+            label: t('boosterSchedule.boosterN', { n: 1 }),
             date: format(addDays(new Date(formData.treatmentDate), 28), 'yyyy-MM-dd'),
           },
         ];
       }
       const last = prev[prev.length - 1];
-      const rappelNum = prev.filter((d) => /rappel/i.test(d.label)).length + 1;
+      const rappelNum = prev.filter((d) => /rappel|booster|refuerzo/i.test(d.label)).length + 1;
       return [
         ...prev,
         {
-          label: `Rappel ${rappelNum}`,
+          label: t('boosterSchedule.boosterN', { n: rappelNum }),
           date: format(addDays(new Date(last.date), 28), 'yyyy-MM-dd'),
         },
       ];
@@ -239,7 +242,7 @@ export default function NewAntiparasiticModalDynamic({
       administeredBy: '',
       effectivenessRating: 'none',
       notes: '',
-      doseLabel: '1er traitement',
+      doseLabel: t('forms.firstTreatmentLabel'),
     });
     setPlannedDoses([]);
     setAppliedProtocolId(null);
@@ -274,8 +277,8 @@ export default function NewAntiparasiticModalDynamic({
 
     if (!formData.animalId || !formData.productName || !formData.treatmentDate) {
       toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs obligatoires.',
+        title: tc('error'),
+        description: t('alerts.fillRequiredFields'),
         variant: 'destructive',
       });
       return;
@@ -285,8 +288,8 @@ export default function NewAntiparasiticModalDynamic({
       const rating = parseInt(formData.effectivenessRating);
       if (isNaN(rating) || rating < 1 || rating > 5) {
         toast({
-          title: 'Erreur',
-          description: "L'évaluation d'efficacité doit être un nombre entre 1 et 5.",
+          title: tc('error'),
+          description: t('alerts.effectivenessRatingInvalid'),
           variant: 'destructive',
         });
         return;
@@ -319,7 +322,7 @@ export default function NewAntiparasiticModalDynamic({
           : plannedDoses.find((d) => d.date === administeredDate)?.label ||
             plannedDoses[0]?.label ||
             formData.doseLabel
-      )?.trim() || "1er traitement";
+      )?.trim() || t('forms.firstTreatmentLabel');
 
       const futurePlan = plannedDoses
         .filter((d) => d.date > administeredDate)
@@ -339,8 +342,8 @@ export default function NewAntiparasiticModalDynamic({
             selectedAnimal?.client_id;
           if (!clientId) {
             toast({
-              title: 'Client introuvable',
-              description: 'Impossible de convertir en RDV sans propriétaire.',
+              title: t('alerts.clientNotFound'),
+              description: t('alerts.cannotConvertWithoutOwner'),
               variant: 'destructive',
             });
             return;
@@ -362,7 +365,7 @@ export default function NewAntiparasiticModalDynamic({
               data: {
                 status: 'scheduled',
                 appointment_date: localDateTimeToISO(administeredDate, '09:00'),
-                notes: `Rappel antiparasitaire — ${todayLabel} · ${productName}`,
+                notes: t('alerts.reminderAntiparasiticNotes', { label: todayLabel, product: productName }),
               },
             });
           } else {
@@ -372,7 +375,7 @@ export default function NewAntiparasiticModalDynamic({
               administeredDate,
               plannedDoses: [{ label: todayLabel, date: administeredDate }],
               appointmentType: 'follow-up',
-              titlePrefix: 'Rappel antiparasitaire',
+              titlePrefix: t('alerts.reminderAntiparasiticPrefix'),
               productName,
               includeBaseDate: true,
             });
@@ -383,8 +386,8 @@ export default function NewAntiparasiticModalDynamic({
             queryKey: appointmentKeys.byAnimal(formData.animalId),
           });
           toast({
-            title: 'Statut → Planifié',
-            description: `${productName} : la même ligne est maintenant planifiée.`,
+            title: t('alerts.statusToPlanned'),
+            description: t('alerts.statusToPlannedBody', { name: productName }),
           });
           onUpdated?.({ id: editingAntiparasitic.id });
           onOpenChange(false);
@@ -401,8 +404,8 @@ export default function NewAntiparasiticModalDynamic({
           } as Partial<CreateAntiparasiticData>,
         });
         toast({
-          title: "Traitement mis à jour",
-          description: `${formData.productName} a été modifié.`,
+          title: t('alerts.treatmentUpdated'),
+          description: t('alerts.treatmentUpdatedBody', { name: formData.productName }),
         });
         onUpdated?.({ id: editingAntiparasitic.id });
         onOpenChange(false);
@@ -417,15 +420,14 @@ export default function NewAntiparasiticModalDynamic({
             : nextDue
               ? [
                   { label: todayLabel, date: administeredDate },
-                  { label: 'Rappel', date: nextDue },
+                  { label: tc('reminder'), date: nextDue },
                 ]
               : [];
 
         if (planForAppointments.filter((d) => d.date >= administeredDate).length === 0) {
           toast({
-            title: 'Confirmation requise',
-            description:
-              'Cochez « traitement administré » pour enregistrer un traitement, ou planifiez au moins un rappel.',
+            title: t('alerts.confirmationRequired'),
+            description: t('alerts.confirmTreatmentOrPlan'),
             variant: 'destructive',
           });
           return;
@@ -434,8 +436,8 @@ export default function NewAntiparasiticModalDynamic({
         const clientId = formData.clientId || selectedClientId;
         if (!clientId) {
           toast({
-            title: 'Client introuvable',
-            description: 'Impossible de créer des RDV de rappel sans propriétaire.',
+            title: t('alerts.clientNotFound'),
+            description: t('alerts.cannotCreateRemindersWithoutOwner'),
             variant: 'destructive',
           });
           return;
@@ -448,7 +450,7 @@ export default function NewAntiparasiticModalDynamic({
           plannedDoses: planForAppointments,
           nextDueDate: nextDue,
           appointmentType: 'follow-up',
-          titlePrefix: 'Rappel antiparasitaire',
+          titlePrefix: t('alerts.reminderAntiparasiticPrefix'),
           productName: formData.productName.trim(),
           includeBaseDate: true,
         });
@@ -461,11 +463,11 @@ export default function NewAntiparasiticModalDynamic({
         }
 
         toast({
-          title: 'Calendrier planifié',
+          title: t('alerts.calendarScheduled'),
           description:
             n > 0
-              ? `${n} RDV créé(s) — aucun traitement enregistré comme administré.`
-              : 'Aucun RDV créé.',
+              ? t('alerts.appointmentsCreatedNoTreatment', { count: n })
+              : t('alerts.noAppointmentsCreated'),
         });
         resetForm();
         onOpenChange(false);
@@ -496,7 +498,7 @@ export default function NewAntiparasiticModalDynamic({
           plannedDoses,
           nextDueDate: nextDue,
           appointmentType: "follow-up",
-          titlePrefix: "Rappel antiparasitaire",
+          titlePrefix: t('alerts.reminderAntiparasiticPrefix'),
           productName: formData.productName,
         });
         reminderCount = n;
@@ -509,11 +511,11 @@ export default function NewAntiparasiticModalDynamic({
       }
 
       toast({
-        title: "Succès",
+        title: t('alerts.treatmentSaved'),
         description:
           reminderCount > 0
-            ? `Traitement du jour + ${reminderCount} RDV de rappel créé(s).`
-            : "Le traitement antiparasitaire a été enregistré avec succès.",
+            ? t('alerts.treatmentPlusReminders', { count: reminderCount })
+            : t('alerts.treatmentAddedFor', { name: selectedAnimal?.name || formData.productName }),
       });
 
       onCreated?.({ id: created.id });
@@ -522,9 +524,9 @@ export default function NewAntiparasiticModalDynamic({
     } catch (error: any) {
       console.error(error);
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible d'enregistrer le traitement.",
-        variant: "destructive",
+        title: tc('error'),
+        description: error?.message || t('alerts.cannotSaveTreatment'),
+        variant: 'destructive',
       });
     }
   };
@@ -550,7 +552,7 @@ export default function NewAntiparasiticModalDynamic({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            {editingAntiparasitic ? 'Modifier le traitement' : 'Nouveau traitement antiparasitaire'}
+            {editingAntiparasitic ? t('forms.editAntiparasitic') : t('forms.newAntiparasitic')}
           </DialogTitle>
         </DialogHeader>
 
@@ -558,10 +560,10 @@ export default function NewAntiparasiticModalDynamic({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Client Selection */}
             <div className="space-y-2">
-              <Label htmlFor="clientId">Client *</Label>
+              <Label htmlFor="clientId">{tc('client')} *</Label>
               <Select value={formData.clientId} onValueChange={(value) => handleInputChange('clientId', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un client" />
+                  <SelectValue placeholder={t('forms.selectClient')} />
                 </SelectTrigger>
                 <SelectContent>
                   {clients?.map(client => (
@@ -575,14 +577,14 @@ export default function NewAntiparasiticModalDynamic({
 
             {/* Animal Selection */}
             <div className="space-y-2">
-              <Label htmlFor="animalId">Animal *</Label>
+              <Label htmlFor="animalId">{tc('animal')} *</Label>
               <Select 
                 value={formData.animalId} 
                 onValueChange={(value) => handleInputChange('animalId', value)}
                 disabled={!formData.clientId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un animal" />
+                  <SelectValue placeholder={t('forms.selectAnimal')} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableAnimals.map(animal => (
@@ -599,14 +601,14 @@ export default function NewAntiparasiticModalDynamic({
           {selectedAnimal && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Animal sélectionné</CardTitle>
+                <CardTitle className="text-sm">{t('forms.selectedAnimal')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="font-medium">Nom:</span> {selectedAnimal.name}</div>
-                  <div><span className="font-medium">Espèce:</span> {selectedAnimal.species}</div>
-                  <div><span className="font-medium">Race:</span> {selectedAnimal.breed || 'N/A'}</div>
-                  <div><span className="font-medium">Poids:</span> {selectedAnimal.weight ? `${selectedAnimal.weight} kg` : 'N/A'}</div>
+                  <div><span className="font-medium">{tc('name')}:</span> {selectedAnimal.name}</div>
+                  <div><span className="font-medium">{tc('species')}:</span> {selectedAnimal.species}</div>
+                  <div><span className="font-medium">{tc('breed')}:</span> {selectedAnimal.breed || tc('notAvailable')}</div>
+                  <div><span className="font-medium">{tc('weight')}:</span> {selectedAnimal.weight ? `${selectedAnimal.weight} kg` : tc('notAvailable')}</div>
                 </div>
               </CardContent>
             </Card>
@@ -618,23 +620,22 @@ export default function NewAntiparasiticModalDynamic({
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Sparkles className="h-4 w-4" />
-                  Protocoles antiparasitaires
+                  {t('forms.antiparasiticProtocols')}
                   {selectedAnimal.species ? ` · ${selectedAnimal.species}` : ''}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {protocolsLoading ? (
-                  <p className="text-sm text-muted-foreground">Chargement des protocoles…</p>
+                  <p className="text-sm text-muted-foreground">{t('forms.loadingProtocols')}</p>
                 ) : protocols.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    Aucun protocole enregistré. Créez-en un dans la page Antiparasites → Protocoles.
+                    {t('protocolEmpty.noneRegisteredAnti')}
                   </p>
                 ) : (
                   <>
                     {!speciesMatched && (
                       <p className="text-xs text-amber-700 dark:text-amber-300 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5">
-                        Aucun protocole exact pour « {selectedAnimal.species} ». Voici vos
-                        protocoles (autres espèces) — appliquez celui qui convient.
+                        {t('protocolEmpty.noneExactOtherSpecies', { name: selectedAnimal.species })}
                       </p>
                     )}
                     {protocols.map((protocol: any) => {
@@ -659,7 +660,7 @@ export default function NewAntiparasiticModalDynamic({
                               </span>
                               {doses > 0 && (
                                 <Badge variant="secondary" className="h-5">
-                                  {doses} dose{doses > 1 ? 's' : ''}
+                                  {t('protocolEmpty.dosesCount', { count: doses })}
                                 </Badge>
                               )}
                             </div>
@@ -671,11 +672,11 @@ export default function NewAntiparasiticModalDynamic({
                             onClick={() => applyProtocol(protocol)}
                           >
                             {isApplied ? (
-                              'Appliqué'
+                              t('protocolEmpty.applied')
                             ) : (
                               <>
                                 <Plus className="h-4 w-4 mr-1" />
-                                Appliquer
+                                {t('protocolEmpty.apply')}
                               </>
                             )}
                           </Button>
@@ -691,59 +692,59 @@ export default function NewAntiparasiticModalDynamic({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Product Name */}
             <div className="space-y-2">
-              <Label htmlFor="productName">Nom du produit *</Label>
+              <Label htmlFor="productName">{t("forms.productName")}</Label>
               <Input
                 id="productName"
                 value={formData.productName}
                 onChange={(e) => handleInputChange('productName', e.target.value)}
-                placeholder="Ex: Frontline, Bravecto..."
+                placeholder={t("forms.productNamePlaceholder")}
                 required
               />
             </div>
 
             {/* Active Ingredient */}
             <div className="space-y-2">
-              <Label htmlFor="activeIngredient">Principe actif</Label>
+              <Label htmlFor="activeIngredient">{t("forms.activeIngredient")}</Label>
               <Input
                 id="activeIngredient"
                 value={formData.activeIngredient}
                 onChange={(e) => handleInputChange('activeIngredient', e.target.value)}
-                placeholder="Ex: Fipronil, Fluralaner..."
+                placeholder={t("forms.activeIngredientPlaceholder")}
               />
             </div>
 
             {/* Parasite Type */}
             <div className="space-y-2">
-              <Label htmlFor="parasiteType">Type de parasite</Label>
+              <Label htmlFor="parasiteType">{t("forms.parasiteType")}</Label>
               <ComboboxFreeText
                 value={formData.parasiteType}
                 onChange={(v) => handleInputChange('parasiteType', v)}
                 options={parasiteTypes}
                 category="parasite_type"
-                placeholder="Sélectionner ou créer..."
+                placeholder={t("forms.selectOrCreate")}
               />
             </div>
 
             {/* Administration Route */}
             <div className="space-y-2">
-              <Label htmlFor="administrationRoute">Voie d'administration</Label>
+              <Label htmlFor="administrationRoute">{t('forms.administrationRoute')}</Label>
               <ComboboxFreeText
                 value={formData.administrationRoute}
                 onChange={(v) => handleInputChange('administrationRoute', v)}
                 options={DEFAULT_ROUTES_ANTIPARASITIC}
                 category="administration_route"
-                placeholder="Sélectionner ou créer..."
+                placeholder={t("forms.selectOrCreate")}
               />
             </div>
 
             {/* Dosage */}
             <div className="space-y-2">
-              <Label htmlFor="dosage">Dosage</Label>
+              <Label htmlFor="dosage">{t('forms.dosage')}</Label>
               <Input
                 id="dosage"
                 value={formData.dosage}
                 onChange={(e) => handleInputChange('dosage', e.target.value)}
-                placeholder="Ex: 1 pipette, 1 comprimé..."
+                placeholder={t('forms.dosagePlaceholder')}
               />
             </div>
 
@@ -751,7 +752,7 @@ export default function NewAntiparasiticModalDynamic({
               <>
                 {isEditing && (
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="editStatus">Statut</Label>
+                    <Label htmlFor="editStatus">{tc('status')}</Label>
                     <Select
                       value={editStatus}
                       onValueChange={(v) => setEditStatus(v as 'administered' | 'planned')}
@@ -760,8 +761,8 @@ export default function NewAntiparasiticModalDynamic({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="administered">Administré</SelectItem>
-                        <SelectItem value="planned">Planifié</SelectItem>
+                        <SelectItem value="administered">{t('forms.administered')}</SelectItem>
+                        <SelectItem value="planned">{t('forms.planned')}</SelectItem>
                       </SelectContent>
                     </Select>
                     {editStatus === 'planned' && (
@@ -773,18 +774,18 @@ export default function NewAntiparasiticModalDynamic({
                 )}
                 {isEditing && (
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="doseLabel">Libellé du traitement</Label>
+                    <Label htmlFor="doseLabel">{t("forms.treatmentLabel")}</Label>
                     <Input
                       id="doseLabel"
                       value={formData.doseLabel}
                       onChange={(e) => handleInputChange('doseLabel', e.target.value)}
-                      placeholder="ex: 1er traitement, Rappel 1…"
+                      placeholder={t("forms.treatmentLabelPlaceholder")}
                     />
                   </div>
                 )}
                 {/* Treatment Date */}
                 <div className="space-y-2">
-                  <Label htmlFor="treatmentDate">Date du traitement *</Label>
+                  <Label htmlFor="treatmentDate">{t("forms.treatmentDate")}</Label>
                   <Input
                     id="treatmentDate"
                     type="date"
@@ -796,7 +797,7 @@ export default function NewAntiparasiticModalDynamic({
 
                 {/* Next Treatment Date */}
                 <div className="space-y-2">
-                  <Label htmlFor="nextTreatmentDate">Prochain traitement</Label>
+                  <Label htmlFor="nextTreatmentDate">{t("forms.nextTreatment")}</Label>
                   <Input
                     id="nextTreatmentDate"
                     type="date"
@@ -808,7 +809,7 @@ export default function NewAntiparasiticModalDynamic({
             )}
             {isEditing && plannedDoses.length > 0 && (
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="doseLabel2">Libellé du traitement</Label>
+                <Label htmlFor="doseLabel2">{t("forms.treatmentLabel")}</Label>
                 <Input
                   id="doseLabel2"
                   value={formData.doseLabel}
@@ -842,7 +843,7 @@ export default function NewAntiparasiticModalDynamic({
                   <div className="flex items-center gap-1">
                     <Button type="button" variant="outline" size="sm" onClick={addManualDose}>
                       <Plus className="h-4 w-4 mr-1" />
-                      Ajouter un rappel
+                      {t('forms.addReminder')}
                     </Button>
                     <Button
                       type="button"
@@ -853,18 +854,17 @@ export default function NewAntiparasiticModalDynamic({
                         setAppliedProtocolId(null);
                       }}
                     >
-                      Réinitialiser
+                      {tc('reset')}
                     </Button>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Si vous confirmez le traitement du jour ci-dessous, il est enregistré
-                  maintenant. Sinon, toutes les dates (y compris aujourd’hui) créent des RDV.
+                  {t('protocolEmpty.treatmentCalendarHintExtended')}
                 </p>
                 <div className="space-y-1">
-                  <Label className="text-xs">Date du traitement du jour *</Label>
+                  <Label className="text-xs">{t("forms.treatmentDateToday")}</Label>
                   <Input
                     type="date"
                     value={formData.treatmentDate}
@@ -883,11 +883,11 @@ export default function NewAntiparasiticModalDynamic({
                       <div className="flex items-center gap-2 min-w-0">
                         {isToday ? (
                           <Badge variant="secondary" className="shrink-0 h-5 font-normal">
-                            Aujourd’hui
+                            {tc('today')}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="shrink-0 h-5 font-normal">
-                            Rappel
+                            {t('protocolEmpty.reminderBadge')}
                           </Badge>
                         )}
                         <Input
@@ -930,7 +930,7 @@ export default function NewAntiparasiticModalDynamic({
                 })}
                 {futureReminders.length === 0 && (
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Aucun rappel futur. Cliquez sur « Ajouter un rappel » pour planifier la suite.
+                    {t('forms.noFutureReminders')}
                   </p>
                 )}
               </CardContent>
@@ -941,15 +941,15 @@ export default function NewAntiparasiticModalDynamic({
           {/* Effectiveness Rating */}
           <div className="space-y-2">
             <Label htmlFor="effectivenessRating">
-              Efficacité du traitement (optionnel)
-              <span className="text-xs text-muted-foreground block">Évaluez l'efficacité sur une échelle de 1 à 5</span>
+              {t('forms.effectiveness')} ({tc('optional')})
+              <span className="text-xs text-muted-foreground block">{t('protocolEmpty.efficacyHint')}</span>
             </Label>
             <Select 
               value={formData.effectivenessRating} 
               onValueChange={(value) => handleInputChange('effectivenessRating', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner l'efficacité" />
+                <SelectValue placeholder={t("forms.selectEffectiveness")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Non évalué</SelectItem>
@@ -964,12 +964,12 @@ export default function NewAntiparasiticModalDynamic({
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder="Observations, effets secondaires, etc."
+              placeholder={t("forms.observationsPlaceholder")}
               rows={3}
             />
           </div>
@@ -986,7 +986,7 @@ export default function NewAntiparasiticModalDynamic({
                   <strong>Je confirme</strong> que le traitement «{' '}
                   {plannedDoses.find((d) => d.date === formData.treatmentDate)?.label ||
                     formData.doseLabel ||
-                    '1er traitement'}{' '}
+                    t('forms.firstTreatmentLabel')}{' '}
                   » a été <strong>administré</strong> le{' '}
                   {formData.treatmentDate
                     ? format(new Date(formData.treatmentDate + 'T12:00:00'), 'dd/MM/yyyy')
@@ -996,8 +996,7 @@ export default function NewAntiparasiticModalDynamic({
               </label>
               {!doseConfirmed && (
                 <p className="text-xs text-muted-foreground pl-7">
-                  Non coché = planifier uniquement des RDV (aucun traitement « fait » en
-                  historique).
+                  {t('forms.planUncheckedHintTreatment')}
                 </p>
               )}
             </div>
@@ -1006,7 +1005,7 @@ export default function NewAntiparasiticModalDynamic({
           {/* Submit Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc('cancel')}
             </Button>
             <Button
               type="submit"
@@ -1023,15 +1022,17 @@ export default function NewAntiparasiticModalDynamic({
               )}
               {editingAntiparasitic
                 ? editStatus === 'planned'
-                  ? 'Convertir en planifié'
-                  : 'Enregistrer les modifications'
+                  ? t('forms.convertToPlanned')
+                  : t('forms.saveChanges')
                 : doseConfirmed
                 ? futureReminders.length > 0
-                  ? `Enregistrer traitement + ${futureReminders.length} rappel(s)`
-                  : 'Enregistrer le traitement administré'
+                  ? t('forms.saveTreatmentPlusReminders', { count: futureReminders.length })
+                  : t('forms.saveAdministeredTreatment')
                 : futureReminders.length > 0 || plannedDoses.length > 0
-                ? `Planifier ${Math.max(futureReminders.length, plannedDoses.length)} RDV (sans traitement)`
-                : 'Planifier / enregistrer'}
+                ? t('forms.scheduleApptsNoTreatment', {
+                    count: Math.max(futureReminders.length, plannedDoses.length),
+                  })
+                : t('forms.scheduleOrSave')}
             </Button>
           </div>
         </form>

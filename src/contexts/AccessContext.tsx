@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useAccessStatus, type AccessStatus } from "@/hooks/useAccessStatus";
 import { AccessBlocked } from "@/components/AccessBlocked";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 interface AccessContextValue {
   status: AccessStatus | undefined;
@@ -63,13 +64,14 @@ export function AccessGate({ children }: { children: ReactNode }) {
 
 export function ReadOnlyBanner() {
   const { readOnly, status, isSuperAdmin } = useAccess();
+  const { t } = useTranslation("auth");
   if (isSuperAdmin || !readOnly) return null;
   return (
     <div className="bg-amber-500/15 border-b border-amber-500/30 text-amber-950 dark:text-amber-100 text-sm px-4 py-2 text-center">
-      Mode lecture seule
+      {t("protected.readOnly")}
       {status?.reason === "subscription_past_due"
-        ? " — paiement en retard. Mettez à jour votre abonnement pour retrouver l'écriture."
-        : " — certaines actions sont temporairement désactivées."}
+        ? t("protected.readOnlyPastDue")
+        : t("protected.readOnlyGeneric")}
     </div>
   );
 }

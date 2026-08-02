@@ -33,6 +33,7 @@ import {
 import { findStockItemByName, isPrescriptionStockCategory } from "@/lib/prescriptionStock";
 import { supabase } from "@/lib/supabase";
 import { Save } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PrescriptionEditModalProps {
   open: boolean;
@@ -143,6 +144,8 @@ export function PrescriptionEditModal({
   const { toast } = useToast();
   const { data: stockItems = [] } = useStockItems();
   const updateMutation = useUpdatePrescription();
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
 
   const [formData, setFormData] = useState({
     diagnosis: "",
@@ -217,8 +220,8 @@ export function PrescriptionEditModal({
 
     if (medPayload.length === 0) {
       toast({
-        title: "Erreur",
-        description: "Ajoutez au moins un médicament.",
+        title: tc("error"),
+        description: t("prescriptionForm.needMedication"),
         variant: "destructive",
       });
       return;
@@ -237,15 +240,15 @@ export function PrescriptionEditModal({
       });
 
       toast({
-        title: "Prescription modifiée",
-        description: "Ordonnance et comptabilité synchronisées avec le dernier prix.",
+        title: t("prescriptionForm.updated"),
+        description: t("forms.prescriptionUpdatedBody"),
       });
       onUpdated?.(updated as Prescription);
       onOpenChange(false);
     } catch (error: any) {
       toast({
-        title: "Erreur",
-        description: error?.message || "Impossible de modifier la prescription.",
+        title: tc("error"),
+        description: error?.message || t("prescriptionForm.cannotUpdate"),
         variant: "destructive",
       });
     }
@@ -257,28 +260,27 @@ export function PrescriptionEditModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier la prescription</DialogTitle>
+          <DialogTitle>{t("prescriptionForm.editTitle")}</DialogTitle>
           <DialogDescription>
-            Prescription #{prescription.id.slice(-8)} — le prix unitaire est
-            enregistré sur l&apos;ordonnance et synchronisé en compta.
+            {t("prescriptionForm.editDesc", { id: prescription.id.slice(-8) })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-diagnosis">Diagnostic</Label>
+              <Label htmlFor="edit-diagnosis">{t("forms.diagnosisLabel")}</Label>
               <Textarea
                 id="edit-diagnosis"
                 value={formData.diagnosis}
                 onChange={(e) => setFormData((p) => ({ ...p, diagnosis: e.target.value }))}
-                placeholder="Diagnostic..."
+                placeholder={t("prescriptionForm.diagnosisPlaceholder")}
                 className="h-20"
               />
             </div>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-validUntil">Valide jusqu&apos;au</Label>
+                <Label htmlFor="edit-validUntil">{t("prescriptionForm.validUntil")}</Label>
                 <Input
                   id="edit-validUntil"
                   type="date"
@@ -287,7 +289,7 @@ export function PrescriptionEditModal({
                 />
               </div>
               <div>
-                <Label>Statut</Label>
+                <Label>{tc("status")}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(v) => setFormData((p) => ({ ...p, status: v }))}
@@ -296,9 +298,9 @@ export function PrescriptionEditModal({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="completed">Terminée</SelectItem>
-                    <SelectItem value="cancelled">Annulée</SelectItem>
+                    <SelectItem value="active">{t("prescriptionForm.statusActive")}</SelectItem>
+                    <SelectItem value="completed">{t("prescriptionForm.statusCompleted")}</SelectItem>
+                    <SelectItem value="cancelled">{t("prescriptionForm.statusCancelled")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -306,9 +308,9 @@ export function PrescriptionEditModal({
           </div>
 
           <div className="space-y-3 pt-2 border-t">
-            <Label className="text-base font-semibold">Médicaments</Label>
+            <Label className="text-base font-semibold">{t("prescriptionForm.medicationsHeading")}</Label>
             {loadingMeds ? (
-              <p className="text-sm text-muted-foreground">Chargement des informations de vente…</p>
+              <p className="text-sm text-muted-foreground">{t("prescriptionForm.loadingSaleInfo")}</p>
             ) : (
               <PrescriptionMedicationsFields
                 medications={medications}
@@ -320,12 +322,12 @@ export function PrescriptionEditModal({
           </div>
 
           <div>
-            <Label htmlFor="edit-notes">Notes</Label>
+            <Label htmlFor="edit-notes">{tc("notes")}</Label>
             <Textarea
               id="edit-notes"
               value={formData.notes}
               onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
-              placeholder="Notes..."
+              placeholder={t("prescriptionForm.notesPlaceholder")}
               className="h-20"
             />
           </div>
@@ -337,11 +339,11 @@ export function PrescriptionEditModal({
               onClick={() => onOpenChange(false)}
               disabled={updateMutation.isPending}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={updateMutation.isPending || loadingMeds}>
               <Save className="h-4 w-4 mr-2" />
-              {updateMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+              {updateMutation.isPending ? tc("saving") : tc("save")}
             </Button>
           </div>
         </form>

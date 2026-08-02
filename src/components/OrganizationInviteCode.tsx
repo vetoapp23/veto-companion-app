@@ -7,9 +7,11 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTranslation } from "react-i18next";
 
 export const OrganizationInviteCode = () => {
   const { toast } = useToast();
+  const { t } = useTranslation("settings");
   const [invitationCode, setInvitationCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -52,12 +54,14 @@ export const OrganizationInviteCode = () => {
     navigator.clipboard.writeText(invitationCode);
     setCopied(true);
     toast({
-      title: "Code copié!",
-      description: "Le code d'invitation a été copié dans le presse-papier",
+      title: t("inviteCode.copied"),
+      description: t("inviteCode.copiedBody"),
     });
     
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const steps = ["1", "2", "3", "4", "5"] as const;
 
   if (loading) {
     return (
@@ -86,10 +90,10 @@ export const OrganizationInviteCode = () => {
           </div>
           <div>
             <CardTitle className="text-lg font-semibold">
-              Code d'Invitation
+              {t("inviteCode.title")}
             </CardTitle>
             <CardDescription className="text-sm">
-              Partagez ce code avec vos assistants vétérinaires
+              {t("inviteCode.description")}
             </CardDescription>
           </div>
         </div>
@@ -97,7 +101,7 @@ export const OrganizationInviteCode = () => {
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3 bg-muted/50 rounded-lg p-4 border">
           <div className="flex-1">
-            <div className="text-xs text-muted-foreground mb-1">Votre Code</div>
+            <div className="text-xs text-muted-foreground mb-1">{t("inviteCode.yourCode")}</div>
             <div className="text-2xl font-bold tracking-wider text-green-600 dark:text-green-400 font-mono select-all">
               {invitationCode}
             </div>
@@ -119,25 +123,19 @@ export const OrganizationInviteCode = () => {
         <Collapsible open={instructionsOpen} onOpenChange={setInstructionsOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="outline" size="sm" className="w-full">
-              {instructionsOpen ? 'Masquer les instructions' : 'Comment inviter un assistant ?'}
+              {instructionsOpen ? t("inviteCode.hideInstructions") : t("inviteCode.howToInvite")}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3">
             <div className="bg-muted/30 rounded-lg p-4 border space-y-3 text-sm">
               <div className="space-y-2">
-                {[
-                  { step: 1, text: "Partagez le code d'invitation avec votre assistant" },
-                  { step: 2, text: "L'assistant se rend sur la page d'inscription" },
-                  { step: 3, text: 'Coche "Je rejoins une clinique existante"' },
-                  { step: 4, text: "Entre le code et complète l'inscription" },
-                  { step: 5, text: "Confirme son email pour activer le compte" }
-                ].map((item) => (
-                  <div key={item.step} className="flex items-start gap-2">
+                {steps.map((step) => (
+                  <div key={step} className="flex items-start gap-2">
                     <div className="flex-shrink-0 w-5 h-5 bg-green-600 dark:bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                      {item.step}
+                      {step}
                     </div>
                     <p className="text-xs text-muted-foreground pt-0.5">
-                      {item.text}
+                      {t(`inviteCode.steps.${step}`)}
                     </p>
                   </div>
                 ))}

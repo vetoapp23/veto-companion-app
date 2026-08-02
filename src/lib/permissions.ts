@@ -7,6 +7,8 @@
  * - rétrocompat : true → "edit", false → "none"
  */
 
+import i18n from "@/i18n";
+
 export type PermissionKey =
   | "can_manage_clients"
   | "can_manage_animals"
@@ -27,101 +29,116 @@ export type AccessLevel = "none" | "view" | "edit";
 
 export type AssistantPermissions = Record<PermissionKey, AccessLevel>;
 
-export interface PermissionDefinition {
+export type PermissionGroup = "clinique" | "elevage" | "admin";
+
+export interface PermissionCatalogEntry {
   key: PermissionKey;
-  label: string;
-  description: string;
-  group: "clinique" | "elevage" | "admin";
+  group: PermissionGroup;
   /** Modules lecture seule (pas de niveau « modifier ») */
   viewOnly?: boolean;
 }
 
-export const ACCESS_LEVEL_OPTIONS: {
+export interface PermissionDefinition extends PermissionCatalogEntry {
+  label: string;
+  description: string;
+}
+
+const PERMISSION_KEY_TO_MODULE: Record<PermissionKey, string> = {
+  can_manage_clients: "clients",
+  can_manage_animals: "animals",
+  can_manage_appointments: "appointments",
+  can_manage_visits: "visits",
+  can_create_consultations: "consultations",
+  can_manage_vaccinations: "vaccinations",
+  can_manage_antiparasites: "antiparasitics",
+  can_view_history: "history",
+  can_view_reports: "history",
+  can_manage_farms: "farms",
+  can_manage_stock: "stock",
+  can_manage_accounting: "accounting",
+  can_manage_settings: "settings",
+};
+
+const PRESET_ID_TO_I18N: Record<string, string> = {
+  clinique: "clinical",
+  lecture: "readonly",
+  secretariat: "frontDesk",
+  etendu: "extended",
+};
+
+const GROUP_TO_I18N: Record<PermissionGroup, string> = {
+  clinique: "clinical",
+  elevage: "farm",
+  admin: "admin",
+};
+
+const ACCESS_LEVEL_TO_I18N: Record<AccessLevel, "none" | "read" | "write"> = {
+  none: "none",
+  view: "read",
+  edit: "write",
+};
+
+function tSettings(key: string, options?: Record<string, unknown>) {
+  return i18n.t(key, { ns: "settings", ...options });
+}
+
+export function getPermissionModuleLabel(moduleId: string): string {
+  return tSettings(`permissions.modules.${moduleId}.label`);
+}
+
+export function getPermissionModuleDescription(moduleId: string): string {
+  return tSettings(`permissions.modules.${moduleId}.description`);
+}
+
+export function getPermissionDefinitionLabel(key: PermissionKey): string {
+  return getPermissionModuleLabel(PERMISSION_KEY_TO_MODULE[key]);
+}
+
+export function getPermissionDefinitionDescription(key: PermissionKey): string {
+  return getPermissionModuleDescription(PERMISSION_KEY_TO_MODULE[key]);
+}
+
+export function getAccessLevelOptions(): {
   value: AccessLevel;
   label: string;
   hint: string;
-}[] = [
-  { value: "none", label: "Aucun", hint: "Module masqué" },
-  { value: "view", label: "Consulter", hint: "Lecture seule" },
-  { value: "edit", label: "Modifier", hint: "Créer, éditer, supprimer" },
+}[] {
+  return (["none", "view", "edit"] as const).map((value) => {
+    const levelKey = ACCESS_LEVEL_TO_I18N[value];
+    return {
+      value,
+      label: tSettings(`permissions.levels.${levelKey}`),
+      hint: tSettings(`permissions.levels.${levelKey}Hint`),
+    };
+  });
+}
+
+/** @deprecated Use getAccessLevelOptions() for UI labels */
+export const ACCESS_LEVEL_OPTIONS = getAccessLevelOptions();
+
+/** Catalogue structurel (sans libellés i18n) */
+export const PERMISSION_CATALOG: PermissionCatalogEntry[] = [
+  { key: "can_manage_clients", group: "clinique" },
+  { key: "can_manage_animals", group: "clinique" },
+  { key: "can_manage_appointments", group: "clinique" },
+  { key: "can_manage_visits", group: "clinique" },
+  { key: "can_create_consultations", group: "clinique" },
+  { key: "can_manage_vaccinations", group: "clinique" },
+  { key: "can_manage_antiparasites", group: "clinique" },
+  { key: "can_view_history", group: "clinique", viewOnly: true },
+  { key: "can_manage_farms", group: "elevage" },
+  { key: "can_manage_stock", group: "admin" },
+  { key: "can_manage_accounting", group: "admin" },
+  { key: "can_manage_settings", group: "admin" },
 ];
 
-/** Catalogue affiché dans Équipe → droits assistant */
-export const PERMISSION_CATALOG: PermissionDefinition[] = [
-  {
-    key: "can_manage_clients",
-    label: "Clients",
-    description: "Fiches clients",
-    group: "clinique",
-  },
-  {
-    key: "can_manage_animals",
-    label: "Animaux",
-    description: "Dossiers animaux / patients",
-    group: "clinique",
-  },
-  {
-    key: "can_manage_appointments",
-    label: "Rendez-vous",
-    description: "Agenda et prise de RDV",
-    group: "clinique",
-  },
-  {
-    key: "can_manage_visits",
-    label: "Visites",
-    description: "Journal des visites et workspace",
-    group: "clinique",
-  },
-  {
-    key: "can_create_consultations",
-    label: "Consultations",
-    description: "Consultations médicales",
-    group: "clinique",
-  },
-  {
-    key: "can_manage_vaccinations",
-    label: "Vaccinations",
-    description: "Protocoles et certificats",
-    group: "clinique",
-  },
-  {
-    key: "can_manage_antiparasites",
-    label: "Antiparasites",
-    description: "Traitements et rappels",
-    group: "clinique",
-  },
-  {
-    key: "can_view_history",
-    label: "Historiques",
-    description: "Historique médical consolidé",
-    group: "clinique",
-    viewOnly: true,
-  },
-  {
-    key: "can_manage_farms",
-    label: "Élevages / Fermes",
-    description: "Exploitations, lots et interventions",
-    group: "elevage",
-  },
-  {
-    key: "can_manage_stock",
-    label: "Stock",
-    description: "Inventaire médicaments et produits",
-    group: "admin",
-  },
-  {
-    key: "can_manage_accounting",
-    label: "Comptabilité",
-    description: "Revenus, dépenses et journal",
-    group: "admin",
-  },
-  {
-    key: "can_manage_settings",
-    label: "Paramètres clinique",
-    description: "Configuration de la clinique",
-    group: "admin",
-  },
-];
+export function getPermissionCatalog(): PermissionDefinition[] {
+  return PERMISSION_CATALOG.map((entry) => ({
+    ...entry,
+    label: getPermissionDefinitionLabel(entry.key),
+    description: getPermissionDefinitionDescription(entry.key),
+  }));
+}
 
 /** Accès clinique standard (édition) — à l'approbation */
 export const DEFAULT_ASSISTANT_PERMISSIONS: AssistantPermissions = {
@@ -181,42 +198,44 @@ export const PRESET_VIEW_ONLY: AssistantPermissions = {
   can_manage_settings: "none",
 };
 
-export const PERMISSION_PRESETS: {
+const PERMISSION_PRESET_DEFS: {
+  id: string;
+  permissions: AssistantPermissions;
+}[] = [
+  { id: "clinique", permissions: DEFAULT_ASSISTANT_PERMISSIONS },
+  { id: "lecture", permissions: PRESET_VIEW_ONLY },
+  { id: "secretariat", permissions: PRESET_SECRETARIAT },
+  { id: "etendu", permissions: PRESET_EXTENDED },
+];
+
+export function getPermissionPresets(): {
   id: string;
   label: string;
   description: string;
   permissions: AssistantPermissions;
-}[] = [
-  {
-    id: "clinique",
-    label: "Accès clinique",
-    description: "Modules cliniques en modification",
-    permissions: DEFAULT_ASSISTANT_PERMISSIONS,
-  },
-  {
-    id: "lecture",
-    label: "Lecture seule",
-    description: "Consulter sans créer ni modifier",
-    permissions: PRESET_VIEW_ONLY,
-  },
-  {
-    id: "secretariat",
-    label: "Secrétariat",
-    description: "Clients / animaux / RDV en modification, actes en lecture",
-    permissions: PRESET_SECRETARIAT,
-  },
-  {
-    id: "etendu",
-    label: "Étendu",
-    description: "Clinique + élevages + stock (sans compta ni paramètres)",
-    permissions: PRESET_EXTENDED,
-  },
-];
+}[] {
+  return PERMISSION_PRESET_DEFS.map((preset) => {
+    const key = PRESET_ID_TO_I18N[preset.id];
+    return {
+      ...preset,
+      label: tSettings(`permissions.presets.${key}`),
+      description: tSettings(`permissions.presetDescriptions.${key}`),
+    };
+  });
+}
 
-export const GROUP_LABELS: Record<PermissionDefinition["group"], string> = {
-  clinique: "Soins & dossiers",
-  elevage: "Élevage",
-  admin: "Administration (sensible)",
+/** @deprecated Use getPermissionPresets() for UI labels */
+export const PERMISSION_PRESETS = getPermissionPresets();
+
+export function getGroupLabel(group: PermissionGroup): string {
+  return tSettings(`permissions.groups.${GROUP_TO_I18N[group]}`);
+}
+
+/** @deprecated Use getGroupLabel() for UI labels */
+export const GROUP_LABELS: Record<PermissionGroup, string> = {
+  clinique: getGroupLabel("clinique"),
+  elevage: getGroupLabel("elevage"),
+  admin: getGroupLabel("admin"),
 };
 
 export function parseAccessLevel(raw: unknown): AccessLevel {
@@ -306,7 +325,8 @@ export function userCanEdit(
 }
 
 export function accessLevelLabel(level: AccessLevel): string {
-  return ACCESS_LEVEL_OPTIONS.find((o) => o.value === level)?.label ?? level;
+  const levelKey = ACCESS_LEVEL_TO_I18N[level];
+  return tSettings(`permissions.levels.${levelKey}`);
 }
 
 /** Mappe un chemin d'app vers la permission requise (null = ouvert à tout user authentifié). */

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,19 +28,22 @@ interface SettingsValue {
   isEditing?: boolean;
 }
 
-const SETTING_CATEGORIES = [
-  { key: 'animals', label: 'Animaux', description: 'Configuration des espèces, races et couleurs' },
-  { key: 'clients', label: 'Clients', description: 'Types de clients et paramètres associés' },
-  { key: 'consultations', label: 'Consultations', description: 'Types de consultations disponibles' },
-  { key: 'appointments', label: 'Rendez-vous', description: 'Types de rendez-vous et configurations' },
-  { key: 'medications', label: 'Médicaments', description: 'Catégories de médicaments' },
-  { key: 'vaccinations', label: 'Vaccinations', description: 'Types de vaccinations disponibles' },
-  { key: 'parasites', label: 'Parasites', description: 'Types de parasites et traitements' },
-  { key: 'farms', label: 'Fermes', description: 'Types de fermes et configurations' },
-  { key: 'payments', label: 'Paiements', description: 'Méthodes de paiement acceptées' },
-];
+const SETTING_CATEGORY_KEYS = [
+  'animals', 'clients', 'consultations', 'appointments', 'medications',
+  'vaccinations', 'parasites', 'farms', 'payments',
+] as const;
 
 export const SettingsManagement = () => {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
+  const SETTING_CATEGORIES = useMemo(
+    () => SETTING_CATEGORY_KEYS.map((key) => ({
+      key,
+      label: t(`management.cat.${key}`),
+      description: t(`management.cat.${key}Desc`),
+    })),
+    [t]
+  );
   const [selectedCategory, setSelectedCategory] = useState('animals');
   const [editingValues, setEditingValues] = useState<Record<string, any>>({});
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -62,8 +66,8 @@ export const SettingsManagement = () => {
       autoInitRef.current = true;
       initializeDefaults().then(() => {
         toast({
-          title: "Paramètres prêts",
-          description: "Les valeurs par défaut ont été chargées. Vous pouvez les modifier ou les restaurer à tout moment.",
+          title: t("management.readyTitle"),
+          description: t("management.readyBody"),
         });
       }).catch(() => {
         autoInitRef.current = false;
@@ -85,19 +89,19 @@ export const SettingsManagement = () => {
 
   const handleInitializeDefaults = async () => {
     if (!guardWrite()) return;
-    if (!confirm("Restaurer toutes les valeurs par défaut ? Vos personnalisations actuelles seront écrasées.")) {
+    if (!confirm(t("management.restoreConfirm"))) {
       return;
     }
     try {
       await initializeDefaults();
       toast({
-        title: "Valeurs restaurées",
-        description: "Tous les paramètres ont été réinitialisés aux valeurs par défaut",
+        title: t("management.restoredTitle"),
+        description: t("management.restoredBody"),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de restaurer les paramètres par défaut",
+        title: tc("error"),
+        description: t("management.restoreError"),
         variant: "destructive"
       });
     }
@@ -111,17 +115,17 @@ export const SettingsManagement = () => {
         category: selectedCategory,
         key,
         value,
-        description: `Configuration ${key} pour ${selectedCategory}`
+        description: t("management.configDesc", { key, category: selectedCategory })
       });
 
       toast({
-        title: "Paramètre sauvegardé",
-        description: `Le paramètre ${key} a été mis à jour`,
+        title: t("management.savedTitle"),
+        description: t("management.savedBody", { key }),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder le paramètre",
+        title: tc("error"),
+        description: t("management.saveError"),
         variant: "destructive"
       });
     }
@@ -129,7 +133,7 @@ export const SettingsManagement = () => {
 
   const handleDeleteSetting = async (key: string) => {
     if (!guardWrite()) return;
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le paramètre ${key} ?`)) {
+    if (!confirm(t("management.deleteConfirm", { key }))) {
       return;
     }
 
@@ -140,13 +144,13 @@ export const SettingsManagement = () => {
       });
 
       toast({
-        title: "Paramètre supprimé",
-        description: `Le paramètre ${key} a été supprimé`,
+        title: t("management.deletedTitle"),
+        description: t("management.deletedBody", { key }),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le paramètre",
+        title: tc("error"),
+        description: t("management.deleteError"),
         variant: "destructive"
       });
     }
@@ -172,17 +176,17 @@ export const SettingsManagement = () => {
         category: selectedCategory,
         key,
         value: updatedValue,
-        description: `Configuration ${key} pour ${selectedCategory}`
+        description: t("management.configDesc", { key, category: selectedCategory })
       });
 
       toast({
-        title: "✓ Valeur ajoutée",
-        description: `La valeur a été ajoutée et sauvegardée`,
+        title: t("management.valueAddedTitle"),
+        description: t("management.valueAddedBody"),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder la valeur",
+        title: tc("error"),
+        description: t("management.valueSaveError"),
         variant: "destructive"
       });
     }
@@ -206,17 +210,17 @@ export const SettingsManagement = () => {
         category: selectedCategory,
         key,
         value: updatedValue,
-        description: `Configuration ${key} pour ${selectedCategory}`
+        description: t("management.configDesc", { key, category: selectedCategory })
       });
 
       toast({
-        title: "✓ Valeur supprimée",
-        description: `La valeur a été supprimée et les changements sauvegardés`,
+        title: t("management.valueRemovedTitle"),
+        description: t("management.valueRemovedBody"),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les changements",
+        title: tc("error"),
+        description: t("management.changesSaveError"),
         variant: "destructive"
       });
     }
@@ -226,8 +230,8 @@ export const SettingsManagement = () => {
     if (!guardWrite()) return;
     if (!newSetting.key.trim()) {
       toast({
-        title: "Erreur",
-        description: "Le nom du paramètre est obligatoire",
+        title: tc("error"),
+        description: t("management.nameRequired"),
         variant: "destructive"
       });
       return;
@@ -242,20 +246,20 @@ export const SettingsManagement = () => {
         category: selectedCategory,
         key: newSetting.key,
         value,
-        description: newSetting.description || `Paramètre personnalisé ${newSetting.key}`
+        description: newSetting.description || t("management.customDesc", { key: newSetting.key })
       });
 
       setShowAddDialog(false);
       setNewSetting({ key: '', description: '', value: '' });
       
       toast({
-        title: "Paramètre ajouté",
-        description: `Le paramètre ${newSetting.key} a été créé`,
+        title: t("management.addedTitle"),
+        description: t("management.addedBody", { key: newSetting.key }),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de créer le paramètre",
+        title: tc("error"),
+        description: t("management.createError"),
         variant: "destructive"
       });
     }
@@ -281,7 +285,7 @@ export const SettingsManagement = () => {
           {canWrite && (
           <div className="flex gap-2">
             <Input
-              placeholder="Ajouter une valeur..."
+              placeholder={t("management.addValuePlaceholder")}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   handleAddValue(key, (e.target as HTMLInputElement).value);
@@ -338,7 +342,7 @@ export const SettingsManagement = () => {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center p-8">Chargement...</div>;
+    return <div className="flex justify-center p-8">{tc("loadingDots")}</div>;
   }
 
   return (
@@ -347,16 +351,16 @@ export const SettingsManagement = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Settings className="h-8 w-8" />
-            Gestion des paramètres
+            {t("management.title")}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Configurez les valeurs utilisées dans toute l'application
+            {t("management.description")}
           </p>
         </div>
         {canWrite && (
           <Button onClick={handleInitializeDefaults} disabled={isInitializing} variant="outline">
             <RotateCcw className="h-4 w-4 mr-2" />
-            {isInitializing ? "Restauration..." : "Restaurer les valeurs par défaut"}
+            {isInitializing ? t("management.restoring") : t("management.restoreDefaults")}
           </Button>
         )}
       </div>
@@ -365,7 +369,7 @@ export const SettingsManagement = () => {
         {/* Categories Sidebar */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Catégories</CardTitle>
+            <CardTitle>{t("management.categories")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {SETTING_CATEGORIES.map(category => (
@@ -398,48 +402,48 @@ export const SettingsManagement = () => {
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
-                    Ajouter un paramètre
+                    {t("management.addSetting")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Nouveau paramètre</DialogTitle>
+                    <DialogTitle>{t("management.newSetting")}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="key">Nom du paramètre</Label>
+                      <Label htmlFor="key">{t("management.settingName")}</Label>
                       <Input
                         id="key"
                         value={newSetting.key}
                         onChange={(e) => setNewSetting(prev => ({ ...prev, key: e.target.value }))}
-                        placeholder="ex: types, categories..."
+                        placeholder={t("management.keyPlaceholder")}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description">{tc("description")}</Label>
                       <Input
                         id="description"
                         value={newSetting.description}
                         onChange={(e) => setNewSetting(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Description du paramètre"
+                        placeholder={t("management.settingDescPlaceholder")}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="value">Valeurs (séparées par des virgules)</Label>
+                      <Label htmlFor="value">{t("management.valuesCommaSeparated")}</Label>
                       <Textarea
                         id="value"
                         value={newSetting.value}
                         onChange={(e) => setNewSetting(prev => ({ ...prev, value: e.target.value }))}
-                        placeholder="Valeur1, Valeur2, Valeur3..."
+                        placeholder={t("management.valuesExamplePlaceholder")}
                         rows={4}
                       />
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleAddNewSetting} className="flex-1">
-                        Créer
+                        {tc("create")}
                       </Button>
                       <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                        Annuler
+                        {tc("cancel")}
                       </Button>
                     </div>
                   </div>
@@ -451,8 +455,8 @@ export const SettingsManagement = () => {
           <CardContent className="space-y-6">
             {categorySettings?.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>Aucun paramètre configuré pour cette catégorie.</p>
-                <p className="text-sm mt-2">Cliquez sur "Charger les valeurs par défaut" pour commencer.</p>
+                <p>{t("management.emptyCategory")}</p>
+                <p className="text-sm mt-2">{t("management.emptyCategoryHint")}</p>
               </div>
             ) : (
               categorySettings?.map(setting => (
@@ -486,7 +490,7 @@ export const SettingsManagement = () => {
                   </div>
                   
                   <div>
-                    <Label>Valeurs</Label>
+                    <Label>{t("management.valuesLabel")}</Label>
                     {renderValueEditor(setting.setting_key, editingValues[setting.setting_key] || setting.setting_value)}
                   </div>
                 </div>

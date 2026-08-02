@@ -9,8 +9,11 @@ import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { recomputeStorageUsage } from "@/lib/photoCompression";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export function StorageUsageCard() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { quota, isLoading, storageWarning, storageBlocked, isFree, refetch, isPrivileged } = usePlanLimits();
   const { counts, limitFor, usagePercent, reached } = useQuotaCheck();
   const { toast } = useToast();
@@ -21,9 +24,9 @@ export function StorageUsageCard() {
     try {
       await recomputeStorageUsage();
       await refetch();
-      toast({ title: "✓ Stockage recalculé" });
+      toast({ title: t("storageUsage.recomputed") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e?.message, variant: "destructive" });
     } finally {
       setRecomputing(false);
     }
@@ -35,9 +38,9 @@ export function StorageUsageCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HardDrive className="h-5 w-5" />
-            Stockage & abonnement
+            {t("storageUsage.title")}
           </CardTitle>
-          <CardDescription>Chargement…</CardDescription>
+          <CardDescription>{t("storageUsage.loading")}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -52,10 +55,10 @@ export function StorageUsageCard() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <HardDrive className="h-5 w-5" />
-              Stockage & abonnement
+              {t("storageUsage.title")}
             </CardTitle>
             <CardDescription>
-              Pack actuel :{" "}
+              {t("storageUsage.currentPack")}{" "}
               <Badge variant={isFree ? "secondary" : "default"} className="ml-1">
                 {quota.plan_name}
               </Badge>
@@ -64,11 +67,11 @@ export function StorageUsageCard() {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRecompute} disabled={recomputing}>
               <RefreshCw className={`mr-1 h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
-              Recalculer
+              {t("storageUsage.recompute")}
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/pricing">
-                Changer de pack
+                {t("storageUsage.changePack")}
                 <ArrowUpRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
@@ -78,14 +81,14 @@ export function StorageUsageCard() {
       <CardContent className="space-y-4">
         <div>
           <div className="flex items-center justify-between text-sm mb-2">
-            <span className="text-muted-foreground">Espace photos utilisé</span>
+            <span className="text-muted-foreground">{t("storageUsage.photosUsed")}</span>
             <span className="font-medium">
               {quota.storage_used_mb.toFixed(1)} Mo / {quota.storage_total_mb} Mo
             </span>
           </div>
           <Progress value={percent} className={storageBlocked ? "[&>div]:bg-destructive" : storageWarning ? "[&>div]:bg-yellow-500" : ""} />
           <p className="text-xs text-muted-foreground mt-2">
-            {percent.toFixed(1)}% utilisé · compression auto activée
+            {t("storageUsage.usedAutoCompress", { percent: percent.toFixed(1) })}
           </p>
         </div>
 
@@ -93,9 +96,9 @@ export function StorageUsageCard() {
           <div className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-3">
             <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium text-destructive">Quota dépassé</p>
+              <p className="font-medium text-destructive">{t("storageUsage.quotaExceeded")}</p>
               <p className="text-muted-foreground">
-                Les nouveaux uploads de photos sont bloqués. Passez à un pack supérieur ou ajoutez du stockage.
+                {t("storageUsage.quotaExceededBody")}
               </p>
             </div>
           </div>
@@ -105,9 +108,9 @@ export function StorageUsageCard() {
           <div className="flex items-start gap-2 rounded-md border border-yellow-500/50 bg-yellow-500/10 p-3">
             <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-medium">Espace presque plein</p>
+              <p className="font-medium">{t("storageUsage.almostFull")}</p>
               <p className="text-muted-foreground">
-                Vous avez utilisé plus de 80% de votre quota.
+                {t("storageUsage.almostFullBody")}
               </p>
             </div>
           </div>
@@ -115,21 +118,21 @@ export function StorageUsageCard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
           <UsageStat
-            label="Clients"
+            label={t("storageUsage.clients")}
             current={counts.clients}
             max={limitFor("clients")}
             percent={usagePercent("clients")}
             blocked={reached("clients")}
           />
           <UsageStat
-            label="Animaux"
+            label={t("storageUsage.animals")}
             current={counts.animals}
             max={limitFor("animals")}
             percent={usagePercent("animals")}
             blocked={reached("animals")}
           />
           <UsageStat
-            label="Utilisateurs"
+            label={t("storageUsage.users")}
             current={counts.users}
             max={limitFor("users")}
             percent={usagePercent("users")}
@@ -141,7 +144,7 @@ export function StorageUsageCard() {
           <Button asChild className="w-full" variant="default">
             <Link to="/pricing">
               <Sparkles className="mr-2 h-4 w-4" />
-              Passer à un pack payant
+              {t("storageUsage.upgrade")}
             </Link>
           </Button>
         )}

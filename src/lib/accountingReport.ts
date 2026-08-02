@@ -1,8 +1,13 @@
+import i18n from "@/i18n";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { buildWatermarkHtml } from "@/lib/printWatermark";
 import { buildReportDocument, buildDefaultFooter } from "@/lib/reportStyles";
 import { formatSourceLabel } from "@/lib/accountingLedger";
 
 export { downloadHtmlAsPdf, printHtml } from "@/lib/htmlToPdf";
+
+const t = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(key, { ns: "app", ...opts });
 
 export interface AccountingReportEntry {
   id: string;
@@ -30,7 +35,7 @@ function esc(s: string): string {
 function fmtDate(d?: string | null): string {
   if (!d) return "—";
   try {
-    return new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString("fr-FR");
+    return new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString(getBcp47Locale(i18n.language));
   } catch {
     return String(d);
   }
@@ -38,13 +43,13 @@ function fmtDate(d?: string | null): string {
 
 function fmtMoney(amount: number, currency: string): string {
   const n = Number(amount) || 0;
-  return `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+  return `${n.toLocaleString(getBcp47Locale(i18n.language), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 }
 
 function typeLabel(type: AccountingReportEntry["type"]): string {
-  if (type === "revenue") return "Recette";
-  if (type === "valuation") return "Valorisation";
-  return "Charge";
+  if (type === "revenue") return t("accounting.print.types.revenue");
+  if (type === "valuation") return t("accounting.print.types.valuation");
+  return t("accounting.print.types.expense");
 }
 
 export function computeAccountingTotals(entries: AccountingReportEntry[]) {
@@ -91,11 +96,12 @@ export function buildAccountingReportHtml({
   clinic,
   isFree,
 }: BuildArgs): string {
+  const sortLocale = (i18n.language || "fr").split("-")[0] || "fr";
   const sorted = [...entries].sort((a, b) => {
     const da = a.date.slice(0, 10);
     const db = b.date.slice(0, 10);
     if (da !== db) return da.localeCompare(db);
-    return (a.description || "").localeCompare(b.description || "", "fr");
+    return (a.description || "").localeCompare(b.description || "", sortLocale);
   });
 
   const totals = computeAccountingTotals(sorted);
@@ -118,7 +124,7 @@ export function buildAccountingReportHtml({
           ${notes}
         </td>
         <td>${esc(formatSourceLabel(e.source))}</td>
-        <td>${e.category === "automatic" ? "Auto" : "Manuel"}</td>
+        <td>${e.category === "automatic" ? t("accounting.print.origin.auto") : t("accounting.print.origin.manual")}</td>
         <td class="num ${amountClass}">${prefix}${fmtMoney(e.amount, currency)}</td>
       </tr>`;
     })
@@ -126,44 +132,44 @@ export function buildAccountingReportHtml({
 
   const sectionsHtml = `
   <section class="block">
-    <h2>Période</h2>
+    <h2>${t("accounting.print.period")}</h2>
     <table class="info">
       <tr>
-        <th>Du</th><td>${fmtDate(startDate)}</td>
-        <th>Au</th><td>${fmtDate(endDate)}</td>
+        <th>${t("accounting.print.from")}</th><td>${fmtDate(startDate)}</td>
+        <th>${t("accounting.print.to")}</th><td>${fmtDate(endDate)}</td>
       </tr>
     </table>
   </section>
 
   <section class="block">
-    <h2>Synthèse du bilan</h2>
+    <h2>${t("accounting.print.summary")}</h2>
     <div class="kpis">
-      <div class="kpi"><div class="l">Chiffre d'affaires</div><div class="v amt-pos">${fmtMoney(totals.totalRevenue, currency)}</div></div>
-      <div class="kpi"><div class="l">Charges (P&amp;L)</div><div class="v amt-neg">${fmtMoney(totals.totalExpenses, currency)}</div></div>
-      <div class="kpi"><div class="l">Résultat net</div><div class="v">${fmtMoney(totals.netIncome, currency)}</div></div>
-      <div class="kpi"><div class="l">Marge brute</div><div class="v">${fmtMoney(totals.grossMargin, currency)}</div></div>
+      <div class="kpi"><div class="l">${t("accounting.print.kpis.revenue")}</div><div class="v amt-pos">${fmtMoney(totals.totalRevenue, currency)}</div></div>
+      <div class="kpi"><div class="l">${t("accounting.print.kpis.expenses")}</div><div class="v amt-neg">${fmtMoney(totals.totalExpenses, currency)}</div></div>
+      <div class="kpi"><div class="l">${t("accounting.print.kpis.netIncome")}</div><div class="v">${fmtMoney(totals.netIncome, currency)}</div></div>
+      <div class="kpi"><div class="l">${t("accounting.print.kpis.grossMargin")}</div><div class="v">${fmtMoney(totals.grossMargin, currency)}</div></div>
     </div>
     ${
       totals.stockValuation > 0
-        ? `<p class="muted" style="margin-top:10px">Valorisation stock (hors CA / hors charges) : <strong>${fmtMoney(totals.stockValuation, currency)}</strong></p>`
+        ? `<p class="muted" style="margin-top:10px">${t("accounting.print.stockValuationNote")} <strong>${fmtMoney(totals.stockValuation, currency)}</strong></p>`
         : ""
     }
   </section>
 
   <section class="block">
-    <h2>Journal comptable (${totals.entriesCount})</h2>
+    <h2>${t("accounting.print.journalHeading", { count: totals.entriesCount })}</h2>
     ${
       sorted.length === 0
-        ? `<p class="muted">Aucune écriture pour cette période.</p>`
+        ? `<p class="muted">${t("accounting.print.empty")}</p>`
         : `<table class="data">
       <thead>
         <tr>
-          <th style="width:11%">Date</th>
-          <th style="width:12%">Type</th>
-          <th style="width:34%">Description</th>
-          <th style="width:14%">Source</th>
-          <th style="width:10%">Origine</th>
-          <th style="width:19%" class="num">Montant</th>
+          <th style="width:11%">${t("accounting.print.cols.date")}</th>
+          <th style="width:12%">${t("accounting.print.cols.type")}</th>
+          <th style="width:34%">${t("accounting.print.cols.description")}</th>
+          <th style="width:14%">${t("accounting.print.cols.source")}</th>
+          <th style="width:10%">${t("accounting.print.cols.origin")}</th>
+          <th style="width:19%" class="num">${t("accounting.print.cols.amount")}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -196,9 +202,9 @@ export function buildAccountingReportHtml({
   const addressParts = [clinic.address, clinic.website].filter(Boolean).join(" · ");
 
   return buildReportDocument({
-    title: `Bilan comptable – ${periodLabel}`,
+    title: t("accounting.print.docTitle", { period: periodLabel }),
     watermarkHtml: buildWatermarkHtml(!!isFree),
-    headerTitle: "Bilan comptable",
+    headerTitle: t("accounting.print.headerTitle"),
     clinic: {
       clinicName: clinic.clinicName,
       address: addressParts || clinic.address,

@@ -8,7 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useVisits, useCreateVisit } from "@/hooks/useVisits";
 import { useClients, useAnimals, useFarmsByClient, type Client } from "@/hooks/useDatabase";
-import { VISIT_STATUS_LABELS, getServiceDef, resolveServiceAmount } from "@/lib/visitCatalog";
+import {
+  getServiceDef,
+  getVisitServiceLabel,
+  getVisitStatusLabel,
+  resolveServiceAmount,
+} from "@/lib/visitCatalog";
 import { ClipboardList, Plus, Search, Stethoscope, ArrowRight, Tractor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/contexts/SettingsContext";
@@ -25,6 +30,8 @@ import { NewPetModal } from "@/components/forms/NewPetModal";
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
 import { matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 function isFarmClient(clientType?: string | null) {
   if (!clientType) return false;
@@ -36,6 +43,10 @@ function isFarmClient(clientType?: string | null) {
 }
 
 export default function Visits() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: tm } = useTranslation("medical");
+  const { bcp47 } = useAppLocale();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { settings } = useSettings();
@@ -105,8 +116,10 @@ export default function Visits() {
     setNewFarmId("");
     setForceFarmMode(isFarmClient(client.client_type));
     toast({
-      title: "Client ajouté",
-      description: `${client.first_name} ${client.last_name} est sélectionné pour la visite.`,
+      title: t("visits.newClient"),
+      description: t("visits.selectedForVisit", {
+        name: `${client.first_name} ${client.last_name}`,
+      }),
     });
   };
 
@@ -117,13 +130,13 @@ export default function Visits() {
   const startWalkIn = async () => {
     if (!guardWrite()) return;
     if (!newClientId) {
-      toast({ title: "Client requis", variant: "destructive" });
+      toast({ title: t("visits.clientRequired"), variant: "destructive" });
       return;
     }
     if (farmMode && !newFarmId) {
       toast({
-        title: "Exploitation requise",
-        description: "Sélectionnez une ferme pour une visite d'élevage.",
+        title: t("visits.farmRequiredTitle"),
+        description: t("visits.farmRequiredBody"),
         variant: "destructive",
       });
       return;
@@ -134,14 +147,14 @@ export default function Visits() {
       const visit = await createVisit.mutateAsync({
         client_id: newClientId,
         animal_id: newAnimalId || null,
-        reason: farmMode ? "Visite d'élevage" : "Visite sans RDV",
+        reason: farmMode ? t("visits.farmVisitReason") : t("visits.walkInReason"),
         context: farmMode ? "farm" : "companion",
         farm_id: farmMode ? newFarmId : null,
         billing_mode: farmMode ? billingMode : null,
         head_count: farmMode ? heads || null : null,
         initial_service: {
           service_code: def.code,
-          service_label: def.label,
+          service_label: getVisitServiceLabel(def, tm),
           amount: resolveServiceAmount(def.code, settings.servicePrices),
         },
       });
@@ -149,22 +162,22 @@ export default function Visits() {
       resetNewForm();
       navigate(`/visites/${visit.id}`);
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 space-y-4">
       <AppPageHeader
-        eyebrow="Parcours clinique"
-        title="Visites"
-        description="Une visite regroupe une ou plusieurs prestations (consultation, vaccin, élevage…) avant facturation."
+        eyebrow={t("visits.clinicalJourney")}
+        title={t("visits.title")}
+        description={t("visits.description")}
         icon={ClipboardList}
         actions={
           canWrite ? (
             <Button onClick={() => setShowNew(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              Nouvelle visite
+              {t("visits.new")}
             </Button>
           ) : undefined
         }
@@ -177,20 +190,20 @@ export default function Visits() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 className="pl-9"
-                placeholder="Client, animal, ferme, motif…"
+                placeholder={t("visits.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-44">
-                <SelectValue placeholder="Statut" />
+                <SelectValue placeholder={t("visits.statusPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="in_progress">En cours</SelectItem>
-                <SelectItem value="completed">Terminées</SelectItem>
-                <SelectItem value="cancelled">Annulées</SelectItem>
+                <SelectItem value="all">{tc("all")}</SelectItem>
+                <SelectItem value="in_progress">{tc("inProgress")}</SelectItem>
+                <SelectItem value="completed">{tc("completed")}</SelectItem>
+                <SelectItem value="cancelled">{tc("cancelled")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -204,16 +217,16 @@ export default function Visits() {
       </Card>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <p className="text-sm text-muted-foreground">{tc("loading")}</p>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center text-muted-foreground space-y-3">
             <Stethoscope className="h-10 w-10 mx-auto opacity-40" />
-            <p>Aucune visite pour le moment</p>
-            <p className="text-sm">Lancez une visite depuis un RDV, ou créez une visite walk-in.</p>
+            <p>{t("visits.empty")}</p>
+            <p className="text-sm">{t("visits.emptyHint")}</p>
             {canWrite && (
               <Button variant="outline" onClick={() => setShowNew(true)}>
-                Démarrer une visite
+                {t("visits.new")}
               </Button>
             )}
           </CardContent>
@@ -234,22 +247,22 @@ export default function Visits() {
                       <span className="text-muted-foreground">·</span>
                       <span>
                         {visit.context === "farm"
-                          ? visit.farm?.farm_name || "Exploitation"
-                          : visit.animal?.name || "Sans animal"}
+                          ? visit.farm?.farm_name || t("visits.farm")
+                          : visit.animal?.name || tc("none")}
                       </span>
                       {visit.context === "farm" && (
                         <Badge variant="outline" className="gap-1">
                           <Tractor className="h-3 w-3" />
-                          Élevage
+                          {t("visits.farm")}
                         </Badge>
                       )}
                       <Badge variant={visit.status === "in_progress" ? "default" : "secondary"}>
-                        {VISIT_STATUS_LABELS[visit.status] || visit.status}
+                        {getVisitStatusLabel(visit.status, tm)}
                       </Badge>
-                      {visit.invoiced && <Badge variant="outline">Facturée</Badge>}
+                      {visit.invoiced && <Badge variant="outline">{t("visits.billed")}</Badge>}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(visit.visit_date).toLocaleString("fr-FR")}
+                      {new Date(visit.visit_date).toLocaleString(bcp47)}
                       {visit.reason ? ` — ${visit.reason}` : ""}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -259,7 +272,7 @@ export default function Visits() {
                   </div>
                   <Button asChild className="gap-2 shrink-0">
                     <Link to={`/visites/${visit.id}`}>
-                      Ouvrir
+                      {tc("open")}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
@@ -279,14 +292,14 @@ export default function Visits() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Nouvelle visite (sans RDV)</DialogTitle>
+            <DialogTitle>{t("visits.new")}</DialogTitle>
             <DialogDescription>
               Client particulier ou éleveur — vous pourrez ajouter plusieurs prestations.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Client *</Label>
+              <Label>{tc("client")} *</Label>
               <div className="flex gap-2">
                 <Select
                   value={newClientId}
@@ -298,7 +311,7 @@ export default function Visits() {
                   }}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Sélectionner un client" />
+                    <SelectValue placeholder={t("visits.selectClient")} />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.map((c) => (
@@ -316,7 +329,7 @@ export default function Visits() {
                     size="icon"
                     className="shrink-0"
                     onClick={() => setShowClientModal(true)}
-                    title="Nouveau client"
+                    title={t("visits.newClient")}
                     aria-label="Ajouter un nouveau client"
                   >
                     <Plus className="h-4 w-4" />
@@ -340,7 +353,7 @@ export default function Visits() {
                   onClick={() => setForceFarmMode(true)}
                 >
                   <Tractor className="h-3.5 w-3.5" />
-                  Visite ferme
+                  {t("visits.farm")}
                 </Button>
                 <Button
                   type="button"
@@ -351,7 +364,7 @@ export default function Visits() {
                     setNewFarmId("");
                   }}
                 >
-                  Animal de compagnie
+                  {tc("pet")}
                 </Button>
               </div>
             )}
@@ -359,10 +372,10 @@ export default function Visits() {
             {farmMode ? (
               <>
                 <div className="space-y-2">
-                  <Label>Exploitation *</Label>
+                  <Label>{t("visits.farmLabel")} *</Label>
                   <Select value={newFarmId} onValueChange={setNewFarmId} disabled={!newClientId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner une ferme" />
+                      <SelectValue placeholder={t("visits.selectFarm")} />
                     </SelectTrigger>
                     <SelectContent>
                       {clientFarms.map((f: any) => (
@@ -381,7 +394,7 @@ export default function Visits() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label>Facturation</Label>
+                    <Label>{tc("invoice")}</Label>
                     <Select
                       value={billingMode}
                       onValueChange={(v) => setBillingMode(v as "forfait" | "per_head")}
@@ -390,8 +403,8 @@ export default function Visits() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="forfait">Forfait</SelectItem>
-                        <SelectItem value="per_head">À la tête</SelectItem>
+                        <SelectItem value="forfait">{t("visits.billingModes.package")}</SelectItem>
+                        <SelectItem value="per_head">{t("visits.billingModes.perHead")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -407,17 +420,17 @@ export default function Visits() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Animal (optionnel)</Label>
+                  <Label>{tc("animal")} ({tc("optional").toLowerCase()})</Label>
                   <Select
                     value={newAnimalId || "__none__"}
                     onValueChange={(v) => setNewAnimalId(v === "__none__" ? "" : v)}
                     disabled={!newClientId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Aucun" />
+                      <SelectValue placeholder={tc("none")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Aucun</SelectItem>
+                      <SelectItem value="__none__">{tc("none")}</SelectItem>
                       {clientAnimals.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name} ({a.species})
@@ -429,7 +442,7 @@ export default function Visits() {
               </>
             ) : (
               <div className="space-y-2">
-                <Label>Animal (recommandé)</Label>
+                <Label>{tc("animal")} ({tc("optional").toLowerCase()})</Label>
                 <div className="flex gap-2">
                   <Select
                     value={newAnimalId || "__none__"}
@@ -437,10 +450,10 @@ export default function Visits() {
                     disabled={!newClientId}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Sélectionner un animal" />
+                      <SelectValue placeholder={t("visits.selectPet")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Aucun</SelectItem>
+                      <SelectItem value="__none__">{tc("none")}</SelectItem>
                       {clientAnimals.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name} ({a.species})
@@ -456,7 +469,7 @@ export default function Visits() {
                       className="shrink-0"
                       disabled={!newClientId}
                       onClick={() => setShowPetModal(true)}
-                      title="Nouvel animal"
+                      title={t("visits.newPet")}
                       aria-label="Ajouter un nouvel animal"
                     >
                       <Plus className="h-4 w-4" />
@@ -468,11 +481,11 @@ export default function Visits() {
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowNew(false)}>
-                Annuler
+                {tc("cancel")}
               </Button>
               {canWrite && (
                 <Button onClick={startWalkIn} disabled={createVisit.isPending}>
-                  Démarrer
+                  {tc("create")}
                 </Button>
               )}
             </div>

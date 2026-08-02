@@ -10,6 +10,8 @@ import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
 import { PrescriptionEditModal } from "@/components/modals/PrescriptionEditModal";
 import { PrescriptionPrint } from "@/components/PrescriptionPrint";
 import { transformDbPrescriptionForPrint } from "@/lib/prescriptionPrint";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 interface PrescriptionsListProps {
   petId: string;
@@ -22,16 +24,18 @@ const statusStyles = {
   discontinued: "bg-red-100 text-red-800"
 };
 
-const statusLabels = {
-  active: "Active",
-  completed: "Terminée",
-  discontinued: "Arrêtée"
-};
-
 export function PrescriptionsList({ petId, consultationId }: PrescriptionsListProps) {
   const { data: allPrescriptions = [] } = usePrescriptions();
   const { data: prescriptionsByAnimal = [] } = usePrescriptionsByAnimal(petId);
   const { toast } = useToast();
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
+  const statusLabels = {
+    active: t("prescriptionsList.statuses.active"),
+    completed: t("prescriptionsList.statuses.completed"),
+    discontinued: t("prescriptionsList.statuses.discontinued"),
+  };
   
   const [showNewPrescription, setShowNewPrescription] = useState(false);
   const [showEditPrescription, setShowEditPrescription] = useState(false);
@@ -48,11 +52,11 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
   };
 
   const handleDelete = (prescription: any) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la prescription pour ${prescription.medications?.map((m: any) => m.medication_name).join(', ') || 'médicaments'} ?`)) {
+    if (confirm(tc("areYouSure"))) {
       // TODO: Implement delete functionality with new hooks
       toast({
-        title: "Fonctionnalité à implémenter",
-        description: "La suppression de prescription n'est pas encore implémentée.",
+        title: tc("notAvailable"),
+        description: tc("featureLocked"),
       });
     }
   };
@@ -60,8 +64,8 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
   const handleStatusChange = (prescriptionId: string, newStatus: string) => {
     // TODO: Implement status change functionality with new hooks
     toast({
-      title: "Fonctionnalité à implémenter",
-      description: "Le changement de statut n'est pas encore implémenté.",
+      title: tc("notAvailable"),
+      description: tc("featureLocked"),
     });
   };
 
@@ -90,7 +94,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Pill className="h-5 w-5" />
-            Prescriptions ({filteredPrescriptions.length})
+            {t("prescriptionsList.headings.title")} ({filteredPrescriptions.length})
           </h3>
           <Button 
             size="sm" 
@@ -99,7 +103,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
             className="gap-2"
           >
             <Plus className="h-4 w-4" />
-            Nouvelle Prescription
+            {tc("create")}
           </Button>
         </div>
 
@@ -107,8 +111,8 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
           <Card>
             <CardContent className="p-6 text-center text-muted-foreground">
               <Pill className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p>Aucune prescription trouvée</p>
-              <p className="text-sm">Commencez par créer une nouvelle prescription</p>
+              <p>{t("prescriptionsList.empty")}</p>
+              <p className="text-sm">{tc("emptyState")}</p>
             </CardContent>
           </Card>
         ) : (
@@ -128,7 +132,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                         </div>
                         <div className="text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4 inline mr-1" />
-                          {new Date(prescription.prescription_date || prescription.date).toLocaleDateString('fr-FR')}
+                          {new Date(prescription.prescription_date || prescription.date).toLocaleDateString(bcp47)}
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -138,7 +142,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                           variant="outline"
                           onClick={() => handleEdit(prescription)}
                           className="h-8 w-8 p-0"
-                          title="Modifier"
+                          title={tc("edit")}
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -147,7 +151,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                           variant="outline"
                           onClick={() => handleDelete(prescription)}
                           className="h-8 w-8 p-0 text-red-600"
-                          title="Supprimer"
+                          title={tc("delete")}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -159,26 +163,26 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                     {/* Informations générales */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="font-medium">Prescrit par:</span>
-                        <p className="text-muted-foreground">Non spécifié</p>
+                        <span className="font-medium">{t("prescriptionsList.labels.veterinarian")}:</span>
+                        <p className="text-muted-foreground">{t("prescriptionsList.notSpecified")}</p>
                       </div>
                       <div>
-                        <span className="font-medium">Diagnostic:</span>
+                        <span className="font-medium">{t("consultations.clinical.diagnosis")}:</span>
                         <p className="text-muted-foreground">{prescription.diagnosis}</p>
                       </div>
                       <div>
-                        <span className="font-medium">Durée:</span>
-                        <p className="text-muted-foreground">{prescription.valid_until ? new Date(prescription.valid_until).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                        <span className="font-medium">{t("prescriptionsList.labels.duration")}:</span>
+                        <p className="text-muted-foreground">{prescription.valid_until ? new Date(prescription.valid_until).toLocaleDateString(bcp47) : tc("notAvailable")}</p>
                       </div>
                       <div>
-                        <span className="font-medium">Coût total:</span>
+                        <span className="font-medium">{tc("total")}:</span>
                         <p className="text-muted-foreground">{calculateTotalCost(prescription.medications).toFixed(2)}€</p>
                       </div>
                     </div>
 
                     {/* Médicaments */}
                     <div>
-                      <h4 className="font-medium mb-3">Médicaments prescrits:</h4>
+                      <h4 className="font-medium mb-3">{t("prescriptionsList.headings.medications")}:</h4>
                       <div className="space-y-3">
                         {prescription.medications?.map((medication: any) => (
                           <div key={medication.id} className="p-3 border rounded-lg bg-muted/30">
@@ -186,17 +190,17 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                               <div className="space-y-1">
                                 <div className="font-medium">{medication.medication_name}</div>
                                 <div className="text-sm text-muted-foreground">
-                                  <span className="font-medium">Posologie:</span> {medication.dosage} - {medication.frequency}
+                                  <span className="font-medium">{t("prescriptionsList.labels.dosage")}:</span> {medication.dosage} - {medication.frequency}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  <span className="font-medium">Durée:</span> {medication.duration}
+                                  <span className="font-medium">{t("prescriptionsList.labels.duration")}:</span> {medication.duration}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  <span className="font-medium">Quantité:</span> {medication.quantity}
+                                  <span className="font-medium">{tc("quantity")}:</span> {medication.quantity}
                                 </div>
                                 {medication.instructions && (
                                   <div className="text-sm text-muted-foreground">
-                                    <span className="font-medium">Instructions:</span> {medication.instructions}
+                                    <span className="font-medium">{t("prescriptionsList.labels.instructions")}:</span> {medication.instructions}
                                   </div>
                                 )}
                               </div>
@@ -214,7 +218,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                     {/* Instructions générales */}
                     {prescription.instructions && (
                       <div>
-                        <span className="font-medium">Instructions générales:</span>
+                        <span className="font-medium">{t("prescriptionsList.labels.instructions")}:</span>
                         <p className="text-sm text-muted-foreground mt-1">{prescription.instructions}</p>
                       </div>
                     )}
@@ -223,9 +227,9 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                     {prescription.followUpDate && (
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">Suivi prévu:</span>
+                        <span className="font-medium">{tc("reminder")}:</span>
                         <span className="text-muted-foreground">
-                          {new Date(prescription.followUpDate).toLocaleDateString('fr-FR')}
+                          {new Date(prescription.followUpDate).toLocaleDateString(bcp47)}
                         </span>
                       </div>
                     )}
@@ -233,7 +237,7 @@ export function PrescriptionsList({ petId, consultationId }: PrescriptionsListPr
                     {/* Notes */}
                     {prescription.notes && (
                       <div>
-                        <span className="font-medium">Notes:</span>
+                        <span className="font-medium">{tc("notes")}:</span>
                         <p className="text-sm text-muted-foreground mt-1">{prescription.notes}</p>
                       </div>
                     )}

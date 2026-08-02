@@ -6,8 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useClients } from "@/contexts/ClientContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { Download, Upload, RotateCcw, Database, AlertTriangle, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 
 export function DataManager() {
+  const { t, i18n } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { 
     clients, 
     pets, 
@@ -26,13 +30,10 @@ export function DataManager() {
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
 
-  // Calculer les statistiques de données
   const totalRecords = clients.length + pets.length + consultations.length + appointments.length + prescriptions.length + farms.length + farmInterventions.length;
   
-  // Calculer la taille estimée des données (approximative)
   const estimatedDataSize = Math.round(totalRecords * 0.5); // KB
   
-  // Calculer la dernière modification
   const allDates = [
     ...clients.map(c => c.lastVisit),
     ...pets.map(p => p.lastVisit).filter(Boolean),
@@ -45,7 +46,6 @@ export function DataManager() {
   
   const lastModification = allDates.length > 0 ? new Date(Math.max(...allDates.map(d => new Date(d).getTime()))) : new Date();
   
-  // Calculer les tendances
   const today = new Date().toISOString().split('T')[0];
   const thisMonth = new Date().getMonth();
   const thisYear = new Date().getFullYear();
@@ -81,13 +81,13 @@ export function DataManager() {
     try {
       exportData();
       toast({
-        title: "Données exportées",
-        description: `Export de ${totalRecords} enregistrements réussi.`,
+        title: t("dataManager.exportedTitle"),
+        description: t("dataManager.exportedBody", { count: totalRecords }),
       });
     } catch (error) {
       toast({
-        title: "Erreur d'export",
-        description: "Impossible d'exporter les données.",
+        title: t("dataManager.exportErrorTitle"),
+        description: t("dataManager.exportErrorBody"),
         variant: "destructive",
       });
     }
@@ -104,16 +104,20 @@ export function DataManager() {
         if (data.clients && data.pets) {
           importData(data);
           toast({
-            title: "Données importées",
-            description: `${data.clients.length} clients, ${data.pets.length} animaux et ${data.consultations?.length || 0} consultations importés avec succès.`,
+            title: t("dataManager.importedTitle"),
+            description: t("dataManager.importedBody", {
+              clients: data.clients.length,
+              pets: data.pets.length,
+              consultations: data.consultations?.length || 0,
+            }),
           });
         } else {
-          throw new Error("Format de fichier invalide");
+          throw new Error("invalid");
         }
       } catch (error) {
         toast({
-          title: "Erreur d'import",
-          description: "Le fichier sélectionné n'est pas valide.",
+          title: t("dataManager.importErrorTitle"),
+          description: t("dataManager.importErrorBody"),
           variant: "destructive",
         });
       }
@@ -126,14 +130,14 @@ export function DataManager() {
     try {
       resetData();
       toast({
-        title: "Données réinitialisées",
-        description: "Toutes les données ont été remises aux valeurs par défaut.",
+        title: t("dataManager.resetDoneTitle"),
+        description: t("dataManager.resetDoneBody"),
       });
       setShowResetDialog(false);
     } catch (error) {
       toast({
-        title: "Erreur de réinitialisation",
-        description: "Impossible de réinitialiser les données.",
+        title: t("dataManager.resetErrorTitle"),
+        description: t("dataManager.resetErrorBody"),
         variant: "destructive",
       });
     }
@@ -145,41 +149,41 @@ export function DataManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            Gestion des Données
+            {t("dataManager.title")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="font-medium">Total:</span>
-                <span className="text-muted-foreground">{totalRecords} enregistrements</span>
+                <span className="font-medium">{t("dataManager.total")}</span>
+                <span className="text-muted-foreground">{tc("recordsCount", { count: totalRecords })}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-medium">Taille:</span>
+                <span className="font-medium">{t("dataManager.size")}</span>
                 <span className="text-muted-foreground">~{estimatedDataSize} KB</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-medium">Dernière modif:</span>
-                <span className="text-muted-foreground">{lastModification.toLocaleDateString('fr-FR')}</span>
+                <span className="font-medium">{t("dataManager.lastMod")}</span>
+                <span className="text-muted-foreground">{lastModification.toLocaleDateString(getBcp47Locale(i18n.language))}</span>
               </div>
             </div>
             
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-green-600" />
-                <span className="font-medium">Aujourd'hui:</span>
+                <span className="font-medium">{t("dataManager.today")}</span>
                 <span className="text-muted-foreground">{newRecordsToday}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-blue-600" />
-                <span className="font-medium">Ce mois:</span>
+                <span className="font-medium">{t("dataManager.thisMonth")}</span>
                 <span className="text-muted-foreground">{newRecordsThisMonth}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="font-medium">Clinique:</span>
-                <span className="text-muted-foreground">{settings.clinicName || 'Non configurée'}</span>
+                <span className="font-medium">{t("dataManager.clinic")}</span>
+                <span className="text-muted-foreground">{settings.clinicName || tc("notConfigured")}</span>
               </div>
             </div>
           </div>
@@ -187,80 +191,78 @@ export function DataManager() {
           <div className="grid grid-cols-3 gap-4 text-xs">
             <div className="text-center p-2 bg-blue-50 rounded">
               <div className="font-medium text-blue-700">{clients.length}</div>
-              <div className="text-blue-600">Clients</div>
+              <div className="text-blue-600">{t("dataManager.clients")}</div>
             </div>
             <div className="text-center p-2 bg-red-50 rounded">
               <div className="font-medium text-red-700">{pets.length}</div>
-              <div className="text-red-600">Animaux</div>
+              <div className="text-red-600">{t("dataManager.pets")}</div>
             </div>
             <div className="text-center p-2 bg-green-50 rounded">
               <div className="font-medium text-green-700">{consultations.length}</div>
-              <div className="text-green-600">Consultations</div>
+              <div className="text-green-600">{t("dataManager.consultations")}</div>
             </div>
             <div className="text-center p-2 bg-purple-50 rounded">
               <div className="font-medium text-purple-700">{appointments.length}</div>
-              <div className="text-purple-600">RDV</div>
+              <div className="text-purple-600">{t("dataManager.appointments")}</div>
             </div>
             <div className="text-center p-2 bg-orange-50 rounded">
               <div className="font-medium text-orange-700">{prescriptions.length}</div>
-              <div className="text-orange-600">Prescriptions</div>
+              <div className="text-orange-600">{t("dataManager.prescriptions")}</div>
             </div>
             <div className="text-center p-2 bg-indigo-50 rounded">
               <div className="font-medium text-indigo-700">{farms.length}</div>
-              <div className="text-indigo-600">Fermes</div>
+              <div className="text-indigo-600">{t("dataManager.farms")}</div>
             </div>
           </div>
 
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={handleExport} className="gap-2">
               <Download className="h-4 w-4" />
-              Exporter
+              {t("dataManager.export")}
             </Button>
             <Button size="sm" variant="outline" onClick={() => setShowImportDialog(true)} className="gap-2">
               <Upload className="h-4 w-4" />
-              Importer
+              {t("dataManager.import")}
             </Button>
             <Button size="sm" variant="destructive" onClick={() => setShowResetDialog(true)} className="gap-2">
               <RotateCcw className="h-4 w-4" />
-              Réinitialiser
+              {t("dataManager.reset")}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Dialog de réinitialisation */}
       <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              Réinitialiser toutes les données
+              {t("dataManager.resetTitle")}
             </DialogTitle>
             <DialogDescription>
-              Cette action supprimera définitivement toutes les données (clients, animaux, consultations, etc.) et les remettra aux valeurs par défaut. Cette action ne peut pas être annulée.
+              {t("dataManager.resetBody")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setShowResetDialog(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button variant="destructive" onClick={handleReset}>
-              Réinitialiser
+              {t("dataManager.reset")}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog d'import */}
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Importer des données
+              {t("dataManager.importTitle")}
             </DialogTitle>
             <DialogDescription>
-              Sélectionnez un fichier JSON exporté précédemment pour restaurer vos données.
+              {t("dataManager.importBody")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -271,12 +273,12 @@ export function DataManager() {
               className="w-full"
             />
             <div className="text-sm text-muted-foreground">
-              <strong>Note:</strong> L'import remplacera toutes les données existantes.
+              <strong>{t("dataManager.importNote")}</strong> {t("dataManager.importWarning")}
             </div>
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
           </div>
         </DialogContent>

@@ -24,6 +24,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '../components/ui/dialog';
+import { useTranslation } from 'react-i18next';
+import { getBcp47Locale } from '@/i18n/useAppLocale';
 
 interface PendingUser {
   id: string;
@@ -38,6 +40,8 @@ interface PendingUser {
 }
 
 const UserManagement = () => {
+  const { t } = useTranslation('app');
+  const { t: tc, i18n } = useTranslation('common');
   const { user } = useAuth();
   const { toast } = useToast();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
@@ -73,8 +77,8 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error fetching pending users:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de charger les utilisateurs en attente.',
+        title: tc('error'),
+        description: t('userManagement.loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -94,8 +98,8 @@ const UserManagement = () => {
       if (error) throw error;
 
       toast({
-        title: 'Succès',
-        description: 'Utilisateur approuvé avec succès.',
+        title: tc('success'),
+        description: t('userManagement.approved'),
       });
 
       // Refresh the list
@@ -103,8 +107,8 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error approving user:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'approuver l\'utilisateur.',
+        title: tc('error'),
+        description: t('userManagement.approveError'),
         variant: 'destructive',
       });
     } finally {
@@ -127,8 +131,8 @@ const UserManagement = () => {
       if (error) throw error;
 
       toast({
-        title: 'Succès',
-        description: 'Utilisateur rejeté.',
+        title: tc('success'),
+        description: t('userManagement.rejected'),
       });
 
       setShowRejectModal(false);
@@ -140,8 +144,8 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error rejecting user:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de rejeter l\'utilisateur.',
+        title: tc('error'),
+        description: t('userManagement.rejectError'),
         variant: 'destructive',
       });
     } finally {
@@ -176,14 +180,14 @@ const UserManagement = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Utilisateurs en attente d'approbation ({pendingUsers.length})
+            {t('userManagement.title', { count: pendingUsers.length })}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {pendingUsers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-              <p>Aucun utilisateur en attente d'approbation</p>
+              <p>{t('userManagement.empty')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -208,18 +212,20 @@ const UserManagement = () => {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
-                            Inscrit le {new Date(pendingUser.created_at).toLocaleDateString('fr-FR')}
+                            {t('userManagement.registeredOn', {
+                              date: new Date(pendingUser.created_at).toLocaleDateString(getBcp47Locale(i18n.language)),
+                            })}
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            {pendingUser.days_waiting} jour{pendingUser.days_waiting > 1 ? 's' : ''} d'attente
+                            {t('userManagement.waitingDays', { count: pendingUser.days_waiting })}
                           </div>
                         </div>
                         
                         {pendingUser.days_waiting > 2 && (
                           <div className="flex items-center gap-1 text-orange-600 text-sm">
                             <AlertCircle className="h-4 w-4" />
-                            Attente prolongée - action recommandée
+                            {t('userManagement.prolongedWait')}
                           </div>
                         )}
                       </div>
@@ -232,7 +238,7 @@ const UserManagement = () => {
                           className="bg-green-600 hover:bg-green-700"
                         >
                           <UserCheck className="h-4 w-4 mr-1" />
-                          Approuver
+                          {t('userManagement.approve')}
                         </Button>
                         
                         <Button
@@ -242,7 +248,7 @@ const UserManagement = () => {
                           size="sm"
                         >
                           <UserX className="h-4 w-4 mr-1" />
-                          Rejeter
+                          {t('userManagement.reject')}
                         </Button>
                       </div>
                     </div>
@@ -260,26 +266,26 @@ const UserManagement = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <XCircle className="h-5 w-5 text-red-500" />
-              Rejeter la demande d'inscription
+              {t('userManagement.rejectTitle')}
             </DialogTitle>
           </DialogHeader>
           
           {selectedUser && (
             <div className="space-y-4">
               <div className="bg-gray-50 p-3 rounded">
-                <p><strong>Utilisateur:</strong> {selectedUser.full_name || selectedUser.username}</p>
-                <p><strong>Email:</strong> {selectedUser.email}</p>
-                <p><strong>Rôle demandé:</strong> {selectedUser.role}</p>
+                <p><strong>{t('userManagement.userLabel')}</strong> {selectedUser.full_name || selectedUser.username}</p>
+                <p><strong>{t('userManagement.emailLabel')}</strong> {selectedUser.email}</p>
+                <p><strong>{t('userManagement.requestedRole')}</strong> {selectedUser.role}</p>
               </div>
               
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Raison du rejet <span className="text-red-500">*</span>
+                  {t('userManagement.rejectReason')} <span className="text-red-500">*</span>
                 </label>
                 <Textarea
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Expliquez pourquoi cette demande est rejetée..."
+                  placeholder={t('userManagement.rejectReasonPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -291,7 +297,7 @@ const UserManagement = () => {
               variant="outline" 
               onClick={() => setShowRejectModal(false)}
             >
-              Annuler
+              {tc('cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -299,7 +305,7 @@ const UserManagement = () => {
               disabled={!rejectionReason.trim() || actionLoading === selectedUser?.id}
             >
               <UserX className="h-4 w-4 mr-1" />
-              Rejeter définitivement
+              {t('userManagement.rejectConfirm')}
             </Button>
           </DialogFooter>
         </DialogContent>

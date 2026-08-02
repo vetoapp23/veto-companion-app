@@ -10,12 +10,15 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useGoogleLogin, useResetPassword, useLogin } from "@/hooks/useAuth";
 import { DemoLoginPanel } from "@/components/DemoLoginPanel";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import heroImage from "@/assets/vet-hero.jpg";
 import { SeoHead } from "@/components/SeoHead";
 
 export function LoginForm() {
+  const { t } = useTranslation("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +42,7 @@ export function LoginForm() {
     setError("");
 
     if (!email || !password) {
-      setError("Veuillez remplir tous les champs");
+      setError(t("login.fillAllFields"));
       return;
     }
 
@@ -48,7 +51,7 @@ export function LoginForm() {
       navigate(redirectTo, { replace: true });
       window.location.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur inattendue est survenue");
+      setError(err instanceof Error ? err.message : t("login.unexpectedError"));
     }
   };
 
@@ -58,7 +61,7 @@ export function LoginForm() {
       await googleLoginMutation.mutateAsync();
       navigate(redirectTo, { replace: true });
     } catch {
-      setError("Erreur lors de la connexion avec Google");
+      setError(t("login.googleError"));
     }
   };
 
@@ -67,7 +70,7 @@ export function LoginForm() {
     setError("");
 
     if (!email) {
-      setError("Veuillez saisir votre email");
+      setError(t("forgotPassword.enterEmailError"));
       return;
     }
 
@@ -75,7 +78,7 @@ export function LoginForm() {
       await resetPasswordMutation.mutateAsync(email);
       setResetEmailSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      setError(err instanceof Error ? err.message : t("forgotPassword.genericError"));
     }
   };
 
@@ -88,30 +91,30 @@ export function LoginForm() {
 
   const title = isForgotPassword
     ? resetEmailSent
-      ? "Vérifiez votre email"
-      : "Mot de passe oublié"
-    : "Connexion";
+      ? t("forgotPassword.checkEmailTitle")
+      : t("forgotPassword.title")
+    : t("login.title");
 
   const description = isForgotPassword
     ? resetEmailSent
-      ? "Un lien vient de partir dans votre boîte mail."
-      : "Indiquez l’email associé à votre compte."
+      ? t("forgotPassword.linkSent")
+      : t("forgotPassword.enterEmail")
     : loginType === "admin"
-      ? "Espace administrateur de clinique"
-      : "Espace assistant — rejoignez votre clinique";
+      ? t("login.adminSpace")
+      : t("login.assistantSpace");
 
   return (
     <div className="marketing-shell mk-login">
       <SeoHead
-        title="Connexion — VetoCrm"
-        description="Connectez-vous à votre espace clinique VetoCrm pour gérer rendez-vous, dossiers et équipe."
+        title={t("seo.loginTitle")}
+        description={t("seo.loginDescription")}
         path="/login"
       />
       <aside className="mk-login-visual">
         <div className="mk-hero-media">
           <img
             src={heroImage}
-            alt="Connexion à l'espace clinique VetoCrm"
+            alt={t("login.heroAlt")}
             width={1200}
             height={1600}
           />
@@ -119,14 +122,14 @@ export function LoginForm() {
           <div className="mk-hero-mesh" aria-hidden />
         </div>
         <div className="mk-login-visual-content">
-          <Link to="/" className="mk-brand" style={{ display: "inline-block", marginBottom: "1.5rem" }}>
-            Veto<span>Crm</span>
-          </Link>
-          <h1>Votre clinique, à portée de clic.</h1>
-          <p>
-            Connectez-vous pour retrouver clients, agenda et dossiers médicaux — synchronisés et
-            sécurisés.
-          </p>
+          <div className="flex items-center justify-between" style={{ marginBottom: "1.5rem" }}>
+            <Link to="/" className="mk-brand" style={{ display: "inline-block" }}>
+              Veto<span>Crm</span>
+            </Link>
+            <LanguageSwitcher variant="compact" />
+          </div>
+          <h1>{t("login.heroHeadline")}</h1>
+          <p>{t("login.heroSub")}</p>
         </div>
       </aside>
 
@@ -135,9 +138,12 @@ export function LoginForm() {
           <Link to="/" className="mk-brand" style={{ color: "var(--mk-ink)" }}>
             Veto<span>Crm</span>
           </Link>
-          <Link to="/" className="mk-link" style={{ color: "var(--mk-muted)" }}>
-            Accueil
-          </Link>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher variant="marketing" />
+            <Link to="/" className="mk-link" style={{ color: "var(--mk-muted)" }}>
+              {t("login.home")}
+            </Link>
+          </div>
         </div>
 
         <div className="mk-login-card">
@@ -147,11 +153,11 @@ export function LoginForm() {
           {resetEmailSent ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Lien envoyé à <strong>{email}</strong>. Pensez à vérifier les spams.
+                {t("forgotPassword.linkSentTo", { email })}
               </p>
               <button type="button" className="mk-btn mk-btn-solid w-full" onClick={handleBackToLogin}>
                 <ArrowLeft className="h-4 w-4" />
-                Retour à la connexion
+                {t("forgotPassword.backToLogin")}
               </button>
             </div>
           ) : isForgotPassword ? (
@@ -162,7 +168,7 @@ export function LoginForm() {
                 </Alert>
               )}
               <div className="mk-field">
-                <label htmlFor="reset-email">Email</label>
+                <label htmlFor="reset-email">{t("login.email")}</label>
                 <input
                   id="reset-email"
                   type="email"
@@ -182,10 +188,10 @@ export function LoginForm() {
                 {resetPasswordMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Envoi…
+                    {t("forgotPassword.sending")}
                   </>
                 ) : (
-                  "Envoyer le lien"
+                  t("forgotPassword.sendLink")
                 )}
               </button>
               <button
@@ -194,12 +200,12 @@ export function LoginForm() {
                 onClick={handleBackToLogin}
               >
                 <ArrowLeft className="h-4 w-4" />
-                Retour
+                {t("forgotPassword.back")}
               </button>
             </form>
           ) : (
             <>
-              <div className="mk-segment" role="tablist" aria-label="Type de compte">
+              <div className="mk-segment" role="tablist" aria-label={t("login.accountType")}>
                 <button
                   type="button"
                   role="tab"
@@ -208,7 +214,7 @@ export function LoginForm() {
                   onClick={() => setLoginType("admin")}
                 >
                   <Building2 className="h-3.5 w-3.5" />
-                  Admin
+                  {t("login.admin")}
                 </button>
                 <button
                   type="button"
@@ -218,7 +224,7 @@ export function LoginForm() {
                   onClick={() => setLoginType("assistant")}
                 >
                   <UserPlus className="h-3.5 w-3.5" />
-                  Assistant
+                  {t("login.assistant")}
                 </button>
               </div>
 
@@ -230,7 +236,7 @@ export function LoginForm() {
                     color: "var(--mk-deep)",
                   }}
                 >
-                  Vous rejoignez une clinique existante avec vos identifiants.
+                  {t("login.assistantHint")}
                 </p>
               )}
 
@@ -242,11 +248,15 @@ export function LoginForm() {
                 )}
 
                 <div className="mk-field">
-                  <label htmlFor="email">Email</label>
+                  <label htmlFor="email">{t("login.email")}</label>
                   <input
                     id="email"
                     type="email"
-                    placeholder={loginType === "admin" ? "admin@clinique.com" : "assistant@clinique.com"}
+                    placeholder={
+                      loginType === "admin"
+                        ? t("login.placeholderAdmin")
+                        : t("login.placeholderAssistant")
+                    }
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loginMutation.isPending}
@@ -257,14 +267,14 @@ export function LoginForm() {
 
                 <div className="mk-field">
                   <div className="flex items-center justify-between">
-                    <label htmlFor="password">Mot de passe</label>
+                    <label htmlFor="password">{t("login.password")}</label>
                     <button
                       type="button"
                       className="text-xs font-medium"
                       style={{ color: "var(--mk-teal)", background: "none", border: "none", cursor: "pointer" }}
                       onClick={() => setIsForgotPassword(true)}
                     >
-                      Oublié ?
+                      {t("login.forgot")}
                     </button>
                   </div>
                   <div className="relative">
@@ -301,7 +311,7 @@ export function LoginForm() {
                   {loginMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Connexion…
+                      {t("login.submitting")}
                     </>
                   ) : (
                     <>
@@ -310,7 +320,7 @@ export function LoginForm() {
                       ) : (
                         <UserPlus className="h-4 w-4" />
                       )}
-                      Se connecter
+                      {t("login.submit")}
                     </>
                   )}
                 </button>
@@ -327,7 +337,7 @@ export function LoginForm() {
                         className="px-2"
                         style={{ background: "var(--mk-surface)", color: "var(--mk-muted)" }}
                       >
-                        ou
+                        {t("login.or")}
                       </span>
                     </div>
                   </div>
@@ -341,7 +351,7 @@ export function LoginForm() {
                     {googleLoginMutation.isPending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Google…
+                        {t("login.googlePending")}
                       </>
                     ) : (
                       <>
@@ -363,7 +373,7 @@ export function LoginForm() {
                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                           />
                         </svg>
-                        Continuer avec Google
+                        {t("login.continueGoogle")}
                       </>
                     )}
                   </button>
@@ -373,19 +383,19 @@ export function LoginForm() {
               <p className="text-sm text-center mt-5" style={{ color: "var(--mk-muted)" }}>
                 {loginType === "admin" ? (
                   <>
-                    Pas encore de compte ?{" "}
+                    {t("login.noAccount")}{" "}
                     <Link to="/register?mode=admin" style={{ color: "var(--mk-teal)", fontWeight: 600 }}>
-                      Créer une clinique
+                      {t("login.createClinic")}
                     </Link>
                   </>
                 ) : (
                   <>
-                    Nouveau dans l’équipe ?{" "}
+                    {t("login.newToTeam")}{" "}
                     <Link
                       to="/register?mode=assistant"
                       style={{ color: "var(--mk-teal)", fontWeight: 600 }}
                     >
-                      Rejoindre avec un code
+                      {t("login.joinWithCode")}
                     </Link>
                   </>
                 )}

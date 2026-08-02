@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import NewVaccinationModal from "../forms/NewVaccinationModalDynamic";
 import NewAntiparasiticModalDynamic from "../forms/NewAntiparasiticModalDynamic";
+import { useTranslation } from "react-i18next";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 
 interface PetDossierModalProps {
   open: boolean;
@@ -86,7 +88,44 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
   const [selectedVaccinationForConfirmation, setSelectedVaccinationForConfirmation] = useState<any>(null);
   const [editingVaccinationStatus, setEditingVaccinationStatus] = useState<number | null>(null);
   const { toast } = useToast();
+  const { t, i18n } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
 
+  const vaccStatusLabel = (status: string) => {
+    if (status === "completed") return t("petDossier.status.completedF");
+    if (status === "scheduled") return t("petDossier.status.scheduledF");
+    if (status === "overdue") return t("petDossier.status.overdue");
+    return t("petDossier.status.missedF");
+  };
+
+  const antiStatusLabel = (status: string) => {
+    if (status === "completed") return t("petDossier.status.completedM");
+    if (status === "scheduled") return t("petDossier.status.scheduledM");
+    if (status === "overdue") return t("petDossier.status.overdue");
+    return t("petDossier.status.missedM");
+  };
+
+  const vaccineTypeLabel = (type?: string) => {
+    if (type === "core") return t("petDossier.vaccineType.core");
+    if (type === "non-core") return t("petDossier.vaccineType.nonCore");
+    if (type === "rabies") return t("petDossier.vaccineType.rabies");
+    return t("petDossier.vaccineType.custom");
+  };
+
+  const injectionSiteLabel = (loc?: string) => {
+    if (loc === "left_shoulder") return t("petDossier.location.left_shoulder");
+    if (loc === "right_shoulder") return t("petDossier.location.right_shoulder");
+    if (loc === "left_hip") return t("petDossier.location.left_hip");
+    if (loc === "right_hip") return t("petDossier.location.right_hip");
+    return t("petDossier.location.subcutaneous");
+  };
+
+  const reminderStatusLabel = (status?: string) => {
+    if (status === "completed") return t("petDossier.status.reminderCompleted");
+    if (status === "missed") return t("petDossier.status.reminderMissed");
+    if (status === "cancelled") return t("petDossier.status.reminderCancelled");
+    return t("petDossier.status.reminderScheduled");
+  };
 
   // Mettre à jour les statuts des vaccinations quand le modal s'ouvre
   useEffect(() => {
@@ -139,7 +178,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
       clientId: pet.ownerId,
       petId: pet.id,
       type: 'vaccination',
-      reason: `Rappel vaccinal - ${vaccination.vaccineName}`
+      reason: t("petDossier.reason.vaccReminder", { name: vaccination.vaccineName })
     });
     
     // Stocker la vaccination sélectionnée pour référence
@@ -158,16 +197,9 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     updateVaccination(vaccinationId, { status: newStatus });
     setEditingVaccinationStatus(null);
     
-    const statusLabels = {
-      completed: 'Terminée',
-      scheduled: 'Planifiée', 
-      overdue: 'En retard',
-      missed: 'Manquée'
-    };
-    
     toast({
-      title: "Statut mis à jour",
-      description: `Le statut de la vaccination a été changé en "${statusLabels[newStatus]}"`,
+      title: t("petDossier.statusUpdatedTitle"),
+      description: t("petDossier.statusUpdatedDesc", { status: vaccStatusLabel(newStatus) }),
     });
   };
 
@@ -276,7 +308,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
   const chartData: ChartData[] = sortedConsultations
     .filter(c => c.weight || c.temperature)
     .map(c => ({
-      date: new Date(c.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+      date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language), { day: '2-digit', month: '2-digit' }),
       weight: c.weight ? parseFloat(c.weight) : 0,
       temperature: c.temperature ? roundTemperature(c.temperature) ?? 0 : 0
     }))
@@ -307,48 +339,42 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     estimatedDate: new Date(lastConsultation.date)
   } : null;
 
-  // Alertes
   const alerts = [];
   
-  // Alerte si pas de consultation depuis plus de 6 mois
   if (lastConsultation) {
     const monthsSinceLastVisit = (new Date().getTime() - new Date(lastConsultation.date).getTime()) / (1000 * 60 * 60 * 24 * 30);
     if (monthsSinceLastVisit > 6) {
       alerts.push({
         type: 'warning',
-        title: 'Contrôle de routine recommandé',
-        message: `Dernière consultation il y a ${Math.floor(monthsSinceLastVisit)} mois`,
-        action: 'Planifier consultation',
+        title: t("petDossier.alerts.routineTitle"),
+        message: t("petDossier.alerts.routineMessage", { months: Math.floor(monthsSinceLastVisit) }),
+        action: t("petDossier.alerts.scheduleConsultation"),
         actionType: 'consultation'
       });
     }
   }
 
-  // Alerte si température anormale
   if (currentTemperature > 39.5 || currentTemperature < 37.5) {
     alerts.push({
       type: 'danger',
-      title: 'Température anormale',
-      message: `Température actuelle: ${formatTemperature(currentTemperature)}`,
-      action: 'Contrôle urgent',
+      title: t("petDossier.alerts.abnormalTempTitle"),
+      message: t("petDossier.alerts.abnormalTempMessage", { temp: formatTemperature(currentTemperature) }),
+      action: t("petDossier.alerts.urgentCheck"),
       actionType: 'consultation'
     });
   }
 
-  // Alerte si perte de poids significative
   if (weightChange < -2) {
     alerts.push({
       type: 'warning',
-      title: 'Perte de poids',
-      message: `Perte de ${Math.abs(weightChange)}kg depuis la dernière consultation`,
-      action: 'Surveiller',
+      title: t("petDossier.alerts.weightLossTitle"),
+      message: t("petDossier.alerts.weightLossMessage", { kg: Math.abs(weightChange) }),
+      action: t("petDossier.alerts.monitor"),
       actionType: 'consultation'
     });
   }
 
-  // Alertes pour les vaccinations en retard ou proches
   const today = new Date();
-  const oneWeekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
   
   petVaccinations.forEach(vaccination => {
     if (vaccination.nextDueDate) {
@@ -356,52 +382,47 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
       const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysUntilDue < 0) {
-        // Vaccination en retard
         alerts.push({
           type: 'danger',
-          title: 'Vaccination en retard',
-          message: `${vaccination.vaccineName} - ${Math.abs(daysUntilDue)} jour(s) de retard`,
-          action: 'Planifier vaccination',
+          title: t("petDossier.alerts.vaccOverdueTitle"),
+          message: t("petDossier.alerts.daysOverdue", { name: vaccination.vaccineName, days: Math.abs(daysUntilDue) }),
+          action: t("petDossier.alerts.scheduleVaccination"),
           actionType: 'vaccination'
         });
       } else if (daysUntilDue <= 7) {
-        // Vaccination dans la semaine
         alerts.push({
           type: 'warning',
-          title: 'Vaccination à prévoir',
-          message: `${vaccination.vaccineName} - Dans ${daysUntilDue} jour(s)`,
-          action: 'Planifier vaccination',
+          title: t("petDossier.alerts.vaccDueSoonTitle"),
+          message: t("petDossier.alerts.daysUntil", { name: vaccination.vaccineName, days: daysUntilDue }),
+          action: t("petDossier.alerts.scheduleVaccination"),
           actionType: 'vaccination'
         });
       }
     }
   });
 
-  // Alertes pour les antiparasitaires en retard ou proches
   petAntiparasitics.forEach(antiparasitic => {
     if (antiparasitic.nextDueDate) {
       const dueDate = new Date(antiparasitic.nextDueDate);
       const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysUntilDue < 0) {
-        // Antiparasitaire en retard
         alerts.push({
           type: 'danger',
-          title: 'Traitement antiparasitaire en retard',
-          message: `${antiparasitic.productName} - ${Math.abs(daysUntilDue)} jour(s) de retard`,
-          action: 'Planifier traitement',
+          title: t("petDossier.alerts.antiOverdueTitle"),
+          message: t("petDossier.alerts.daysOverdue", { name: antiparasitic.productName, days: Math.abs(daysUntilDue) }),
+          action: t("petDossier.alerts.scheduleTreatment"),
           actionType: 'antiparasitic'
         });
-              } else if (daysUntilDue <= 7) {
-          // Antiparasitaire dans la semaine
-          alerts.push({
-            type: 'warning',
-            title: 'Traitement antiparasitaire à prévoir',
-            message: `${antiparasitic.productName} - Dans ${daysUntilDue} jour(s)`,
-            action: 'Planifier traitement',
-            actionType: 'antiparasitic'
-          });
-        }
+      } else if (daysUntilDue <= 7) {
+        alerts.push({
+          type: 'warning',
+          title: t("petDossier.alerts.antiDueSoonTitle"),
+          message: t("petDossier.alerts.daysUntil", { name: antiparasitic.productName, days: daysUntilDue }),
+          action: t("petDossier.alerts.scheduleTreatment"),
+          actionType: 'antiparasitic'
+        });
+      }
     }
   });
 
@@ -411,7 +432,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
       clientId: owner?.id || 0,
       petId: pet.id,
       type: 'consultation',
-      reason: 'Nouvelle consultation'
+      reason: t("petDossier.reason.newConsultation")
     });
     setShowNewAppointment(true);
   };
@@ -436,19 +457,19 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     switch (actionType) {
       case 'consultation':
         appointmentType = 'consultation';
-        reason = 'Contrôle de routine recommandé';
+        reason = t("petDossier.reason.routineCheck");
         break;
       case 'vaccination':
         appointmentType = 'vaccination';
-        reason = 'Vaccination à effectuer';
+        reason = t("petDossier.reason.vaccinationDue");
         break;
       case 'antiparasitic':
         appointmentType = 'controle';
-        reason = 'Traitement antiparasitaire à effectuer';
+        reason = t("petDossier.reason.antiparasiticDue");
         break;
       default:
         appointmentType = 'consultation';
-        reason = 'Rendez-vous médical';
+        reason = t("petDossier.reason.medicalAppointment");
     }
     
     setAlertPrefill({
@@ -465,11 +486,15 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const sexLabel = pet.gender === 'male' ? tc("male") : pet.gender === 'female' ? tc("female") : tc("notSpecified");
+    const notSpec = tc("notSpecified");
+    const notProvided = t("print.legacyDossier.notProvided");
+
     const printContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Dossier Médical - ${pet.name}</title>
+          <title>${t("print.legacyDossier.docTitle", { name: pet.name })}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
             .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
@@ -489,48 +514,48 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
         <body>
           <div class="header">
             <div class="clinic-name">VetoCrm</div>
-            <h2>Dossier Médical Complet</h2>
-            <p><strong>Animal:</strong> ${pet.name} | <strong>Généré le:</strong> ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+            <h2>${t("print.legacyDossier.fullTitle")}</h2>
+            <p><strong>${t("print.legacyDossier.animal")}</strong> ${pet.name} | <strong>${t("print.legacyDossier.generatedOn")}</strong> ${new Date().toLocaleDateString(getBcp47Locale(i18n.language))} ${new Date().toLocaleTimeString(getBcp47Locale(i18n.language))}</p>
           </div>
 
           <div class="pet-info">
             <div class="info-section">
-              <h3>Informations Animal</h3>
-              <p><strong>Nom:</strong> ${pet.name}</p>
-              <p><strong>Espèce:</strong> ${pet.type}</p>
-              <p><strong>Race:</strong> ${pet.breed || 'Non spécifiée'}</p>
-              <p><strong>Sexe:</strong> ${pet.gender === 'male' ? 'Mâle' : pet.gender === 'female' ? 'Femelle' : 'Non spécifié'}</p>
-              <p><strong>Âge:</strong> ${pet.birthDate ? calculateAge(pet.birthDate) : 'Non spécifié'}</p>
-              <p><strong>Poids actuel:</strong> ${currentWeight}kg</p>
-              <p><strong>Température actuelle:</strong> ${formatTemperature(currentTemperature)}</p>
-              <p><strong>Couleur:</strong> ${pet.color || 'Non spécifiée'}</p>
-              <p><strong>Puce électronique:</strong> ${pet.microchip || 'Non spécifiée'}</p>
-              ${pet.medicalNotes ? `<p><strong>Notes médicales:</strong> ${pet.medicalNotes}</p>` : ''}
+              <h3>${t("print.legacyDossier.animalInfo")}</h3>
+              <p><strong>${t("print.legacyDossier.name")}</strong> ${pet.name}</p>
+              <p><strong>${t("print.legacyDossier.species")}</strong> ${pet.type}</p>
+              <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.breed || notSpec}</p>
+              <p><strong>${t("print.legacyDossier.sex")}</strong> ${sexLabel}</p>
+              <p><strong>${t("print.legacyDossier.age")}</strong> ${pet.birthDate ? calculateAge(pet.birthDate) : notSpec}</p>
+              <p><strong>${t("print.legacyDossier.currentWeight")}</strong> ${currentWeight}kg</p>
+              <p><strong>${t("print.legacyDossier.currentTemp")}</strong> ${formatTemperature(currentTemperature)}</p>
+              <p><strong>${t("print.legacyDossier.color")}</strong> ${pet.color || notSpec}</p>
+              <p><strong>${t("print.legacyDossier.microchip")}</strong> ${pet.microchip || notSpec}</p>
+              ${pet.medicalNotes ? `<p><strong>${t("print.legacyDossier.medicalNotes")}</strong> ${pet.medicalNotes}</p>` : ''}
             </div>
             <div class="info-section">
-              <h3>Propriétaire</h3>
-              <p><strong>Nom:</strong> ${owner?.name || 'Non spécifié'}</p>
-              <p><strong>Email:</strong> ${owner?.email || 'Non spécifié'}</p>
-              <p><strong>Téléphone:</strong> ${owner?.phone || 'Non spécifié'}</p>
+              <h3>${t("print.legacyDossier.owner")}</h3>
+              <p><strong>${t("print.legacyDossier.name")}</strong> ${owner?.name || notSpec}</p>
+              <p><strong>${t("print.legacyDossier.email")}</strong> ${owner?.email || notSpec}</p>
+              <p><strong>${t("print.legacyDossier.phone")}</strong> ${owner?.phone || notSpec}</p>
             </div>
           </div>
 
           <div class="stats">
             <div class="stat-card">
               <div class="stat-value">${sortedConsultations.length}</div>
-              <div class="stat-label">Consultations</div>
+              <div class="stat-label">${t("print.legacyDossier.kpiConsult")}</div>
             </div>
             <div class="stat-card">
               <div class="stat-value">${petVaccinations.length}</div>
-              <div class="stat-label">Vaccinations</div>
+              <div class="stat-label">${t("print.legacyDossier.kpiVacc")}</div>
             </div>
             <div class="stat-card">
               <div class="stat-value">${petAntiparasitics.length}</div>
-              <div class="stat-label">Antiparasitaires</div>
+              <div class="stat-label">${t("print.legacyDossier.kpiAnti")}</div>
             </div>
             <div class="stat-card">
               <div class="stat-value">${currentWeight}kg</div>
-              <div class="stat-label">Poids actuel</div>
+              <div class="stat-label">${t("print.legacyDossier.kpiWeight")}</div>
             </div>
           </div>
 
@@ -538,147 +563,147 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
           ${pet.photo ? `
             <div style="text-align: center; margin: 20px 0;">
               <img src="${pet.photo}" alt="${pet.name}" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;" />
-              <p style="margin-top: 10px; font-weight: bold;">Photo de ${pet.name}</p>
+              <p style="margin-top: 10px; font-weight: bold;">${t("print.legacyDossier.photoOf", { name: pet.name })}</p>
             </div>
           ` : ''}
 
           <!-- Historique des Consultations -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Historique des Consultations (${sortedConsultations.length})</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.consultHistory", { count: sortedConsultations.length })}</h3>
             ${sortedConsultations.length > 0 ? sortedConsultations.map(c => `
               <div style="margin: 15px 0; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">Consultation du ${new Date(c.date).toLocaleDateString('fr-FR')}</h4>
+                <h4 style="margin: 0 0 10px 0; color: #333;">${t("print.legacyDossier.consultOf", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) })}</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                   <div>
-                    <p><strong>Poids:</strong> ${c.weight || 'Non renseigné'}</p>
-                    <p><strong>Température:</strong> ${c.temperature ? formatTemperature(c.temperature) : 'Non renseigné'}</p>
-                    ${c.symptoms ? `<p><strong>Symptômes:</strong> ${c.symptoms}</p>` : ''}
+                    <p><strong>${t("print.legacyDossier.weight")}</strong> ${c.weight || notProvided}</p>
+                    <p><strong>${t("print.legacyDossier.temperature")}</strong> ${c.temperature ? formatTemperature(c.temperature) : notProvided}</p>
+                    ${c.symptoms ? `<p><strong>${t("print.legacyDossier.symptoms")}</strong> ${c.symptoms}</p>` : ''}
                   </div>
                   <div>
-                    ${c.diagnosis ? `<p><strong>Diagnostic:</strong> ${c.diagnosis}</p>` : ''}
-                    ${c.treatment ? `<p><strong>Traitement:</strong> ${c.treatment}</p>` : ''}
-                    ${c.medications ? `<p><strong>Médicaments:</strong> ${c.medications}</p>` : ''}
+                    ${c.diagnosis ? `<p><strong>${t("print.legacyDossier.diagnosis")}</strong> ${c.diagnosis}</p>` : ''}
+                    ${c.treatment ? `<p><strong>${t("print.legacyDossier.treatment")}</strong> ${c.treatment}</p>` : ''}
+                    ${c.medications ? `<p><strong>${t("print.legacyDossier.medications")}</strong> ${c.medications}</p>` : ''}
                   </div>
                 </div>
-                ${c.notes ? `<p><strong>Notes:</strong> ${c.notes}</p>` : ''}
+                ${c.notes ? `<p><strong>${t("print.legacyDossier.notes")}</strong> ${c.notes}</p>` : ''}
                 ${c.photos && c.photos.length > 0 ? `
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 15px 0;">
                     ${c.photos.map((photo, idx) => `
                       <div style="text-align: center;">
-                        <img src="${photo}" alt="Photo consultation ${idx + 1}" style="max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
-                        <div style="font-size: 11px; color: #666; margin-top: 5px;">Photo ${idx + 1}</div>
+                        <img src="${photo}" alt="${t("print.legacyDossier.consultPhotoAlt", { n: idx + 1 })}" style="max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
+                        <div style="font-size: 11px; color: #666; margin-top: 5px;">${t("print.legacyDossier.photoN", { n: idx + 1 })}</div>
                       </div>
                     `).join('')}
                   </div>
                 ` : ''}
               </div>
-            `).join('') : '<p style="text-align: center; color: #666; font-style: italic;">Aucune consultation enregistrée</p>'}
+            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noConsultations")}</p>`}
           </div>
 
           <!-- Historique des Vaccinations -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Historique des Vaccinations (${petVaccinations.length})</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.vaccHistory", { count: petVaccinations.length })}</h3>
             ${petVaccinations.length > 0 ? petVaccinations.map(v => `
               <div style="margin: 10px 0; padding: 10px; border-left: 3px solid #4CAF50; background: #f0f8f0;">
-                <h4 style="margin: 0 0 10px 0;">${v.vaccineName} - ${new Date(v.dateGiven).toLocaleDateString('fr-FR')}</h4>
-                <p><strong>Type:</strong> ${v.vaccineType || 'Non spécifié'}</p>
-                <p><strong>Prochain rappel:</strong> ${v.nextDueDate ? new Date(v.nextDueDate).toLocaleDateString('fr-FR') : 'Non spécifié'}</p>
-                <p><strong>Vétérinaire:</strong> ${v.veterinarian || 'Non spécifié'}</p>
-                ${v.notes ? `<p><strong>Notes:</strong> ${v.notes}</p>` : ''}
+                <h4 style="margin: 0 0 10px 0;">${v.vaccineName} - ${new Date(v.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language))}</h4>
+                <p><strong>${t("print.legacyDossier.type")}</strong> ${v.vaccineType || notSpec}</p>
+                <p><strong>${t("print.legacyDossier.nextBooster")}</strong> ${v.nextDueDate ? new Date(v.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec}</p>
+                <p><strong>${t("print.legacyDossier.veterinarian")}</strong> ${v.veterinarian || notSpec}</p>
+                ${v.notes ? `<p><strong>${t("print.legacyDossier.notes")}</strong> ${v.notes}</p>` : ''}
               </div>
-            `).join('') : '<p style="text-align: center; color: #666; font-style: italic;">Aucune vaccination enregistrée</p>'}
+            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noVaccinations")}</p>`}
           </div>
 
           <!-- Historique des Antiparasitaires -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Historique des Traitements Antiparasitaires (${petAntiparasitics.length})</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.antiHistory", { count: petAntiparasitics.length })}</h3>
             ${petAntiparasitics.length > 0 ? petAntiparasitics.map(a => `
               <div style="margin: 15px 0; padding: 15px; border-left: 4px solid #9C27B0; background: #f3e5f5; border-radius: 5px;">
-                <h4 style="margin: 0 0 10px 0; color: #7B1FA2;">${a.productName} - ${new Date(a.dateGiven).toLocaleDateString('fr-FR')}</h4>
+                <h4 style="margin: 0 0 10px 0; color: #7B1FA2;">${a.productName} - ${new Date(a.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language))}</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 10px 0;">
                   <div>
-                    <p><strong>Type de produit:</strong> ${a.productType || 'Non spécifié'}</p>
-                    <p><strong>Parasites ciblés:</strong> ${a.targetParasites || 'Non spécifié'}</p>
-                    <p><strong>Voie d'administration:</strong> ${a.administrationRoute || 'Non spécifié'}</p>
-                    <p><strong>Dosage:</strong> ${a.dosage || 'Non spécifié'}</p>
+                    <p><strong>${t("print.legacyDossier.productType")}</strong> ${a.productType || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.parasites")}</strong> ${a.targetParasites || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.route")}</strong> ${a.administrationRoute || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.dosage")}</strong> ${a.dosage || notSpec}</p>
                   </div>
                   <div>
-                <p><strong>Prochain traitement:</strong> ${a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString('fr-FR') : 'Non spécifié'}</p>
-                <p><strong>Vétérinaire:</strong> ${a.veterinarian || 'Non spécifié'}</p>
-                    <p><strong>Statut:</strong> ${a.status === 'completed' ? 'Terminé' : a.status === 'scheduled' ? 'Planifié' : a.status === 'overdue' ? 'En retard' : 'Manqué'}</p>
-                    ${a.cost ? `<p><strong>Coût:</strong> ${a.cost} €</p>` : ''}
+                <p><strong>${t("print.legacyDossier.nextTreatment")}</strong> ${a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec}</p>
+                <p><strong>${t("print.legacyDossier.veterinarian")}</strong> ${a.veterinarian || notSpec}</p>
+                    <p><strong>${tc("status")}:</strong> ${a.status === 'completed' ? t("print.legacyDossier.statusCompleted") : a.status === 'scheduled' ? t("print.legacyDossier.statusPlanned") : a.status === 'overdue' ? t("print.legacyDossier.statusOverdue") : t("print.legacyDossier.statusMissed")}</p>
+                    ${a.cost ? `<p><strong>${t("print.legacyDossier.cost")}</strong> ${a.cost} €</p>` : ''}
                   </div>
                 </div>
-                ${a.batchNumber ? `<p><strong>Numéro de lot:</strong> ${a.batchNumber}</p>` : ''}
-                ${a.manufacturer ? `<p><strong>Fabricant:</strong> ${a.manufacturer}</p>` : ''}
-                ${a.weight ? `<p><strong>Poids de l'animal:</strong> ${a.weight}</p>` : ''}
+                ${a.batchNumber ? `<p><strong>${t("print.legacyDossier.batchNumber")}</strong> ${a.batchNumber}</p>` : ''}
+                ${a.manufacturer ? `<p><strong>${t("print.legacyDossier.manufacturer")}</strong> ${a.manufacturer}</p>` : ''}
+                ${a.weight ? `<p><strong>${t("print.legacyDossier.animalWeight")}</strong> ${a.weight}</p>` : ''}
                 ${a.notes ? `
                   <div style="margin: 10px 0; padding: 10px; background: rgba(156, 39, 176, 0.1); border-radius: 3px;">
-                    <p><strong>Notes:</strong> ${a.notes}</p>
+                    <p><strong>${t("print.legacyDossier.notes")}</strong> ${a.notes}</p>
                   </div>
                 ` : ''}
                 ${a.sideEffects ? `
                   <div style="margin: 10px 0; padding: 10px; background: #ffebee; border: 1px solid #f44336; border-radius: 3px;">
-                    <p style="color: #d32f2f;"><strong>⚠️ Effets indésirables:</strong> ${a.sideEffects}</p>
+                    <p style="color: #d32f2f;"><strong>⚠️ ${t("print.legacyDossier.sideEffects")}</strong> ${a.sideEffects}</p>
                   </div>
                 ` : ''}
               </div>
-            `).join('') : '<p style="text-align: center; color: #666; font-style: italic;">Aucun traitement antiparasitaire enregistré</p>'}
+            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noTreatments")}</p>`}
           </div>
 
           <!-- Section Pedigree -->
           ${pet.hasPedigree ? `
             <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-              <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Pedigree Officiel</h3>
+              <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.officialPedigree")}</h3>
               
               <!-- Informations de l'animal -->
               <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">Informations de l'animal</h4>
+                <h4 style="margin: 0 0 10px 0; color: #333;">${t("print.legacyDossier.animalDetails")}</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                   <div>
-                    <p><strong>Nom officiel:</strong> ${pet.officialName || 'Non spécifié'}</p>
-                    <p><strong>N° Pedigree/LOF:</strong> ${pet.pedigreeNumber || 'Non spécifié'}</p>
-                    <p><strong>N° Puce/Tatouage:</strong> ${pet.microchip || 'Non spécifié'}</p>
-                    <p><strong>Race:</strong> ${pet.breed || 'Non spécifiée'}</p>
+                    <p><strong>${t("print.legacyDossier.officialName")}</strong> ${pet.officialName || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.pedigreeLof")}</strong> ${pet.pedigreeNumber || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.chipTattoo")}</strong> ${pet.microchip || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.breed || notSpec}</p>
                   </div>
                   <div>
-                    <p><strong>Sexe:</strong> ${pet.gender === 'male' ? 'Mâle' : pet.gender === 'female' ? 'Femelle' : 'Non spécifié'}</p>
-                    <p><strong>Couleur/Robe:</strong> ${pet.color || 'Non spécifiée'}</p>
-                    <p><strong>Date de naissance:</strong> ${pet.birthDate ? new Date(pet.birthDate).toLocaleDateString('fr-FR') : 'Non spécifié'}</p>
-                    <p><strong>Éleveur:</strong> ${pet.breeder || 'Non spécifié'}</p>
+                    <p><strong>${t("print.legacyDossier.sex")}</strong> ${sexLabel}</p>
+                    <p><strong>${t("print.legacyDossier.coatColor")}</strong> ${pet.color || notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.birthDate")}</strong> ${pet.birthDate ? new Date(pet.birthDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec}</p>
+                    <p><strong>${t("print.legacyDossier.breeder")}</strong> ${pet.breeder || notSpec}</p>
                   </div>
                 </div>
               </div>
 
               <!-- Parents -->
               <div style="margin: 20px 0;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">Ascendance</h4>
+                <h4 style="margin: 0 0 10px 0; color: #333;">${t("print.legacyDossier.ancestry")}</h4>
                 
                 <!-- Père -->
                 <div style="margin: 15px 0; padding: 15px; border-left: 3px solid #007bff; background: #f0f8ff;">
-                  <h5 style="margin: 0 0 8px 0; color: #007bff;">Père</h5>
-                  <p><strong>Nom:</strong> ${pet.fatherName || 'Non spécifié'}</p>
-                  <p><strong>N° Pedigree:</strong> ${pet.fatherPedigree || 'Non spécifié'}</p>
-                  <p><strong>Race:</strong> ${pet.fatherBreed || 'Non spécifiée'}</p>
-                  ${pet.fatherTitles ? `<p><strong>Titres:</strong> ${pet.fatherTitles}</p>` : ''}
+                  <h5 style="margin: 0 0 8px 0; color: #007bff;">${t("print.legacyDossier.father")}</h5>
+                  <p><strong>${t("print.legacyDossier.name")}</strong> ${pet.fatherName || notSpec}</p>
+                  <p><strong>${t("print.legacyDossier.pedigreeLof")}</strong> ${pet.fatherPedigree || notSpec}</p>
+                  <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.fatherBreed || notSpec}</p>
+                  ${pet.fatherTitles ? `<p><strong>${t("print.legacyDossier.titles")}</strong> ${pet.fatherTitles}</p>` : ''}
                 </div>
 
                 <!-- Mère -->
                 <div style="margin: 15px 0; padding: 15px; border-left: 3px solid #e91e63; background: #fce4ec;">
-                  <h5 style="margin: 0 0 8px 0; color: #e91e63;">Mère</h5>
-                  <p><strong>Nom:</strong> ${pet.motherName || 'Non spécifié'}</p>
-                  <p><strong>N° Pedigree:</strong> ${pet.motherPedigree || 'Non spécifié'}</p>
-                  <p><strong>Race:</strong> ${pet.motherBreed || 'Non spécifiée'}</p>
-                  ${pet.motherTitles ? `<p><strong>Titres:</strong> ${pet.motherTitles}</p>` : ''}
+                  <h5 style="margin: 0 0 8px 0; color: #e91e63;">${t("print.legacyDossier.mother")}</h5>
+                  <p><strong>${t("print.legacyDossier.name")}</strong> ${pet.motherName || notSpec}</p>
+                  <p><strong>${t("print.legacyDossier.pedigreeLof")}</strong> ${pet.motherPedigree || notSpec}</p>
+                  <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.motherBreed || notSpec}</p>
+                  ${pet.motherTitles ? `<p><strong>${t("print.legacyDossier.titles")}</strong> ${pet.motherTitles}</p>` : ''}
                 </div>
               </div>
 
               <!-- Certificat Pedigree -->
               ${pet.pedigreePhoto ? `
                 <div style="margin: 20px 0; text-align: center;">
-                  <h4 style="margin: 0 0 15px 0; color: #333;">Certificat Pedigree</h4>
-                  <img src="${pet.pedigreePhoto}" alt="Certificat Pedigree" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; border: 2px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-                  <p style="margin-top: 10px; font-size: 12px; color: #666;">Document officiel du pedigree</p>
+                  <h4 style="margin: 0 0 15px 0; color: #333;">${t("print.legacyDossier.pedigreeCert")}</h4>
+                  <img src="${pet.pedigreePhoto}" alt="${t("print.legacyDossier.pedigreeCert")}" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; border: 2px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+                  <p style="margin-top: 10px; font-size: 12px; color: #666;">${t("print.legacyDossier.pedigreeOfficialDoc")}</p>
                 </div>
               ` : ''}
             </div>
@@ -686,32 +711,32 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
 
           <!-- Album Photo -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">Album Photo</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.photoAlbum")}</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
               ${pet.photo ? `
                 <div style="text-align: center;">
-                  <img src="${pet.photo}" alt="Photo principale" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
-                  <div style="font-size: 11px; color: #666; margin-top: 5px;">Photo principale</div>
+                  <img src="${pet.photo}" alt="${t("print.legacyDossier.mainPhoto")}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
+                  <div style="font-size: 11px; color: #666; margin-top: 5px;">${t("print.legacyDossier.mainPhoto")}</div>
                 </div>
               ` : ''}
               ${sortedConsultations.some(c => c.photos && c.photos.length > 0) ? 
                 sortedConsultations.map(c => 
                   c.photos ? c.photos.map((photo, idx) => `
                     <div style="text-align: center;">
-                      <img src="${photo}" alt="Consultation ${new Date(c.date).toLocaleDateString('fr-FR')} - Photo ${idx + 1}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
-                      <div style="font-size: 11px; color: #666; margin-top: 5px;">Consultation ${new Date(c.date).toLocaleDateString('fr-FR')}</div>
+                      <img src="${photo}" alt="${t("print.legacyDossier.consultPhoto", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) })} - ${t("print.legacyDossier.photoN", { n: idx + 1 })}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
+                      <div style="font-size: 11px; color: #666; margin-top: 5px;">${t("print.legacyDossier.consultPhoto", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) })}</div>
                     </div>
                   `).join('') : ''
                 ).join('') : ''
               }
             </div>
             ${!pet.photo && !sortedConsultations.some(c => c.photos && c.photos.length > 0) ? 
-              '<p style="text-align: center; color: #666; font-style: italic;">Aucune photo disponible</p>' : ''
+              `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noPhotos")}</p>` : ''
             }
           </div>
 
           <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
-            <p>VetoCrm - Gestion Vétérinaire Complète</p>
+            <p>${t("print.legacyDossier.footerBrand")}</p>
           </div>
         </body>
       </html>
@@ -731,10 +756,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Dossier Médical - {pet.name}
+            {t("print.legacyDossier.docTitle", { name: pet.name })}
               {owner && (
                 <span className="text-sm text-muted-foreground">
-                  (Propriétaire: {owner.name})
+                  ({tc("owner")}: {owner.name})
                 </span>
               )}
           </DialogTitle>
@@ -744,35 +769,35 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
             <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview" className="gap-2">
                 <Activity className="h-4 w-4" />
-                Vue d'ensemble
+                {t("petDossier.tabOverviewFull")}
               </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
               <Stethoscope className="h-4 w-4" />
-              Historique
+              {t("petDossier.tabHistory")}
             </TabsTrigger>
               <TabsTrigger value="prescriptions" className="gap-2">
               <Syringe className="h-4 w-4" />
-                Prescriptions
+                {t("petDossier.prescriptions")}
             </TabsTrigger>
             <TabsTrigger value="vaccinations" className="gap-2">
               <Syringe className="h-4 w-4" />
-              Vaccinations
+              {t("petDossier.vaccinations")}
               </TabsTrigger>
               <TabsTrigger value="antiparasites" className="gap-2">
                 <Bug className="h-4 w-4" />
-                Antiparasitaires
+                {t("petDossier.antiparasitics")}
               </TabsTrigger>
               <TabsTrigger value="pedigree" className="gap-2">
                 <Award className="h-4 w-4" />
-                Pedigree
+                {t("petDossier.tabPedigree")}
               </TabsTrigger>
               <TabsTrigger value="charts" className="gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Évolution
+                {t("petDossier.tabCharts")}
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-2">
               <AlertCircle className="h-4 w-4" />
-              Alertes
+              {t("petDossier.tabAlerts")}
             </TabsTrigger>
           </TabsList>
 
@@ -780,7 +805,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
               {/* Galerie photos */}
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-lg">Galerie photos</CardTitle>
+                  <CardTitle className="text-lg">{t("petDossier.photoGallery")}</CardTitle>
                   <div className="flex items-center gap-2">
                     <input
                       type="file"
@@ -794,7 +819,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                       className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
                     >
                       <Plus className="h-4 w-4" />
-                      Ajouter une photo
+                      {t("petDossier.addPhoto")}
                     </label>
                   </div>
                 </CardHeader>
@@ -803,9 +828,9 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     {/* Photo officielle */}
                     {pet.photo && (
                       <div className="relative flex-shrink-0">
-                        <img src={pet.photo} alt="Photo officielle" className="h-32 w-32 object-cover rounded" />
+                        <img src={pet.photo} alt={t("petDossier.officialPhotoAlt")} className="h-32 w-32 object-cover rounded" />
                         <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1 rounded">
-                          Officielle
+                          {t("petDossier.official")}
                         </div>
                       </div>
                     )}
@@ -813,15 +838,15 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     {/* Photos supplémentaires */}
                     {additionalPhotos.map((src, idx) => (
                       <div key={`additional-${idx}`} className="relative flex-shrink-0 group">
-                        <img src={src} alt={`Photo supplémentaire ${idx + 1}`} className="h-32 w-32 object-cover rounded" />
+                        <img src={src} alt={t("petDossier.additionalPhotoAlt", { n: idx + 1 })} className="h-32 w-32 object-cover rounded" />
                         <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1 rounded">
-                          Photo {idx + 1}
+                          {t("petDossier.photoN", { n: idx + 1 })}
                         </div>
                         {/* Bouton de suppression */}
                         <button
                           onClick={() => handleDeleteAdditionalPhoto(idx)}
                           className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                          title="Supprimer cette photo"
+                          title={t("petDossier.deletePhoto")}
                         >
                           ×
                         </button>
@@ -834,13 +859,13 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                         <div key={`${consultation.id}-${idx}`} className="relative flex-shrink-0 group">
                           <img src={src} alt={`consultation-${consultation.id}-${idx}`} className="h-32 w-32 object-cover rounded" />
                           <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-1 rounded">
-                            {new Date(consultation.date).toLocaleDateString('fr-FR')}
+                            {new Date(consultation.date).toLocaleDateString(getBcp47Locale(i18n.language))}
                           </div>
                           {/* Bouton de suppression */}
                           <button
                             onClick={() => handleDeletePhoto(consultation.id, idx)}
                             className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            title="Supprimer cette photo"
+                            title={t("petDossier.deletePhoto")}
                           >
                             ×
                           </button>
@@ -851,7 +876,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     {/* Message si aucune photo */}
                     {!pet.photo && additionalPhotos.length === 0 && sortedConsultations.every(c => !c.photos || c.photos.length === 0) && (
                       <div className="flex items-center justify-center h-32 w-full border-2 border-dashed border-gray-300 rounded text-gray-500">
-                        Aucune photo disponible
+                        {t("petDossier.noPhotosAvailable")}
                       </div>
                     )}
                   </div>
@@ -864,7 +889,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <div className="flex items-center gap-2">
                       <Weight className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Poids actuel</p>
+                        <p className="text-sm text-muted-foreground">{t("petDossier.currentWeight")}</p>
                         <p className="text-2xl font-bold">{currentWeight}kg</p>
                         {weightChange !== 0 && (
                           <div className="flex items-center gap-1 text-sm">
@@ -888,10 +913,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <div className="flex items-center gap-2">
                       <Thermometer className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Température</p>
+                        <p className="text-sm text-muted-foreground">{t("petDossier.temperature")}</p>
                         <p className="text-2xl font-bold">{formatTemperature(currentTemperature)}</p>
                         <p className="text-sm text-muted-foreground">
-                          Moy: {formatTemperatureValue(avgTemperature) ?? '—'}°C
+                          {t("petDossier.avgTemp", { value: formatTemperatureValue(avgTemperature) ?? '—' })}
                         </p>
                       </div>
                     </div>
@@ -903,10 +928,14 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <div className="flex items-center gap-2">
                       <Calendar className="h-5 w-5 text-primary" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Consultations</p>
+                        <p className="text-sm text-muted-foreground">{t("petDossier.consultations")}</p>
                         <p className="text-2xl font-bold">{sortedConsultations.length}</p>
                         <p className="text-sm text-muted-foreground">
-                          Dernière: {lastConsultation ? new Date(lastConsultation.date).toLocaleDateString('fr-FR') : 'Aucune'}
+                          {t("petDossier.lastColon", {
+                            date: lastConsultation
+                              ? new Date(lastConsultation.date).toLocaleDateString(getBcp47Locale(i18n.language))
+                              : t("petDossier.none"),
+                          })}
                         </p>
                       </div>
                     </div>
@@ -918,10 +947,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <div className="flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Alertes</p>
+                      <p className="text-sm text-muted-foreground">{t("petDossier.tabAlerts")}</p>
                       <p className="text-2xl font-bold">{alerts.length}</p>
                       <p className="text-sm text-muted-foreground">
-                        {alerts.length > 0 ? 'À traiter' : 'Aucune'}
+                        {alerts.length > 0 ? t("petDossier.toTreat") : t("petDossier.none")}
                       </p>
                     </div>
                   </div>
@@ -933,10 +962,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                   <div className="flex items-center gap-2">
                     <Syringe className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Prescriptions</p>
+                      <p className="text-sm text-muted-foreground">{t("petDossier.prescriptions")}</p>
                       <p className="text-2xl font-bold">{getPrescriptionsByPetId(pet.id).length}</p>
                       <p className="text-sm text-muted-foreground">
-                        {getActivePrescriptions().filter(p => p.petId === pet.id).length} active(s)
+                        {t("petDossier.activeCount", { count: getActivePrescriptions().filter(p => p.petId === pet.id).length })}
                       </p>
                     </div>
                   </div>
@@ -949,12 +978,12 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-semibold">Prochain suivi recommandé</h4>
+                        <h4 className="font-semibold">{t("petDossier.nextFollowUp")}</h4>
                         <p className="text-sm text-muted-foreground">{nextConsultation.reason}</p>
                       </div>
                       <Button size="sm" onClick={handleNewConsultation}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Planifier
+                        {t("petDossier.schedule")}
                       </Button>
                     </div>
                   </CardContent>
@@ -964,7 +993,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
               {alerts.length > 0 && (
                 <Card className="border-destructive">
                   <CardHeader>
-                    <CardTitle className="text-destructive">Alertes importantes</CardTitle>
+                    <CardTitle className="text-destructive">{t("petDossier.importantAlerts")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {alerts.slice(0, 3).map((alert, index) => (
@@ -990,10 +1019,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
 
             <TabsContent value="history" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Historique des consultations</h3>
+                <h3 className="text-lg font-semibold">{t("petDossier.consultHistoryTitle")}</h3>
                 <Button size="sm" onClick={handleNewConsultation} className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Planifier Consultation
+                  {t("petDossier.scheduleConsultationBtn")}
                 </Button>
               </div>
 
@@ -1001,8 +1030,8 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <Stethoscope className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>Aucune consultation enregistrée</p>
-                    <p className="text-sm">Commencez par créer la première consultation</p>
+                    <p>{t("petDossier.noConsultationsRecorded")}</p>
+                    <p className="text-sm">{t("petDossier.startFirstConsultation")}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -1011,67 +1040,67 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <Card key={consultation.id}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">Consultation #{consultation.id}</CardTitle>
+                          <CardTitle className="text-base">{t("petDossier.consultationN", { id: consultation.id })}</CardTitle>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-4 w-4" />
-                            {new Date(consultation.date).toLocaleDateString('fr-FR')}
+                            {new Date(consultation.date).toLocaleDateString(getBcp47Locale(i18n.language))}
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium">Poids:</span>
-                            <span className="ml-2">{consultation.weight || 'Non renseigné'}</span>
+                            <span className="font-medium">{t("petDossier.weightLabel")}</span>
+                            <span className="ml-2">{consultation.weight || t("petDossier.notProvided")}</span>
                           </div>
                           <div>
-                            <span className="font-medium">Température:</span>
+                            <span className="font-medium">{t("petDossier.temperatureLabel")}</span>
                             <span className="ml-2">
                               {consultation.temperature
                                 ? formatTemperature(consultation.temperature)
-                                : 'Non renseigné'}
+                                : t("petDossier.notProvided")}
                             </span>
                           </div>
                         </div>
                         
                         {consultation.symptoms && (
                           <div>
-                            <span className="font-medium">Symptômes:</span>
+                            <span className="font-medium">{t("petDossier.symptoms")}</span>
                             <p className="text-sm mt-1">{consultation.symptoms}</p>
                           </div>
                         )}
                         
                         {consultation.diagnosis && (
                           <div>
-                            <span className="font-medium">Diagnostic:</span>
+                            <span className="font-medium">{t("petDossier.diagnosis")}</span>
                             <p className="text-sm mt-1">{consultation.diagnosis}</p>
                           </div>
                         )}
                         
                         {consultation.treatment && (
                           <div>
-                            <span className="font-medium">Traitement:</span>
+                            <span className="font-medium">{t("petDossier.treatment")}</span>
                             <p className="text-sm mt-1">{consultation.treatment}</p>
                           </div>
                         )}
                         
                         {consultation.medications && (
                           <div>
-                            <span className="font-medium">Médicaments:</span>
+                            <span className="font-medium">{t("petDossier.medications")}</span>
                             <p className="text-sm mt-1">{consultation.medications}</p>
                           </div>
                         )}
                         
                         {consultation.notes && (
                           <div>
-                            <span className="font-medium">Notes:</span>
+                            <span className="font-medium">{t("petDossier.notes")}</span>
                             <p className="text-sm mt-1 text-muted-foreground">{consultation.notes}</p>
                           </div>
                         )}
                         
                         {consultation.followUp && (
                           <div className="pt-2 border-t">
-                            <span className="font-medium text-primary">Suivi recommandé:</span>
+                            <span className="font-medium text-primary">{t("petDossier.followUpRecommended")}</span>
                             <p className="text-sm mt-1">{consultation.followUp}</p>
                           </div>
                         )}
@@ -1087,7 +1116,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
             </TabsContent>
 
             <TabsContent value="charts" className="space-y-4">
-              <h3 className="text-lg font-semibold">Évolution du poids et de la température</h3>
+              <h3 className="text-lg font-semibold">{t("petDossier.weightTempEvolution")}</h3>
               
               {chartData.length > 0 ? (
                 <div className="space-y-6">
@@ -1095,7 +1124,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Weight className="h-5 w-5" />
-                        Évolution du poids
+                        {t("petDossier.weightEvolution")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1115,7 +1144,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Thermometer className="h-5 w-5" />
-                        Évolution de la température
+                        {t("petDossier.tempEvolution")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1135,8 +1164,8 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <TrendingUp className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>Aucune donnée disponible pour les graphiques</p>
-                    <p className="text-sm">Ajoutez des consultations avec poids et température</p>
+                    <p>{t("petDossier.noChartData")}</p>
+                    <p className="text-sm">{t("petDossier.addWeightTempConsults")}</p>
                   </CardContent>
                 </Card>
               )}
@@ -1144,11 +1173,11 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
 
             <TabsContent value="vaccinations" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Historique vaccinal</h3>
+                <h3 className="text-lg font-semibold">{t("petDossier.vaccHistoryTitle")}</h3>
                 <NewVaccinationModal selectedClientId={owner?.id} selectedPetId={pet.id}>
                   <Button size="sm" className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Nouvelle vaccination
+                    {t("petDossier.newVaccination")}
                   </Button>
                 </NewVaccinationModal>
               </div>
@@ -1157,8 +1186,8 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <Syringe className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>Aucune vaccination enregistrée</p>
-                    <p className="text-sm">Commencez par ajouter la première vaccination</p>
+                    <p>{t("petDossier.noVaccinationsRecorded")}</p>
+                    <p className="text-sm">{t("petDossier.startFirstVaccination")}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -1172,7 +1201,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <Syringe className="h-4 w-4 text-green-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">Total</p>
+                            <p className="text-sm font-medium text-gray-600">{tc("total")}</p>
                             <p className="text-xl font-bold">{sortedVaccinations.length}</p>
                           </div>
                         </div>
@@ -1186,7 +1215,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <Calendar className="h-4 w-4 text-blue-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">À jour</p>
+                            <p className="text-sm font-medium text-gray-600">{t("petDossier.upToDate")}</p>
                             <p className="text-xl font-bold">
                               {sortedVaccinations.filter(v => v.status === 'completed').length}
                             </p>
@@ -1202,7 +1231,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <AlertCircle className="h-4 w-4 text-red-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">En retard</p>
+                            <p className="text-sm font-medium text-gray-600">{t("petDossier.overdue")}</p>
                             <p className="text-xl font-bold">
                               {sortedVaccinations.filter(v => v.status === 'overdue').length}
                             </p>
@@ -1218,7 +1247,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <Calendar className="h-4 w-4 text-orange-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">Planifiées</p>
+                            <p className="text-sm font-medium text-gray-600">{t("petDossier.scheduledPluralF")}</p>
                             <p className="text-xl font-bold">
                               {sortedVaccinations.filter(v => v.status === 'scheduled').length}
                             </p>
@@ -1240,20 +1269,18 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                 <h4 className="font-semibold text-lg">
                                   {vaccination.vaccineName}
                                   {vaccination.vaccinationCategory === 'reminder' && (
-                                    <span className="ml-2 text-sm text-orange-600 font-normal">(Rappel)</span>
+                                    <span className="ml-2 text-sm text-orange-600 font-normal">{t("petDossier.reminderParen")}</span>
                                   )}
                                 </h4>
                                 <Badge 
                                   variant={vaccination.vaccineType === 'core' ? 'default' : 'secondary'}
                                   className="text-xs"
                                 >
-                                  {vaccination.vaccineType === 'core' ? 'Essentiel' : 
-                                   vaccination.vaccineType === 'non-core' ? 'Optionnel' :
-                                   vaccination.vaccineType === 'rabies' ? 'Rage' : 'Personnalisé'}
+                                  {vaccineTypeLabel(vaccination.vaccineType)}
                                 </Badge>
                                 {vaccination.vaccinationCategory === 'reminder' && (
                                   <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
-                                    Rappel
+                                    {t("petDossier.boosterBadge")}
                                   </Badge>
                                 )}
                                 {editingVaccinationStatus === vaccination.id ? (
@@ -1268,10 +1295,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="completed">Terminée</SelectItem>
-                                        <SelectItem value="scheduled">Planifiée</SelectItem>
-                                        <SelectItem value="overdue">En retard</SelectItem>
-                                        <SelectItem value="missed">Manquée</SelectItem>
+                                        <SelectItem value="completed">{t("petDossier.status.completedF")}</SelectItem>
+                                        <SelectItem value="scheduled">{t("petDossier.status.scheduledF")}</SelectItem>
+                                        <SelectItem value="overdue">{t("petDossier.status.overdue")}</SelectItem>
+                                        <SelectItem value="missed">{t("petDossier.status.missedF")}</SelectItem>
                                       </SelectContent>
                                     </Select>
                                     <Button
@@ -1279,7 +1306,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                       variant="outline"
                                       onClick={() => setEditingVaccinationStatus(null)}
                                     >
-                                      Annuler
+                                      {tc("cancel")}
                                     </Button>
                                   </div>
                                 ) : (
@@ -1292,9 +1319,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                     }
                                     onClick={() => setEditingVaccinationStatus(vaccination.id)}
                                 >
-                                  {vaccination.status === 'completed' ? 'Terminée' :
-                                   vaccination.status === 'overdue' ? 'En retard' :
-                                   vaccination.status === 'scheduled' ? 'Planifiée' : 'Manquée'}
+                                  {vaccStatusLabel(vaccination.status)}
                                 </Badge>
                                 )}
                               </div>
@@ -1302,54 +1327,50 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                                 <div>
                                   <p className="text-gray-600">
-                                    {vaccination.vaccinationCategory === 'reminder' ? 'Date du rappel' : 'Date administrée'}
+                                    {vaccination.vaccinationCategory === 'reminder' ? t("petDossier.dateReminder") : t("petDossier.dateAdministered")}
                                   </p>
                                   <p className="font-medium">{formatDate(vaccination.dateGiven)}</p>
                                 </div>
                                 {vaccination.vaccinationCategory === 'new' && (
                                 <div>
-                                  <p className="text-gray-600">Rappel prévu</p>
+                                  <p className="text-gray-600">{t("petDossier.nextBooster")}</p>
                                   <p className="font-medium">{formatDate(vaccination.nextDueDate)}</p>
                                 </div>
                                 )}
                                 {vaccination.vaccinationCategory === 'reminder' && vaccination.originalVaccinationId && (
                                   <div>
-                                    <p className="text-gray-600">Vaccination originale</p>
+                                    <p className="text-gray-600">{t("petDossier.originalVaccination")}</p>
                                     <p className="font-medium text-sm text-gray-500">ID: {vaccination.originalVaccinationId}</p>
                                   </div>
                                 )}
                                 <div>
-                                  <p className="text-gray-600">Vétérinaire</p>
+                                  <p className="text-gray-600">{t("petDossier.veterinarian")}</p>
                                   <p className="font-medium">{vaccination.veterinarian}</p>
                                 </div>
                                 <div>
-                                  <p className="text-gray-600">Coût</p>
+                                  <p className="text-gray-600">{t("petDossier.cost")}</p>
                                   <p className="font-medium">
-                                    {vaccination.cost ? `${vaccination.cost} €` : 'Non spécifié'}
+                                    {vaccination.cost ? `${vaccination.cost} €` : t("petDossier.costNotSpecified")}
                                   </p>
                                 </div>
                               </div>
 
                               {vaccination.batchNumber && (
                                 <div className="mt-3 text-sm">
-                                  <p className="text-gray-600">Numéro de lot: <span className="font-medium">{vaccination.batchNumber}</span></p>
+                                  <p className="text-gray-600">{t("petDossier.batchNumber")} <span className="font-medium">{vaccination.batchNumber}</span></p>
                                 </div>
                               )}
 
                               {vaccination.manufacturer && (
                                 <div className="mt-1 text-sm">
-                                  <p className="text-gray-600">Fabricant: <span className="font-medium">{vaccination.manufacturer}</span></p>
+                                  <p className="text-gray-600">{t("petDossier.manufacturer")} <span className="font-medium">{vaccination.manufacturer}</span></p>
                                 </div>
                               )}
 
                               {vaccination.location && (
                                 <div className="mt-1 text-sm">
-                                  <p className="text-gray-600">Site d'injection: <span className="font-medium">
-                                    {vaccination.location === 'left_shoulder' ? 'Épaule gauche' :
-                                     vaccination.location === 'right_shoulder' ? 'Épaule droite' :
-                                     vaccination.location === 'left_hip' ? 'Hanche gauche' :
-                                     vaccination.location === 'right_hip' ? 'Hanche droite' :
-                                     'Sous-cutané'}
+                                  <p className="text-gray-600">{t("petDossier.injectionSite")} <span className="font-medium">
+                                    {injectionSiteLabel(vaccination.location)}
                                   </span></p>
                                 </div>
                               )}
@@ -1357,7 +1378,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                               {vaccination.notes && (
                                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                                   <p className="text-sm text-gray-700">
-                                    <strong>Notes:</strong> {vaccination.notes}
+                                    <strong>{t("petDossier.notes")}</strong> {vaccination.notes}
                                   </p>
                                 </div>
                               )}
@@ -1365,7 +1386,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                               {vaccination.adverseReactions && (
                                 <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
                                   <p className="text-sm text-red-700">
-                                    <strong>⚠️ Réactions adverses:</strong> {vaccination.adverseReactions}
+                                    <strong>{t("petDossier.adverseReactions")}</strong> {vaccination.adverseReactions}
                                   </p>
                                 </div>
                               )}
@@ -1380,12 +1401,12 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                   onClick={() => handleVaccinationReminder(vaccination)}
                                 >
                                   <Plus className="h-4 w-4" />
-                                  Rappel
+                                  {t("petDossier.reminder")}
                                 </Button>
                               )}
                               {vaccination.reminderAppointmentId && (
                                 <Badge variant="outline" className="text-xs">
-                                  Rappel programmé
+                                  {t("petDossier.reminderScheduled")}
                                 </Badge>
                               )}
                               {vaccination.status === 'overdue' && (
@@ -1395,7 +1416,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                   onClick={() => handleConfirmReminder(vaccination)}
                                 >
                                   <CheckSquare className="h-4 w-4" />
-                                  Confirmer
+                                  {t("petDossier.confirm")}
                                 </Button>
                               )}
                             </div>
@@ -1404,22 +1425,20 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                           {/* Historique des rappels */}
                           {vaccination.reminderHistory && vaccination.reminderHistory.length > 0 && (
                             <div className="mt-4 pt-4 border-t">
-                              <h5 className="text-sm font-medium text-muted-foreground mb-2">Historique des rappels</h5>
+                              <h5 className="text-sm font-medium text-muted-foreground mb-2">{t("petDossier.reminderHistory")}</h5>
                               <div className="space-y-2">
                                 {vaccination.reminderHistory.map((reminder) => (
                                   <div key={reminder.id} className="flex items-center justify-between text-xs bg-muted/30 p-2 rounded">
                                     <div className="flex items-center gap-2">
                                       <Calendar className="h-3 w-3" />
-                                      <span>{new Date(reminder.scheduledDate).toLocaleDateString('fr-FR')}</span>
+                                      <span>{new Date(reminder.scheduledDate).toLocaleDateString(getBcp47Locale(i18n.language))}</span>
                                     </div>
                                     <Badge 
                                       variant={reminder.status === 'completed' ? 'default' : 
                                               reminder.status === 'missed' ? 'destructive' : 'secondary'}
                                       className="text-xs"
                                     >
-                                      {reminder.status === 'completed' ? 'Complété' :
-                                       reminder.status === 'missed' ? 'Manqué' :
-                                       reminder.status === 'cancelled' ? 'Annulé' : 'Programmé'}
+                                      {reminderStatusLabel(reminder.status)}
                                     </Badge>
                                   </div>
                                 ))}
@@ -1436,11 +1455,11 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
 
             <TabsContent value="antiparasites" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Historique antiparasitaire</h3>
+                <h3 className="text-lg font-semibold">{t("petDossier.antiHistoryTitle")}</h3>
                 <NewAntiparasiticModalDynamic selectedClientId={owner?.id} selectedPetId={pet.id}>
                   <Button size="sm" className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Nouveau Traitement
+                    {t("petDossier.newTreatment")}
                   </Button>
                 </NewAntiparasiticModalDynamic>
               </div>
@@ -1448,8 +1467,8 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <Bug className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>Aucun traitement antiparasitaire enregistré</p>
-                    <p className="text-sm">Ajoutez des traitements depuis l'onglet Antiparasitaires</p>
+                    <p>{t("petDossier.noAntiRecorded")}</p>
+                    <p className="text-sm">{t("petDossier.addFromAntiTab")}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -1463,7 +1482,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <Bug className="h-4 w-4 text-green-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">Total</p>
+                            <p className="text-sm font-medium text-gray-600">{tc("total")}</p>
                             <p className="text-xl font-bold">{sortedAntiparasitics.length}</p>
                           </div>
                         </div>
@@ -1477,7 +1496,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <CheckCircle className="h-4 w-4 text-blue-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">Complétés</p>
+                            <p className="text-sm font-medium text-gray-600">{t("petDossier.completedPlural")}</p>
                             <p className="text-xl font-bold">
                               {sortedAntiparasitics.filter(a => a.status === 'completed').length}
                             </p>
@@ -1493,7 +1512,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <AlertCircle className="h-4 w-4 text-red-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">En retard</p>
+                            <p className="text-sm font-medium text-gray-600">{t("petDossier.overdue")}</p>
                             <p className="text-xl font-bold">
                               {sortedAntiparasitics.filter(a => a.status === 'overdue').length}
                             </p>
@@ -1509,7 +1528,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             <Calendar className="h-4 w-4 text-orange-600" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-600">Planifiés</p>
+                            <p className="text-sm font-medium text-gray-600">{t("petDossier.scheduledPluralM")}</p>
                             <p className="text-xl font-bold">
                               {sortedAntiparasitics.filter(a => a.status === 'scheduled').length}
                             </p>
@@ -1537,70 +1556,68 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                                     'bg-orange-100 text-orange-800 border-orange-200'
                                   }
                                 >
-                                  {treatment.status === 'completed' ? 'Terminé' :
-                                   treatment.status === 'overdue' ? 'En retard' :
-                                   treatment.status === 'scheduled' ? 'Planifié' : 'Manqué'}
+                                  {antiStatusLabel(treatment.status)}
                                 </Badge>
                               </div>
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                                 <div>
-                                  <p className="text-gray-600">Date administrée</p>
-                                  <p className="font-medium">{new Date(treatment.dateGiven).toLocaleDateString('fr-FR')}</p>
+                                  <p className="text-gray-600">{t("petDossier.dateAdministered")}</p>
+                                  <p className="font-medium">{new Date(treatment.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language))}</p>
                                 </div>
                                 <div>
-                                  <p className="text-gray-600">Prochain traitement</p>
-                                  <p className="font-medium">{treatment.nextDueDate ? new Date(treatment.nextDueDate).toLocaleDateString('fr-FR') : 'Non spécifié'}</p>
+                                  <p className="text-gray-600">{t("petDossier.nextTreatment")}</p>
+                                  <p className="font-medium">{treatment.nextDueDate ? new Date(treatment.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : t("petDossier.costNotSpecified")}</p>
                                 </div>
                                 <div>
-                                  <p className="text-gray-600">Type</p>
+                                  <p className="text-gray-600">{t("petDossier.productType")}</p>
                                   <p className="font-medium">{treatment.productType}</p>
                                 </div>
                                 <div>
-                                  <p className="text-gray-600">Vétérinaire</p>
+                                  <p className="text-gray-600">{t("petDossier.veterinarian")}</p>
                                   <p className="font-medium">{treatment.veterinarian}</p>
                                 </div>
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-3">
                                 <div>
-                                  <p className="text-gray-600">Parasites ciblés</p>
+                                  <p className="text-gray-600">{t("petDossier.targetParasites")}</p>
                                   <p className="font-medium">{treatment.targetParasites}</p>
                                 </div>
                                 <div>
-                                  <p className="text-gray-600">Dosage</p>
-                                  <p className="font-medium">{treatment.dosage || 'Non spécifié'}</p>
+                                  <p className="text-gray-600">{t("petDossier.dosage")}</p>
+                                  <p className="font-medium">{treatment.dosage || t("petDossier.costNotSpecified")}</p>
                                 </div>
                               </div>
 
                               {treatment.batchNumber && (
                                 <div className="mt-3 text-sm">
-                                  <p className="text-gray-600">Numéro de lot: <span className="font-medium">{treatment.batchNumber}</span></p>
+                                  <p className="text-gray-600">{t("petDossier.batchNumber")} <span className="font-medium">{treatment.batchNumber}</span></p>
                                 </div>
                               )}
 
                               {treatment.manufacturer && (
                                 <div className="mt-1 text-sm">
-                                  <p className="text-gray-600">Fabricant: <span className="font-medium">{treatment.manufacturer}</span></p>
+                                  <p className="text-gray-600">{t("petDossier.manufacturer")} <span className="font-medium">{treatment.manufacturer}</span></p>
                                 </div>
                               )}
 
                               {treatment.weight && (
                                 <div className="mt-1 text-sm">
-                                  <p className="text-gray-600">Poids de l'animal: <span className="font-medium">{treatment.weight}</span></p>
+                                  <p className="text-gray-600">{t("petDossier.animalWeight")} <span className="font-medium">{treatment.weight}</span></p>
                                 </div>
                               )}
 
                               {treatment.cost && (
                                 <div className="mt-1 text-sm">
-                                  <p className="text-gray-600">Coût: <span className="font-medium">{treatment.cost} €</span></p>
+                                  <p className="text-gray-600">{t("petDossier.costColon")} <span className="font-medium">{treatment.cost} €</span></p>
                                 </div>
                               )}
 
                               {treatment.notes && (
                                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                                   <p className="text-sm text-gray-700">
-                                    <strong>Notes:</strong> {treatment.notes}
+                                    <strong>{t("petDossier.notes")}</strong> {treatment.notes}
                                   </p>
                                 </div>
                               )}
@@ -1608,7 +1625,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                               {treatment.sideEffects && (
                                 <div className="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
                                   <p className="text-sm text-red-700">
-                                    <strong>⚠️ Effets indésirables:</strong> {treatment.sideEffects}
+                                    <strong>{t("petDossier.sideEffects")}</strong> {treatment.sideEffects}
                                   </p>
                                 </div>
                               )}
@@ -1618,7 +1635,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                               {treatment.nextDueDate && new Date(treatment.nextDueDate) <= new Date() && treatment.status !== 'completed' && (
                                 <Button size="sm" className="gap-2">
                                   <Plus className="h-4 w-4" />
-                                  Rappel
+                                  {t("petDossier.reminder")}
                                 </Button>
                               )}
                             </div>
@@ -1633,7 +1650,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
 
             <TabsContent value="pedigree" className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Pedigree Officiel</h3>
+                <h3 className="text-lg font-semibold">{t("petDossier.officialPedigreeTitle")}</h3>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -1641,7 +1658,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                   className="gap-2"
                 >
                   <Edit className="h-4 w-4" />
-                  {editingPedigree ? 'Annuler' : 'Modifier'}
+                  {editingPedigree ? tc("cancel") : tc("edit")}
                 </Button>
               </div>
 
@@ -1657,7 +1674,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                       }
                       disabled={!editingPedigree}
                     />
-                    <Label htmlFor="hasPedigree" className="text-lg">Cet animal a un pedigree officiel</Label>
+                    <Label htmlFor="hasPedigree" className="text-lg">{t("petDossier.hasOfficialPedigree")}</Label>
                   </CardTitle>
                 </CardHeader>
               </Card>
@@ -1668,38 +1685,38 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     {/* Informations sur l'animal */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Informations sur l'animal</CardTitle>
+                        <CardTitle className="text-lg">{t("petDossier.animalInfo")}</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-3">
                           <div>
-                            <Label htmlFor="officialName">Nom officiel</Label>
+                            <Label htmlFor="officialName">{t("petDossier.officialName")}</Label>
                             <Input
                               id="officialName"
                               value={pedigreeData.officialName}
                               onChange={(e) => setPedigreeData(prev => ({ ...prev, officialName: e.target.value }))}
                               disabled={!editingPedigree}
-                              placeholder="Nom officiel du pedigree"
+                              placeholder={t("petDossier.officialNamePlaceholder")}
                             />
                           </div>
                           <div>
-                            <Label htmlFor="pedigreeNumber">N° pedigree/LOF</Label>
+                            <Label htmlFor="pedigreeNumber">{t("petDossier.pedigreeNumber")}</Label>
                             <Input
                               id="pedigreeNumber"
                               value={pedigreeData.pedigreeNumber}
                               onChange={(e) => setPedigreeData(prev => ({ ...prev, pedigreeNumber: e.target.value }))}
                               disabled={!editingPedigree}
-                              placeholder="Numéro de pedigree"
+                              placeholder={t("petDossier.pedigreeNumberPlaceholder")}
                             />
                           </div>
                           <div>
-                            <Label htmlFor="breeder">Éleveur</Label>
+                            <Label htmlFor="breeder">{t("petDossier.breeder")}</Label>
                             <Input
                               id="breeder"
                               value={pedigreeData.breeder}
                               onChange={(e) => setPedigreeData(prev => ({ ...prev, breeder: e.target.value }))}
                               disabled={!editingPedigree}
-                              placeholder="Nom de l'éleveur"
+                              placeholder={t("petDossier.breederPlaceholder")}
                             />
                           </div>
                         </div>
@@ -1709,33 +1726,33 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                     {/* Parents */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Parents</CardTitle>
+                        <CardTitle className="text-lg">{t("petDossier.parents")}</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-3">
                           <div>
-                            <h4 className="font-medium text-sm">Père</h4>
+                            <h4 className="font-medium text-sm">{t("petDossier.father")}</h4>
                             <div className="space-y-2">
                               <Input
-                                placeholder="Nom du père"
+                                placeholder={t("petDossier.fatherNamePh")}
                                 value={pedigreeData.fatherName}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, fatherName: e.target.value }))}
                                 disabled={!editingPedigree}
                               />
                               <Input
-                                placeholder="N° pedigree du père"
+                                placeholder={t("petDossier.fatherPedigreePh")}
                                 value={pedigreeData.fatherPedigree}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, fatherPedigree: e.target.value }))}
                                 disabled={!editingPedigree}
                               />
                               <Input
-                                placeholder="Race du père"
+                                placeholder={t("petDossier.fatherBreedPh")}
                                 value={pedigreeData.fatherBreed}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, fatherBreed: e.target.value }))}
                                 disabled={!editingPedigree}
                               />
                               <Textarea
-                                placeholder="Titres du père"
+                                placeholder={t("petDossier.fatherTitlesPh")}
                                 value={pedigreeData.fatherTitles}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, fatherTitles: e.target.value }))}
                                 disabled={!editingPedigree}
@@ -1744,28 +1761,28 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-medium text-sm">Mère</h4>
+                            <h4 className="font-medium text-sm">{t("petDossier.mother")}</h4>
                             <div className="space-y-2">
                               <Input
-                                placeholder="Nom de la mère"
+                                placeholder={t("petDossier.motherNamePh")}
                                 value={pedigreeData.motherName}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, motherName: e.target.value }))}
                                 disabled={!editingPedigree}
                               />
                               <Input
-                                placeholder="N° pedigree de la mère"
+                                placeholder={t("petDossier.motherPedigreePh")}
                                 value={pedigreeData.motherPedigree}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, motherPedigree: e.target.value }))}
                                 disabled={!editingPedigree}
                               />
                               <Input
-                                placeholder="Race de la mère"
+                                placeholder={t("petDossier.motherBreedPh")}
                                 value={pedigreeData.motherBreed}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, motherBreed: e.target.value }))}
                                 disabled={!editingPedigree}
                               />
                               <Textarea
-                                placeholder="Titres de la mère"
+                                placeholder={t("petDossier.motherTitlesPh")}
                                 value={pedigreeData.motherTitles}
                                 onChange={(e) => setPedigreeData(prev => ({ ...prev, motherTitles: e.target.value }))}
                                 disabled={!editingPedigree}
@@ -1781,7 +1798,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                   {/* Upload du document pedigree */}
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Document officiel</CardTitle>
+                      <CardTitle className="text-lg">{t("petDossier.officialDocument")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
@@ -1798,7 +1815,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                           disabled={!editingPedigree}
                         />
                         {pedigreeData.pedigreePhoto && (
-                          <img src={pedigreeData.pedigreePhoto} alt="Document pedigree" className="h-48 w-auto object-contain rounded border" />
+                          <img src={pedigreeData.pedigreePhoto} alt={t("petDossier.pedigreeDocAlt")} className="h-48 w-auto object-contain rounded border" />
                         )}
                       </div>
                     </CardContent>
@@ -1808,10 +1825,10 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                   {editingPedigree && (
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={handlePedigreeCancel}>
-                        Annuler
+                        {tc("cancel")}
                       </Button>
                       <Button onClick={handlePedigreeSave}>
-                        Sauvegarder
+                        {tc("save")}
                       </Button>
                     </div>
                   )}
@@ -1822,22 +1839,22 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <Award className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>Aucun pedigree officiel</p>
-                    <p className="text-sm">Cochez la case ci-dessus pour ajouter les informations du pedigree</p>
+                    <p>{t("petDossier.noOfficialPedigree")}</p>
+                    <p className="text-sm">{t("petDossier.checkToAddPedigree")}</p>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
             <TabsContent value="alerts" className="space-y-4">
-              <h3 className="text-lg font-semibold">Alertes et rappels</h3>
+              <h3 className="text-lg font-semibold">{t("petDossier.alertsAndReminders")}</h3>
               
               {alerts.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                    <p>Aucune alerte active</p>
-                    <p className="text-sm">Tout va bien !</p>
+                    <p>{t("petDossier.noActiveAlerts")}</p>
+                    <p className="text-sm">{t("petDossier.allGood")}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -1865,11 +1882,11 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
         
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Fermer
+            {tc("close")}
           </Button>
             <Button onClick={handlePrintDossier} className="gap-2">
               <Printer className="h-4 w-4" />
-            Imprimer Dossier
+            {t("petDossier.printDossier")}
           </Button>
         </div>
       </DialogContent>
@@ -1899,7 +1916,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
           selectedClientId={owner?.id}
           selectedPetId={pet.id}
         >
-          <Button onClick={() => setShowNewVaccination(false)}>Fermer</Button>
+          <Button onClick={() => setShowNewVaccination(false)}>{tc("close")}</Button>
         </NewVaccinationModal>
       )}
       
@@ -1918,7 +1935,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
           selectedClientId={owner?.id}
           selectedPetId={pet.id}
         >
-          <Button onClick={() => setShowNewAntiparasitic(false)}>Fermer</Button>
+          <Button onClick={() => setShowNewAntiparasitic(false)}>{tc("close")}</Button>
         </NewAntiparasiticModalDynamic>
       )}
 

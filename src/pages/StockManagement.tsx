@@ -9,13 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Package, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  AlertTriangle, 
-  TrendingDown, 
+import {
+  Package,
+  Plus,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  TrendingDown,
   TrendingUp,
   Search,
   Filter,
@@ -24,6 +24,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
+import { useAppLocale } from '@/i18n/useAppLocale';
 
 interface StockItem {
   id: string;
@@ -59,8 +61,46 @@ interface StockMovement {
   };
 }
 
+const CATEGORY_DEFS = [
+  { value: 'Médicaments', key: 'medications' },
+  { value: 'Vaccins', key: 'vaccines' },
+  { value: 'Antiparasitaires', key: 'antiparasitics' },
+  { value: 'Matériel médical', key: 'medicalEquipment' },
+  { value: 'Consommables', key: 'consumables' },
+  { value: 'Nourriture', key: 'food' },
+  { value: 'Supplements', key: 'supplements' },
+  { value: 'Autre', key: 'other' },
+] as const;
+
+const MOVEMENT_TYPE_DEFS = [
+  { value: 'purchase', key: 'purchase', color: 'bg-green-100 text-green-800' },
+  { value: 'sale', key: 'sale', color: 'bg-blue-100 text-blue-800' },
+  { value: 'usage', key: 'usage', color: 'bg-orange-100 text-orange-800' },
+  { value: 'adjustment_in', key: 'adjustmentIn', color: 'bg-green-100 text-green-800' },
+  { value: 'adjustment_out', key: 'adjustmentOut', color: 'bg-red-100 text-red-800' },
+  { value: 'expired', key: 'expired', color: 'bg-gray-100 text-gray-800' },
+  { value: 'lost', key: 'lost', color: 'bg-red-100 text-red-800' },
+  { value: 'return', key: 'return', color: 'bg-purple-100 text-purple-800' },
+] as const;
+
+const UNIT_DEFS = [
+  { value: 'unit', key: 'unit' },
+  { value: 'kg', key: 'kg' },
+  { value: 'g', key: 'g' },
+  { value: 'l', key: 'l' },
+  { value: 'ml', key: 'ml' },
+  { value: 'boîte', key: 'box' },
+  { value: 'flacon', key: 'vial' },
+  { value: 'ampoule', key: 'ampoule' },
+  { value: 'comprimé', key: 'tablet' },
+  { value: 'dose', key: 'dose' },
+] as const;
+
 const StockManagement: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useTranslation('app');
+  const { t: tc } = useTranslation('common');
+  const { bcp47 } = useAppLocale();
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,31 +137,15 @@ const StockManagement: React.FC = () => {
     notes: ''
   });
 
-  const categories = [
-    'Médicaments',
-    'Vaccins',
-    'Antiparasitaires',
-    'Matériel médical',
-    'Consommables',
-    'Nourriture',
-    'Supplements',
-    'Autre'
-  ];
+  const categoryLabel = (value: string) => {
+    const def = CATEGORY_DEFS.find((c) => c.value === value);
+    return def ? t(`stock.mgmt.categories.${def.key}`) : value;
+  };
 
-  const movementTypes = [
-    { value: 'purchase', label: 'Achat', color: 'bg-green-100 text-green-800' },
-    { value: 'sale', label: 'Vente', color: 'bg-blue-100 text-blue-800' },
-    { value: 'usage', label: 'Utilisation', color: 'bg-orange-100 text-orange-800' },
-    { value: 'adjustment_in', label: 'Ajustement +', color: 'bg-green-100 text-green-800' },
-    { value: 'adjustment_out', label: 'Ajustement -', color: 'bg-red-100 text-red-800' },
-    { value: 'expired', label: 'Périmé', color: 'bg-gray-100 text-gray-800' },
-    { value: 'lost', label: 'Perdu', color: 'bg-red-100 text-red-800' },
-    { value: 'return', label: 'Retour', color: 'bg-purple-100 text-purple-800' }
-  ];
-
-  const units = [
-    'unit', 'kg', 'g', 'l', 'ml', 'boîte', 'flacon', 'ampoule', 'comprimé', 'dose'
-  ];
+  const unitLabel = (value: string) => {
+    const def = UNIT_DEFS.find((u) => u.value === value);
+    return def ? t(`stock.mgmt.units.${def.key}`) : value;
+  };
 
   const getCurrentOrganizationId = async () => {
     if (!user?.id) throw new Error('User not authenticated');
@@ -161,8 +185,8 @@ const StockManagement: React.FC = () => {
     } catch (error) {
       console.error('Error fetching stock items:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de charger l\'inventaire.',
+        title: tc('error'),
+        description: t('stock.mgmt.loadError'),
         variant: 'destructive',
       });
     } finally {
@@ -174,7 +198,6 @@ const StockManagement: React.FC = () => {
     try {
       const organizationId = await getCurrentOrganizationId();
 
-      // stock_movements n'a pas organization_id — filtrer via stock_items
       const { data, error } = await supabase
         .from('stock_movements')
         .select(`
@@ -194,7 +217,7 @@ const StockManagement: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const organizationId = await getCurrentOrganizationId();
 
@@ -216,10 +239,10 @@ const StockManagement: React.FC = () => {
           .eq('id', editingItem.id);
 
         if (error) throw error;
-        
+
         toast({
-          title: 'Succès',
-          description: 'Article mis à jour avec succès.',
+          title: tc('success'),
+          description: t('stock.mgmt.itemUpdated'),
         });
       } else {
         const { error } = await supabase
@@ -227,10 +250,10 @@ const StockManagement: React.FC = () => {
           .insert([itemData]);
 
         if (error) throw error;
-        
+
         toast({
-          title: 'Succès',
-          description: 'Article créé avec succès.',
+          title: tc('success'),
+          description: t('stock.mgmt.itemCreated'),
         });
       }
 
@@ -241,8 +264,8 @@ const StockManagement: React.FC = () => {
     } catch (error) {
       console.error('Error saving stock item:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'enregistrer l\'article.',
+        title: tc('error'),
+        description: t('stock.mgmt.itemSaveError'),
         variant: 'destructive',
       });
     }
@@ -250,11 +273,11 @@ const StockManagement: React.FC = () => {
 
   const handleMovementSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const qty = parseInt(movementData.quantity.toString()) || 0;
       if (!movementData.stock_item_id || qty <= 0) {
-        throw new Error('Article et quantité requis');
+        throw new Error(t('stock.mgmt.itemAndQtyRequired'));
       }
 
       const { data: item, error: itemErr } = await supabase
@@ -262,14 +285,14 @@ const StockManagement: React.FC = () => {
         .select('id, name, current_quantity')
         .eq('id', movementData.stock_item_id)
         .single();
-      if (itemErr || !item) throw itemErr || new Error('Article introuvable');
+      if (itemErr || !item) throw itemErr || new Error(t('stock.mgmt.itemNotFound'));
 
       const current = Number(item.current_quantity) || 0;
       const type = movementData.movement_type;
       let newQty = current;
       if (type === 'in' || type === 'purchase' || type === 'return') newQty = current + qty;
       else if (type === 'out' || type === 'sale' || type === 'usage' || type === 'expired' || type === 'damaged') {
-        if (qty > current) throw new Error(`Stock insuffisant (disponible: ${current})`);
+        if (qty > current) throw new Error(t('stock.mgmt.insufficientStock', { count: current }));
         newQty = current - qty;
       } else if (type === 'adjustment') {
         newQty = qty;
@@ -297,10 +320,10 @@ const StockManagement: React.FC = () => {
         }]);
 
       if (error) throw error;
-      
+
       toast({
-        title: 'Succès',
-        description: 'Mouvement de stock enregistré.',
+        title: tc('success'),
+        description: t('stock.mgmt.movementSaved'),
       });
 
       setShowMovementForm(false);
@@ -310,8 +333,8 @@ const StockManagement: React.FC = () => {
     } catch (error) {
       console.error('Error saving stock movement:', error);
       toast({
-        title: 'Erreur',
-        description: (error as any)?.message || 'Impossible d\'enregistrer le mouvement.',
+        title: tc('error'),
+        description: (error as any)?.message || t('stock.mgmt.movementSaveError'),
         variant: 'destructive',
       });
     }
@@ -340,7 +363,7 @@ const StockManagement: React.FC = () => {
   };
 
   const handleDelete = async (itemId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) return;
+    if (!confirm(t('stock.mgmt.confirmDelete'))) return;
 
     try {
       const { error } = await supabase
@@ -349,18 +372,18 @@ const StockManagement: React.FC = () => {
         .eq('id', itemId);
 
       if (error) throw error;
-      
+
       toast({
-        title: 'Succès',
-        description: 'Article supprimé avec succès.',
+        title: tc('success'),
+        description: t('stock.mgmt.itemDeleted'),
       });
-      
+
       fetchStockItems();
     } catch (error) {
       console.error('Error deleting stock item:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer l\'article.',
+        title: tc('error'),
+        description: t('stock.mgmt.itemDeleteError'),
         variant: 'destructive',
       });
     }
@@ -398,11 +421,11 @@ const StockManagement: React.FC = () => {
 
   const getStockStatus = (item: StockItem) => {
     if (item.current_quantity === 0) {
-      return { status: 'Rupture de stock', color: 'bg-red-100 text-red-800', icon: AlertTriangle };
+      return { status: t('stock.mgmt.status.outOfStock'), color: 'bg-red-100 text-red-800', icon: AlertTriangle };
     } else if (item.current_quantity <= item.minimum_quantity) {
-      return { status: 'Stock faible', color: 'bg-yellow-100 text-yellow-800', icon: TrendingDown };
+      return { status: t('stock.mgmt.status.low'), color: 'bg-yellow-100 text-yellow-800', icon: TrendingDown };
     } else {
-      return { status: 'En stock', color: 'bg-green-100 text-green-800', icon: TrendingUp };
+      return { status: t('stock.mgmt.status.inStock'), color: 'bg-green-100 text-green-800', icon: TrendingUp };
     }
   };
 
@@ -413,25 +436,25 @@ const StockManagement: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const lowStockItems = stockItems.filter(item => 
+  const lowStockItems = stockItems.filter(item =>
     item.current_quantity <= item.minimum_quantity && item.active
   );
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Chargement...</div>;
+    return <div className="flex justify-center items-center h-64">{t('stock.mgmt.loading')}</div>;
   }
 
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Stocks</h1>
+        <h1 className="text-2xl font-bold">{t('stock.mgmt.title')}</h1>
       </div>
 
       {lowStockItems.length > 0 && (
         <Alert className="mb-6">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>{lowStockItems.length} article(s)</strong> en stock faible ou en rupture.
+            {t('stock.mgmt.lowStockAlert', { count: lowStockItems.length })}
             <div className="mt-2">
               {lowStockItems.slice(0, 3).map(item => (
                 <span key={item.id} className="inline-block mr-2 mb-1">
@@ -446,9 +469,9 @@ const StockManagement: React.FC = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="inventory">Inventaire</TabsTrigger>
-          <TabsTrigger value="movements">Mouvements</TabsTrigger>
-          <TabsTrigger value="alerts">Alertes</TabsTrigger>
+          <TabsTrigger value="inventory">{t('stock.mgmt.tabs.inventory')}</TabsTrigger>
+          <TabsTrigger value="movements">{t('stock.mgmt.tabs.movements')}</TabsTrigger>
+          <TabsTrigger value="alerts">{t('stock.mgmt.tabs.alerts')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory" className="space-y-4">
@@ -457,7 +480,7 @@ const StockManagement: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Rechercher un article..."
+                  placeholder={t('stock.mgmt.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64"
@@ -466,13 +489,13 @@ const StockManagement: React.FC = () => {
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-48">
                   <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filtrer par catégorie" />
+                  <SelectValue placeholder={t('stock.mgmt.filterCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Toutes les catégories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  <SelectItem value="all">{t('stock.mgmt.allCategories')}</SelectItem>
+                  {CATEGORY_DEFS.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {t(`stock.mgmt.categories.${category.key}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -481,11 +504,11 @@ const StockManagement: React.FC = () => {
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowMovementForm(true)}>
                 <ShoppingCart className="h-4 w-4 mr-2" />
-                Mouvement
+                {t('stock.mgmt.movement')}
               </Button>
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nouvel Article
+                {t('stock.mgmt.newItem')}
               </Button>
             </div>
           </div>
@@ -493,13 +516,13 @@ const StockManagement: React.FC = () => {
           {showForm && (
             <Card>
               <CardHeader>
-                <CardTitle>{editingItem ? 'Modifier l\'Article' : 'Nouvel Article'}</CardTitle>
+                <CardTitle>{editingItem ? t('stock.mgmt.editItem') : t('stock.mgmt.newItem')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="name">Nom *</Label>
+                      <Label htmlFor="name">{t('stock.mgmt.labels.name')}</Label>
                       <Input
                         id="name"
                         value={formData.name}
@@ -507,17 +530,17 @@ const StockManagement: React.FC = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
-                      <Label htmlFor="category">Catégorie</Label>
+                      <Label htmlFor="category">{t('stock.mgmt.labels.category')}</Label>
                       <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une catégorie" />
+                          <SelectValue placeholder={t('stock.mgmt.placeholders.selectCategory')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
+                          {CATEGORY_DEFS.map((category) => (
+                            <SelectItem key={category.value} value={category.value}>
+                              {t(`stock.mgmt.categories.${category.key}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -525,15 +548,15 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="unit">Unité</Label>
+                      <Label htmlFor="unit">{t('stock.mgmt.labels.unit')}</Label>
                       <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {units.map((unit) => (
-                            <SelectItem key={unit} value={unit}>
-                              {unit}
+                          {UNIT_DEFS.map((unit) => (
+                            <SelectItem key={unit.value} value={unit.value}>
+                              {t(`stock.mgmt.units.${unit.key}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -541,7 +564,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="current_quantity">Quantité actuelle</Label>
+                      <Label htmlFor="current_quantity">{t('stock.mgmt.labels.currentQty')}</Label>
                       <Input
                         id="current_quantity"
                         type="number"
@@ -552,7 +575,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="minimum_quantity">Seuil minimum</Label>
+                      <Label htmlFor="minimum_quantity">{t('stock.mgmt.labels.minThreshold')}</Label>
                       <Input
                         id="minimum_quantity"
                         type="number"
@@ -563,7 +586,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="unit_cost">Coût unitaire (DH)</Label>
+                      <Label htmlFor="unit_cost">{t('stock.mgmt.labels.unitCost', { currency: 'DH' })}</Label>
                       <Input
                         id="unit_cost"
                         type="number"
@@ -575,7 +598,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="selling_price">Prix de vente (DH)</Label>
+                      <Label htmlFor="selling_price">{t('stock.mgmt.labels.sellingPrice', { currency: 'DH' })}</Label>
                       <Input
                         id="selling_price"
                         type="number"
@@ -587,7 +610,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="supplier">Fournisseur</Label>
+                      <Label htmlFor="supplier">{t('stock.mgmt.labels.supplier')}</Label>
                       <Input
                         id="supplier"
                         value={formData.supplier}
@@ -596,7 +619,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="batch_number">Numéro de lot</Label>
+                      <Label htmlFor="batch_number">{t('stock.mgmt.labels.batchNumber')}</Label>
                       <Input
                         id="batch_number"
                         value={formData.batch_number}
@@ -605,7 +628,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="expiration_date">Date d'expiration</Label>
+                      <Label htmlFor="expiration_date">{t('stock.mgmt.labels.expiration')}</Label>
                       <Input
                         id="expiration_date"
                         type="date"
@@ -615,7 +638,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="location">Emplacement</Label>
+                      <Label htmlFor="location">{t('stock.mgmt.labels.location')}</Label>
                       <Input
                         id="location"
                         value={formData.location}
@@ -625,7 +648,7 @@ const StockManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="description">Description</Label>
+                    <Label htmlFor="description">{t('stock.mgmt.labels.description')}</Label>
                     <Textarea
                       id="description"
                       value={formData.description}
@@ -641,15 +664,15 @@ const StockManagement: React.FC = () => {
                       checked={formData.requires_prescription}
                       onChange={(e) => setFormData({ ...formData, requires_prescription: e.target.checked })}
                     />
-                    <Label htmlFor="requires_prescription">Nécessite une prescription</Label>
+                    <Label htmlFor="requires_prescription">{t('stock.mgmt.labels.requiresPrescription')}</Label>
                   </div>
 
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingItem(null); resetForm(); }}>
-                      Annuler
+                      {tc('cancel')}
                     </Button>
                     <Button type="submit">
-                      {editingItem ? 'Mettre à jour' : 'Créer'}
+                      {editingItem ? tc('update') : tc('create')}
                     </Button>
                   </div>
                 </form>
@@ -660,21 +683,21 @@ const StockManagement: React.FC = () => {
           {showMovementForm && (
             <Card>
               <CardHeader>
-                <CardTitle>Nouveau Mouvement de Stock</CardTitle>
+                <CardTitle>{t('stock.mgmt.newMovement')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleMovementSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="stock_item_id">Article *</Label>
+                      <Label htmlFor="stock_item_id">{t('stock.mgmt.labels.item')}</Label>
                       <Select value={movementData.stock_item_id} onValueChange={(value) => setMovementData({ ...movementData, stock_item_id: value })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un article" />
+                          <SelectValue placeholder={t('stock.mgmt.placeholders.selectItem')} />
                         </SelectTrigger>
                         <SelectContent>
                           {stockItems.filter(item => item.active).map((item) => (
                             <SelectItem key={item.id} value={item.id}>
-                              {item.name} (Stock: {item.current_quantity})
+                              {item.name} ({t('stock.mgmt.stockLabel', { count: item.current_quantity })})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -682,15 +705,15 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="movement_type">Type de mouvement *</Label>
+                      <Label htmlFor="movement_type">{t('stock.mgmt.labels.movementType')}</Label>
                       <Select value={movementData.movement_type} onValueChange={(value) => setMovementData({ ...movementData, movement_type: value })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner le type" />
+                          <SelectValue placeholder={t('stock.mgmt.placeholders.selectType')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {movementTypes.map((type) => (
+                          {MOVEMENT_TYPE_DEFS.map((type) => (
                             <SelectItem key={type.value} value={type.value}>
-                              {type.label}
+                              {t(`stock.mgmt.movementTypes.${type.key}`)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -698,7 +721,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="quantity">Quantité *</Label>
+                      <Label htmlFor="quantity">{t('stock.mgmt.labels.quantity')}</Label>
                       <Input
                         id="quantity"
                         type="number"
@@ -710,7 +733,7 @@ const StockManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="reason">Raison</Label>
+                      <Label htmlFor="reason">{t('stock.mgmt.labels.reason')}</Label>
                       <Input
                         id="reason"
                         value={movementData.reason}
@@ -720,7 +743,7 @@ const StockManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="notes">Notes</Label>
+                    <Label htmlFor="notes">{t('stock.mgmt.labels.notes')}</Label>
                     <Textarea
                       id="notes"
                       value={movementData.notes}
@@ -731,10 +754,10 @@ const StockManagement: React.FC = () => {
 
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => { setShowMovementForm(false); resetMovementForm(); }}>
-                      Annuler
+                      {tc('cancel')}
                     </Button>
                     <Button type="submit">
-                      Enregistrer
+                      {tc('save')}
                     </Button>
                   </div>
                 </form>
@@ -746,7 +769,7 @@ const StockManagement: React.FC = () => {
             {filteredItems.map((item) => {
               const stockStatus = getStockStatus(item);
               const StatusIcon = stockStatus.icon;
-              
+
               return (
                 <Card key={item.id} className={`${!item.active ? 'opacity-60' : ''}`}>
                   <CardHeader className="pb-3">
@@ -756,7 +779,7 @@ const StockManagement: React.FC = () => {
                           <Package className="h-5 w-5" />
                           {item.name}
                         </CardTitle>
-                        <p className="text-sm text-muted-foreground">{item.category}</p>
+                        <p className="text-sm text-muted-foreground">{categoryLabel(item.category)}</p>
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
@@ -772,33 +795,33 @@ const StockManagement: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-2xl font-bold">{item.current_quantity}</span>
-                        <span className="text-sm text-muted-foreground">{item.unit}</span>
+                        <span className="text-sm text-muted-foreground">{unitLabel(item.unit)}</span>
                       </div>
-                      
+
                       <Badge className={stockStatus.color} variant="secondary">
                         <StatusIcon className="h-3 w-3 mr-1" />
                         {stockStatus.status}
                       </Badge>
-                      
+
                       <div className="text-xs space-y-1">
-                        <p><strong>Seuil min:</strong> {item.minimum_quantity}</p>
+                        <p><strong>{t('stock.mgmt.labels.minThresholdShort')}</strong> {item.minimum_quantity}</p>
                         {item.unit_cost > 0 && (
-                          <p><strong>Coût:</strong> {item.unit_cost} DH</p>
+                          <p><strong>{t('stock.mgmt.labels.cost')}</strong> {item.unit_cost} DH</p>
                         )}
                         {item.selling_price > 0 && (
-                          <p><strong>Prix:</strong> {item.selling_price} DH</p>
+                          <p><strong>{t('stock.mgmt.labels.price')}</strong> {item.selling_price} DH</p>
                         )}
                         {item.supplier && (
-                          <p><strong>Fournisseur:</strong> {item.supplier}</p>
+                          <p><strong>{t('stock.mgmt.labels.supplier')}:</strong> {item.supplier}</p>
                         )}
                         {item.expiration_date && (
-                          <p><strong>Expiration:</strong> {new Date(item.expiration_date).toLocaleDateString()}</p>
+                          <p><strong>{t('stock.mgmt.labels.expiration')}:</strong> {new Date(item.expiration_date).toLocaleDateString(bcp47)}</p>
                         )}
                         {item.location && (
-                          <p><strong>Emplacement:</strong> {item.location}</p>
+                          <p><strong>{t('stock.mgmt.labels.location')}:</strong> {item.location}</p>
                         )}
                       </div>
-                      
+
                       {item.description && (
                         <p className="text-xs text-muted-foreground mt-2">{item.description}</p>
                       )}
@@ -813,17 +836,17 @@ const StockManagement: React.FC = () => {
             <Card className="text-center py-12">
               <CardContent>
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-lg font-medium mb-2">Aucun article trouvé</p>
+                <p className="text-lg font-medium mb-2">{t('stock.mgmt.empty')}</p>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm || categoryFilter !== 'all' 
-                    ? 'Essayez de modifier vos critères de recherche.'
-                    : 'Commencez par ajouter votre premier article.'
+                  {searchTerm || categoryFilter !== 'all'
+                    ? t('stock.mgmt.emptyFilterHint')
+                    : t('stock.mgmt.emptyHint')
                   }
                 </p>
                 {!searchTerm && categoryFilter === 'all' && (
                   <Button onClick={() => setShowForm(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Ajouter un article
+                    {t('stock.mgmt.addItem')}
                   </Button>
                 )}
               </CardContent>
@@ -833,10 +856,10 @@ const StockManagement: React.FC = () => {
 
         <TabsContent value="movements" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Historique des Mouvements</h2>
+            <h2 className="text-lg font-semibold">{t('stock.mgmt.movementsHistory')}</h2>
             <Button onClick={() => setShowMovementForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Nouveau Mouvement
+              {t('stock.mgmt.newMovementShort')}
             </Button>
           </div>
 
@@ -846,26 +869,26 @@ const StockManagement: React.FC = () => {
                 <table className="w-full">
                   <thead className="border-b">
                     <tr className="text-left">
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Article</th>
-                      <th className="p-4">Type</th>
-                      <th className="p-4">Quantité</th>
-                      <th className="p-4">Raison</th>
+                      <th className="p-4">{t('stock.mgmt.colDate')}</th>
+                      <th className="p-4">{t('stock.mgmt.colItem')}</th>
+                      <th className="p-4">{t('stock.mgmt.colType')}</th>
+                      <th className="p-4">{t('stock.mgmt.colQty')}</th>
+                      <th className="p-4">{t('stock.mgmt.colReason')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stockMovements.map((movement) => {
-                      const movementType = movementTypes.find(t => t.value === movement.movement_type);
+                      const movementType = MOVEMENT_TYPE_DEFS.find(type => type.value === movement.movement_type);
                       return (
                         <tr key={movement.id} className="border-b">
                           <td className="p-4">
-                            {new Date(movement.movement_date).toLocaleDateString()}
+                            {new Date(movement.movement_date).toLocaleDateString(bcp47)}
                           </td>
                           <td className="p-4">{movement.stock_item?.name}</td>
                           <td className="p-4">
                             {movementType && (
                               <Badge className={movementType.color} variant="secondary">
-                                {movementType.label}
+                                {t(`stock.mgmt.movementTypes.${movementType.key}`)}
                               </Badge>
                             )}
                           </td>
@@ -887,13 +910,13 @@ const StockManagement: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="alerts" className="space-y-4">
-          <h2 className="text-lg font-semibold">Alertes de Stock</h2>
-          
+          <h2 className="text-lg font-semibold">{t('stock.mgmt.alertsTitle')}</h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {lowStockItems.map((item) => {
               const stockStatus = getStockStatus(item);
               const StatusIcon = stockStatus.icon;
-              
+
               return (
                 <Card key={item.id} className="border-l-4 border-l-red-500">
                   <CardContent className="p-4">
@@ -903,11 +926,11 @@ const StockManagement: React.FC = () => {
                           <StatusIcon className="h-4 w-4 text-red-500" />
                           {item.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground">{item.category}</p>
+                        <p className="text-sm text-muted-foreground">{categoryLabel(item.category)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-red-600">{item.current_quantity}</p>
-                        <p className="text-xs text-muted-foreground">Seuil: {item.minimum_quantity}</p>
+                        <p className="text-xs text-muted-foreground">{t('stock.mgmt.labels.threshold', { count: item.minimum_quantity })}</p>
                       </div>
                     </div>
                     <div className="mt-2">
@@ -925,9 +948,9 @@ const StockManagement: React.FC = () => {
             <Card className="text-center py-12">
               <CardContent>
                 <TrendingUp className="h-12 w-12 mx-auto text-green-500 mb-4" />
-                <p className="text-lg font-medium mb-2">Aucune alerte de stock</p>
+                <p className="text-lg font-medium mb-2">{t('stock.mgmt.noAlerts')}</p>
                 <p className="text-muted-foreground">
-                  Tous vos articles sont à un niveau de stock satisfaisant.
+                  {t('stock.mgmt.noAlertsHint')}
                 </p>
               </CardContent>
             </Card>

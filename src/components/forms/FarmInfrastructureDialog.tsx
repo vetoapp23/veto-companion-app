@@ -13,6 +13,7 @@ import {
   type FarmInfrastructure,
 } from "@/hooks/useFarmInfrastructures";
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -22,6 +23,8 @@ interface Props {
 }
 
 const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const create = useCreateFarmInfrastructure();
   const update = useUpdateFarmInfrastructure();
@@ -74,7 +77,7 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
       setData((p) => ({ ...p, photos: [...p.photos, ...out] }));
       if (addedBytes > 0) recordStorageChange("farm", addedBytes, out.length);
     } catch (err: any) {
-      toast({ title: "Erreur photo", description: err.message, variant: "destructive" });
+      toast({ title: t("farms.photoError"), description: err.message, variant: "destructive" });
     }
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -91,7 +94,7 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data.name.trim() || !data.infra_type.trim()) {
-      toast({ title: "Nom et type requis", variant: "destructive" });
+      toast({ title: t("farms.infra.nameTypeRequired"), variant: "destructive" });
       return;
     }
     const payload = {
@@ -107,14 +110,14 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
     try {
       if (infra?.id) {
         await update.mutateAsync({ id: infra.id, data: payload });
-        toast({ title: "✓ Infrastructure mise à jour" });
+        toast({ title: t("farms.infra.updated") });
       } else {
         await create.mutateAsync(payload);
-        toast({ title: "✓ Infrastructure ajoutée" });
+        toast({ title: t("farms.infra.added") });
       }
       onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: tc("error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -122,46 +125,46 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{infra ? "Modifier l'infrastructure" : "Nouvelle infrastructure"}</DialogTitle>
-          <DialogDescription>Bâtiment, écurie, poulailler, rucher, bassin…</DialogDescription>
+          <DialogTitle>{infra ? t("farms.infra.edit") : t("farms.infra.new")}</DialogTitle>
+          <DialogDescription>{t("farms.infra.description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Nom *</Label>
-              <Input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} required placeholder="Ex: Étable nord" />
+              <Label>{tc("name")} *</Label>
+              <Input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} required placeholder={t("farms.infra.namePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>Type *</Label>
+              <Label>{t("farms.infra.type")} *</Label>
               <ComboboxFreeText
                 value={data.infra_type}
                 onChange={(v) => setData({ ...data, infra_type: v })}
                 options={INFRA_TYPE_DEFAULTS}
                 category="infrastructure_type"
-                placeholder="Étable, poulailler…"
+                placeholder={t("farms.infra.typePlaceholder")}
               />
             </div>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Capacité (têtes)</Label>
+              <Label>{t("farms.infra.capacity")}</Label>
               <Input type="number" min={0} value={data.capacity} onChange={(e) => setData({ ...data, capacity: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Surface (m²)</Label>
+              <Label>{t("farms.infra.surface")}</Label>
               <Input type="number" min={0} step="0.1" value={data.surface_sqm} onChange={(e) => setData({ ...data, surface_sqm: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label>Emplacement</Label>
-              <Input value={data.location} onChange={(e) => setData({ ...data, location: e.target.value })} placeholder="Bât. A, zone nord…" />
+              <Label>{t("stock.colLocation")}</Label>
+              <Input value={data.location} onChange={(e) => setData({ ...data, location: e.target.value })} placeholder={t("farms.infra.locationPlaceholder")} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{tc("notes")}</Label>
             <Textarea rows={2} value={data.notes} onChange={(e) => setData({ ...data, notes: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label>Photos</Label>
+            <Label>{t("farms.infra.photos")}</Label>
             <div className="flex flex-wrap gap-2">
               {data.photos.map((src, i) => (
                 <div key={i} className="relative h-20 w-20 rounded overflow-hidden border">
@@ -174,16 +177,16 @@ const FarmInfrastructureDialog = ({ open, onOpenChange, farmId, infra }: Props) 
               ))}
               <button type="button" onClick={() => fileRef.current?.click()}
                 className="h-20 w-20 rounded border border-dashed flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-accent">
-                <Upload className="h-4 w-4 mb-1" /> Ajouter
+                <Upload className="h-4 w-4 mb-1" /> {tc("add")}
               </button>
               <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFiles} />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>{tc("cancel")}</Button>
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {infra ? "Enregistrer" : "Ajouter"}
+              {infra ? tc("save") : tc("add")}
             </Button>
           </DialogFooter>
         </form>

@@ -4,8 +4,12 @@ import { useClients, useAnimals, useConsultations, useAppointments, useVaccinati
 import { useAccounting } from "@/hooks/useAccounting";
 import { useSettings } from "@/contexts/SettingsContext";
 import { toLocalDateKey, todayLocalKey } from "@/lib/dateLocal";
+import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
 
 export function DashboardStats() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { data: clients = [] } = useClients();
   const { data: pets = [] } = useAnimals();
   const { data: consultations = [] } = useConsultations();
@@ -79,17 +83,17 @@ export function DashboardStats() {
   const newPetsPreviousMonth = pets.filter(p => inMonth(p.created_at, previousMonth, previousYear)).length;
   const currency = settings.currency || "MAD";
 
-  const stats = [
-    { title: "Clients Total", value: totalClients.toString(), change: getChangePercentage(newClientsThisMonth, newClientsPreviousMonth), icon: Users, color: "text-blue-600", bgColor: "bg-blue-50", description: `${newClientsThisMonth} nouveaux ce mois` },
-    { title: "Animaux Suivis", value: totalPets.toString(), change: getChangePercentage(newPetsThisMonth, newPetsPreviousMonth), icon: Heart, color: "text-red-600", bgColor: "bg-red-50", description: `${newPetsThisMonth} nouveaux ce mois` },
-    { title: "RDV Aujourd'hui", value: appointmentsToday.toString(), change: getChangePercentage(appointmentsThisMonth, appointmentsPreviousMonth), icon: Calendar, color: "text-purple-600", bgColor: "bg-purple-50", description: `${upcomingAppointments.length} a venir cette semaine` },
-    { title: "Consultations", value: consultationsThisMonth.toString(), change: getChangePercentage(consultationsThisMonth, consultationsPreviousMonth), icon: Stethoscope, color: "text-green-600", bgColor: "bg-green-50", description: `${consultationsToday} aujourd'hui` },
-    { title: "Revenus Reels", value: `${realRevenue.toFixed(0)} ${currency}`, change: getChangePercentage(realRevenue, previousRevenue), icon: DollarSign, color: "text-emerald-600", bgColor: "bg-emerald-50", description: `Benefice: ${netIncome.toFixed(0)} ${currency}` },
-    { title: "Activite Ferme", value: totalFarms.toString(), change: "—", icon: Activity, color: "text-orange-600", bgColor: "bg-orange-50", description: `${totalFarms} exploitations actives` },
-    { title: "Vaccinations", value: vaccinationsThisMonth.toString(), change: getChangePercentage(vaccinationsThisMonth, vaccinationsPreviousMonth), icon: Syringe, color: "text-blue-600", bgColor: "bg-blue-50", description: `${totalVaccinations} au total` },
-    { title: "Antiparasitaires", value: antiparasiticsThisMonth.toString(), change: getChangePercentage(antiparasiticsThisMonth, antiparasiticsPreviousMonth), icon: Shield, color: "text-purple-600", bgColor: "bg-purple-50", description: `${totalAntiparasitics} au total` },
-    { title: "Stock", value: totalStockItems.toString(), change: lowStockItems > 0 ? `${lowStockItems} alertes` : "OK", icon: lowStockItems > 0 ? AlertTriangle : Package, color: lowStockItems > 0 ? "text-red-600" : "text-green-600", bgColor: lowStockItems > 0 ? "bg-red-50" : "bg-green-50", description: `${lowStockItems} bas, ${outOfStockItems} epuises` },
-  ];
+  const stats = useMemo(() => [
+    { title: t("dashboard.stats.totalClients"), value: totalClients.toString(), change: getChangePercentage(newClientsThisMonth, newClientsPreviousMonth), icon: Users, color: "text-blue-600", bgColor: "bg-blue-50", description: t("dashboard.stats.newThisMonth", { count: newClientsThisMonth }) },
+    { title: t("dashboard.stats.petsFollowed"), value: totalPets.toString(), change: getChangePercentage(newPetsThisMonth, newPetsPreviousMonth), icon: Heart, color: "text-red-600", bgColor: "bg-red-50", description: t("dashboard.stats.newThisMonth", { count: newPetsThisMonth }) },
+    { title: t("dashboard.stats.apptsToday"), value: appointmentsToday.toString(), change: getChangePercentage(appointmentsThisMonth, appointmentsPreviousMonth), icon: Calendar, color: "text-purple-600", bgColor: "bg-purple-50", description: t("dashboard.stats.upcomingWeek", { count: upcomingAppointments.length }) },
+    { title: t("dashboard.stats.consultations"), value: consultationsThisMonth.toString(), change: getChangePercentage(consultationsThisMonth, consultationsPreviousMonth), icon: Stethoscope, color: "text-green-600", bgColor: "bg-green-50", description: t("dashboard.stats.todayCount", { count: consultationsToday }) },
+    { title: t("dashboard.stats.realRevenue"), value: `${realRevenue.toFixed(0)} ${currency}`, change: getChangePercentage(realRevenue, previousRevenue), icon: DollarSign, color: "text-emerald-600", bgColor: "bg-emerald-50", description: t("dashboard.stats.profit", { amount: netIncome.toFixed(0), currency }) },
+    { title: t("dashboard.stats.farmActivity"), value: totalFarms.toString(), change: "—", icon: Activity, color: "text-orange-600", bgColor: "bg-orange-50", description: t("dashboard.stats.activeFarms", { count: totalFarms }) },
+    { title: t("dashboard.stats.vaccinations"), value: vaccinationsThisMonth.toString(), change: getChangePercentage(vaccinationsThisMonth, vaccinationsPreviousMonth), icon: Syringe, color: "text-blue-600", bgColor: "bg-blue-50", description: t("dashboard.stats.totalCount", { count: totalVaccinations }) },
+    { title: t("dashboard.stats.antiparasitics"), value: antiparasiticsThisMonth.toString(), change: getChangePercentage(antiparasiticsThisMonth, antiparasiticsPreviousMonth), icon: Shield, color: "text-purple-600", bgColor: "bg-purple-50", description: t("dashboard.stats.totalCount", { count: totalAntiparasitics }) },
+    { title: t("dashboard.stats.stock"), value: totalStockItems.toString(), change: lowStockItems > 0 ? t("dashboard.stats.stockAlerts", { count: lowStockItems }) : t("dashboard.stats.stockOk"), icon: lowStockItems > 0 ? AlertTriangle : Package, color: lowStockItems > 0 ? "text-red-600" : "text-green-600", bgColor: lowStockItems > 0 ? "bg-red-50" : "bg-green-50", description: t("dashboard.stats.stockLevels", { low: lowStockItems, out: outOfStockItems }) },
+  ], [t, totalClients, totalPets, appointmentsToday, consultationsThisMonth, realRevenue, currency, netIncome, totalFarms, vaccinationsThisMonth, antiparasiticsThisMonth, totalStockItems, lowStockItems, outOfStockItems, newClientsThisMonth, newPetsThisMonth, upcomingAppointments.length, consultationsToday, totalVaccinations, totalAntiparasitics, appointmentsThisMonth, appointmentsPreviousMonth, consultationsPreviousMonth, previousRevenue, vaccinationsPreviousMonth, antiparasiticsPreviousMonth, newClientsPreviousMonth, newPetsPreviousMonth]);
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -104,7 +108,7 @@ export function DashboardStats() {
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-secondary font-medium">{stat.change}</span> vs mois dernier
+              <span className="text-secondary font-medium">{stat.change}</span> {tc("vsLastMonth")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
           </CardContent>

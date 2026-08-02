@@ -21,49 +21,51 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { cn } from "@/lib/utils";
 import { type PermissionKey, userHasPermission } from "@/lib/permissions";
+import { useTranslation } from "react-i18next";
 
 const primaryNavItems: {
   icon: typeof Home;
-  label: string;
+  labelKey: string;
   path: string;
   permission: PermissionKey | null;
 }[] = [
-  { icon: Home, label: "Dashboard", path: "/dashboard", permission: null },
-  { icon: Users, label: "Clients", path: "/clients", permission: "can_manage_clients" },
-  { icon: Heart, label: "Animaux", path: "/pets", permission: "can_manage_animals" },
-  { icon: Calendar, label: "RDV", path: "/appointments", permission: "can_manage_appointments" },
-  { icon: ClipboardList, label: "Visites", path: "/visites", permission: "can_manage_visits" },
-  { icon: FileText, label: "Consultations", path: "/consultations", permission: "can_create_consultations" },
-  { icon: Syringe, label: "Vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
-  { icon: Bug, label: "Antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
-  { icon: BarChart3, label: "Historiques", path: "/history", permission: "can_view_history" },
+  { icon: Home, labelKey: "dashboard", path: "/dashboard", permission: null },
+  { icon: Users, labelKey: "clients", path: "/clients", permission: "can_manage_clients" },
+  { icon: Heart, labelKey: "pets", path: "/pets", permission: "can_manage_animals" },
+  { icon: Calendar, labelKey: "appointmentsShort", path: "/appointments", permission: "can_manage_appointments" },
+  { icon: ClipboardList, labelKey: "visits", path: "/visites", permission: "can_manage_visits" },
+  { icon: FileText, labelKey: "consultations", path: "/consultations", permission: "can_create_consultations" },
+  { icon: Syringe, labelKey: "vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
+  { icon: Bug, labelKey: "antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
+  { icon: BarChart3, labelKey: "history", path: "/history", permission: "can_view_history" },
 ];
 
 const secondaryNavItems: {
   icon: typeof Home;
-  label: string;
+  labelKey: string;
   path: string;
   permission: PermissionKey | null;
   planFeature?: "farm" | "stock" | "accounting";
   adminOnly?: boolean;
   superAdminOnly?: boolean;
 }[] = [
-  { icon: Building2, label: "Fermes", path: "/farms", permission: "can_manage_farms", planFeature: "farm" },
-  { icon: Package, label: "Stock", path: "/stock", permission: "can_manage_stock", planFeature: "stock" },
+  { icon: Building2, labelKey: "farms", path: "/farms", permission: "can_manage_farms", planFeature: "farm" },
+  { icon: Package, labelKey: "stock", path: "/stock", permission: "can_manage_stock", planFeature: "stock" },
   {
     icon: Euro,
-    label: "Comptabilité",
+    labelKey: "accounting",
     path: "/accounting",
     permission: "can_manage_accounting",
     planFeature: "accounting",
   },
-  { icon: Users, label: "Équipe", path: "/admin/team", permission: null, adminOnly: true },
-  { icon: Shield, label: "Super Admin", path: "/super-admin", permission: null, superAdminOnly: true },
-  { icon: Cog, label: "Paramètres", path: "/settings", permission: "can_manage_settings" },
+  { icon: Users, labelKey: "team", path: "/admin/team", permission: null, adminOnly: true },
+  { icon: Shield, labelKey: "superAdmin", path: "/super-admin", permission: null, superAdminOnly: true },
+  { icon: Cog, labelKey: "settings", path: "/settings", permission: "can_manage_settings" },
 ];
 
 const navItemAllowed = (user: any, item: any) => {
@@ -81,6 +83,7 @@ export function VetNavigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
+  const { t } = useTranslation("nav");
 
   const planAllows = (feature?: "farm" | "accounting" | "stock") => {
     if (!feature) return true;
@@ -97,7 +100,7 @@ export function VetNavigation() {
   const allNavItems = [...filteredPrimaryNavItems, ...filteredSecondaryNavItems];
 
   return (
-    <nav className="app-nav">
+    <nav className="app-nav" aria-label={t("mainNavigation")}>
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -116,8 +119,9 @@ export function VetNavigation() {
                 Veto<span>Crm</span>
               </span>
             </Link>
-            <div className="hidden sm:block">
+            <div className="hidden sm:flex items-center gap-1.5">
               <ThemeToggle />
+              <LanguageSwitcher variant="compact" />
             </div>
           </div>
 
@@ -137,7 +141,7 @@ export function VetNavigation() {
                 >
                   <Link to={item.path}>
                     <item.icon className="h-3.5 w-3.5" />
-                    <span className="hidden xl:inline">{item.label}</span>
+                    <span className="hidden xl:inline">{t(item.labelKey)}</span>
                   </Link>
                 </Button>
               );
@@ -147,7 +151,7 @@ export function VetNavigation() {
               <div className="relative group">
                 <Button variant="ghost" size="sm" className="app-nav-link gap-1.5 px-2.5">
                   <Menu className="h-3.5 w-3.5" />
-                  <span className="hidden xl:inline">Plus</span>
+                  <span className="hidden xl:inline">{t("more")}</span>
                 </Button>
                 <div className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border bg-card/95 backdrop-blur-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-hidden">
                   <div className="py-1.5">
@@ -165,7 +169,7 @@ export function VetNavigation() {
                           )}
                         >
                           <item.icon className="h-4 w-4" />
-                          {item.label}
+                          {t(item.labelKey)}
                         </Link>
                       );
                     })}
@@ -180,8 +184,9 @@ export function VetNavigation() {
           </div>
 
           <div className="lg:hidden flex items-center gap-1.5">
-            <div className="sm:hidden">
+            <div className="sm:hidden flex items-center gap-1">
               <ThemeToggle />
+              <LanguageSwitcher variant="compact" />
             </div>
             <LogoutButton />
             <Button
@@ -189,6 +194,7 @@ export function VetNavigation() {
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-full"
+              aria-label={isMobileMenuOpen ? t("closeMenu") : t("openMenu")}
             >
               {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
@@ -209,7 +215,7 @@ export function VetNavigation() {
                 >
                   <Link to={item.path}>
                     <item.icon className="h-3.5 w-3.5" />
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate">{t(item.labelKey)}</span>
                   </Link>
                 </Button>
               ))}

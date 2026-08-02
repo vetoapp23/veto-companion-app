@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchPlatformSettings, upsertPlatformSetting } from "@/lib/superAdmin";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Activity, Wrench, Flag, Mail } from "lucide-react";
 
 export default function SuperAdminSystem() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const qc = useQueryClient();
   const settings = useQuery({
@@ -72,15 +75,15 @@ export default function SuperAdminSystem() {
     try {
       await upsertPlatformSetting("maintenance_mode", {
         enabled: maintEnabled,
-        message: maintMessage || "Maintenance en cours. Réessayez bientôt.",
+        message: maintMessage || t("superAdmin.system.defaultMaintenanceMsg"),
       });
       await upsertPlatformSetting("feature_flags", flags);
       await upsertPlatformSetting("support_email", { email: supportEmail });
-      toast({ title: "Paramètres système enregistrés" });
+      toast({ title: t("superAdmin.system.saved") });
       qc.invalidateQueries({ queryKey: ["super-admin", "platform-settings"] });
       qc.invalidateQueries({ queryKey: ["access-status"] });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -91,7 +94,7 @@ export default function SuperAdminSystem() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="h-4 w-4" /> Santé
+            <Activity className="h-4 w-4" /> {t("superAdmin.system.health")}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-2">
@@ -107,23 +110,23 @@ export default function SuperAdminSystem() {
               {!c.ok && c.detail && <p className="text-xs text-muted-foreground mt-1">{c.detail}</p>}
             </div>
           ))}
-          {health.isLoading && <p className="text-sm text-muted-foreground">Vérification…</p>}
+          {health.isLoading && <p className="text-sm text-muted-foreground">{t("superAdmin.system.checking")}</p>}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Wrench className="h-4 w-4" /> Mode maintenance
+            <Wrench className="h-4 w-4" /> {t("superAdmin.system.maintenance")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between rounded border p-3">
-            <Label>Activer la maintenance (bloque tous sauf super_admin)</Label>
+            <Label>{t("superAdmin.system.enableMaintenance")}</Label>
             <Switch checked={maintEnabled} onCheckedChange={setMaintEnabled} />
           </div>
           <div>
-            <Label>Message</Label>
+            <Label>{t("superAdmin.system.message")}</Label>
             <Textarea rows={2} value={maintMessage} onChange={(e) => setMaintMessage(e.target.value)} />
           </div>
         </CardContent>
@@ -132,15 +135,17 @@ export default function SuperAdminSystem() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Flag className="h-4 w-4" /> Feature flags
+            <Flag className="h-4 w-4" /> {t("superAdmin.system.featureFlags")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {[
-            ["force_read_only", "Lecture seule globale"],
-            ["block_registrations", "Bloquer les inscriptions"],
-            ["new_billing_ui", "Nouvelle UI billing (preview)"],
-          ].map(([key, label]) => (
+          {(
+            [
+              ["force_read_only", t("superAdmin.system.forceReadOnly")],
+              ["block_registrations", t("superAdmin.system.blockRegistrations")],
+              ["new_billing_ui", t("superAdmin.system.newBillingUi")],
+            ] as const
+          ).map(([key, label]) => (
             <div key={key} className="flex items-center justify-between rounded border p-3">
               <Label>{label}</Label>
               <Switch
@@ -155,22 +160,22 @@ export default function SuperAdminSystem() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Mail className="h-4 w-4" /> Support
+            <Mail className="h-4 w-4" /> {t("superAdmin.system.support")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <Label>Email support</Label>
+            <Label>{t("superAdmin.system.supportEmail")}</Label>
             <Input value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} />
           </div>
           <p className="text-xs text-muted-foreground">
-            Les broadcasts email / exports RGPD peuvent s’appuyer sur cet email et l’edge function `send-email`.
+            {t("superAdmin.system.supportEmailHint")}
           </p>
         </CardContent>
       </Card>
 
       <Button className="rounded-full" onClick={save} disabled={saving}>
-        {saving ? "Enregistrement…" : "Enregistrer le système"}
+        {saving ? t("superAdmin.system.saving") : t("superAdmin.system.saveSystem")}
       </Button>
     </div>
   );

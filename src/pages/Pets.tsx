@@ -32,13 +32,15 @@ import {
 import type { Animal, Client, CreateAnimalData } from "@/lib/database";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useDisplayPreference } from "@/hooks/use-display-preference";
-import { calculateAge, formatTemperatureValue } from "@/lib/utils";
+import { calculateAgeInYears, formatTemperatureValue } from "@/lib/utils";
 import { 
   useFarmManagementSettings,
   useAnimalColors,
   DEFAULT_SETTINGS
 } from "@/hooks/useAppSettings";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 // Import the original Pet interface from ClientContext for compatibility
 import { Pet } from "@/contexts/ClientContext";
@@ -56,9 +58,9 @@ interface PetUI extends Pet {
 }
 
 // Convert database Animal to old Pet format
-const convertAnimalToPet = (animal: Animal, clients: Client[]): PetUI => {
+const convertAnimalToPet = (animal: Animal, clients: Client[], ownerUnknown: string): PetUI => {
   const client = clients.find(c => c.id === animal.client_id);
-  const clientName = client ? `${client.first_name} ${client.last_name}` : 'Propriétaire inconnu';
+  const clientName = client ? `${client.first_name} ${client.last_name}` : ownerUnknown;
   
   // Convert UUID to number for compatibility (using hash)
   const petId = Math.abs(animal.id.split('').reduce((a, b) => {
@@ -86,7 +88,7 @@ const convertAnimalToPet = (animal: Animal, clients: Client[]): PetUI => {
     ownerId: clientId,
     owner: clientName,
     status: animal.status === 'vivant' ? 'healthy' : (animal.status === 'décédé' ? 'urgent' : 'treatment'),
-    lastVisit: animal.updated_at ? new Date(animal.updated_at).toLocaleDateString('fr-FR') : 'Jamais',
+    lastVisit: animal.updated_at || '',
     nextAppointment: undefined,
     vaccinations: [],
     // Store original DB IDs for updates
@@ -96,6 +98,10 @@ const convertAnimalToPet = (animal: Animal, clients: Client[]): PetUI => {
 };
 
 const PetsContent = () => {
+  const { t } = useTranslation("app");
+  const { t: ts } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
   const { data: animals = [], isLoading: animalsLoading } = useAnimals();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: stats } = useClientStats();
@@ -113,7 +119,7 @@ const PetsContent = () => {
   const animalBreeds = farmSettings?.breeds_by_category || {};
   
   // Convert animals to pets format for compatibility
-  const pets = animals.map(animal => convertAnimalToPet(animal, clients));
+  const pets = animals.map(animal => convertAnimalToPet(animal, clients, t("pets.ownerUnknown")));
   // Import consultation and vaccination hooks
   const { data: consultations = [] } = useConsultations();
   const { data: vaccinations = [] } = useVaccinations();
@@ -145,12 +151,12 @@ const PetsContent = () => {
       }, 0)),
       clientName: dbConsultation.client?.first_name && dbConsultation.client?.last_name 
         ? `${dbConsultation.client.first_name} ${dbConsultation.client.last_name}` 
-        : 'Client inconnu',
+        : t("pets.ownerUnknown"),
       petId: Math.abs(dbConsultation.animal_id.split('').reduce((a: number, b: string) => {
         a = ((a << 5) - a) + b.charCodeAt(0);
         return a & a;
       }, 0)),
-      petName: dbConsultation.animal?.name || 'Animal inconnu',
+      petName: dbConsultation.animal?.name || t("pets.unknownPet"),
       date: dbConsultation.consultation_date || dbConsultation.created_at,
       weight: dbConsultation.weight?.toString(),
       temperature: formatTemperatureValue(dbConsultation.temperature) ?? undefined,
@@ -164,9 +170,9 @@ const PetsContent = () => {
       photos: dbConsultation.photos || [],
       createdAt: dbConsultation.created_at,
       purpose: dbConsultation.consultation_type || 'consultation',
-      veterinarian: dbConsultation.veterinarian_name || 'Vétérinaire'
+      veterinarian: dbConsultation.veterinarian_name || tc("veterinarian")
     };
-  }, []);
+  }, [t, tc]);
   const { currentView } = useDisplayPreference('pets');
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -287,8 +293,8 @@ const PetsContent = () => {
       await deleteAnimalMutation.mutateAsync(petToDelete.dbId);
       
       toast({
-        title: "Suppression réussie",
-        description: `${petToDelete.name} a été supprimé avec succès de la base de données`,
+        title: t("pets.deleteSuccess"),
+        description: t("pets.deleteSuccessBody", { name: petToDelete.name }),
       });
       
       setShowDeleteAlert(false);
@@ -296,26 +302,26 @@ const PetsContent = () => {
     } catch (error) {
       console.error('Error deleting animal:', error);
       
-      let errorMessage = "Erreur lors de la suppression de l'animal";
+      let errorMessage = t("pets.deleteErrorDefault");
       
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
         
         if (errorMsg.includes('foreign key') || errorMsg.includes('constraint')) {
-          errorMessage = "Impossible de supprimer cet animal car il a des données associées (consultations, vaccinations, etc.). Supprimez d'abord ces données.";
+          errorMessage = t("pets.deleteHasRelated");
         } else if (errorMsg.includes('permission') || errorMsg.includes('access')) {
-          errorMessage = "Vous n'avez pas les permissions nécessaires pour supprimer cet animal.";
+          errorMessage = t("pets.noPermissionDelete");
         } else if (errorMsg.includes('network') || errorMsg.includes('connection')) {
-          errorMessage = "Problème de connexion. Vérifiez votre connexion internet.";
+          errorMessage = tc("connectionProblem");
         } else if (errorMsg.includes('authentication')) {
-          errorMessage = "Votre session a expiré. Veuillez vous reconnecter.";
+          errorMessage = t("pets.sessionExpired");
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: "Erreur de suppression",
+        title: t("pets.deleteError"),
         description: errorMessage,
         variant: "destructive"
       });
@@ -339,8 +345,8 @@ const PetsContent = () => {
     // Basic validation
     if (!editForm.name?.trim()) {
       toast({
-        title: "Erreur de validation",
-        description: "Le nom de l'animal est obligatoire.",
+        title: t("pets.validationError"),
+        description: t("pets.nameRequired"),
         variant: "destructive",
       });
       return;
@@ -348,8 +354,8 @@ const PetsContent = () => {
     
     if (!editForm.client_id) {
       toast({
-        title: "Erreur de validation",
-        description: "Le propriétaire est obligatoire.",
+        title: t("pets.validationError"),
+        description: t("pets.ownerRequired"),
         variant: "destructive",
       });
       return;
@@ -362,8 +368,8 @@ const PetsContent = () => {
       );
       if (existingAnimal) {
         toast({
-          title: "Erreur de validation",
-          description: "Un animal avec ce numéro de puce existe déjà.",
+          title: t("pets.validationError"),
+          description: t("pets.microchipExists"),
           variant: "destructive",
         });
         return;
@@ -377,8 +383,8 @@ const PetsContent = () => {
       });
       
       toast({
-        title: "Modification réussie",
-        description: `${editForm.name} a été modifié avec succès.`,
+        title: t("pets.updateSuccess"),
+        description: t("pets.updatedBody", { name: editForm.name }),
       });
       
       setShowEditModal(false);
@@ -386,30 +392,30 @@ const PetsContent = () => {
       console.error('Error updating animal:', error);
       
       // Enhanced error handling
-      let errorMessage = "Une erreur inattendue s'est produite";
+      let errorMessage = tc("unexpectedError");
       
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
         
         if (errorMsg.includes('microchip') || errorMsg.includes('unique')) {
-          errorMessage = "Ce numéro de puce électronique est déjà utilisé par un autre animal";
+          errorMessage = t("pets.microchipDuplicate");
         } else if (errorMsg.includes('client') || errorMsg.includes('foreign key')) {
-          errorMessage = "Le propriétaire sélectionné n'est plus valide";
+          errorMessage = t("pets.ownerInvalid");
         } else if (errorMsg.includes('name') || errorMsg.includes('not null')) {
-          errorMessage = "Tous les champs obligatoires doivent être remplis";
+          errorMessage = t("pets.requiredFieldsFill");
         } else if (errorMsg.includes('authentication') || errorMsg.includes('not authenticated')) {
-          errorMessage = "Votre session a expiré. Veuillez vous reconnecter.";
+          errorMessage = t("pets.sessionExpired");
         } else if (errorMsg.includes('network') || errorMsg.includes('connection')) {
-          errorMessage = "Problème de connexion. Vérifiez votre connexion internet.";
+          errorMessage = tc("connectionProblem");
         } else if (errorMsg.includes('permission') || errorMsg.includes('access')) {
-          errorMessage = "Vous n'avez pas les permissions nécessaires.";
+          errorMessage = t("pets.noPermissionGeneric");
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: "Erreur lors de la modification",
+        title: t("pets.updateError"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -426,8 +432,8 @@ const PetsContent = () => {
     <div className="container mx-auto px-4 py-8 space-y-8 sm:px-6">
       <AppPageHeader
         icon={Heart}
-        title="Animaux"
-        description="Suivez tous les animaux et leurs informations médicales"
+        title={t("pets.title")}
+        description={t("pets.description")}
         actions={
           <>
             <Button
@@ -437,7 +443,7 @@ const PetsContent = () => {
               className="gap-2 rounded-full"
             >
               <Grid className="h-4 w-4" />
-              Cartes
+              {ts("display.modes.cards")}
             </Button>
             <Button
               size="sm"
@@ -446,14 +452,14 @@ const PetsContent = () => {
               className="gap-2 rounded-full"
             >
               <List className="h-4 w-4" />
-              Tableau
+              {ts("display.modes.table")}
             </Button>
             {canWriteAnimals && (
               <>
                 <Button variant="outline" className="gap-2 rounded-full" asChild>
                   <Link to="/import/dossier">
                     <QrCode className="h-4 w-4" />
-                    Importer dossier (QR)
+                    {t("pets.importDossierQr")}
                   </Link>
                 </Button>
                 <Button className="gap-2 rounded-full" onClick={() => {
@@ -461,7 +467,7 @@ const PetsContent = () => {
                   setShowPetModal(true);
                 }}>
                   <Plus className="h-4 w-4" />
-                  Nouvel Animal
+                  {t("pets.new")}
                 </Button>
               </>
             )}
@@ -476,7 +482,7 @@ const PetsContent = () => {
         <div className="flex items-center gap-2">
           <Heart className="h-5 w-5 text-primary" />
           <div>
-          <p className="text-sm text-muted-foreground">Total animaux</p>
+          <p className="text-sm text-muted-foreground">{t("pets.kpi.total")}</p>
           <p className="text-2xl font-bold">{stats?.totalAnimals || pets.length}</p>
           </div>
         </div>
@@ -488,7 +494,7 @@ const PetsContent = () => {
         <div className="flex items-center gap-2">
           <CheckCircle className="h-5 w-5 text-green-500" />
           <div>
-          <p className="text-sm text-muted-foreground">En bonne santé</p>
+          <p className="text-sm text-muted-foreground">{t("pets.kpi.active")}</p>
           <p className="text-2xl font-bold">{stats?.animalsByStatus?.vivant || pets.filter(p => p.status === 'healthy').length}</p>
           </div>
         </div>
@@ -500,7 +506,7 @@ const PetsContent = () => {
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-yellow-500" />
           <div>
-          <p className="text-sm text-muted-foreground">En traitement</p>
+          <p className="text-sm text-muted-foreground">{t("pets.kpi.vaccinationsDue")}</p>
           <p className="text-2xl font-bold">{pets.filter(p => p.status === 'treatment').length}</p>
           </div>
         </div>
@@ -512,7 +518,7 @@ const PetsContent = () => {
         <div className="flex items-center gap-2">
           <User className="h-5 w-5 text-primary" />
           <div>
-          <p className="text-sm text-muted-foreground">Clients actifs</p>
+          <p className="text-sm text-muted-foreground">{t("pets.kpi.withMicrochip")}</p>
           <p className="text-2xl font-bold">{stats?.totalClients || clients.length}</p>
           </div>
         </div>
@@ -527,7 +533,7 @@ const PetsContent = () => {
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Configuration dynamique activée</p>
+                <p className="text-sm font-medium">{t("pets.dynamicConfigEnabled")}</p>
                 <p className="text-xs text-muted-foreground">
                   Les types d'animaux sont configurables dans les paramètres
                 </p>
@@ -546,12 +552,12 @@ const PetsContent = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
         <Search className="h-5 w-5" />
-        Rechercher et filtrer
+        {tc("searchAndFilter")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Input 
-        placeholder="Rechercher par nom, race ou propriétaire..."
+        placeholder={t("pets.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="w-full max-w-md"
@@ -560,10 +566,10 @@ const PetsContent = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:gap-4">
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-full sm:w-40">
-          <SelectValue placeholder="Tous types" />
+          <SelectValue placeholder={t("pets.allTypes")} />
           </SelectTrigger>
           <SelectContent>
-          <SelectItem value="all">Tous types</SelectItem>
+          <SelectItem value="all">{t("pets.allTypes")}</SelectItem>
           {speciesList.map((sp, idx) => (
             <SelectItem key={idx} value={sp.toLowerCase()}>
             {sp}
@@ -574,12 +580,12 @@ const PetsContent = () => {
         
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-full sm:w-40">
-          <SelectValue placeholder="Statut" />
+          <SelectValue placeholder={t("pets.status")} />
           </SelectTrigger>
           <SelectContent>
-          <SelectItem value="all">Tous statuts</SelectItem>
-          <SelectItem value="healthy">En bonne santé</SelectItem>
-          <SelectItem value="treatment">En traitement</SelectItem>
+          <SelectItem value="all">{t("pets.filters.allStatuses")}</SelectItem>
+          <SelectItem value="healthy">{t("pets.health.healthy")}</SelectItem>
+          <SelectItem value="treatment">{t("pets.health.sick")}</SelectItem>
           <SelectItem value="urgent">Urgent</SelectItem>
           </SelectContent>
         </Select>
@@ -612,8 +618,8 @@ const PetsContent = () => {
                 variant="outline"
                 className={`${statusStyles[pet.status as keyof typeof statusStyles]} text-xs`}
               >
-                {pet.status === 'healthy' ? 'En bonne santé' : 
-                 pet.status === 'treatment' ? 'En traitement' : 'Urgent'}
+                {pet.status === 'healthy' ? t("pets.health.healthy") :
+                 pet.status === 'treatment' ? t("pets.health.sick") : t("pets.health.recovering")}
               </Badge>
               </div>
             </div>
@@ -621,32 +627,29 @@ const PetsContent = () => {
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
             <div>
-              <span className="font-medium">Type:</span> {pet.type}
+              <span className="font-medium">{t("pets.card.species")}:</span> {pet.type}
             </div>
             <div>
-              <span className="font-medium">Âge:</span> {pet.birthDate ? calculateAge(pet.birthDate) : 'Non renseigné'}
+              <span className="font-medium">{t("pets.columns.age")}:</span> {pet.birthDate ? t("pets.age", { age: calculateAgeInYears(pet.birthDate) }) : t("pets.notSpecified")}
             </div>
             <div>
-              <span className="font-medium">Poids:</span> {pet.weight}
-            </div>
-            <div>
-              <span className="font-medium">Couleur:</span> {pet.color}
+              <span className="font-medium">{t("pets.card.breed")}:</span> {pet.breed || t("pets.notSpecified")}
             </div>
             </div>
             
             <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="truncate">Propriétaire: {typeof pet.owner === 'string' ? pet.owner : 
+              <span className="truncate">{t("pets.card.owner")}: {typeof pet.owner === 'string' ? pet.owner : 
                (() => {
                  const client = clients.find(c => String(c.id) === String(pet.ownerId));
-                 return client ? `${client.first_name} ${client.last_name}` : 'Non spécifié';
+                 return client ? `${client.first_name} ${client.last_name}` : t("pets.notSpecified");
                })()}</span>
                
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span>Dernière visite: {pet.lastVisit ? new Date(pet.lastVisit).toLocaleDateString('fr-FR') : 'Aucune'}</span>
+              <span>{t("pets.card.lastVisit")}: {pet.lastVisit ? new Date(pet.lastVisit).toLocaleDateString(bcp47) : tc("none")}</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <Stethoscope className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -660,9 +663,9 @@ const PetsContent = () => {
               {(() => {
               const petVaccinations = getVaccinationsByPetId(pet.id);
               return petVaccinations.length > 0 ? (
-                `${petVaccinations.length} vaccination${petVaccinations.length > 1 ? 's' : ''} enregistrée${petVaccinations.length > 1 ? 's' : ''}`
+                t("pets.vaccinationsRegistered", { count: petVaccinations.length })
               ) : (
-                'Aucune vaccination enregistrée'
+                t("pets.noVaccinations")
               );
               })()}
             </div>
@@ -677,7 +680,7 @@ const PetsContent = () => {
               <>
                 <Button size="sm" variant="outline" className="gap-2 flex-1" onClick={() => handleEdit(pet)}>
                   <Edit className="h-4 w-4" />
-                  Modifier
+                  {tc("edit")}
                 </Button>
                 <Button 
                   size="sm" 
@@ -686,7 +689,7 @@ const PetsContent = () => {
                   onClick={() => handleDelete(pet)}
                 >
                   <Trash2 className="h-4 w-4" />
-                  Supprimer
+                  {tc("delete")}
                 </Button>
               </>
             )}
@@ -705,7 +708,7 @@ const PetsContent = () => {
             )}
             <Button size="sm" variant="secondary" className="flex-1" onClick={() => handleShowDossier(pet)}>
               <FileText className="h-4 w-4 mr-2" />
-              Dossier
+              {t("pets.dossier")}
             </Button>
             </div>
           </div>
@@ -720,13 +723,13 @@ const PetsContent = () => {
           <table className="w-full min-w-[600px]">
           <thead className="border-b">
             <tr className="text-left">
-            <th className="p-4 font-medium">Animal</th>
-            <th className="p-4 font-medium">Type</th>
-            <th className="p-4 font-medium">Âge</th>
-            <th className="p-4 font-medium">Propriétaire</th>
-            <th className="p-4 font-medium">Statut</th>
-            <th className="p-4 font-medium">Dernière visite</th>
-            <th className="p-4 font-medium">Actions</th>
+            <th className="p-4 font-medium">{t("pets.columns.name")}</th>
+            <th className="p-4 font-medium">{t("pets.columns.species")}</th>
+            <th className="p-4 font-medium">{t("pets.columns.age")}</th>
+            <th className="p-4 font-medium">{t("pets.columns.owner")}</th>
+            <th className="p-4 font-medium">{t("pets.columns.status")}</th>
+            <th className="p-4 font-medium">{t("pets.card.lastVisit")}</th>
+            <th className="p-4 font-medium">{t("pets.columns.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -750,12 +753,12 @@ const PetsContent = () => {
               </div>
               </td>
               <td className="p-4">{pet.type}</td>
-              <td className="p-4">{pet.birthDate ? calculateAge(pet.birthDate) : 'Non renseigné'}</td>
+              <td className="p-4">{pet.birthDate ? t("pets.age", { age: calculateAgeInYears(pet.birthDate) }) : t("pets.notSpecified")}</td>
               <td className="p-4">
               {typeof pet.owner === 'string' ? pet.owner : 
                (() => {
                  const client = clients.find(c => String(c.id) === String(pet.ownerId));
-                 return client ? `${client.first_name} ${client.last_name}` : 'Non spécifié';
+                 return client ? `${client.first_name} ${client.last_name}` : t("pets.notSpecified");
                })()}
               </td>
               <td className="p-4">
@@ -763,12 +766,12 @@ const PetsContent = () => {
                 variant="outline"
                 className={statusStyles[pet.status as keyof typeof statusStyles]}
               >
-                {pet.status === 'healthy' ? 'En bonne santé' : 
-                 pet.status === 'treatment' ? 'En traitement' : 'Urgent'}
+                {pet.status === 'healthy' ? t("pets.health.healthy") :
+                 pet.status === 'treatment' ? t("pets.health.sick") : t("pets.health.recovering")}
               </Badge>
               </td>
               <td className="p-4">
-              {pet.lastVisit ? new Date(pet.lastVisit).toLocaleDateString('fr-FR') : 'Aucune'}
+              {pet.lastVisit ? new Date(pet.lastVisit).toLocaleDateString(bcp47) : tc("none")}
               </td>
               <td className="p-4">
               <div className="flex gap-1 flex-wrap">
@@ -791,7 +794,7 @@ const PetsContent = () => {
                   </>
                 )}
                 <Button size="sm" variant="outline" onClick={() => handleShowDossier(pet)}>
-                Dossier
+                {t("pets.dossier")}
                 </Button>
               </div>
               </td>
@@ -846,7 +849,7 @@ const PetsContent = () => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto mx-4">
         <DialogHeader>
-        <DialogTitle>Modifier Animal</DialogTitle>
+        <DialogTitle>{t("pets.editTitle")}</DialogTitle>
         <DialogDescription>
           Modifiez les informations de l'animal.
         </DialogDescription>
@@ -855,7 +858,7 @@ const PetsContent = () => {
         <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-          <Label htmlFor="name">Nom *</Label>
+          <Label htmlFor="name">{t("pets.nameLabel")}</Label>
           <Input
             id="name"
             value={editForm.name}
@@ -864,10 +867,10 @@ const PetsContent = () => {
           />
           </div>
           <div className="space-y-2">
-          <Label htmlFor="species">Espèce *</Label>
+          <Label htmlFor="species">{t("pets.speciesLabel")}</Label>
           <Select value={editForm.species} onValueChange={(value) => setEditForm(prev => ({ ...prev, species: value }))}>
             <SelectTrigger>
-            <SelectValue placeholder="Sélectionner l'espèce" />
+            <SelectValue placeholder={t("pets.selectSpecies")} />
             </SelectTrigger>
             <SelectContent>
             {animalSpecies.map(species => (
@@ -879,10 +882,10 @@ const PetsContent = () => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="client_id">Propriétaire *</Label>
+          <Label htmlFor="client_id">{t("pets.card.owner")} *</Label>
           <Select value={editForm.client_id} onValueChange={(value) => setEditForm(prev => ({ ...prev, client_id: value }))}>
           <SelectTrigger>
-            <SelectValue placeholder="Sélectionner le propriétaire" />
+            <SelectValue placeholder={t("pets.selectOwner")} />
           </SelectTrigger>
           <SelectContent>
             {clients.map((client) => (
@@ -899,7 +902,7 @@ const PetsContent = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-          <Label htmlFor="breed">Race</Label>
+          <Label htmlFor="breed">{t("pets.card.breed")}</Label>
           <Input
             id="breed"
             value={editForm.breed || ""}
@@ -907,14 +910,14 @@ const PetsContent = () => {
           />
           </div>
           <div className="space-y-2">
-          <Label htmlFor="sex">Sexe</Label>
+          <Label htmlFor="sex">{tc("sex")}</Label>
           <Select value={editForm.sex} onValueChange={(value) => setEditForm(prev => ({ ...prev, sex: value as 'Mâle' | 'Femelle' | 'Inconnu' }))}>
             <SelectTrigger>
-            <SelectValue placeholder="Sélectionner le sexe" />
+            <SelectValue placeholder={t("pets.selectSex")} />
             </SelectTrigger>
             <SelectContent>
-            <SelectItem value="Mâle">Mâle</SelectItem>
-            <SelectItem value="Femelle">Femelle</SelectItem>
+            <SelectItem value="Mâle">{t("pets.sexMale")}</SelectItem>
+            <SelectItem value="Femelle">{t("pets.sexFemale")}</SelectItem>
             <SelectItem value="Inconnu">Inconnu</SelectItem>
             </SelectContent>
           </Select>
@@ -923,7 +926,7 @@ const PetsContent = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-          <Label htmlFor="birth_date">Date de naissance</Label>
+          <Label htmlFor="birth_date">{t("pets.birthDate")}</Label>
           <Input
             id="birth_date"
             type="date"
@@ -932,7 +935,7 @@ const PetsContent = () => {
           />
           </div>
           <div className="space-y-2">
-          <Label htmlFor="weight">Poids (kg)</Label>
+          <Label htmlFor="weight">{tc("weight")} ({tc("kg")})</Label>
           <Input
             id="weight"
             type="number"
@@ -945,7 +948,7 @@ const PetsContent = () => {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-          <Label htmlFor="color">Couleur</Label>
+          <Label htmlFor="color">{t("pets.color")}</Label>
           <Input
             id="color"
             value={editForm.color || ""}
@@ -953,7 +956,7 @@ const PetsContent = () => {
           />
           </div>
           <div className="space-y-2">
-          <Label htmlFor="microchip_number">N° puce électronique</Label>
+          <Label htmlFor="microchip_number">{t("pets.microchip")}</Label>
           <Input
             id="microchip_number"
             value={editForm.microchip_number || ""}
@@ -963,22 +966,22 @@ const PetsContent = () => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="notes">Notes médicales</Label>
+          <Label htmlFor="notes">{t("pets.medicalNotes")}</Label>
           <Textarea
           id="notes"
           value={editForm.notes || ""}
           onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-          placeholder="Notes additionnelles..."
+          placeholder={t("pets.medicalNotesPlaceholder")}
           />
         </div>
         
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end pt-4">
           <Button type="button" variant="outline" onClick={() => setShowEditModal(false)} className="w-full sm:w-auto">
-          Annuler
+          {tc("cancel")}
           </Button>
           <Button onClick={handleSaveEdit} disabled={updateAnimalMutation.isPending} className="w-full sm:w-auto">
           {updateAnimalMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Sauvegarder
+          {tc("save")}
           </Button>
         </div>
         </div>
@@ -995,15 +998,13 @@ const PetsContent = () => {
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogTitle>{t("pets.deleteConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'animal <strong>{petToDelete?.name}</strong> ?
-              Cette action est irréversible et supprimera définitivement toutes les données associées à cet animal, 
-              y compris ses consultations, vaccinations et historique médical.
+              {t("pets.deleteConfirmBody", { name: petToDelete?.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -1012,10 +1013,10 @@ const PetsContent = () => {
               {deleteAnimalMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Suppression...
+                  {tc("deleting")}
                 </>
               ) : (
-                'Supprimer'
+                tc("delete")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

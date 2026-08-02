@@ -33,11 +33,13 @@ import {
   visitKeys,
 } from "@/hooks/useVisits";
 import {
-  VISIT_STATUS_LABELS,
-  VISIT_SERVICE_STATUS_LABELS,
   getServiceDef,
   resolveServiceAmount,
   getCatalogWithPrices,
+  getVisitServiceDescription,
+  getVisitServiceLabel,
+  getVisitServiceStatusLabel,
+  getVisitStatusLabel,
 } from "@/lib/visitCatalog";
 import type { VisitService } from "@/lib/visits";
 import { useToast } from "@/hooks/use-toast";
@@ -101,8 +103,14 @@ import {
   syncVisitExamToMedicalRecord,
 } from "@/lib/medicalActSync";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 export default function VisitWorkspace() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: tm } = useTranslation("medical");
+  const { bcp47 } = useAppLocale();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -227,8 +235,8 @@ export default function VisitWorkspace() {
       def?.action !== "farm_intervention";
     if (!visit?.animal_id && needsAnimal) {
       toast({
-        title: "Animal requis",
-        description: "Associez un animal à la visite avant cet acte.",
+        title: t("visits.workspace.animalRequired"),
+        description: t("visits.workspace.animalRequiredBeforeAct"),
         variant: "destructive",
       });
       setShowAnimalPicker(true);
@@ -236,8 +244,8 @@ export default function VisitWorkspace() {
     }
     if (def?.action === "farm_intervention" && !visit?.farm_id) {
       toast({
-        title: "Exploitation requise",
-        description: "Cette visite n'est pas liée à une ferme.",
+        title: t("visits.farmRequiredTitle"),
+        description: t("visits.workspace.farmRequiredBody"),
         variant: "destructive",
       });
       return;
@@ -312,8 +320,8 @@ export default function VisitWorkspace() {
     if (!ref && !service.reference_id && isVaccinationService(service)) {
       if (!visit.animal_id) {
         toast({
-          title: "Animal requis",
-          description: "Associez un animal avant d'enregistrer la vaccination.",
+          title: t("visits.workspace.animalRequired"),
+          description: t("visits.workspace.animalRequiredBeforeVax"),
           variant: "destructive",
         });
         return;
@@ -326,9 +334,8 @@ export default function VisitWorkspace() {
 
       if (!reminder) {
         toast({
-          title: "Saisie du vaccin requise",
-          description:
-            "Cliquez sur « Enregistrer vaccin » pour saisir le produit et la dose avant de marquer fait.",
+          title: t("visits.workspace.vaxEntryRequired"),
+          description: t("visits.workspace.vaxEntryRequiredBody"),
           variant: "destructive",
         });
         setVaccOpen(true);
@@ -363,7 +370,7 @@ export default function VisitWorkspace() {
             notes: buildVaccinationNotes({
               doseLabel: reminder.doseLabel,
               plannedReminders: [],
-              userNotes: `Visite · ${reminder.doseLabel}`,
+              userNotes: t("visits.workspace.visitNotePrefix", { label: reminder.doseLabel }),
             }),
           });
           ref = { type: "vaccination", id: created.id };
@@ -389,8 +396,8 @@ export default function VisitWorkspace() {
         queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
       } catch (e: any) {
         toast({
-          title: "Impossible d'enregistrer la dose",
-          description: e?.message || "Erreur lors de la création de la vaccination.",
+          title: t("visits.workspace.cannotSaveDose"),
+          description: e?.message || t("visits.workspace.vaxCreateError"),
           variant: "destructive",
         });
         return;
@@ -401,8 +408,8 @@ export default function VisitWorkspace() {
     if (!ref && !service.reference_id && isAntiparasiticService(service)) {
       if (!visit.animal_id) {
         toast({
-          title: "Animal requis",
-          description: "Associez un animal avant d'enregistrer le traitement.",
+          title: t("visits.workspace.animalRequired"),
+          description: t("visits.workspace.animalRequiredBeforeAnti"),
           variant: "destructive",
         });
         return;
@@ -415,9 +422,8 @@ export default function VisitWorkspace() {
 
       if (!reminder) {
         toast({
-          title: "Saisie du traitement requise",
-          description:
-            "Cliquez sur « Enregistrer traitement » pour saisir le produit avant de marquer fait.",
+          title: t("visits.workspace.antiEntryRequired"),
+          description: t("visits.workspace.antiEntryRequiredBody"),
           variant: "destructive",
         });
         setAntiOpen(true);
@@ -451,7 +457,7 @@ export default function VisitWorkspace() {
             notes: buildAntiparasiticNotes({
               doseLabel: reminder.doseLabel,
               plannedReminders: [],
-              userNotes: `Visite · ${reminder.doseLabel}`,
+              userNotes: t("visits.workspace.visitNotePrefix", { label: reminder.doseLabel }),
             }),
           });
           ref = { type: "antiparasitic", id: created.id };
@@ -477,8 +483,8 @@ export default function VisitWorkspace() {
         queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
       } catch (e: any) {
         toast({
-          title: "Impossible d'enregistrer le traitement",
-          description: e?.message || "Erreur lors de la création du traitement.",
+          title: t("visits.workspace.cannotSaveTreatment"),
+          description: e?.message || t("visits.workspace.antiCreateError"),
           variant: "destructive",
         });
         return;
@@ -493,8 +499,8 @@ export default function VisitWorkspace() {
     ) {
       if (!visit.animal_id) {
         toast({
-          title: "Animal requis",
-          description: "Associez un animal avant d'enregistrer la consultation.",
+          title: t("visits.workspace.animalRequired"),
+          description: t("visits.workspace.animalRequiredBeforeConsult"),
           variant: "destructive",
         });
         return;
@@ -507,7 +513,7 @@ export default function VisitWorkspace() {
           visit_id: visit.id,
           consultation_date: visit.visit_date || new Date().toISOString(),
           consultation_type: service.service_code || "consultation",
-          notes: service.notes || `Visite · ${service.service_label}`,
+          notes: service.notes || t("visits.workspace.visitNotePrefix", { label: service.service_label }),
           status: "completed",
           cost: Number(service.amount) || undefined,
         });
@@ -515,8 +521,8 @@ export default function VisitWorkspace() {
         queryClient.invalidateQueries({ queryKey: ["consultations"] });
       } catch (e: any) {
         toast({
-          title: "Impossible d'enregistrer la consultation",
-          description: e?.message || "Erreur lors de la création du dossier.",
+          title: t("visits.workspace.cannotSaveConsult"),
+          description: e?.message || t("visits.workspace.consultCreateError"),
           variant: "destructive",
         });
         return;
@@ -536,14 +542,14 @@ export default function VisitWorkspace() {
       },
     });
     toast({
-      title: "Prestation terminée",
+      title: t("visits.workspace.serviceDone"),
       description:
         ref?.type === "vaccination"
-          ? `${service.service_label} — dose ajoutée au certificat`
+          ? t("visits.workspace.doseAddedCert", { label: service.service_label })
           : ref?.type === "antiparasitic"
-            ? `${service.service_label} — traitement ajouté au certificat`
+            ? t("visits.workspace.treatmentAddedCert", { label: service.service_label })
             : ref?.type === "consultation"
-              ? `${service.service_label} — dossier consultation créé`
+              ? t("visits.workspace.consultCreated", { label: service.service_label })
               : service.service_label,
     });
   };
@@ -566,14 +572,14 @@ export default function VisitWorkspace() {
         visitId: visit.id,
         service: {
           service_code: def.code,
-          service_label: def.label,
+          service_label: getVisitServiceLabel(def, tm),
           amount: resolveServiceAmount(def.code, settings.servicePrices),
         },
       });
       setShowCatalog(false);
       setActiveServiceId(created.id);
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -627,10 +633,8 @@ export default function VisitWorkspace() {
         }
       } catch (e: any) {
         toast({
-          title: "Dossier médical",
-          description:
-            e?.message ||
-            "L'acte a été sauvé sur la visite, mais pas synchronisé au dossier.",
+          title: t("visits.workspace.medicalRecord"),
+          description: e?.message || t("visits.workspace.medicalSyncFail"),
           variant: "destructive",
         });
       }
@@ -671,7 +675,7 @@ export default function VisitWorkspace() {
       await printVisitInvoice(inv, visit, clinicPrintSettings());
     } catch (e: any) {
       toast({
-        title: "Erreur document",
+        title: t("visits.workspace.documentError"),
         description: e?.message,
         variant: "destructive",
       });
@@ -692,9 +696,8 @@ export default function VisitWorkspace() {
     const amount = sumLines(billable);
     if (amount <= 0) {
       toast({
-        title: "Montant nul",
-        description:
-          "Marquez des prestations comme faites avec un montant > 0 avant de facturer.",
+        title: t("visits.workspace.zeroAmount"),
+        description: t("visits.workspace.zeroAmountBody"),
         variant: "destructive",
       });
       return;
@@ -704,8 +707,8 @@ export default function VisitWorkspace() {
     );
     if (pending.length > 0) {
       toast({
-        title: "Prestations en cours",
-        description: `${pending.length} prestation(s) non terminée(s). Terminez-les ou ignorez-les avant facturation.`,
+        title: t("visits.workspace.pendingServicesToast"),
+        description: t("visits.workspace.pendingServicesToastBody", { count: pending.length }),
         variant: "destructive",
       });
       return;
@@ -717,12 +720,12 @@ export default function VisitWorkspace() {
       await queryClient.invalidateQueries({ queryKey: visitKeys.detail(visit.id) });
       await queryClient.invalidateQueries({ queryKey: visitKeys.lists() });
       toast({
-        title: "Facture émise",
+        title: t("visits.workspace.invoiceIssued"),
         description: `${invoice.invoice_number} — ${amount.toFixed(0)} ${currency}`,
       });
       await printVisitInvoice(invoice, visit, clinicPrintSettings());
     } catch (e: any) {
-      toast({ title: "Erreur facturation", description: e?.message, variant: "destructive" });
+      toast({ title: t("visits.workspace.invoiceError"), description: e?.message, variant: "destructive" });
     } finally {
       setInvoiceBusy(false);
     }
@@ -735,9 +738,9 @@ export default function VisitWorkspace() {
     try {
       const inv = await markInvoicePaid(visit.invoice_id);
       setLastInvoice(inv);
-      toast({ title: "Facture payée", description: inv.invoice_number });
+      toast({ title: t("visits.workspace.invoicePaid"), description: inv.invoice_number });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e?.message, variant: "destructive" });
     } finally {
       setPayBusy(false);
     }
@@ -755,10 +758,10 @@ export default function VisitWorkspace() {
       }
       queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ["vaccinations"] });
-      toast({ title: "Visite terminée" });
+      toast({ title: t("visits.workspace.visitCompleted") });
       navigate("/visites");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -781,14 +784,14 @@ export default function VisitWorkspace() {
         patch: { animal_id: animalId },
       });
       toast({
-        title: animalId ? "Animal associé" : "Animal retiré",
+        title: animalId ? t("visits.workspace.animalLinked") : t("visits.workspace.animalUnlinked"),
         description: animalId
-          ? "L'animal est maintenant lié à cette visite."
-          : "La visite n'a plus d'animal associé.",
+          ? t("visits.workspace.animalLinkedBody")
+          : t("visits.workspace.animalUnlinkedBody"),
       });
       setShowAnimalPicker(false);
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -820,10 +823,10 @@ export default function VisitWorkspace() {
         patch.visit_date = new Date(editVisitDate).toISOString();
       }
       await updateVisit.mutateAsync({ id: visit.id, patch });
-      toast({ title: "Visite mise à jour" });
+      toast({ title: t("visits.workspace.visitUpdated") });
       setEditVisitOpen(false);
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     } finally {
       setEditSaving(false);
     }
@@ -838,11 +841,11 @@ export default function VisitWorkspace() {
         patch: { status: "in_progress" },
       });
       toast({
-        title: "Visite réouverte",
-        description: "Vous pouvez à nouveau modifier les prestations.",
+        title: t("visits.workspace.visitReopened"),
+        description: t("visits.workspace.visitReopenedBody"),
       });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -850,7 +853,7 @@ export default function VisitWorkspace() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center gap-2 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin" />
-        Chargement de la visite…
+        {t("visits.workspace.loadingVisit")}
       </div>
     );
   }
@@ -858,9 +861,9 @@ export default function VisitWorkspace() {
   if (error || !visit) {
     return (
       <div className="container mx-auto p-6 space-y-4">
-        <p className="text-destructive">Visite introuvable.</p>
+        <p className="text-destructive">{t("visits.workspace.visitNotFound")}</p>
         <Button asChild variant="outline">
-          <Link to="/visites">Retour</Link>
+          <Link to="/visites">{t("visits.workspace.backToVisits")}</Link>
         </Button>
       </div>
     );
@@ -877,21 +880,21 @@ export default function VisitWorkspace() {
           <Button asChild variant="ghost" size="sm" className="-ml-2 gap-1 text-muted-foreground">
             <Link to="/visites">
               <ArrowLeft className="h-4 w-4" />
-              Visites
+              {t("visits.title")}
             </Link>
           </Button>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold font-display tracking-tight">Visite</h1>
-            <Badge>{VISIT_STATUS_LABELS[visit.status]}</Badge>
+            <h1 className="text-2xl font-bold font-display tracking-tight">{t("visits.singular")}</h1>
+            <Badge>{getVisitStatusLabel(visit.status, tm)}</Badge>
             {visit.context === "farm" && (
               <Badge variant="outline" className="gap-1">
                 <Tractor className="h-3 w-3" />
-                Élevage
+                {t("visits.workspace.livestock")}
               </Badge>
             )}
-            {visit.invoiced && <Badge variant="outline">Facturée</Badge>}
+            {visit.invoiced && <Badge variant="outline">{t("visits.billed")}</Badge>}
             {lastInvoice?.status === "paid" && (
-              <Badge className="bg-emerald-600 hover:bg-emerald-600">Payée</Badge>
+              <Badge className="bg-emerald-600 hover:bg-emerald-600">{t("visits.workspace.paid")}</Badge>
             )}
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground items-center">
@@ -902,10 +905,12 @@ export default function VisitWorkspace() {
             {visit.context === "farm" ? (
               <span className="inline-flex items-center gap-1.5 text-foreground font-medium">
                 <Tractor className="h-3.5 w-3.5" />
-                {visit.farm?.farm_name || "Exploitation"}
+                {visit.farm?.farm_name || t("visits.farm")}
                 {visit.head_count != null
-                  ? ` · ${visit.head_count} têtes (${
-                      visit.billing_mode === "per_head" ? "à la tête" : "forfait"
+                  ? ` · ${visit.head_count} ${t("visits.workspace.heads")} (${
+                      visit.billing_mode === "per_head"
+                        ? t("visits.workspace.perHeadShort")
+                        : t("visits.workspace.packageShort")
                     })`
                   : ""}
               </span>
@@ -914,7 +919,7 @@ export default function VisitWorkspace() {
                 <Heart className="h-3.5 w-3.5" />
                 {visit.animal
                   ? `${visit.animal.name} (${visit.animal.species || "—"})`
-                  : "Sans animal"}
+                  : t("visits.workspace.noAnimal")}
               </span>
             )}
             {visit.status === "in_progress" && visit.context !== "farm" && canWrite && (
@@ -926,7 +931,7 @@ export default function VisitWorkspace() {
                 onClick={() => setShowAnimalPicker(true)}
               >
                 <Plus className="h-3.5 w-3.5" />
-                {visit.animal_id ? "Changer l'animal" : "Ajouter un animal"}
+                {visit.animal_id ? t("visits.workspace.changeAnimal") : t("visits.workspace.addAnimal")}
               </Button>
             )}
             {visit.status === "completed" && visit.context !== "farm" && canWrite && (
@@ -938,33 +943,33 @@ export default function VisitWorkspace() {
                 onClick={() => setShowAnimalPicker(true)}
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Animal
+                {t("visits.workspace.animal")}
               </Button>
             )}
-            <span>{new Date(visit.visit_date).toLocaleString("fr-FR")}</span>
+            <span>{new Date(visit.visit_date).toLocaleString(bcp47)}</span>
             {visit.appointment && (
               <Link to="/appointments" className="text-primary hover:underline">
-                Lié au RDV
+                {t("visits.workspace.linkedAppointment")}
               </Link>
             )}
           </div>
           {!visit.animal_id && visit.status === "in_progress" && visit.context !== "farm" && (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
-              Aucun animal associé. Ajoutez-en un pour réaliser consultation, vaccin ou ordonnance.
+              {t("visits.workspace.noAnimalHint")}
             </div>
           )}
           {visit.context === "farm" && (
             <div className="rounded-lg border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-sm">
-              Visite d&apos;élevage
-              {visit.farm?.farm_name ? ` — ${visit.farm.farm_name}` : ""}. Les actes ouvrent une
-              intervention ferme.
+              {t("visits.workspace.farmVisitBanner")}
+              {visit.farm?.farm_name ? ` — ${visit.farm.farm_name}` : ""}.{" "}
+              {t("visits.workspace.farmVisitBannerBody")}
             </div>
           )}
           {(visit.reason || visit.notes) && (
             <div className="text-sm space-y-1">
               {visit.reason && (
                 <p>
-                  <span className="text-muted-foreground">Motif : </span>
+                  <span className="text-muted-foreground">{t("visits.workspace.reasonLabel")} </span>
                   {visit.reason}
                 </p>
               )}
@@ -979,19 +984,19 @@ export default function VisitWorkspace() {
           {canWrite && (
             <Button variant="outline" className="gap-2" onClick={openEditVisit}>
               <Pencil className="h-4 w-4" />
-              Modifier
+              {tc("edit")}
             </Button>
           )}
           {canWrite && visit.status === "completed" && (
             <Button variant="outline" className="gap-2" onClick={reopenVisit}>
               <RotateCcw className="h-4 w-4" />
-              Réouvrir
+              {t("visits.workspace.reopen")}
             </Button>
           )}
           {canWrite && (
             <Button variant="outline" className="gap-2" onClick={() => setShowCatalog(true)}>
               <Plus className="h-4 w-4" />
-              Prestation
+              {t("visits.workspace.service")}
             </Button>
           )}
           {(visit.invoiced || canWrite) && (
@@ -1008,7 +1013,7 @@ export default function VisitWorkspace() {
               ) : (
                 <Receipt className="h-4 w-4" />
               )}
-              {visit.invoiced ? "Imprimer / PDF" : "Générer facture"}
+              {visit.invoiced ? t("visits.workspace.printPdf") : t("visits.workspace.generateInvoice")}
             </Button>
           )}
           {canWrite && visit.invoiced && visit.invoice_id && lastInvoice?.status !== "paid" && (
@@ -1023,7 +1028,7 @@ export default function VisitWorkspace() {
               ) : (
                 <Banknote className="h-4 w-4" />
               )}
-              Marquer payée
+              {t("visits.workspace.markPaid")}
             </Button>
           )}
           {canWrite && visit.status === "in_progress" && (
@@ -1033,7 +1038,7 @@ export default function VisitWorkspace() {
               ) : (
                 <Check className="h-4 w-4" />
               )}
-              Terminer la visite
+              {t("visits.workspace.completeVisit")}
               {(pendingServices.length > 0 || vaccinationWithoutDose.length > 0) && (
                 <Badge variant="destructive" className="ml-1 h-5 px-1.5">
                   !
@@ -1048,12 +1053,14 @@ export default function VisitWorkspace() {
       <Card>
         <CardContent className="p-3 sm:p-4 flex flex-wrap items-center justify-between gap-2 text-sm">
           <span>
-            Progression : <strong>{progress.done}</strong> / {progress.total} prestations
+            {t("visits.workspace.progress")}{" "}
+            <strong>{progress.done}</strong> / {progress.total}{" "}
+            {t("visits.workspace.servicesCount")}
           </span>
           <span className="font-semibold tabular-nums">
-            Total : {displayTotal.toFixed(0)} {currency}
+            {t("visits.workspace.totalLabel")} {displayTotal.toFixed(0)} {currency}
             {visit.billing_mode === "per_head" && visit.head_count
-              ? ` (${visit.head_count} × PU)`
+              ? ` ${t("visits.workspace.perUnitShort", { count: visit.head_count })}`
               : ""}
           </span>
         </CardContent>
@@ -1063,16 +1070,16 @@ export default function VisitWorkspace() {
         {/* Prestations list */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Prestations de la visite</CardTitle>
+            <CardTitle className="text-base">{t("visits.workspace.servicesOfVisit")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {services.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground space-y-3">
-                <p className="text-sm">Aucune prestation. Ajoutez-en une pour commencer.</p>
+                <p className="text-sm">{t("visits.workspace.noServicesHint")}</p>
                 {canWrite && (
                   <Button size="sm" onClick={() => setShowCatalog(true)}>
                     <Plus className="h-4 w-4 mr-1" />
-                    Ajouter
+                    {tc("add")}
                   </Button>
                 )}
               </div>
@@ -1110,11 +1117,13 @@ export default function VisitWorkspace() {
                             }
                             className="shrink-0 text-[10px]"
                           >
-                            {VISIT_SERVICE_STATUS_LABELS[service.status]}
+                            {getVisitServiceStatusLabel(service.status, tm)}
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5 flex justify-between">
-                          <span>{def?.description}</span>
+                          <span>
+                            {def ? getVisitServiceDescription(def, tm) : undefined}
+                          </span>
                           <span className="tabular-nums font-medium text-foreground">
                             {Number(service.amount || 0).toFixed(0)} {currency}
                           </span>
@@ -1138,13 +1147,13 @@ export default function VisitWorkspace() {
                   {activeService.service_label}
                 </>
               ) : (
-                "Détail prestation"
+                t("visits.workspace.serviceDetail")
               )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!activeService ? (
-              <p className="text-sm text-muted-foreground">Sélectionnez une prestation à gauche.</p>
+              <p className="text-sm text-muted-foreground">{t("visits.workspace.selectServiceHint")}</p>
             ) : (
               <VisitServiceDetailPanel
                 key={activeService.id}
@@ -1175,9 +1184,9 @@ export default function VisitWorkspace() {
       <Dialog open={showCatalog} onOpenChange={setShowCatalog}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Ajouter une prestation</DialogTitle>
+            <DialogTitle>{t("visits.workspace.addServiceTitle")}</DialogTitle>
             <DialogDescription>
-              Vous pouvez enchaîner plusieurs actes dans la même visite.
+              {t("visits.workspace.addServiceDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
@@ -1194,12 +1203,14 @@ export default function VisitWorkspace() {
                     <Icon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium">{item.label}</div>
-                    <div className="text-xs text-muted-foreground">{item.description}</div>
+                    <div className="font-medium">{getVisitServiceLabel(item, tm)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {getVisitServiceDescription(item, tm)}
+                    </div>
                     <div className="text-xs mt-1 tabular-nums">
                       {item.amount > 0
                         ? `~ ${item.amount} ${currency}`
-                        : "Montant libre"}
+                        : t("visits.workspace.freeAmount")}
                     </div>
                   </div>
                 </button>
@@ -1322,7 +1333,7 @@ export default function VisitWorkspace() {
                 })
                 .then(() =>
                   toast({
-                    title: "Prestation terminée",
+                    title: t("visits.workspace.serviceDone"),
                     description: activeService.service_label,
                   })
                 );
@@ -1343,10 +1354,10 @@ export default function VisitWorkspace() {
           preferServiceId={activeService?.id}
           onCreated={() => {
             toast({
-              title: "Prestation terminée",
+              title: t("visits.workspace.serviceDone"),
               description:
                 activeService?.service_label ||
-                "Intervention liée à la visite d'élevage",
+                t("visits.workspace.farmInterventionLinked"),
             });
             void queryClient.invalidateQueries({
               queryKey: visitKeys.detail(visit.id),
@@ -1359,23 +1370,23 @@ export default function VisitWorkspace() {
       <Dialog open={showAnimalPicker} onOpenChange={setShowAnimalPicker}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Animal de la visite</DialogTitle>
+            <DialogTitle>{t("visits.workspace.animalOfVisit")}</DialogTitle>
             <DialogDescription>
-              Sélectionnez un animal du client ou créez-en un nouveau.
+              {t("visits.workspace.animalPickerDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Animal existant</Label>
+              <Label>{t("visits.workspace.existingAnimal")}</Label>
               <Select
                 value={visit.animal_id || "__none__"}
                 onValueChange={(v) => assignAnimal(v === "__none__" ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choisir un animal" />
+                  <SelectValue placeholder={t("visits.workspace.chooseAnimal")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Aucun animal</SelectItem>
+                  <SelectItem value="__none__">{t("visits.workspace.noAnimalOption")}</SelectItem>
                   {clientAnimals.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.name} ({a.species})
@@ -1385,7 +1396,7 @@ export default function VisitWorkspace() {
               </Select>
               {clientAnimals.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Ce client n&apos;a pas encore d&apos;animal enregistré.
+                  {t("visits.workspace.clientHasNoAnimals")}
                 </p>
               )}
             </div>
@@ -1400,7 +1411,7 @@ export default function VisitWorkspace() {
                 }}
               >
                 <Plus className="h-4 w-4" />
-                Créer un nouvel animal
+                {t("visits.workspace.createNewAnimal")}
               </Button>
             )}
           </div>
@@ -1421,13 +1432,12 @@ export default function VisitWorkspace() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
-              Prestations non terminées
+              {t("visits.workspace.pendingServicesTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>
-                  Des prestations ne sont pas encore marquées comme faites. Les doses / rappels
-                  non enregistrés n&apos;apparaîtront pas sur le certificat de vaccination.
+                  {t("visits.workspace.pendingServicesBody")}
                 </p>
                 {pendingServices.length > 0 && (
                   <ul className="list-disc pl-5 space-y-1">
@@ -1435,7 +1445,7 @@ export default function VisitWorkspace() {
                       <li key={s.id}>
                         <span className="text-foreground font-medium">{s.service_label}</span>
                         {" — "}
-                        {VISIT_SERVICE_STATUS_LABELS[s.status] || s.status}
+                        {getVisitServiceStatusLabel(s.status, tm)}
                       </li>
                     ))}
                   </ul>
@@ -1444,17 +1454,15 @@ export default function VisitWorkspace() {
                   (s) => s.status === "done" && !s.reference_id
                 ) && (
                   <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-900 dark:text-amber-200">
-                    Au moins une vaccination ou un antiparasitaire est « fait » sans
-                    enregistrement lié au certificat. Utilisez « Enregistrer » ou « Marquer
-                    fait » sur le rappel.
+                    {t("visits.workspace.pendingVaxWarning")}
                   </p>
                 )}
-                <p>Terminez ou ignorez les prestations concernées, ou forcez la clôture.</p>
+                <p>{t("visits.workspace.pendingForceHint")}</p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Retour</AlertDialogCancel>
+            <AlertDialogCancel>{tc("back")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -1462,7 +1470,7 @@ export default function VisitWorkspace() {
                 void doCompleteVisit();
               }}
             >
-              Terminer quand même
+              {t("visits.workspace.completeAnyway")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1471,14 +1479,14 @@ export default function VisitWorkspace() {
       <Dialog open={editVisitOpen} onOpenChange={setEditVisitOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Modifier la visite</DialogTitle>
+            <DialogTitle>{t("visits.workspace.editVisitTitle")}</DialogTitle>
             <DialogDescription>
-              Motif, notes et date. Les prestations se gèrent dans le panneau de gauche.
+              {t("visits.workspace.editVisitDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-visit-date">Date / heure</Label>
+              <Label htmlFor="edit-visit-date">{t("visits.workspace.dateTime")}</Label>
               <Input
                 id="edit-visit-date"
                 type="datetime-local"
@@ -1487,31 +1495,31 @@ export default function VisitWorkspace() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-reason">Motif</Label>
+              <Label htmlFor="edit-reason">{t("visits.form.reason")}</Label>
               <Input
                 id="edit-reason"
                 value={editReason}
                 onChange={(e) => setEditReason(e.target.value)}
-                placeholder="ex. Rappel vaccin — Rappel 2 · rage"
+                placeholder={t("visits.workspace.reasonPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-notes">Notes</Label>
+              <Label htmlFor="edit-notes">{tc("notes")}</Label>
               <textarea
                 id="edit-notes"
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={editNotes}
                 onChange={(e) => setEditNotes(e.target.value)}
-                placeholder="Notes internes…"
+                placeholder={t("visits.workspace.notesPlaceholder")}
                 rows={3}
               />
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setEditVisitOpen(false)}>
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button type="button" onClick={saveVisitEdits} disabled={editSaving}>
-                {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enregistrer"}
+                {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : tc("save")}
               </Button>
             </div>
           </div>

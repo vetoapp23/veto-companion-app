@@ -1,6 +1,8 @@
 import { format, parseISO, isValid } from "date-fns";
-import { fr } from "date-fns/locale";
+import type { Locale } from "date-fns";
 import type { Antiparasitic, Appointment, Vaccination } from "@/lib/database";
+import i18n from "@/i18n";
+import { getDateFnsLocale } from "@/i18n/dateLocale";
 
 export type CertificateDoseStatus = "administered" | "planned";
 
@@ -25,13 +27,15 @@ export interface CertificateDoseRow {
 const SCHEDULE_MARKER = "Calendrier:";
 
 /** Format a day key for print (avoids UTC shift). */
-export function formatCertDate(dateKey?: string | null): string {
+export function formatCertDate(dateKey?: string | null, locale?: Locale): string {
   if (!dateKey) return "N/A";
   const day = dateKey.slice(0, 10);
   try {
     const d = parseISO(day);
     if (!isValid(d)) return day;
-    return format(d, "dd/MM/yyyy", { locale: fr });
+    return format(d, "dd/MM/yyyy", {
+      locale: locale ?? getDateFnsLocale(i18n.language),
+    });
   } catch {
     return day;
   }

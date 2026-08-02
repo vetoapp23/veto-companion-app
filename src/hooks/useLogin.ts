@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface LoginCredentials {
   email: string;
@@ -11,6 +12,7 @@ interface LoginCredentials {
 export const useLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation('auth');
 
   return useMutation({
     mutationFn: async ({ email, password }: LoginCredentials) => {
@@ -24,24 +26,24 @@ export const useLogin = () => {
     },
     onSuccess: () => {
       toast({
-        title: "Connexion réussie",
-        description: "Bienvenue!",
+        title: t('login.successTitle'),
+        description: t('login.successBody'),
       });
       navigate('/dashboard');
     },
     onError: (error: Error) => {
-      let message = 'Une erreur est survenue lors de la connexion';
-      
+      let message = t('login.errorGeneric');
+
       if (error.message.includes('Invalid login credentials')) {
-        message = 'Email ou mot de passe incorrect';
+        message = t('login.invalidCredentials');
       } else if (error.message.includes('Email not confirmed')) {
-        message = 'Veuillez confirmer votre email avant de vous connecter';
+        message = t('login.emailNotConfirmed');
       }
-      
+
       toast({
-        title: "Erreur de connexion",
+        title: t('login.errorTitle'),
         description: message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
   });

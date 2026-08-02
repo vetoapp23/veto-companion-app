@@ -7,6 +7,8 @@ import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 import { printHtml, downloadHtmlAsPdf } from "@/lib/htmlToPdf";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 
 interface PrescriptionPrintProps {
   prescription: Prescription;
@@ -18,6 +20,7 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
   const { toast } = useToast();
+  const { t, i18n } = useTranslation("medical");
   const [busy, setBusy] = useState<"print" | "download" | null>(null);
   const prescriber = prescription.prescribedBy;
 
@@ -28,9 +31,15 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
           med.name,
           med.dosage || "",
           med.frequency || "",
-          med.duration ? `pendant ${med.duration}` : "",
-          med.quantity ? `Qté : ${med.quantity}${med.unit ? ` ${med.unit}` : ""}` : "",
-          med.refills && med.refills > 0 ? `Renouv. : ${med.refills}` : "",
+          med.duration ? t("print.prescription.forDuration", { duration: med.duration }) : "",
+          med.quantity
+            ? t("print.prescription.qty", {
+                qty: `${med.quantity}${med.unit ? ` ${med.unit}` : ""}`,
+              })
+            : "",
+          med.refills && med.refills > 0
+            ? t("print.prescription.refills", { count: med.refills })
+            : "",
         ].filter(Boolean);
 
         return `
@@ -51,7 +60,7 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
     return `
       <html>
         <head>
-          <title>Ordonnance - ${prescription.petName}</title>
+          <title>${t("print.prescription.docTitle", { name: prescription.petName })}</title>
           <style>
             @page { margin: 16mm; }
             body {
@@ -161,53 +170,53 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
         <body>
           ${buildWatermarkHtml(isFree)}
           <div class="header">
-            ${settings.logo ? `<img src="${settings.logo}" alt="Logo clinique" style="height:64px;margin-bottom:8px;"/>` : ""}
-            <h1>ORDONNANCE MÉDICALE</h1>
+            ${settings.logo ? `<img src="${settings.logo}" alt="${t("print.prescription.clinicLogoAlt")}" style="height:64px;margin-bottom:8px;"/>` : ""}
+            <h1>${t("print.prescription.heading")}</h1>
             <h2>${settings.clinicName || ""}</h2>
             <p>${settings.address || ""}</p>
-            <p>Tél: ${settings.phone || ""} | Email: ${settings.email || ""}</p>
+            <p>${t("print.prescription.tel")} ${settings.phone || ""} | ${t("print.prescription.email")} ${settings.email || ""}</p>
           </div>
 
           <div class="meta">
-            <p><strong>Date :</strong> ${new Date(prescription.date).toLocaleDateString("fr-FR")}</p>
-            <p><strong>Prescrit par :</strong> ${prescriber || "—"}</p>
+            <p><strong>${t("print.prescription.date")}</strong> ${new Date(prescription.date).toLocaleDateString(getBcp47Locale(i18n.language))}</p>
+            <p><strong>${t("print.prescription.prescribedBy")}</strong> ${prescriber || "—"}</p>
           </div>
 
           <div class="patient">
-            <p class="section-title">Patient</p>
-            <p><strong>Propriétaire :</strong> ${prescription.clientName}</p>
-            <p><strong>Animal :</strong> ${prescription.petName}</p>
-            ${prescription.diagnosis ? `<p><strong>Diagnostic :</strong> ${prescription.diagnosis}</p>` : ""}
-            ${prescription.duration ? `<p><strong>Validité :</strong> ${prescription.duration}</p>` : ""}
+            <p class="section-title">${t("print.prescription.patient")}</p>
+            <p><strong>${t("print.prescription.owner")}</strong> ${prescription.clientName}</p>
+            <p><strong>${t("print.prescription.animal")}</strong> ${prescription.petName}</p>
+            ${prescription.diagnosis ? `<p><strong>${t("print.prescription.diagnosis")}</strong> ${prescription.diagnosis}</p>` : ""}
+            ${prescription.duration ? `<p><strong>${t("print.prescription.validity")}</strong> ${prescription.duration}</p>` : ""}
           </div>
 
           <p class="rp-mark">Rp/</p>
           <div class="medications">
-            ${medLines || "<p>Aucun médicament prescrit.</p>"}
+            ${medLines || `<p>${t("print.prescription.noMeds")}</p>`}
           </div>
 
           ${
             prescription.instructions
-              ? `<div class="notes"><p class="section-title">Instructions générales</p><p>${prescription.instructions}</p></div>`
+              ? `<div class="notes"><p class="section-title">${t("print.prescription.generalInstructions")}</p><p>${prescription.instructions}</p></div>`
               : ""
           }
           ${
             prescription.followUpDate
-              ? `<div class="notes"><p><strong>Suivi prévu :</strong> ${new Date(prescription.followUpDate).toLocaleDateString("fr-FR")}</p></div>`
+              ? `<div class="notes"><p><strong>${t("print.prescription.followUpScheduled")}</strong> ${new Date(prescription.followUpDate).toLocaleDateString(getBcp47Locale(i18n.language))}</p></div>`
               : ""
           }
           ${
             prescription.notes && prescription.notes !== prescription.instructions
-              ? `<div class="notes"><p class="section-title">Notes</p><p>${prescription.notes}</p></div>`
+              ? `<div class="notes"><p class="section-title">${t("print.prescription.notes")}</p><p>${prescription.notes}</p></div>`
               : ""
           }
 
           <div class="footer">
             <div class="signature-block">
               <div class="signature-line"></div>
-              <p>Signature du vétérinaire</p>
+              <p>${t("print.prescription.vetSignature")}</p>
             </div>
-            <small>Cette ordonnance est valable pour la durée du traitement prescrit.</small>
+            <small>${t("print.prescription.validityNote")}</small>
           </div>
         </body>
       </html>
@@ -217,8 +226,8 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
   const ensureValid = () => {
     if (!prescription?.petName || !prescription?.clientName) {
       toast({
-        title: "Ordonnance incomplete",
-        description: "Animal ou propriétaire manquant.",
+        title: t("print.prescription.incompleteTitle"),
+        description: t("print.prescription.incompleteBody"),
         variant: "destructive",
       });
       return false;
@@ -233,8 +242,8 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
       await printHtml(buildHtml());
     } catch (e: any) {
       toast({
-        title: "Impression impossible",
-        description: e?.message || "Autorisez les popups.",
+        title: t("print.prescription.printFailedTitle"),
+        description: e?.message || t("print.prescription.printFailedBody"),
         variant: "destructive",
       });
     } finally {
@@ -246,16 +255,16 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
     if (!ensureValid()) return;
     setBusy("download");
     try {
-      const filename = `ordonnance-${prescription.petName}-${new Date(prescription.date).toISOString().slice(0, 10)}.pdf`;
+      const filename = `prescription-${prescription.petName}-${new Date(prescription.date).toISOString().slice(0, 10)}.pdf`;
       await downloadHtmlAsPdf(buildHtml(), filename);
       toast({
-        title: "Téléchargement",
-        description: "Choisissez « Enregistrer au format PDF » dans la boîte d'impression.",
+        title: t("print.prescription.downloadTitle"),
+        description: t("print.prescription.downloadBody"),
       });
     } catch (e: any) {
       toast({
-        title: "Téléchargement impossible",
-        description: e?.message || "Autorisez les popups.",
+        title: t("print.prescription.downloadFailedTitle"),
+        description: e?.message || t("print.prescription.printFailedBody"),
         variant: "destructive",
       });
     } finally {
@@ -272,7 +281,7 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
           onClick={handlePrint}
           disabled={!!busy}
           className="h-8 w-8 p-0"
-          title="Imprimer l'ordonnance"
+          title={t("print.prescription.printRx")}
         >
           <Printer className="h-3.5 w-3.5" />
         </Button>
@@ -282,7 +291,7 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
           onClick={handleDownload}
           disabled={!!busy}
           className="h-8 w-8 p-0"
-          title="Télécharger l'ordonnance (PDF)"
+          title={t("print.prescription.downloadRx")}
         >
           <Download className="h-3.5 w-3.5" />
         </Button>
@@ -294,11 +303,11 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
     <div className="flex flex-wrap gap-2">
       <Button size="sm" variant="outline" onClick={handlePrint} disabled={!!busy} className="gap-2">
         <Printer className="h-4 w-4" />
-        {busy === "print" ? "Ouverture…" : "Imprimer"}
+        {busy === "print" ? t("print.prescription.opening") : t("print.prescription.print")}
       </Button>
       <Button size="sm" variant="outline" onClick={handleDownload} disabled={!!busy} className="gap-2">
         <Download className="h-4 w-4" />
-        {busy === "download" ? "Ouverture…" : "Télécharger PDF"}
+        {busy === "download" ? t("print.prescription.opening") : t("print.prescription.downloadPdf")}
       </Button>
     </div>
   );

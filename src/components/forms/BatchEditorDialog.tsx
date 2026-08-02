@@ -11,6 +11,7 @@ import { ComboboxFreeText } from "@/components/ui/combobox-freetext";
 import { useCreateFarmBatch, useUpdateFarmBatch, type FarmBatch } from "@/hooks/useFarmBatches";
 import { getFarmTypeConfig } from "@/lib/farmTypeConfig";
 import { ChipNumbersField } from "@/components/forms/ChipNumbersField";
+import { useTranslation } from "react-i18next";
 
 interface BatchEditorDialogProps {
   open: boolean;
@@ -24,6 +25,8 @@ interface BatchEditorDialogProps {
 }
 
 const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [], batch, onSaved }: BatchEditorDialogProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const create = useCreateFarmBatch();
   const update = useUpdateFarmBatch();
@@ -68,7 +71,7 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!data.name.trim()) {
-      toast({ title: "Nom du lot requis", variant: "destructive" });
+      toast({ title: t("farms.batch.nameRequired"), variant: "destructive" });
       return;
     }
     const payload: any = {
@@ -87,16 +90,16 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
     try {
       if (batch?.id) {
         const updated = await update.mutateAsync({ id: batch.id, data: payload });
-        toast({ title: "✓ Lot mis à jour" });
+        toast({ title: t("farms.batch.updated") });
         onSaved?.(updated);
       } else {
         const created = await create.mutateAsync(payload);
-        toast({ title: "✓ Lot créé" });
+        toast({ title: t("farms.batch.created") });
         onSaved?.(created);
       }
       onOpenChange(false);
     } catch (err: any) {
-      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      toast({ title: tc("error"), description: err.message, variant: "destructive" });
     }
   };
 
@@ -104,84 +107,84 @@ const BatchEditorDialog = ({ open, onOpenChange, farmId, farmType, farmTypes = [
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>{batch ? "Modifier le lot" : "Nouveau lot / troupeau"}</DialogTitle>
-          <DialogDescription>Groupe d'animaux au sein de l'exploitation.</DialogDescription>
+          <DialogTitle>{batch ? t("farms.batch.edit") : t("farms.batch.new")}</DialogTitle>
+          <DialogDescription>{t("farms.batch.description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           {farmTypes.length > 1 && (
             <div className="space-y-2">
-              <Label>Type d'élevage du lot</Label>
+              <Label>{t("farms.batch.farmType")}</Label>
               <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                 value={data.farm_type} onChange={(e) => set("farm_type", e.target.value)}>
-                <option value="">— Choisir —</option>
-                {farmTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                <option value="">{t("farms.batch.choose")}</option>
+                {farmTypes.map((ft) => <option key={ft} value={ft}>{ft}</option>)}
               </select>
               <p className="text-xs text-muted-foreground">
-                Les catégories ci-dessous s'adaptent au type choisi.
+                {t("farms.batch.categoriesAdapt")}
               </p>
             </div>
           )}
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Nom du lot *</Label>
-              <Input value={data.name} onChange={(e) => set("name", e.target.value)} required placeholder="Ex: Vaches laitières 2024" />
+              <Label>{t("farms.batch.name")}</Label>
+              <Input value={data.name} onChange={(e) => set("name", e.target.value)} required placeholder={t("farms.batch.namePlaceholder")} />
             </div>
             <div className="space-y-2">
-              <Label>Catégorie</Label>
+              <Label>{t("farms.batch.category")}</Label>
               <ComboboxFreeText
                 value={data.category}
                 onChange={(v) => set("category", v)}
                 options={config.batchCategories}
                 category="batch_category"
-                placeholder="Catégorie de cheptel"
+                placeholder={t("farms.batch.categoryPlaceholder")}
               />
             </div>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Espèce / race</Label>
+              <Label>{t("farms.batch.speciesBreed")}</Label>
               <Input value={data.species} onChange={(e) => set("species", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Effectif</Label>
+              <Label>{t("farms.batch.headcount")}</Label>
               <Input type="number" min={0} value={data.animal_count} onChange={(e) => set("animal_count", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Période de naissance</Label>
-              <Input value={data.birth_period} onChange={(e) => set("birth_period", e.target.value)} placeholder="Ex: Printemps 2024" />
+              <Label>{t("farms.batch.birthPeriod")}</Label>
+              <Input value={data.birth_period} onChange={(e) => set("birth_period", e.target.value)} placeholder={t("farms.batch.birthPeriodPlaceholder")} />
             </div>
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Emplacement / bâtiment</Label>
+              <Label>{t("farms.batch.locationBuilding")}</Label>
               <Input value={data.location} onChange={(e) => set("location", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Statut</Label>
+              <Label>{tc("status")}</Label>
               <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={data.status} onChange={(e) => set("status", e.target.value)}>
-                <option value="active">Actif</option>
-                <option value="sold">Vendu</option>
-                <option value="closed">Clôturé</option>
-                <option value="quarantine">Quarantaine</option>
+                <option value="active">{t("farms.batch.statusActive")}</option>
+                <option value="sold">{t("farms.batch.statusSold")}</option>
+                <option value="closed">{t("farms.batch.statusClosed")}</option>
+                <option value="quarantine">{t("farms.batch.statusQuarantine")}</option>
               </select>
             </div>
           </div>
           <ChipNumbersField
             value={data.chip_numbers}
             onChange={(chips) => set("chip_numbers", chips)}
-            label="Numéros de puces / boucles"
-            hint="Identifiants des animaux du lot. Collez plusieurs numéros séparés par virgule ou espace."
+            label={t("farms.batch.chipNumbers")}
+            hint={t("farms.batch.chipHint")}
           />
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{tc("notes")}</Label>
             <Textarea rows={2} value={data.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>{tc("cancel")}</Button>
             <Button type="submit" disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {batch ? "Enregistrer" : "Créer le lot"}
+              {batch ? tc("save") : t("farms.batch.create")}
             </Button>
           </DialogFooter>
         </form>

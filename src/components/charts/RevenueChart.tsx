@@ -4,11 +4,15 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { TrendingUp, DollarSign } from 'lucide-react';
 import { useAccounting } from '@/hooks/useAccounting';
 import { useSettings } from '@/contexts/SettingsContext';
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function RevenueChart() {
   const { revenues, expenses } = useAccounting();
   const { settings } = useSettings();
   const currency = settings.currency || 'MAD';
+  const { t } = useTranslation("app");
+  const { bcp47 } = useAppLocale();
 
   const generateRevenueData = () => {
     const data = [];
@@ -34,7 +38,7 @@ export function RevenueChart() {
         .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
       data.push({
-        month: date.toLocaleDateString('fr-FR', { month: 'short' }),
+        month: date.toLocaleDateString(bcp47, { month: 'short' }),
         revenue: Math.round(monthRevenue),
         expenses: Math.round(monthExpenses),
         profit: Math.round(monthRevenue - monthExpenses),
@@ -49,7 +53,7 @@ export function RevenueChart() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">Évolution des Revenus</CardTitle>
+        <CardTitle className="text-base font-medium">{t("charts.revenue.title")}</CardTitle>
         <div className="flex items-center gap-2">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
           <TrendingUp className="h-4 w-4 text-green-600" />
@@ -75,7 +79,7 @@ export function RevenueChart() {
                 }}
                 formatter={(value: number, name: string) => [
                   `${value} ${currency}`,
-                  name === 'revenue' ? 'Revenus' : name === 'expenses' ? 'Dépenses' : 'Bénéfice',
+                  name === 'revenue' ? t("charts.revenue.revenue") : name === 'expenses' ? t("charts.revenue.expenses") : t("charts.revenue.profit"),
                 ]}
               />
               <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.15} />

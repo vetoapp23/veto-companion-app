@@ -19,6 +19,7 @@ import {
   buildPrescriptionMedPayload,
   type PrescriptionMedDraft,
 } from "@/components/forms/PrescriptionMedicationsFields";
+import { useTranslation } from "react-i18next";
 
 interface NewPrescriptionModalProps {
   open: boolean;
@@ -43,6 +44,9 @@ export function NewPrescriptionModal({
   const { data: stockItems = [] } = useStockItems();
   const createPrescriptionMutation = useCreatePrescription();
   const { toast } = useToast();
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+  const { t: ta } = useTranslation("app");
 
   const [formData, setFormData] = useState({
     diagnosis: "",
@@ -65,8 +69,8 @@ export function NewPrescriptionModal({
 
     if (!animal || !client) {
       toast({
-        title: "Erreur",
-        description: "Impossible de trouver l'animal ou le client associé.",
+        title: tc("error"),
+        description: t("prescriptionForm.animalClientNotFound"),
         variant: "destructive",
       });
       return;
@@ -77,8 +81,8 @@ export function NewPrescriptionModal({
       validMedications = buildPrescriptionMedPayload(medications, stockItems);
     } catch (error: any) {
       toast({
-        title: "Stock insuffisant",
-        description: error?.message || "Impossible de vendre ce médicament.",
+        title: t("alerts.insufficientStock"),
+        description: error?.message || t("alerts.cannotGeneratePrescription"),
         variant: "destructive",
       });
       return;
@@ -86,8 +90,8 @@ export function NewPrescriptionModal({
 
     if (validMedications.length === 0) {
       toast({
-        title: "Erreur",
-        description: "Veuillez ajouter au moins un médicament à la prescription.",
+        title: tc("error"),
+        description: t("prescriptionForm.needMedication"),
         variant: "destructive",
       });
       return;
@@ -114,11 +118,11 @@ export function NewPrescriptionModal({
       const created = await createPrescriptionMutation.mutateAsync(prescriptionData);
 
       toast({
-        title: "Prescription créée",
+        title: t("prescriptionForm.created"),
         description:
           soldLines.length > 0
-            ? `Ordonnance créée pour ${animal.name}. ${soldLines.length} médicament(s) déduit(s) du stock.`
-            : `Ordonnance créée pour ${animal.name} (stock non modifié).`,
+            ? `${t("prescriptionForm.createdFor", { name: animal.name })} ${t("prescriptionForm.medsDeducted", { count: soldLines.length })}`
+            : `${t("prescriptionForm.createdFor", { name: animal.name })} (${t("prescriptionForm.stockUnchanged")}).`,
       });
 
       onCreated?.({ id: created.id, estimatedAmount });
@@ -129,8 +133,8 @@ export function NewPrescriptionModal({
     } catch (error: any) {
       console.error("Error creating prescription:", error);
       toast({
-        title: "Erreur",
-        description: error?.message || "Une erreur est survenue lors de la création de la prescription.",
+        title: tc("error"),
+        description: error?.message || t("prescriptionForm.createError"),
         variant: "destructive",
       });
     }
@@ -141,9 +145,9 @@ export function NewPrescriptionModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Erreur</DialogTitle>
+            <DialogTitle>{tc("error")}</DialogTitle>
             <DialogDescription>
-              Impossible de trouver l'animal ou le client associé.
+              {t("prescriptionForm.animalClientNotFound")}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -155,27 +159,30 @@ export function NewPrescriptionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvelle Prescription</DialogTitle>
+          <DialogTitle>{ta("consultations.newPrescription")}</DialogTitle>
           <DialogDescription>
-            Créer une nouvelle prescription pour {animal.name} ({client.first_name} {client.last_name})
+            {t("prescriptionForm.newDesc", {
+              pet: animal.name,
+              client: `${client.first_name} ${client.last_name}`,
+            })}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="diagnosis">Diagnostic</Label>
+              <Label htmlFor="diagnosis">{t("forms.diagnosisLabel")}</Label>
               <Textarea
                 id="diagnosis"
                 name="diagnosis"
                 value={formData.diagnosis}
                 onChange={handleInputChange}
-                placeholder="Entrez le diagnostic..."
+                placeholder={t("prescriptionForm.diagnosisInputPlaceholder")}
                 className="h-20"
               />
             </div>
             <div>
-              <Label htmlFor="validUntil">Valide jusqu'au (optionnel)</Label>
+              <Label htmlFor="validUntil">{t("prescriptionForm.validUntilOptional")}</Label>
               <Input
                 id="validUntil"
                 name="validUntil"
@@ -187,7 +194,7 @@ export function NewPrescriptionModal({
           </div>
 
           <div className="space-y-4 pt-4 border-t border-border">
-            <Label className="text-lg font-semibold">Médicaments</Label>
+            <Label className="text-lg font-semibold">{t("prescriptionForm.medicationsHeading")}</Label>
             <PrescriptionMedicationsFields
               medications={medications}
               onChange={setMedications}
@@ -196,13 +203,13 @@ export function NewPrescriptionModal({
           </div>
 
           <div>
-            <Label htmlFor="notes">Notes générales</Label>
+            <Label htmlFor="notes">{t("prescriptionForm.generalNotes")}</Label>
             <Textarea
               id="notes"
               name="notes"
               value={formData.notes}
               onChange={handleInputChange}
-              placeholder="Notes générales sur la prescription..."
+              placeholder={t("prescriptionForm.generalNotesPlaceholder")}
               className="h-20"
             />
           </div>
@@ -214,10 +221,10 @@ export function NewPrescriptionModal({
               onClick={() => onOpenChange(false)}
               disabled={createPrescriptionMutation.isPending}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={createPrescriptionMutation.isPending}>
-              {createPrescriptionMutation.isPending ? "Création..." : "Créer la prescription"}
+              {createPrescriptionMutation.isPending ? t("prescriptionForm.creating") : t("prescriptionForm.createButton")}
             </Button>
           </div>
         </form>

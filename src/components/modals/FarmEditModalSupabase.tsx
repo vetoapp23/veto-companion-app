@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,8 @@ interface FarmEditModalSupabaseProps {
 }
 
 const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupabaseProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   
   // Fetch settings for dynamic data
@@ -112,8 +115,8 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
     // Validation
     if (!formData.farm_name.trim()) {
       toast({
-        title: "Erreur de validation",
-        description: "Le nom de l'exploitation est obligatoire",
+        title: t("farms.ui.validationError"),
+        description: t("farms.farmNameRequired"),
         variant: "destructive",
       });
       return;
@@ -141,21 +144,21 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
       if (error) throw error;
 
       toast({
-        title: "✓ Exploitation modifiée",
-        description: `${formData.farm_name} a été mise à jour avec succès.`,
+        title: t("farms.ui.farmUpdatedToast"),
+        description: t("farms.ui.farmUpdatedToastBody", { name: formData.farm_name }),
       });
       
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating farm:', error);
       
-      let errorMessage = "Une erreur inattendue s'est produite.";
+      let errorMessage = t("farms.ui.unexpectedError");
       if (error instanceof Error) {
         errorMessage = error.message;
       }
       
       toast({
-        title: "⚠ Erreur de mise à jour",
+        title: t("farms.ui.updateError"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -170,20 +173,20 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier l'Exploitation</DialogTitle>
+          <DialogTitle>{t("farms.editFarm")}</DialogTitle>
           <DialogDescription>
-            Modifiez les informations de l'exploitation agricole
+            {t("farms.ui.editFarmDesc")}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Informations de base</h3>
+            <h3 className="text-lg font-semibold">{t("farms.ui.basicInfo")}</h3>
             
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="farm_name">Nom de l'exploitation *</Label>
+                <Label htmlFor="farm_name">{t("farms.farmName")}</Label>
                 <Input
                   id="farm_name"
                   value={formData.farm_name}
@@ -193,7 +196,7 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="registration_number">Numéro d'enregistrement</Label>
+                <Label htmlFor="registration_number">{t("farms.registrationNumber")}</Label>
                 <Input
                   id="registration_number"
                   value={formData.registration_number}
@@ -204,10 +207,10 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="farm_type">Type d'exploitation</Label>
+                <Label htmlFor="farm_type">{t("farms.ui.farmType")}</Label>
                 <Select value={formData.farm_type} onValueChange={(value) => handleSelectChange("farm_type", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le type" />
+                    <SelectValue placeholder={t("farms.ui.selectType")} />
                   </SelectTrigger>
                   <SelectContent>
                     {farmTypes.map(type => (
@@ -218,14 +221,14 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="herd_size">Taille du cheptel</Label>
+                <Label htmlFor="herd_size">{t("farms.ui.herdSize")}</Label>
                 <Input
                   id="herd_size"
                   type="number"
                   min="0"
                   value={formData.herd_size}
                   onChange={handleChange}
-                  placeholder="Nombre d'animaux"
+                  placeholder={t("farms.ui.animalCountPlaceholder")}
                 />
               </div>
             </div>
@@ -233,39 +236,39 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
 
           {/* Contact Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Informations de contact</h3>
+            <h3 className="text-lg font-semibold">{t("farms.ui.contactInfo")}</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="address">Adresse</Label>
+              <Label htmlFor="address">{tc("address")}</Label>
               <Textarea
                 id="address"
                 value={formData.address}
                 onChange={handleChange}
-                placeholder="Adresse complète de l'exploitation"
+                placeholder={t("farms.ui.farmAddressPlaceholder")}
                 rows={2}
               />
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone</Label>
+                <Label htmlFor="phone">{tc("phone")}</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="Numéro de téléphone"
+                  placeholder={t("farms.ui.phonePlaceholder")}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{tc("email")}</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="Adresse email"
+                  placeholder={t("farms.ui.emailAddressPlaceholder")}
                 />
               </div>
             </div>
@@ -274,7 +277,7 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
           {/* Certifications */}
           {certificationOptions.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Certifications</h3>
+              <h3 className="text-lg font-semibold">{t("farms.certifications")}</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {certificationOptions.map((certification) => (
                   <div key={certification} className="flex items-center space-x-2">
@@ -310,12 +313,12 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={handleChange}
-              placeholder="Notes additionnelles sur l'exploitation..."
+              placeholder={t("farms.ui.notesPlaceholder")}
               rows={4}
             />
           </div>
@@ -328,11 +331,11 @@ const FarmEditModalSupabase = ({ open, onOpenChange, farm }: FarmEditModalSupaba
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isSubmitting ? "Enregistrement..." : "Enregistrer les modifications"}
+              {isSubmitting ? tc("saving") : t("farms.ui.saveChanges")}
             </Button>
           </div>
         </form>

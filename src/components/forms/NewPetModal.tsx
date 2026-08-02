@@ -14,6 +14,7 @@ import { useClients, useCreateAnimal, useAnimals } from "@/hooks/useDatabase";
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { Animal, CreateAnimalData } from "@/lib/database";
+import { useTranslation } from "react-i18next";
 
 interface NewPetModalProps {
   open: boolean;
@@ -24,6 +25,8 @@ interface NewPetModalProps {
 }
 
 export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: NewPetModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
   const createAnimalMutation = useCreateAnimal();
@@ -85,28 +88,28 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
     
     // Required fields validation
     if (!formData.name.trim()) {
-      errors.name = "Le nom de l'animal est obligatoire";
+      errors.name = t("pets.nameRequired");
     } else if (formData.name.trim().length < 2) {
-      errors.name = "Le nom doit contenir au moins 2 caractères";
+      errors.name = t("pets.nameMinLength");
     } else if (formData.name.trim().length > 50) {
-      errors.name = "Le nom ne peut pas dépasser 50 caractères";
+      errors.name = t("pets.nameMaxLength");
     }
     
     if (!formData.type) {
-      errors.type = "Le type d'animal est obligatoire";
+      errors.type = t("pets.typeRequired");
     }
     
     if (!formData.ownerId) {
-      errors.ownerId = "Le propriétaire est obligatoire";
+      errors.ownerId = t("pets.ownerRequired");
     }
     
     // Optional fields validation
     if (formData.weight && (isNaN(Number(formData.weight)) || Number(formData.weight) <= 0)) {
-      errors.weight = "Le poids doit être un nombre positif";
+      errors.weight = t("pets.weightPositive");
     }
     
     if (formData.weight && Number(formData.weight) > 1000) {
-      errors.weight = "Le poids semble anormalement élevé (max: 1000kg)";
+      errors.weight = t("pets.weightTooHigh");
     }
     
     // Microchip validation - flexible format
@@ -115,14 +118,14 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
       
       // Check length - allow 10-15 characters (more flexible)
       if (microchipValue.length < 10) {
-        errors.microchip = "Le numéro de puce doit contenir au moins 10 caractères";
+        errors.microchip = t("pets.microchipMinLength");
       } else if (microchipValue.length > 15) {
-        errors.microchip = "Le numéro de puce ne doit pas dépasser 15 caractères";
+        errors.microchip = t("pets.microchipMaxLength");
       }
       
       // Check for valid characters (alphanumeric only)
       if (!/^[0-9A-Fa-f]+$/.test(microchipValue)) {
-        errors.microchip = "Le numéro de puce ne doit contenir que des chiffres et lettres (A-F)";
+        errors.microchip = t("pets.microchipHex");
       }
       
       // Check for existing microchip
@@ -130,7 +133,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
         animal.microchip_number === microchipValue
       );
       if (existingAnimal) {
-        errors.microchip = `Ce numéro de puce est déjà utilisé par ${existingAnimal.name}`;
+        errors.microchip = t("pets.microchipInUse", { name: existingAnimal.name });
       }
     }
     
@@ -140,14 +143,14 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
       const today = new Date();
       
       if (birthDate > today) {
-        errors.birthDate = "La date de naissance ne peut pas être dans le futur";
+        errors.birthDate = t("pets.birthDateFuture");
       }
       
       // Check if animal is not too old (reasonable limit: 30 years)
       const maxAge = new Date();
       maxAge.setFullYear(maxAge.getFullYear() - 30);
       if (birthDate < maxAge) {
-        errors.birthDate = "La date de naissance semble trop ancienne";
+        errors.birthDate = t("pets.birthDateTooOld");
       }
     }
     
@@ -212,8 +215,8 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
     if (Object.keys(errors).length > 0) {
       const firstError = Object.values(errors)[0];
       toast({
-        title: "⚠ Formulaire incomplet",
-        description: firstError || "Veuillez corriger les erreurs dans le formulaire",
+        title: t("pets.formIncomplete"),
+        description: firstError || t("pets.formIncompleteBody"),
         variant: "destructive",
       });
       return;
@@ -242,8 +245,8 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
       const created = await createAnimalMutation.mutateAsync(animalData);
     
       toast({
-        title: "✓ Animal ajouté avec succès",
-        description: `${formData.name} a été enregistré dans votre base de données.`,
+        title: t("pets.addedSuccess"),
+        description: t("pets.addedSuccessBody", { name: formData.name }),
       });
       
       // Reset form with all required properties
@@ -284,25 +287,25 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
       console.error('Error creating animal:', error);
       
       // Enhanced error handling with specific messages
-      let errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
+      let errorMessage = tc("unexpectedError");
       
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
         
         if (errorMsg.includes('microchip') || errorMsg.includes('unique')) {
-          errorMessage = "Ce numéro de puce électronique est déjà utilisé par un autre animal. Vérifiez le numéro.";
+          errorMessage = t("pets.microchipDuplicate");
           setFormErrors({ microchip: errorMessage });
         } else if (errorMsg.includes('client') || errorMsg.includes('foreign key')) {
-          errorMessage = "Le propriétaire sélectionné n'existe pas. Veuillez créer le client d'abord.";
+          errorMessage = t("pets.ownerNotFound");
           setFormErrors({ ownerId: errorMessage });
         } else if (errorMsg.includes('name') || errorMsg.includes('not null')) {
-          errorMessage = "Le nom de l'animal et son propriétaire sont obligatoires.";
+          errorMessage = t("pets.nameAndOwnerRequired");
         } else if (errorMsg.includes('authentication') || errorMsg.includes('not authenticated')) {
-          errorMessage = "Votre session a expiré. Veuillez vous reconnecter à l'application.";
+          errorMessage = t("pets.sessionExpired");
         } else if (errorMsg.includes('network') || errorMsg.includes('connection') || errorMsg.includes('fetch')) {
-          errorMessage = "Problème de connexion. Vérifiez votre connexion internet et réessayez.";
+          errorMessage = tc("connectionProblem");
         } else if (errorMsg.includes('permission') || errorMsg.includes('access') || errorMsg.includes('authorized')) {
-          errorMessage = "Vous n'avez pas les permissions nécessaires pour ajouter un animal.";
+          errorMessage = t("pets.noPermissionAdd");
         } else {
           // Extract meaningful part of the error message
           if (error.message.includes('Error creating animal:')) {
@@ -314,7 +317,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
       }
       
       toast({
-        title: "⚠ Impossible d'ajouter l'animal",
+        title: t("pets.cannotAdd"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -337,9 +340,9 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
     >
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvel Animal</DialogTitle>
+          <DialogTitle>{t("pets.new")}</DialogTitle>
           <DialogDescription>
-            Ajoutez un nouvel animal à votre base de données.
+            {t("pets.newDesc")}
           </DialogDescription>
         </DialogHeader>
         
@@ -349,7 +352,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                Veuillez corriger les erreurs suivantes :
+                {t("pets.formErrorsTitle")}
                 <ul className="mt-2 ml-4 list-disc">
                   {Object.values(formErrors).map((error, index) => (
                     <li key={index} className="text-sm">{error}</li>
@@ -362,7 +365,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name" className={formErrors.name ? "text-destructive" : ""}>
-                Nom de l'animal *
+                {t("pets.nameLabel")}
               </Label>
               <Input
                 id="name"
@@ -377,11 +380,11 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             </div>
             <div className="space-y-2">
               <Label className={formErrors.type ? "text-destructive" : ""}>
-                Type d'animal *
+                {t("pets.speciesLabel")}
               </Label>
               <Select value={formData.type} onValueChange={(value) => handleSelectChange("type", value)}>
                 <SelectTrigger className={formErrors.type ? "border-destructive focus:border-destructive" : ""}>
-                  <SelectValue placeholder="Sélectionner le type" />
+                  <SelectValue placeholder={t("pets.selectSpecies")} />
                 </SelectTrigger>
                 <SelectContent>
                   {animalSpecies.map(species => (
@@ -399,25 +402,25 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="breed">Race</Label>
+              <Label htmlFor="breed">{tc("breed")}</Label>
               <ComboboxFreeText
                 value={formData.breed}
                 onChange={(v) => handleSelectChange("breed", v)}
                 options={availableBreeds}
                 category={formData.type ? `breed_${formData.type.toLowerCase()}` : "breed_other"}
-                placeholder={formData.type ? "Sélectionner ou taper" : "Sélectionnez d'abord un type"}
+                placeholder={formData.type ? t("pets.selectOrType") : t("pets.selectTypeFirst")}
                 disabled={!formData.type}
               />
             </div>
             <div className="space-y-2">
-              <Label>Sexe</Label>
+              <Label>{tc("sex")}</Label>
               <Select value={formData.gender} onValueChange={(value) => handleSelectChange("gender", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le sexe" />
+                  <SelectValue placeholder={t("pets.selectSex")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">Mâle</SelectItem>
-                  <SelectItem value="female">Femelle</SelectItem>
+                  <SelectItem value="male">{tc("male")}</SelectItem>
+                  <SelectItem value="female">{tc("female")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -426,7 +429,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="birthDate" className={formErrors.birthDate ? "text-destructive" : ""}>
-                Date de naissance
+                {t("pets.birthDate")}
               </Label>
               <Input
                 id="birthDate"
@@ -442,7 +445,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             </div>
             <div className="space-y-2">
               <Label htmlFor="weight" className={formErrors.weight ? "text-destructive" : ""}>
-                Poids (kg)
+                {tc("weight")} ({tc("kg")})
               </Label>
               <Input
                 id="weight"
@@ -463,13 +466,13 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="color">Couleur</Label>
+              <Label htmlFor="color">{t("pets.color")}</Label>
               <ComboboxFreeText
                 value={formData.color}
                 onChange={(v) => handleSelectChange("color", v)}
                 options={animalColors}
                 category="color"
-                placeholder="Sélectionner ou taper la couleur"
+                placeholder={t("pets.colorPlaceholder")}
               />
 
             </div>
@@ -480,18 +483,18 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           
           <div className="space-y-2">
             <Label className={formErrors.ownerId ? "text-destructive" : ""}>
-              Propriétaire *
+              {tc("owner")} *
             </Label>
             {clients.length === 0 ? (
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-yellow-800 text-sm">
-                  Aucun client disponible. Veuillez d'abord ajouter un client.
+                  {t("pets.noClientsAvailable")}
                 </p>
               </div>
             ) : (
               <Select value={formData.ownerId.toString()} onValueChange={(value) => handleSelectChange("ownerId", value)}>
                 <SelectTrigger className={formErrors.ownerId ? "border-destructive focus:border-destructive" : ""}>
-                  <SelectValue placeholder="Sélectionner le propriétaire" />
+                  <SelectValue placeholder={t("pets.selectOwner")} />
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map(client => (
@@ -509,7 +512,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           
           <div className="space-y-2">
             <Label htmlFor="microchip" className={formErrors.microchip ? "text-destructive" : ""}>
-              Numéro de puce électronique (optionnel)
+              {t("pets.microchip")} ({tc("optional")})
             </Label>
             <div className="relative">
               <Input
@@ -517,7 +520,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
                 value={formData.microchip}
                 onChange={handleChange}
                 className={formErrors.microchip ? "border-destructive focus:border-destructive" : ""}
-                placeholder="Ex: 250268500123456 (10-15 caractères)"
+                placeholder={t("pets.microchipPlaceholder")}
               />
               {formData.microchip && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -548,20 +551,20 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="medicalNotes">Notes médicales</Label>
+            <Label htmlFor="medicalNotes">{t("pets.medicalNotes")}</Label>
             <Textarea
               id="medicalNotes"
               value={formData.medicalNotes}
               onChange={handleChange}
-              placeholder="Allergies, conditions médicales, notes importantes..."
+              placeholder={t("pets.medicalNotesPlaceholder")}
             />
           </div>
           
           <div className="space-y-2">
-            <Label>État de santé</Label>
+            <Label>{t("pets.healthStatus")}</Label>
             <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner l'état de santé" />
+                <SelectValue placeholder={t("pets.selectHealthStatus")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="healthy">En bonne santé</SelectItem>
@@ -574,7 +577,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
      
           {/* Official Photo */}
           <div className="space-y-2">
-            <Label>Photo de l'animal</Label>
+            <Label>{t("pets.photo")}</Label>
             <input
               type="file"
               accept="image/*"
@@ -598,14 +601,14 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               type="submit" 
               disabled={isSubmitting || Object.keys(formErrors).length > 0}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isSubmitting ? "Ajout en cours..." : "Ajouter Animal"}
+              {isSubmitting ? t("pets.adding") : t("pets.addPet")}
             </Button>
           </div>
         </form>

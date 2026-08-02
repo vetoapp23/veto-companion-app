@@ -1,4 +1,13 @@
+import i18n from "@/i18n";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { watermarkStyle } from "@/lib/printWatermark";
+
+const t = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(key, { ns: "app", ...opts });
+
+function htmlLang() {
+  return (i18n.language || "fr").split("-")[0] || "fr";
+}
 
 export const REPORT_PHOTO_STYLES = `
   .photos {
@@ -225,7 +234,7 @@ export function buildReportHeader(title: string, clinic: ReportDocumentOptions["
   return `
     <header class="report-header">
       <div>
-        ${clinic.logo ? `<div class="logo"><img src="${clinic.logo}" alt="Logo" /></div>` : ""}
+        ${clinic.logo ? `<div class="logo"><img src="${clinic.logo}" alt="${t("report.logoAlt")}" /></div>` : ""}
         <h1>${title}</h1>
       </div>
       <div class="clinic">
@@ -239,7 +248,7 @@ export function buildReportHeader(title: string, clinic: ReportDocumentOptions["
 export function buildReportDocument(opts: ReportDocumentOptions): string {
   const headerHtml = buildReportHeader(opts.headerTitle, opts.clinic);
   return `<!doctype html>
-<html lang="fr">
+<html lang="${htmlLang()}">
 <head>
   <meta charset="utf-8"/>
   <title>${opts.title}</title>
@@ -261,9 +270,9 @@ export function buildReportDocument(opts: ReportDocumentOptions): string {
 }
 
 export function buildDefaultFooter(clinicName?: string, withSignature = false): string {
-  const dateLine = `<div>Document généré le ${new Date().toLocaleDateString("fr-FR")}</div>`;
+  const dateLine = `<div>${t("report.generatedOn", { date: new Date().toLocaleDateString(getBcp47Locale(i18n.language)) })}</div>`;
   if (withSignature) {
-    return `${dateLine}<div class="sig"><div class="line">Signature et cachet</div></div>`;
+    return `${dateLine}<div class="sig"><div class="line">${t("report.signatureStamp")}</div></div>`;
   }
   return `${dateLine}<div>${clinicName ?? ""}</div>`;
 }

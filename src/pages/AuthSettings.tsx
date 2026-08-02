@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthSettings() {
+  const { t } = useTranslation("settings");
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -82,8 +84,7 @@ export default function AuthSettings() {
       id: 1,
       device: 'MacBook Pro',
       browser: 'Chrome',
-      location: 'Rabat, Maroc',
-      lastActive: 'Maintenant',
+      lastActiveKey: 'now' as const,
       current: true,
       ip: '192.168.1.100'
     },
@@ -91,8 +92,8 @@ export default function AuthSettings() {
       id: 2,
       device: 'iPhone 14',
       browser: 'Safari',
-      location: 'Rabat, Maroc',
-      lastActive: 'Il y a 2 heures',
+      lastActiveKey: 'hoursAgo' as const,
+      lastActiveHours: 2,
       current: false,
       ip: '192.168.1.101'
     }
@@ -100,50 +101,50 @@ export default function AuthSettings() {
 
   const handleSaveSecurity = () => {
     toast({
-      title: "Paramètres de sécurité sauvegardés",
-      description: "Vos paramètres de sécurité ont été mis à jour.",
+      title: t("authSettings.security.savedTitle"),
+      description: t("authSettings.security.savedBody"),
     });
   };
 
   const handleSaveSession = () => {
     toast({
-      title: "Paramètres de session sauvegardés",
-      description: "Vos paramètres de session ont été mis à jour.",
+      title: t("authSettings.session.savedTitle"),
+      description: t("authSettings.session.savedBody"),
     });
   };
 
   const handleSaveNotifications = () => {
     toast({
-      title: "Paramètres de notification sauvegardés",
-      description: "Vos paramètres de notification ont été mis à jour.",
+      title: t("authSettings.notifications.savedTitle"),
+      description: t("authSettings.notifications.savedBody"),
     });
   };
 
   const handleSavePrivacy = () => {
     toast({
-      title: "Paramètres de confidentialité sauvegardés",
-      description: "Vos paramètres de confidentialité ont été mis à jour.",
+      title: t("authSettings.privacy.savedTitle"),
+      description: t("authSettings.privacy.savedBody"),
     });
   };
 
   const handleSaveDisplay = () => {
     toast({
-      title: "Paramètres d'affichage sauvegardés",
-      description: "Vos paramètres d'affichage ont été mis à jour.",
+      title: t("authSettings.display.savedTitle"),
+      description: t("authSettings.display.savedBody"),
     });
   };
 
   const handleTerminateSession = (sessionId: number) => {
     toast({
-      title: "Session terminée",
-      description: "La session a été fermée avec succès.",
+      title: t("authSettings.activeSessions.terminatedTitle"),
+      description: t("authSettings.activeSessions.terminatedBody"),
     });
   };
 
   const handleTerminateAllSessions = () => {
     toast({
-      title: "Toutes les sessions terminées",
-      description: "Toutes les autres sessions ont été fermées.",
+      title: t("authSettings.activeSessions.allTerminatedTitle"),
+      description: t("authSettings.activeSessions.allTerminatedBody"),
     });
   };
 
@@ -157,6 +158,13 @@ export default function AuthSettings() {
     }
   };
 
+  const formatLastActive = (session: (typeof activeSessions)[number]) => {
+    if (session.lastActiveKey === 'now') {
+      return t("authSettings.activeSessions.now");
+    }
+    return t("authSettings.activeSessions.hoursAgo", { count: session.lastActiveHours ?? 2 });
+  };
+
   if (!user) return null;
 
   return (
@@ -164,9 +172,9 @@ export default function AuthSettings() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Paramètres de Connexion</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">{t("authSettings.title")}</h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Gérez vos paramètres de sécurité et de session
+            {t("authSettings.description")}
           </p>
         </div>
       </div>
@@ -177,16 +185,16 @@ export default function AuthSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Sécurité
+              {t("authSettings.security.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Authentification à deux facteurs</Label>
+                  <Label>{t("authSettings.security.twoFactor")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Ajoutez une couche de sécurité supplémentaire
+                    {t("authSettings.security.twoFactorDesc")}
                   </p>
                 </div>
                 <Switch
@@ -198,7 +206,7 @@ export default function AuthSettings() {
               </div>
 
               <div className="space-y-2">
-                <Label>Délai d'expiration de session (minutes)</Label>
+                <Label>{t("authSettings.security.sessionTimeout")}</Label>
                 <Select
                   value={securitySettings.sessionTimeout.toString()}
                   onValueChange={(value) => 
@@ -209,17 +217,17 @@ export default function AuthSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="15">15 minutes</SelectItem>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="60">1 heure</SelectItem>
-                    <SelectItem value="120">2 heures</SelectItem>
-                    <SelectItem value="480">8 heures</SelectItem>
+                    <SelectItem value="15">{t("authSettings.options.minutes15")}</SelectItem>
+                    <SelectItem value="30">{t("authSettings.options.minutes30")}</SelectItem>
+                    <SelectItem value="60">{t("authSettings.options.hours1")}</SelectItem>
+                    <SelectItem value="120">{t("authSettings.options.hours2")}</SelectItem>
+                    <SelectItem value="480">{t("authSettings.options.hours8")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Expiration du mot de passe (jours)</Label>
+                <Label>{t("authSettings.security.passwordExpiry")}</Label>
                 <Select
                   value={securitySettings.passwordExpiry.toString()}
                   onValueChange={(value) => 
@@ -230,20 +238,20 @@ export default function AuthSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="30">30 jours</SelectItem>
-                    <SelectItem value="60">60 jours</SelectItem>
-                    <SelectItem value="90">90 jours</SelectItem>
-                    <SelectItem value="180">6 mois</SelectItem>
-                    <SelectItem value="365">1 an</SelectItem>
+                    <SelectItem value="30">{t("authSettings.options.days30")}</SelectItem>
+                    <SelectItem value="60">{t("authSettings.options.days60")}</SelectItem>
+                    <SelectItem value="90">{t("authSettings.options.days90")}</SelectItem>
+                    <SelectItem value="180">{t("authSettings.options.months6")}</SelectItem>
+                    <SelectItem value="365">{t("authSettings.options.year1")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Notifications de connexion</Label>
+                  <Label>{t("authSettings.security.loginNotifications")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Recevez des alertes pour les nouvelles connexions
+                    {t("authSettings.security.loginNotificationsDesc")}
                   </p>
                 </div>
                 <Switch
@@ -256,9 +264,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Suivi des appareils</Label>
+                  <Label>{t("authSettings.security.deviceTracking")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Surveillez les appareils connectés
+                    {t("authSettings.security.deviceTrackingDesc")}
                   </p>
                 </div>
                 <Switch
@@ -271,9 +279,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Déconnexion automatique</Label>
+                  <Label>{t("authSettings.security.autoLogout")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Déconnexion après inactivité
+                    {t("authSettings.security.autoLogoutDesc")}
                   </p>
                 </div>
                 <Switch
@@ -287,7 +295,7 @@ export default function AuthSettings() {
 
             <Button onClick={handleSaveSecurity} className="w-full gap-2">
               <Save className="h-4 w-4" />
-              Sauvegarder les paramètres de sécurité
+              {t("authSettings.security.save")}
             </Button>
           </CardContent>
         </Card>
@@ -297,7 +305,7 @@ export default function AuthSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Monitor className="h-5 w-5" />
-              Sessions Actives
+              {t("authSettings.activeSessions.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -311,15 +319,15 @@ export default function AuthSettings() {
                         <span className="font-medium">{session.device}</span>
                         {session.current && (
                           <Badge variant="secondary" className="text-xs">
-                            Actuel
+                            {t("authSettings.activeSessions.current")}
                           </Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {session.browser} • {session.location}
+                        {session.browser} • {t("authSettings.activeSessions.locationRabat")}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Dernière activité: {session.lastActive}
+                        {t("authSettings.activeSessions.lastActive", { time: formatLastActive(session) })}
                       </p>
                     </div>
                   </div>
@@ -329,7 +337,7 @@ export default function AuthSettings() {
                       size="sm"
                       onClick={() => handleTerminateSession(session.id)}
                     >
-                      Terminer
+                      {t("authSettings.activeSessions.terminate")}
                     </Button>
                   )}
                 </div>
@@ -343,7 +351,7 @@ export default function AuthSettings() {
               onClick={handleTerminateAllSessions}
               className="w-full"
             >
-              Terminer toutes les autres sessions
+              {t("authSettings.activeSessions.terminateAll")}
             </Button>
           </CardContent>
         </Card>
@@ -353,16 +361,16 @@ export default function AuthSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Gestion des Sessions
+              {t("authSettings.session.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Se souvenir de moi</Label>
+                  <Label>{t("authSettings.session.rememberMe")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Restez connecté entre les sessions
+                    {t("authSettings.session.rememberMeDesc")}
                   </p>
                 </div>
                 <Switch
@@ -375,9 +383,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Connexion automatique</Label>
+                  <Label>{t("authSettings.session.autoLogin")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Connexion automatique au démarrage
+                    {t("authSettings.session.autoLoginDesc")}
                   </p>
                 </div>
                 <Switch
@@ -389,7 +397,7 @@ export default function AuthSettings() {
               </div>
 
               <div className="space-y-2">
-                <Label>Durée de session (heures)</Label>
+                <Label>{t("authSettings.session.sessionDuration")}</Label>
                 <Select
                   value={sessionSettings.sessionDuration.toString()}
                   onValueChange={(value) => 
@@ -400,17 +408,17 @@ export default function AuthSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 heure</SelectItem>
-                    <SelectItem value="4">4 heures</SelectItem>
-                    <SelectItem value="8">8 heures</SelectItem>
-                    <SelectItem value="12">12 heures</SelectItem>
-                    <SelectItem value="24">24 heures</SelectItem>
+                    <SelectItem value="1">{t("authSettings.options.hours1")}</SelectItem>
+                    <SelectItem value="4">{t("authSettings.options.hours4")}</SelectItem>
+                    <SelectItem value="8">{t("authSettings.options.hours8")}</SelectItem>
+                    <SelectItem value="12">{t("authSettings.options.hours12")}</SelectItem>
+                    <SelectItem value="24">{t("authSettings.options.hours24")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Sessions simultanées maximum</Label>
+                <Label>{t("authSettings.session.maxConcurrent")}</Label>
                 <Select
                   value={sessionSettings.maxConcurrentSessions.toString()}
                   onValueChange={(value) => 
@@ -421,11 +429,11 @@ export default function AuthSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 session</SelectItem>
-                    <SelectItem value="2">2 sessions</SelectItem>
-                    <SelectItem value="3">3 sessions</SelectItem>
-                    <SelectItem value="5">5 sessions</SelectItem>
-                    <SelectItem value="10">10 sessions</SelectItem>
+                    <SelectItem value="1">{t("authSettings.options.session1")}</SelectItem>
+                    <SelectItem value="2">{t("authSettings.options.sessions2")}</SelectItem>
+                    <SelectItem value="3">{t("authSettings.options.sessions3")}</SelectItem>
+                    <SelectItem value="5">{t("authSettings.options.sessions5")}</SelectItem>
+                    <SelectItem value="10">{t("authSettings.options.sessions10")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -433,7 +441,7 @@ export default function AuthSettings() {
 
             <Button onClick={handleSaveSession} className="w-full gap-2">
               <Save className="h-4 w-4" />
-              Sauvegarder les paramètres de session
+              {t("authSettings.session.save")}
             </Button>
           </CardContent>
         </Card>
@@ -443,16 +451,16 @@ export default function AuthSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Notifications de Sécurité
+              {t("authSettings.notifications.title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Alertes de connexion</Label>
+                  <Label>{t("authSettings.notifications.loginAlerts")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Notifications pour les nouvelles connexions
+                    {t("authSettings.notifications.loginAlertsDesc")}
                   </p>
                 </div>
                 <Switch
@@ -465,9 +473,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Alertes de sécurité</Label>
+                  <Label>{t("authSettings.notifications.securityAlerts")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Notifications pour les événements de sécurité
+                    {t("authSettings.notifications.securityAlertsDesc")}
                   </p>
                 </div>
                 <Switch
@@ -480,9 +488,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Alertes d'appareil</Label>
+                  <Label>{t("authSettings.notifications.deviceAlerts")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Notifications pour les nouveaux appareils
+                    {t("authSettings.notifications.deviceAlertsDesc")}
                   </p>
                 </div>
                 <Switch
@@ -497,9 +505,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Notifications par email</Label>
+                  <Label>{t("authSettings.notifications.email")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Recevez les alertes par email
+                    {t("authSettings.notifications.emailDesc")}
                   </p>
                 </div>
                 <Switch
@@ -512,9 +520,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Notifications SMS</Label>
+                  <Label>{t("authSettings.notifications.sms")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Recevez les alertes par SMS
+                    {t("authSettings.notifications.smsDesc")}
                   </p>
                 </div>
                 <Switch
@@ -527,9 +535,9 @@ export default function AuthSettings() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Notifications push</Label>
+                  <Label>{t("authSettings.notifications.push")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Recevez les alertes push
+                    {t("authSettings.notifications.pushDesc")}
                   </p>
                 </div>
                 <Switch
@@ -543,7 +551,7 @@ export default function AuthSettings() {
 
             <Button onClick={handleSaveNotifications} className="w-full gap-2">
               <Save className="h-4 w-4" />
-              Sauvegarder les paramètres de notification
+              {t("authSettings.notifications.save")}
             </Button>
           </CardContent>
         </Card>

@@ -3,15 +3,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AccessProvider, AccessGate, ReadOnlyBanner } from "@/contexts/AccessContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useSeo } from "@/components/SeoHead";
+import { useTranslation } from "react-i18next";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 function PrivateSeo() {
+  const { t } = useTranslation("auth");
   useSeo({
     title: "VetoCrm",
-    description: "Espace clinique privé",
+    description: t("seo.privateSpaceDescription"),
     noIndex: true,
   });
   return null;
@@ -19,13 +21,14 @@ function PrivateSeo() {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { t } = useTranslation("auth");
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          <p className="text-sm text-muted-foreground">Vérification de l'authentification...</p>
+          <p className="text-sm text-muted-foreground">{t("protected.checkingAuth")}</p>
         </div>
       </div>
     );

@@ -1,0 +1,684 @@
+{
+  "page": {
+    "title": "Ajustes",
+    "description": "Configure su clínica, equipo y preferencias de visualización"
+  },
+  "tabs": {
+    "appSettings": "Ajustes de la aplicación",
+    "general": "Ajustes generales",
+    "data": "Configuración de datos"
+  },
+  "language": {
+    "title": "Idioma",
+    "description": "Elija el idioma de la interfaz.",
+    "fr": "Français",
+    "en": "English",
+    "es": "Español",
+    "updated": "Idioma actualizado"
+  },
+  "clinic": {
+    "title": "Ajustes de la clínica",
+    "logo": "Logo de la clínica",
+    "name": "Nombre de la clínica",
+    "address": "Dirección",
+    "phone": "Teléfono",
+    "email": "Correo",
+    "website": "Sitio web",
+    "currency": "Divisa",
+    "save": "Guardar",
+    "saved": "Ajustes guardados",
+    "savedBody": "Información de la clínica actualizada."
+  },
+  "servicePrices": {
+    "title": "Precios de prestaciones",
+    "description": "Importes por defecto al añadir una prestación a una visita (modificables después línea a línea).",
+    "reset": "Restablecer",
+    "save": "Guardar",
+    "resetToast": "Precios restablecidos",
+    "resetBody": "Valores de catálogo del software restaurados.",
+    "savedToast": "Precios guardados",
+    "savedBody": "Los nuevos importes se aplican a las próximas prestaciones."
+  },
+  "theme": {
+    "title": "Tema de la aplicación",
+    "description": "Elija el tema de la aplicación para su comodidad visual.",
+    "label": "Tema",
+    "light": "Modo claro",
+    "dark": "Modo oscuro",
+    "updated": "Tema actualizado",
+    "changedTo": "Tema cambiado a {{mode}}"
+  },
+  "display": {
+    "title": "Preferencias de visualización",
+    "description": "Elija cómo desea mostrar cada sección por defecto.",
+    "sections": {
+      "clients": "Clientes",
+      "pets": "Pacientes",
+      "consultations": "Consultas",
+      "appointments": "Citas",
+      "visits": "Visitas",
+      "prescriptions": "Recetas",
+      "farms": "Granjas",
+      "vaccinations": "Vacunaciones",
+      "antiparasitics": "Antiparasitarios",
+      "history": "Historiales"
+    },
+    "modes": {
+      "calendar": "Calendario",
+      "list": "Lista",
+      "table": "Tabla",
+      "cards": "Tarjetas"
+    },
+    "updated": "Preferencia de visualización actualizada",
+    "updatedBody": "{{section}} se mostrará en {{mode}}."
+  },
+  "schedule": {
+    "title": "Configuración de horarios",
+    "save": "Guardar",
+    "saved": "Horarios guardados",
+    "savedBody": "Los huecos de citas usan ahora estos parámetros.",
+    "unsavedWarning": "Cambios sin guardar — pulse Guardar para aplicarlos a las citas.",
+    "openingTime": "Hora de apertura",
+    "closingTime": "Hora de cierre",
+    "lunchPeriod": "Periodo de almuerzo",
+    "lunchStart": "Inicio del descanso",
+    "lunchEnd": "Fin del descanso",
+    "slotDuration": "Duración de huecos (minutos)",
+    "workingDays": "Días laborables",
+    "days": {
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sábado",
+      "sunday": "Domingo"
+    }
+  },
+  "veterinarians": {
+    "title": "Veterinarios",
+    "add": "Añadir",
+    "empty": "Ningún veterinario configurado",
+    "saved": "Veterinario guardado",
+    "deleted": "Veterinario eliminado",
+    "nameTitleRequired": "Nombre y título obligatorios",
+    "deleteConfirm": "¿Eliminar este veterinario?",
+    "editTitle": "Editar veterinario",
+    "newTitle": "Nuevo veterinario",
+    "dialogDesc": "Nombre, título, especialidad, contacto",
+    "fullName": "Nombre completo *",
+    "titleLabel": "Título *",
+    "specialty": "Especialidad",
+    "phone": "Teléfono",
+    "email": "Correo",
+    "update": "Actualizar",
+    "create": "Crear"
+  },
+  "farmsConfig": {
+    "title": "Gestión de explotaciones",
+    "farmTypeAdded": "Tipo añadido",
+    "farmTypeAddedBody": "{{type}} se añadió a los tipos de ganadería",
+    "farmTypeDeleted": "Tipo eliminado",
+    "farmTypeDeletedBody": "{{type}} se eliminó",
+    "categoryAdded": "Categoría añadida",
+    "categoryAddedBody": "{{category}} se añadió",
+    "categoryDeleted": "Categoría eliminada",
+    "categoryDeletedBody": "{{category}} y sus razas se eliminaron",
+    "breedAdded": "Raza añadida",
+    "breedAddedBody": "{{breed}} se añadió a {{category}}",
+    "breedDeleted": "Raza eliminada",
+    "breedDeletedBody": "{{breed}} se eliminó de {{category}}",
+    "certificationAdded": "Certificación añadida",
+    "certificationAddedBody": "{{type}} se añadió",
+    "certificationDeleted": "Certificación eliminada",
+    "certificationDeletedBody": "{{type}} se eliminó",
+    "farmTypes": "Tipos de ganadería",
+    "noFarmTypes": "Ningún tipo de ganadería configurado",
+    "animalCategories": "Categorías de animales",
+    "noCategories": "Ninguna categoría configurada",
+    "breedsFor": "Razas — {{category}}",
+    "noBreedsFor": "Ninguna raza configurada para {{category}}",
+    "noBreedsHint": "Ninguna raza configurada. Añada categorías de animales primero.",
+    "certifications": "Certificaciones",
+    "noCertifications": "Ninguna certificación configurada",
+    "addFarmTypeTitle": "Añadir un tipo de ganadería",
+    "addFarmTypeDesc": "Añada un nuevo tipo de explotación agrícola",
+    "farmTypeLabel": "Tipo de ganadería *",
+    "farmTypePlaceholder": "Ej: Lechera, Carne, Avícola...",
+    "pressEnterHint": "Pulse Intro o haga clic en Añadir",
+    "addCategoryTitle": "Añadir una categoría de animales",
+    "addCategoryDesc": "Añada una nueva categoría de animales de granja",
+    "categoryLabel": "Categoría *",
+    "categoryPlaceholder": "Ej: Bovino, Ovino, Caprino, Aves...",
+    "breedsAutoHint": "Se creará automáticamente una sección de razas",
+    "addBreedTitle": "Añadir una raza",
+    "addBreedDesc": "Añadir una raza para la categoría: {{category}}",
+    "breedLabel": "Nombre de la raza *",
+    "breedPlaceholder": "Ej: Holstein, Timahdit, Draa...",
+    "addBreedBtn": "Raza",
+    "addCertificationTitle": "Añadir una certificación",
+    "addCertificationDesc": "Añada un nuevo tipo de certificación agrícola",
+    "certificationLabel": "Tipo de certificación *",
+    "certificationPlaceholder": "Ej: Ecológico, Label Rouge, DOP, IGP..."
+  },
+  "readOnly": {
+    "title": "Solo lectura",
+    "description": "Contacte a un veterinario para modificar los ajustes."
+  },
+  "errors": {
+    "generic": "Error"
+  },
+  "permissions": {
+    "levels": {
+      "none": "Ninguno",
+      "read": "Consultar",
+      "write": "Editar",
+      "noneHint": "Oculto",
+      "readHint": "Solo lectura",
+      "writeHint": "Crear / editar / eliminar"
+    },
+    "groups": {
+      "clinical": "Cuidados e historiales",
+      "farm": "Ganadería",
+      "admin": "Administración (sensible)"
+    },
+    "presets": {
+      "clinical": "Acceso clínico",
+      "readonly": "Solo lectura",
+      "frontDesk": "Recepción",
+      "extended": "Ampliado"
+    },
+    "presetDescriptions": {
+      "clinical": "Módulos clínicos con permiso de edición",
+      "readonly": "Consultar sin crear ni modificar",
+      "frontDesk": "Editar clientes, pacientes y citas; actos clínicos en lectura",
+      "extended": "Clínica + ganadería + inventario (sin contabilidad ni ajustes)"
+    },
+    "modules": {
+      "clients": {
+        "label": "Clientes",
+        "description": "Fichas de clientes y contactos"
+      },
+      "animals": {
+        "label": "Pacientes",
+        "description": "Animales de compañía / pacientes"
+      },
+      "appointments": {
+        "label": "Citas",
+        "description": "Agenda y citas"
+      },
+      "visits": {
+        "label": "Visitas",
+        "description": "Visitas y prestaciones"
+      },
+      "consultations": {
+        "label": "Consultas",
+        "description": "Fichas de consulta"
+      },
+      "prescriptions": {
+        "label": "Recetas",
+        "description": "Prescripciones médicas"
+      },
+      "vaccinations": {
+        "label": "Vacunaciones",
+        "description": "Vacunas y refuerzos"
+      },
+      "antiparasitics": {
+        "label": "Antiparasitarios",
+        "description": "Tratamientos antiparasitarios"
+      },
+      "farms": {
+        "label": "Granjas / Ganadería",
+        "description": "Explotaciones e intervenciones"
+      },
+      "stock": {
+        "label": "Inventario",
+        "description": "Stock y movimientos"
+      },
+      "accounting": {
+        "label": "Contabilidad",
+        "description": "Facturación y caja"
+      },
+      "settings": {
+        "label": "Ajustes",
+        "description": "Configuración de la clínica"
+      },
+      "team": {
+        "label": "Equipo",
+        "description": "Miembros y permisos"
+      },
+      "history": {
+        "label": "Historiales",
+        "description": "Historial médico consolidado"
+      }
+    }
+  },
+  "themeToggle": {
+    "toDark": "Activar modo oscuro",
+    "toLight": "Activar modo claro"
+  },
+  "planGate": {
+    "title": "Función no incluida en su plan",
+    "body": "Esta función requiere una suscripción superior. Consulte los planes para actualizar.",
+    "bodyFeature": "{{feature}} no está disponible en su plan actual ({{planCode}}). Actualice a un plan superior para acceder.",
+    "seePlans": "Ver planes",
+    "features": {
+      "farms": "Ganadería / Granjas",
+      "accounting": "Contabilidad",
+      "stock": "Inventario",
+      "team": "Equipo"
+    }
+  },
+  "roleGuard": {
+    "forbiddenTitle": "Modificación prohibida",
+    "forbiddenBody": "Su cuenta es de solo consulta. Contacte a un veterinario para modificar los datos."
+  },
+  "inviteCode": {
+    "title": "Código de invitación",
+    "description": "Comparta este código con sus asistentes veterinarios",
+    "copied": "¡Código copiado!",
+    "copiedBody": "El código de invitación se copió al portapapeles",
+    "yourCode": "Su código",
+    "howToInvite": "¿Cómo invitar a un asistente?",
+    "hideInstructions": "Ocultar instrucciones",
+    "steps": {
+      "1": "Comparta este código con su asistente",
+      "2": "Crea una cuenta en VetoCrm",
+      "3": "Introduce el código de invitación",
+      "4": "Aparece en su equipo",
+      "5": "Usted le asigna los permisos"
+    }
+  },
+  "adminPanel": {
+    "denied": "Acceso denegado",
+    "deniedBody": "No tiene permiso para acceder al panel de administración.",
+    "title": "Panel de administración",
+    "loading": "Cargando…",
+    "searchPlaceholder": "Buscar un usuario…",
+    "never": "Nunca",
+    "pending": "Pendiente",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "suspended": "Suspendido",
+    "tabs": {
+      "approvals": "Aprobaciones pendientes",
+      "users": "Asistentes",
+      "activity": "Actividad"
+    },
+    "filterByStatus": "Filtrar por estado",
+    "filterByRole": "Filtrar por rol",
+    "allStatuses": "Todos los estados",
+    "allRoles": "Todos los roles",
+    "roleAdmin": "Administrador",
+    "roleAssistant": "Asistente",
+    "columns": {
+      "user": "Usuario",
+      "role": "Rol",
+      "status": "Estado",
+      "registeredAt": "Registrado el",
+      "lastLogin": "Último acceso",
+      "actions": "Acciones",
+      "date": "Fecha",
+      "action": "Acción",
+      "resource": "Recurso",
+      "details": "Detalles"
+    },
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "permissions": "Permisos",
+    "suspend": "Suspender",
+    "view": "Ver",
+    "rejectReasonPrompt": "Motivo del rechazo:",
+    "activityLog": "Registro de actividad",
+    "managePermissions": "Gestionar permisos — {{name}}",
+    "userDetails": "Detalles del usuario",
+    "fullName": "Nombre completo",
+    "email": "Correo",
+    "username": "Nombre de usuario",
+    "registeredDate": "Fecha de registro",
+    "rejectionReason": "Motivo del rechazo",
+    "notProvided": "No indicado",
+    "toast": {
+      "approveSuccess": "Usuario aprobado correctamente.",
+      "approveError": "No se pudo aprobar al usuario.",
+      "rejectSuccess": "Usuario rechazado correctamente.",
+      "rejectError": "No se pudo rechazar al usuario.",
+      "permissionsSuccess": "Permisos actualizados correctamente.",
+      "permissionsError": "No se pudieron actualizar los permisos.",
+      "suspendSuccess": "Usuario suspendido correctamente.",
+      "suspendError": "No se pudo suspender al usuario."
+    }
+  },
+  "resetPassword": {
+    "invalidLink": "Enlace no válido",
+    "invalidLinkBody": "Este enlace de restablecimiento no es válido o ha caducado.",
+    "verifyingLink": "Verificando enlace de restablecimiento…",
+    "setNewPassword": "Definir una nueva contraseña",
+    "requiredFields": "Campos obligatorios",
+    "fillAllFields": "Rellene todos los campos",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "invalidPassword": "Contraseña no válida",
+    "passwordUpdated": "Contraseña actualizada",
+    "passwordUpdatedBody": "Su contraseña se restableció correctamente.",
+    "updateButton": "Actualizar contraseña",
+    "updating": "Actualizando…",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordPlaceholder": "Su nueva contraseña",
+    "confirmPlaceholder": "Confirme su nueva contraseña",
+    "passwordRequirements": "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un dígito y un carácter especial.",
+    "verifyError": "Error al verificar el enlace de restablecimiento",
+    "updateError": "Se produjo un error al actualizar la contraseña",
+    "backToLogin": "Volver al inicio de sesión",
+    "rules": {
+      "minLength": "La contraseña debe tener al menos 8 caracteres",
+      "uppercase": "La contraseña debe contener al menos una letra mayúscula",
+      "lowercase": "La contraseña debe contener al menos una letra minúscula",
+      "digit": "La contraseña debe contener al menos un dígito",
+      "special": "La contraseña debe contener al menos un carácter especial"
+    }
+  },
+  "datePeriods": {
+    "all": "Todas las fechas",
+    "today": "Hoy",
+    "thisWeek": "Esta semana",
+    "thisMonth": "Este mes",
+    "thisYear": "Este año",
+    "thisQuarter": "Este trimestre",
+    "custom": "Rango personalizado"
+  },
+  "superAdmin": {
+    "layout": {
+      "eyebrow": "Plataforma",
+      "title": "Consola Super Admin",
+      "description": "Gestión multi-inquilino: clínicas, suscripciones, soporte, auditoría y salud del sistema."
+    },
+    "nav": {
+      "overview": "Resumen",
+      "organizations": "Clínicas",
+      "users": "Usuarios",
+      "plans": "Planes",
+      "billing": "Billing",
+      "audit": "Auditoría",
+      "system": "Sistema"
+    },
+    "overview": {
+      "refresh": "Actualizar",
+      "clinics": "Clínicas",
+      "clinicsSub": "{{paid}} de pago · {{free}} free",
+      "users": "Usuarios",
+      "usersSub": "{{pending}} pendientes",
+      "clientsTotal": "Clientes (total)",
+      "animals": "Pacientes",
+      "storage": "Almacenamiento",
+      "clientLimits": "Límites de clientes",
+      "clientLimitsSub": "clínicas en el límite",
+      "estimatedMrr": "MRR estimado",
+      "mrrHint": "Basado en precios del plan (MAD mensual)",
+      "pastDue": "Pagos atrasados",
+      "trialsEnding": "Trials ≤ 7 d",
+      "planDistribution": "Distribución por plan",
+      "manageClinics": "Gestionar clínicas",
+      "approveUsers": "Aprobar usuarios"
+    },
+    "orgDetail": {
+      "loading": "Cargando ficha…",
+      "notFound": "Clínica no encontrada",
+      "subscriptionUpdated": "Suscripción actualizada",
+      "noteAdded": "Nota añadida",
+      "cancelAtPeriodEnd": "Cancelar al final del periodo",
+      "saveSubscription": "Guardar suscripción",
+      "supportNotes": "Notas de soporte",
+      "noNotes": "Sin notas",
+      "recentAudit": "Auditoría reciente",
+      "noEvents": "Sin eventos",
+      "clientSupport": "Soporte al cliente",
+      "exportJson": "Exportar JSON",
+      "impersonate": "Suplantar",
+      "savingSubscription": "Guardando…"
+    },
+    "plans": {
+      "newPlan": "Nuevo plan",
+      "saved": "Plan guardado",
+      "loading": "Cargando…",
+      "code": "Código",
+      "name": "Nombre",
+      "storage": "Almacenamiento",
+      "users": "Users",
+      "clients": "Clientes",
+      "animals": "Animales",
+      "priceMadMonth": "Precio MAD/mes",
+      "active": "Activo",
+      "confirmDelete": "¿Eliminar este plan?",
+      "editPlan": "Editar {{name}}",
+      "confirmDeleteNamed": "¿Eliminar el plan {{code}}?"
+    },
+    "system": {
+      "saved": "Ajustes del sistema guardados",
+      "health": "Salud",
+      "checking": "Comprobando…",
+      "maintenance": "Modo mantenimiento",
+      "enableMaintenance": "Activar mantenimiento (bloquea a todos excepto super_admin)",
+      "message": "Mensaje",
+      "defaultMaintenanceMsg": "Mantenimiento en curso. Inténtelo de nuevo pronto.",
+      "featureFlags": "Feature flags",
+      "newBillingUi": "Nueva UI de facturación (preview)",
+      "supportEmail": "Email de soporte",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saveSystem": "Guardar el sistema",
+      "forceReadOnly": "Solo lectura global",
+      "blockRegistrations": "Bloquear registros",
+      "support": "Soporte",
+      "supportEmailHint": "Los envíos masivos / exportaciones RGPD pueden usar este email y la edge function `send-email`."
+    },
+    "users": {
+      "searchPlaceholder": "Email / nombre / clínica",
+      "allStatuses": "Todos los estados",
+      "allRoles": "Todos los roles",
+      "user": "Usuario",
+      "clinic": "Clínica",
+      "role": "Rol",
+      "status": "Estado",
+      "actions": "Acciones",
+      "loading": "Cargando…",
+      "empty": "Ningún usuario",
+      "promoteConfirm": "¿Promover a este usuario a super_admin?"
+    },
+    "organizations": {
+      "searchPlaceholder": "Buscar (nombre / código)",
+      "allPlans": "Todos los planes",
+      "allStatuses": "Todos los estados",
+      "plan": "Plan",
+      "status": "Estado",
+      "clinic": "Clínica",
+      "users": "Users",
+      "clients": "Clientes",
+      "animals": "Pacientes",
+      "storage": "Almacenamiento",
+      "actions": "Acciones",
+      "loading": "Cargando…",
+      "empty": "Ninguna organización",
+      "view": "Ficha",
+      "mb": "MB",
+      "pagination": "{{count}} clínica · página {{page}}/{{pageCount}}",
+      "pagination_plural": "{{count}} clínicas · página {{page}}/{{pageCount}}"
+    }
+  },
+  "storageUsage": {
+    "title": "Almacenamiento y suscripción",
+    "loading": "Cargando…",
+    "recomputed": "✓ Almacenamiento recalculado",
+    "photosUsed": "Espacio de fotos usado",
+    "usedAutoCompress": "{{percent}} % usado · compresión auto activada",
+    "quotaExceeded": "Cuota superada",
+    "quotaExceededBody": "Elimine fotos o pase a un plan superior para seguir añadiendo.",
+    "almostFull": "Espacio casi lleno",
+    "almostFullBody": "Queda poco espacio. Considere archivar o aumentar su cuota.",
+    "clients": "Clientes",
+    "animals": "Animales",
+    "users": "Usuarios",
+    "upgrade": "Pasar a un plan de pago",
+    "manage": "Gestionar",
+    "recompute": "Recalcular",
+    "currentPack": "Plan actual:",
+    "changePack": "Cambiar de plan"
+  },
+  "management": {
+    "title": "Gestión de parámetros",
+    "description": "Configure los valores usados en toda la aplicación",
+    "restoreDefaults": "Restaurar valores por defecto",
+    "restoring": "Restaurando...",
+    "categories": "Categorías",
+    "addSetting": "Añadir un parámetro",
+    "newSetting": "Nuevo parámetro",
+    "settingName": "Nombre del parámetro",
+    "settingDescPlaceholder": "Descripción del parámetro",
+    "valuesCommaSeparated": "Valores (separados por comas)",
+    "emptyCategory": "Ningún parámetro configurado para esta categoría.",
+    "emptyCategoryHint": "Haga clic en « Restaurar valores por defecto » para empezar.",
+    "addValuePlaceholder": "Añadir un valor...",
+    "readyTitle": "Parámetros listos",
+    "readyBody": "Se han cargado los valores por defecto. Puede modificarlos o restaurarlos en cualquier momento.",
+    "restoreConfirm": "¿Restaurar todos los valores por defecto? Se sobrescribirán sus personalizaciones actuales.",
+    "restoredTitle": "Valores restaurados",
+    "restoredBody": "Todos los parámetros se han restablecido a los valores por defecto",
+    "restoreError": "No se pudieron restaurar los parámetros por defecto",
+    "savedTitle": "Parámetro guardado",
+    "savedBody": "El parámetro {{key}} se ha actualizado",
+    "saveError": "No se pudo guardar el parámetro",
+    "deleteConfirm": "¿Seguro que desea eliminar el parámetro {{key}}?",
+    "deletedTitle": "Parámetro eliminado",
+    "deletedBody": "El parámetro {{key}} se ha eliminado",
+    "deleteError": "No se pudo eliminar el parámetro",
+    "valueAddedTitle": "✓ Valor añadido",
+    "valueAddedBody": "El valor se ha añadido y guardado",
+    "valueRemovedTitle": "✓ Valor eliminado",
+    "valueRemovedBody": "El valor se ha eliminado y los cambios se han guardado",
+    "valueSaveError": "No se pudo guardar el valor",
+    "changesSaveError": "No se pudieron guardar los cambios",
+    "nameRequired": "El nombre del parámetro es obligatorio",
+    "customDesc": "Parámetro personalizado {{key}}",
+    "configDesc": "Configuración {{key}} para {{category}}",
+    "addedTitle": "Parámetro añadido",
+    "addedBody": "El parámetro {{key}} se ha creado",
+    "createError": "No se pudo crear el parámetro",
+    "cat": {
+      "animals": "Animales",
+      "animalsDesc": "Configuración de especies, razas y colores",
+      "clients": "Clientes",
+      "clientsDesc": "Tipos de clientes y parámetros asociados",
+      "consultations": "Consultas",
+      "consultationsDesc": "Tipos de consultas disponibles",
+      "appointments": "Citas",
+      "appointmentsDesc": "Tipos de citas y configuraciones",
+      "medications": "Medicamentos",
+      "medicationsDesc": "Categorías de medicamentos",
+      "vaccinations": "Vacunaciones",
+      "vaccinationsDesc": "Tipos de vacunación disponibles",
+      "parasites": "Parásitos",
+      "parasitesDesc": "Tipos de parásitos y tratamientos",
+      "farms": "Granjas",
+      "farmsDesc": "Tipos de granjas y configuraciones",
+      "payments": "Pagos",
+      "paymentsDesc": "Métodos de pago aceptados"
+    },
+    "valuesLabel": "Valores",
+    "keyPlaceholder": "ej.: types, categories...",
+    "valuesExamplePlaceholder": "Valor1, Valor2, Valor3..."
+  },
+  "authSettings": {
+    "title": "Ajustes de acceso",
+    "description": "Gestione la seguridad y las preferencias de sesión",
+    "security": {
+      "title": "Seguridad",
+      "twoFactor": "Autenticación en dos pasos",
+      "twoFactorDesc": "Añada una capa adicional de protección a su cuenta",
+      "sessionTimeout": "Caducidad de sesión (minutos)",
+      "passwordExpiry": "Caducidad de la contraseña (días)",
+      "loginNotifications": "Notificaciones de acceso",
+      "loginNotificationsDesc": "Reciba alertas de nuevos inicios de sesión en su clínica",
+      "deviceTracking": "Seguimiento de dispositivos",
+      "deviceTrackingDesc": "Supervise los dispositivos conectados a su cuenta",
+      "autoLogout": "Cierre de sesión automático",
+      "autoLogoutDesc": "Cerrar sesión tras un periodo de inactividad",
+      "save": "Guardar ajustes de seguridad",
+      "savedTitle": "Ajustes de seguridad guardados",
+      "savedBody": "Sus ajustes de seguridad se han actualizado."
+    },
+    "activeSessions": {
+      "title": "Sesiones activas",
+      "current": "Actual",
+      "lastActive": "Última actividad: {{time}}",
+      "terminate": "Cerrar sesión",
+      "terminateAll": "Cerrar todas las demás sesiones",
+      "terminatedTitle": "Sesión cerrada",
+      "terminatedBody": "La sesión se cerró correctamente.",
+      "allTerminatedTitle": "Demás sesiones cerradas",
+      "allTerminatedBody": "Se han cerrado todas las demás sesiones.",
+      "now": "Ahora",
+      "hoursAgo": "Hace {{count}} horas",
+      "locationRabat": "Rabat, Marruecos"
+    },
+    "session": {
+      "title": "Gestión de sesiones",
+      "rememberMe": "Recordarme",
+      "rememberMeDesc": "Mantener la sesión iniciada entre visitas",
+      "autoLogin": "Inicio de sesión automático",
+      "autoLoginDesc": "Iniciar sesión automáticamente al abrir la aplicación",
+      "sessionDuration": "Duración de la sesión (horas)",
+      "maxConcurrent": "Sesiones simultáneas máximas",
+      "save": "Guardar ajustes de sesión",
+      "savedTitle": "Ajustes de sesión guardados",
+      "savedBody": "Sus ajustes de sesión se han actualizado."
+    },
+    "notifications": {
+      "title": "Notificaciones de seguridad",
+      "loginAlerts": "Alertas de acceso",
+      "loginAlertsDesc": "Avisos de nuevos inicios de sesión",
+      "securityAlerts": "Alertas de seguridad",
+      "securityAlertsDesc": "Avisos de eventos relacionados con la seguridad",
+      "deviceAlerts": "Alertas de dispositivo",
+      "deviceAlertsDesc": "Avisos cuando un nuevo dispositivo inicia sesión",
+      "email": "Notificaciones por correo",
+      "emailDesc": "Recibir alertas por correo electrónico",
+      "sms": "Notificaciones SMS",
+      "smsDesc": "Recibir alertas por SMS",
+      "push": "Notificaciones push",
+      "pushDesc": "Recibir alertas push",
+      "save": "Guardar ajustes de notificación",
+      "savedTitle": "Ajustes de notificación guardados",
+      "savedBody": "Sus ajustes de notificación se han actualizado."
+    },
+    "privacy": {
+      "title": "Privacidad",
+      "savedTitle": "Ajustes de privacidad guardados",
+      "savedBody": "Sus ajustes de privacidad se han actualizado."
+    },
+    "display": {
+      "title": "Visualización",
+      "savedTitle": "Ajustes de visualización guardados",
+      "savedBody": "Sus ajustes de visualización se han actualizado."
+    },
+    "options": {
+      "minutes15": "15 minutos",
+      "minutes30": "30 minutos",
+      "hours1": "1 hora",
+      "hours2": "2 horas",
+      "hours4": "4 horas",
+      "hours8": "8 horas",
+      "hours12": "12 horas",
+      "hours24": "24 horas",
+      "days30": "30 días",
+      "days60": "60 días",
+      "days90": "90 días",
+      "months6": "6 meses",
+      "year1": "1 año",
+      "session1": "1 sesión",
+      "sessions2": "2 sesiones",
+      "sessions3": "3 sesiones",
+      "sessions5": "5 sesiones",
+      "sessions10": "10 sesiones"
+    }
+  }
+}

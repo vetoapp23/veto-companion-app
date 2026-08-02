@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 // Database types
 export interface DatabaseRevenue {
@@ -80,6 +81,8 @@ export interface DatabasePayment {
 export const useAccounting = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('app');
+  const { t: tc } = useTranslation('common');
   
   const [revenues, setRevenues] = useState<DatabaseRevenue[]>([]);
   const [expenses, setExpenses] = useState<DatabaseExpense[]>([]);
@@ -230,8 +233,8 @@ export const useAccounting = () => {
     const organizationId = await resolveOrganizationId();
     if (!organizationId) {
       toast({
-        title: "Erreur",
-        description: "Organisation introuvable — reconnectez-vous.",
+        title: tc("error"),
+        description: t("accounting.orgNotFoundReconnect"),
         variant: "destructive",
       });
       return null;
@@ -255,16 +258,16 @@ export const useAccounting = () => {
       await fetchRevenues();
       
       toast({
-        title: "Succès",
-        description: "Recette ajoutée",
+        title: tc("success"),
+        description: t("accounting.revenueAdded"),
       });
 
       return data;
     } catch (err: any) {
       console.error('Error adding revenue:', err);
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible d'ajouter la recette",
+        title: tc("error"),
+        description: err?.message || t("accounting.revenueAddError"),
         variant: "destructive",
       });
       return null;
@@ -278,8 +281,8 @@ export const useAccounting = () => {
     const organizationId = await resolveOrganizationId();
     if (!organizationId) {
       toast({
-        title: "Erreur",
-        description: "Organisation introuvable — reconnectez-vous.",
+        title: tc("error"),
+        description: t("accounting.orgNotFoundReconnect"),
         variant: "destructive",
       });
       return null;
@@ -303,16 +306,16 @@ export const useAccounting = () => {
       await fetchExpenses();
       
       toast({
-        title: "Succès",
-        description: "Charge ajoutée",
+        title: tc("success"),
+        description: t("accounting.expenseAdded"),
       });
 
       return data;
     } catch (err: any) {
       console.error('Error adding expense:', err);
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible d'ajouter la charge",
+        title: tc("error"),
+        description: err?.message || t("accounting.expenseAddError"),
         variant: "destructive",
       });
       return null;
@@ -332,14 +335,14 @@ export const useAccounting = () => {
       await fetchRevenues();
       
       toast({
-        title: "Succès",
-        description: "Recette modifiée",
+        title: tc("success"),
+        description: t("accounting.revenueUpdated"),
       });
     } catch (err: any) {
       console.error('Error updating revenue:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible de modifier la recette",
+        title: tc("error"),
+        description: t("accounting.revenueUpdateError"),
         variant: "destructive",
       });
     }
@@ -358,14 +361,14 @@ export const useAccounting = () => {
       await fetchExpenses();
       
       toast({
-        title: "Succès",
-        description: "Charge modifiée",
+        title: tc("success"),
+        description: t("accounting.expenseUpdated"),
       });
     } catch (err: any) {
       console.error('Error updating expense:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible de modifier la charge",
+        title: tc("error"),
+        description: t("accounting.expenseUpdateError"),
         variant: "destructive",
       });
     }
@@ -384,14 +387,14 @@ export const useAccounting = () => {
       await fetchRevenues();
       
       toast({
-        title: "Succès",
-        description: "Recette supprimée",
+        title: tc("success"),
+        description: t("accounting.revenueDeleted"),
       });
     } catch (err: any) {
       console.error('Error deleting revenue:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la recette",
+        title: tc("error"),
+        description: t("accounting.revenueDeleteError"),
         variant: "destructive",
       });
     }
@@ -410,14 +413,14 @@ export const useAccounting = () => {
       await fetchExpenses();
       
       toast({
-        title: "Succès",
-        description: "Charge supprimée",
+        title: tc("success"),
+        description: t("accounting.expenseDeleted"),
       });
     } catch (err: any) {
       console.error('Error deleting expense:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la charge",
+        title: tc("error"),
+        description: t("accounting.expenseDeleteError"),
         variant: "destructive",
       });
     }

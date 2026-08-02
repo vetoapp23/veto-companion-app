@@ -20,10 +20,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import {
   DEFAULT_ASSISTANT_PERMISSIONS,
-  GROUP_LABELS,
   PERMISSION_CATALOG,
-  PERMISSION_PRESETS,
-  ACCESS_LEVEL_OPTIONS,
+  getGroupLabel,
+  getPermissionCatalog,
+  getPermissionPresets,
+  getAccessLevelOptions,
   normalizePermissions,
   type AccessLevel,
   type AssistantPermissions,
@@ -42,8 +43,11 @@ import {
   Clock,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
+import { useTranslation } from "react-i18next";
 
 export default function TeamManagement() {
+  const { t, i18n } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -77,8 +81,12 @@ export default function TeamManagement() {
     setPermOpen(true);
   };
 
+  const permissionPresets = useMemo(() => getPermissionPresets(), [i18n.language]);
+  const accessLevelOptions = useMemo(() => getAccessLevelOptions(), [i18n.language]);
+  const permissionCatalog = useMemo(() => getPermissionCatalog(), [i18n.language]);
+
   const applyPreset = (presetId: string) => {
-    const preset = PERMISSION_PRESETS.find((p) => p.id === presetId);
+    const preset = permissionPresets.find((p) => p.id === presetId);
     if (preset) setDraftPerms({ ...preset.permissions });
   };
 
@@ -108,14 +116,16 @@ export default function TeamManagement() {
       if (permErr) console.warn("permissions after approve", permErr);
 
       toast({
-        title: "Assistant approuvé",
-        description: `${member.full_name || member.email} a accès clinique (modification) par défaut. Vous pouvez affiner les droits.`,
+        title: t("team.approved"),
+        description: t("team.approvedBody", {
+          name: member.full_name || member.email,
+        }),
       });
       await invalidate();
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: e?.message || "Impossible d'approuver",
+        title: tc("error"),
+        description: e?.message || t("team.cannotApprove"),
         variant: "destructive",
       });
     } finally {
@@ -125,21 +135,21 @@ export default function TeamManagement() {
 
   const handleReject = async (member: TeamMember) => {
     if (!user?.id) return;
-    const reason = window.prompt("Raison du rejet (optionnel) :") ?? "";
+    const reason = window.prompt(t("team.rejectReasonPrompt")) ?? "";
     setBusyId(member.id);
     try {
       const { error: rejectErr } = await supabase.rpc("reject_user", {
         user_id_param: member.id,
         rejected_by_param: user.id,
-        reason_param: reason || "Non spécifié",
+        reason_param: reason || t("team.unspecified"),
       });
       if (rejectErr) throw rejectErr;
-      toast({ title: "Demande rejetée" });
+      toast({ title: t("team.rejected") });
       await invalidate();
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: e?.message || "Impossible de rejeter",
+        title: tc("error"),
+        description: e?.message || t("team.cannotReject"),
         variant: "destructive",
       });
     } finally {
@@ -158,16 +168,18 @@ export default function TeamManagement() {
       });
       if (saveErr) throw saveErr;
       toast({
-        title: "Droits enregistrés",
-        description: `Les permissions de ${selected.full_name || selected.email} ont été mises à jour.`,
+        title: t("team.permissionsSaved"),
+        description: t("team.permissionsSavedBody", {
+          name: selected.full_name || selected.email,
+        }),
       });
       setPermOpen(false);
       setSelected(null);
       await invalidate();
     } catch (e: any) {
       toast({
-        title: "Erreur",
-        description: e?.message || "Impossible d'enregistrer les permissions",
+        title: tc("error"),
+        description: e?.message || t("team.cannotSavePermissions"),
         variant: "destructive",
       });
     } finally {
@@ -176,16 +188,16 @@ export default function TeamManagement() {
   };
 
   const statusBadge = (status: string) => {
-    if (status === "approved") return <Badge>Actif</Badge>;
+    if (status === "approved") return <Badge>{t("team.statusActive")}</Badge>;
     if (status === "pending")
       return (
         <Badge variant="secondary" className="gap-1">
           <Clock className="h-3 w-3" />
-          En attente
+          {t("team.statusPending")}
         </Badge>
       );
-    if (status === "suspended") return <Badge variant="outline">Suspendu</Badge>;
-    if (status === "rejected") return <Badge variant="destructive">Rejeté</Badge>;
+    if (status === "suspended") return <Badge variant="outline">{t("team.statusSuspended")}</Badge>;
+    if (status === "rejected") return <Badge variant="destructive">{t("team.statusRejected")}</Badge>;
     return <Badge variant="secondary">{status}</Badge>;
   };
 
@@ -205,12 +217,12 @@ export default function TeamManagement() {
       elevage: [],
       admin: [],
     };
-    for (const d of PERMISSION_CATALOG) {
+    for (const d of permissionCatalog) {
       if (d.key === "can_view_reports") continue;
       groups[d.group].push(d);
     }
     return groups;
-  }, []);
+  }, [permissionCatalog]);
 
   if (isLoading) {
     return (
@@ -237,8 +249,8 @@ export default function TeamManagement() {
     <div className="container mx-auto p-6 max-w-6xl space-y-6">
       <AppPageHeader
         icon={Users}
-        title="Équipe"
-        description="Invitez des assistants et définissez précisément leurs droits d'accès"
+        title={t("team.title")}
+        description={t("team.description")}
       />
 
       <OrganizationInviteCode />
@@ -246,7 +258,7 @@ export default function TeamManagement() {
       <div className="app-kpi-grid grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("team.total")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{teamMembers?.length || 0}</div>
@@ -254,7 +266,7 @@ export default function TeamManagement() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Vétérinaires</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("team.vets")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{admins.length}</div>
@@ -262,7 +274,7 @@ export default function TeamManagement() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Assistants</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("team.assistants")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{assistants.length}</div>
@@ -270,7 +282,7 @@ export default function TeamManagement() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">En attente</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("team.pending")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pending.length}</div>
@@ -283,10 +295,10 @@ export default function TeamManagement() {
           <CardHeader>
             <CardTitle className="flex items-center text-amber-700 dark:text-amber-400">
               <Clock className="mr-2 h-5 w-5" />
-              Demandes en attente
+              {t("team.pendingRequests")}
             </CardTitle>
             <CardDescription>
-              Approuvez pour activer le compte. Un pack « Accès clinique » est appliqué ; vous pourrez ensuite restreindre ou élargir.
+              {t("team.pendingRequestsDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -300,10 +312,12 @@ export default function TeamManagement() {
                     <UserCircle className="h-6 w-6 text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-medium">{member.full_name || "Sans nom"}</p>
+                    <p className="font-medium">{member.full_name || t("team.noName")}</p>
                     <p className="text-sm text-muted-foreground">{member.email}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Rôle demandé : {member.role === "admin" ? "Vétérinaire" : "Assistant"}
+                      {t("team.requestedRole", {
+                        role: member.role === "admin" ? t("team.roleVet") : t("team.roleAssistant"),
+                      })}
                     </p>
                   </div>
                 </div>
@@ -318,7 +332,7 @@ export default function TeamManagement() {
                     ) : (
                       <UserCheck className="h-4 w-4 mr-1" />
                     )}
-                    Approuver
+                    {t("team.approve")}
                   </Button>
                   <Button
                     size="sm"
@@ -327,7 +341,7 @@ export default function TeamManagement() {
                     onClick={() => handleReject(member)}
                   >
                     <UserX className="h-4 w-4 mr-1" />
-                    Rejeter
+                    {t("team.reject")}
                   </Button>
                 </div>
               </div>
@@ -340,10 +354,10 @@ export default function TeamManagement() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Crown className="mr-2 h-5 w-5 text-yellow-500" />
-            Vétérinaires (Administrateurs)
+            {t("team.vetsAdmins")}
           </CardTitle>
           <CardDescription>
-            Accès complet à la clinique, y compris la gestion des droits des assistants. Les permissions individuelles ne s'appliquent pas à ce rôle.
+            {t("team.adminsHint")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -359,10 +373,10 @@ export default function TeamManagement() {
                   </div>
                   <div>
                     <p className="font-medium flex items-center">
-                      {admin.full_name || "Sans nom"}
+                      {admin.full_name || t("team.noName")}
                       {admin.id === user?.id && (
                         <Badge variant="outline" className="ml-2 text-xs">
-                          Vous
+                          {t("team.you")}
                         </Badge>
                       )}
                     </p>
@@ -379,7 +393,7 @@ export default function TeamManagement() {
               </div>
             ))}
             {admins.length === 0 && (
-              <p className="text-muted-foreground text-center py-8">Aucun vétérinaire dans l'équipe</p>
+              <p className="text-muted-foreground text-center py-8">{t("team.empty")}</p>
             )}
           </div>
         </CardContent>
@@ -389,10 +403,10 @@ export default function TeamManagement() {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Shield className="mr-2 h-5 w-5 text-blue-500" />
-            Assistants
+            {t("team.assistantsSection")}
           </CardTitle>
           <CardDescription>
-            Définissez module par module ce que chaque assistant peut voir et faire. L'équipe et la facturation SaaS restent réservées aux vétérinaires.
+            {t("team.assistantsDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -407,11 +421,11 @@ export default function TeamManagement() {
                     <UserCircle className="h-6 w-6 text-blue-500" />
                   </div>
                   <div>
-                    <p className="font-medium">{assistant.full_name || "Sans nom"}</p>
+                    <p className="font-medium">{assistant.full_name || t("team.noName")}</p>
                     <p className="text-sm text-muted-foreground">{assistant.email}</p>
                     {assistant.status === "approved" && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {enabledCount(assistant)} modules · {editCount(assistant)} en modification
+                        {t("team.modulesLabel", { count: enabledCount(assistant) })} · {t("team.editAccessLabel", { count: editCount(assistant) })}
                       </p>
                     )}
                   </div>
@@ -433,9 +447,9 @@ export default function TeamManagement() {
             ))}
             {assistants.length === 0 && (
               <div className="text-center py-8 space-y-3">
-                <p className="text-muted-foreground">Aucun assistant dans votre équipe</p>
+                <p className="text-muted-foreground">{t("team.empty")}</p>
                 <p className="text-sm text-muted-foreground">
-                  Partagez votre code d'invitation ci-dessus pour inviter des assistants
+                  {t("team.emptyInviteHint")}
                 </p>
               </div>
             )}
@@ -446,16 +460,19 @@ export default function TeamManagement() {
       <Dialog open={permOpen} onOpenChange={setPermOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Droits — {selected?.full_name || selected?.email}</DialogTitle>
+            <DialogTitle>{t("team.permissionsTitle", { name: selected?.full_name || selected?.email })}</DialogTitle>
             <DialogDescription>
-              Pour chaque module : <strong>Aucun</strong>, <strong>Consulter</strong> (lecture seule) ou{" "}
-              <strong>Modifier</strong> (créer / éditer / supprimer). L’assistant doit rafraîchir sa session pour voir les changements.
+              {t("team.permissionsHelpBefore")}{" "}
+              <strong>{t("team.permissionsHelpNone")}</strong>,{" "}
+              <strong>{t("team.permissionsHelpView")}</strong> {t("team.permissionsHelpViewHint")} {tc("or")}{" "}
+              <strong>{t("team.permissionsHelpEdit")}</strong> {t("team.permissionsHelpEditHint")}{" "}
+              {t("team.permissionsHelpRefresh")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              {PERMISSION_PRESETS.map((preset) => (
+              {permissionPresets.map((preset) => (
                 <Button
                   key={preset.id}
                   type="button"
@@ -472,14 +489,14 @@ export default function TeamManagement() {
             {(["clinique", "elevage", "admin"] as const).map((group) => (
               <div key={group} className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {GROUP_LABELS[group]}
+                  {getGroupLabel(group)}
                 </p>
                 <div className="space-y-2 rounded-lg border p-3">
                   {groupedCatalog[group].map((def) => {
                     const level = draftPerms[def.key] || "none";
                     const options = def.viewOnly
-                      ? ACCESS_LEVEL_OPTIONS.filter((o) => o.value !== "edit")
-                      : ACCESS_LEVEL_OPTIONS;
+                      ? accessLevelOptions.filter((o) => o.value !== "edit")
+                      : accessLevelOptions;
                     return (
                       <div
                         key={def.key}
@@ -521,11 +538,11 @@ export default function TeamManagement() {
               }}
               disabled={savingPerms}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="button" onClick={handleSavePermissions} disabled={savingPerms}>
               {savingPerms && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Enregistrer
+              {tc("save")}
             </Button>
           </DialogFooter>
         </DialogContent>

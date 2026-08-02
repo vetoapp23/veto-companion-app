@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Package, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useStockItems } from '@/hooks/useDatabase';
+import { useTranslation } from "react-i18next";
 
 export function StockChart() {
   const { data: stockItems = [] } = useStockItems();
+  const { t } = useTranslation("app");
 
   // Calculer les données du stock
   const stockData = React.useMemo(() => {
@@ -17,11 +19,11 @@ export function StockChart() {
     const normalStockItems = totalItems - lowStockItems - outOfStockItems;
 
     return [
-      { name: 'Stock Normal', value: normalStockItems, color: '#10b981' },
-      { name: 'Stock Faible', value: lowStockItems, color: '#f59e0b' },
-      { name: 'Rupture', value: outOfStockItems, color: '#ef4444' }
+      { name: t("charts.stock.normal"), value: normalStockItems, color: '#10b981' },
+      { name: t("charts.stock.low"), value: lowStockItems, color: '#f59e0b' },
+      { name: t("charts.stock.out"), value: outOfStockItems, color: '#ef4444' }
     ].filter(item => item.value > 0);
-  }, [stockItems]);
+  }, [stockItems, t]);
 
   // Calculer la valeur totale du stock
   const totalStockValue = stockItems.reduce((sum, item) => 
@@ -38,7 +40,7 @@ export function StockChart() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">État du Stock</CardTitle>
+        <CardTitle className="text-base font-medium">{t("charts.stock.title")}</CardTitle>
         <Package className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -65,7 +67,7 @@ export function StockChart() {
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                 }}
-                formatter={(value: number) => [value, 'Articles']}
+                formatter={(value: number) => [value, t("charts.stock.tooltip")]}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -73,12 +75,12 @@ export function StockChart() {
         
         <div className="mt-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Valeur totale du stock</span>
+            <span className="text-sm text-muted-foreground">{t("stock.kpi.totalValue")}</span>
             <span className="font-medium">{totalStockValue.toFixed(0)} €</span>
           </div>
           
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Articles les plus précieux</h4>
+            <h4 className="text-sm font-medium">{t("charts.stock.tooltip")}</h4>
             {topExpensiveItems.map((item, index) => (
               <div key={item.id} className="flex items-center justify-between text-xs">
                 <span className="truncate flex-1">{item.name}</span>

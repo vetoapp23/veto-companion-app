@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,9 +37,11 @@ interface FarmViewModalSupabaseProps {
 }
 
 const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewIntervention }: FarmViewModalSupabaseProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   if (!farm) return null;
 
-  const ownerName = farm.clients ? `${farm.clients.first_name} ${farm.clients.last_name}` : 'Non spécifié';
+  const ownerName = farm.clients ? `${farm.clients.first_name} ${farm.clients.last_name}` : t("farms.ui.notSpecified");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -51,17 +54,17 @@ const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewInterven
                 {farm.farm_name}
               </DialogTitle>
               <DialogDescription className="mt-2">
-                Détails complets de l'exploitation agricole
+                {t("farms.ui.viewFarmDesc")}
               </DialogDescription>
             </div>
             <div className="flex gap-2">
               <Button onClick={onEdit} variant="outline" className="gap-2">
                 <Edit className="h-4 w-4" />
-                Modifier
+                {tc("edit")}
               </Button>
               <Button onClick={onNewIntervention} className="gap-2">
                 <Stethoscope className="h-4 w-4" />
-                Nouvelle Intervention
+                {t("farms.newIntervention")}
               </Button>
             </div>
           </div>
@@ -71,7 +74,7 @@ const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewInterven
           {/* Status Badge */}
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-green-100 text-green-800">
-              {farm.active ? 'Actif' : 'Inactif'}
+              {farm.active ? t("farms.print.active") : t("farms.print.inactive")}
             </Badge>
             {farm.farm_type && (
               <Badge variant="secondary">{farm.farm_type}</Badge>
@@ -85,36 +88,36 @@ const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewInterven
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Informations Générales
+                  {t("farms.ui.generalInfoTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Propriétaire</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("farms.owner")}</Label>
                   <p className="text-base font-medium">{ownerName}</p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Numéro d'enregistrement</Label>
-                  <p className="text-base">{farm.registration_number || 'Non renseigné'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("farms.registrationNumber")}</Label>
+                  <p className="text-base">{farm.registration_number || t("farms.ui.notProvided")}</p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Type d'exploitation</Label>
-                  <p className="text-base">{farm.farm_type || 'Non spécifié'}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("farms.ui.farmType")}</Label>
+                  <p className="text-base">{farm.farm_type || t("farms.ui.notSpecified")}</p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Taille du cheptel</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("farms.ui.herdSize")}</Label>
                   <div className="flex items-center gap-2">
                     <Users2 className="h-5 w-5 text-primary" />
-                    <p className="text-lg font-semibold">{farm.herd_size || 0} animaux</p>
+                    <p className="text-lg font-semibold">{t("farms.ui.herdSizeAnimals", { count: farm.herd_size || 0 })}</p>
                   </div>
                 </div>
 
                 {farm.certifications && farm.certifications.length > 0 && (
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Certifications</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">{t("farms.certifications")}</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {farm.certifications.map((cert, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
@@ -132,44 +135,44 @@ const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewInterven
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Contact & Localisation
+                  {t("farms.ui.contactLocation")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Adresse</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{tc("address")}</Label>
                   <p className="text-base flex items-start gap-2">
                     <MapPin className="h-4 w-4 mt-1 text-muted-foreground flex-shrink-0" />
-                    {farm.address || 'Adresse non renseignée'}
+                    {farm.address || t("farms.ui.addressNotProvided")}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Téléphone</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{tc("phone")}</Label>
                   <p className="text-base flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    {farm.phone || 'Non renseigné'}
+                    {farm.phone || t("farms.ui.notProvided")}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{tc("email")}</Label>
                   <p className="text-base flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    {farm.email || 'Non renseigné'}
+                    {farm.email || t("farms.ui.notProvided")}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Dates</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">{t("farms.ui.dates")}</Label>
                   <div className="space-y-1 text-sm">
                     <p className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      Créé le: {formatDate(farm.created_at)}
+                      {t("farms.ui.createdOn", { date: formatDate(farm.created_at) })}
                     </p>
                     <p className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      Modifié le: {formatDate(farm.updated_at)}
+                      {t("farms.ui.updatedOn", { date: formatDate(farm.updated_at) })}
                     </p>
                   </div>
                 </div>
@@ -181,7 +184,7 @@ const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewInterven
           {farm.notes && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Notes</CardTitle>
+                <CardTitle className="text-lg">{tc("notes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-base whitespace-pre-wrap">{farm.notes}</p>
@@ -193,15 +196,15 @@ const FarmViewModalSupabase = ({ farm, open, onOpenChange, onEdit, onNewInterven
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             <X className="h-4 w-4 mr-2" />
-            Fermer
+            {tc("close")}
           </Button>
           <Button onClick={onEdit} variant="outline">
             <Edit className="h-4 w-4 mr-2" />
-            Modifier
+            {tc("edit")}
           </Button>
           <Button onClick={onNewIntervention}>
             <Stethoscope className="h-4 w-4 mr-2" />
-            Nouvelle Intervention
+            {t("farms.newIntervention")}
           </Button>
         </div>
       </DialogContent>

@@ -17,7 +17,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateVisit, useVisits } from "@/hooks/useVisits";
-import { getServiceDef, suggestServiceFromAppointmentType, resolveServiceAmount } from "@/lib/visitCatalog";
+import {
+  getServiceDef,
+  getVisitServiceLabel,
+  suggestServiceFromAppointmentType,
+  resolveServiceAmount,
+} from "@/lib/visitCatalog";
 import { buildClinicCalendarEvents } from "@/lib/clinicCalendar";
 import { toLocalDateKey, toLocalTimeKey, todayLocalKey, localDateTimeToISO, matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
 import type { UpdateAppointmentData } from "@/lib/database";
@@ -25,6 +30,8 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
 import { Label } from "@/components/ui/label";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 const statusStyles = {
   scheduled: "bg-blue-100 text-blue-800",
@@ -34,25 +41,27 @@ const statusStyles = {
   "no-show": "bg-orange-100 text-orange-800"
 };
 
-const statusLabels = {
-  scheduled: "Planifié",
-  confirmed: "Confirmé",
-  completed: "Terminé",
-  cancelled: "Annulé",
-  "no-show": "Absent"
-};
-
-const typeLabels = {
-  consultation: "Consultation générale",
-  vaccination: "Vaccination",
-  chirurgie: "Chirurgie",
-  urgence: "Urgence",
-  controle: "Contrôle post-opératoire",
-  sterilisation: "Stérilisation",
-  dentaire: "Soins dentaires"
-};
-
 export default function Appointments() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: ts } = useTranslation("settings");
+  const { t: tm } = useTranslation("medical");
+  const { bcp47 } = useAppLocale();
+  const typeLabels = {
+    consultation: t("appointments.types.consultation"),
+    vaccination: t("appointments.types.vaccination"),
+    chirurgie: t("appointments.types.chirurgie"),
+    controle: t("appointments.types.controle"),
+    sterilisation: t("appointments.types.sterilisation"),
+    dentaire: t("appointments.types.dentaire"),
+  };
+  const statusLabels: Record<string, string> = {
+    scheduled: tc("scheduled"),
+    confirmed: tc("confirmed"),
+    completed: tc("completed"),
+    cancelled: tc("cancelled"),
+    "no-show": tc("noShow"),
+  };
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: visits = [] } = useVisits();
   const { data: vaccinations = [] } = useVaccinations();
@@ -106,11 +115,11 @@ export default function Appointments() {
 
   // Helper functions for date and time formatting
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    return new Date(dateString).toLocaleDateString(bcp47);
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('fr-FR', { 
+    return new Date(dateString).toLocaleTimeString(bcp47, { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
@@ -133,7 +142,7 @@ export default function Appointments() {
     if (appointment.client) {
       return `${appointment.client.first_name} ${appointment.client.last_name}`;
     }
-    return 'Unknown Client';
+    return t("appointments.unknownClient");
   };
 
   const getAnimalName = (appointment: Appointment) => {
@@ -159,7 +168,8 @@ export default function Appointments() {
   };
 
   const upcomingAppointments = getUpcomingAppointments();
-  const overdueAppointments = getOverdueAppointments();
+  const completedAppointments = appointments.filter((appointment) => appointment.status === "completed");
+  const cancelledAppointments = appointments.filter((appointment) => appointment.status === "cancelled");
 
   const filteredAppointments = appointments.filter(appointment => {
     const clientName = getClientName(appointment);
@@ -186,13 +196,13 @@ export default function Appointments() {
         data: { status: newStatus }
       });
       toast({
-        title: "Statut mis à jour",
+        title: t("appointments.statusUpdated"),
         description: `Le rendez-vous est maintenant ${statusLabels[newStatus].toLowerCase()}.`,
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le statut",
+        title: tc("error"),
+        description: tc("somethingWentWrong"),
         variant: "destructive",
       });
     }
@@ -201,8 +211,8 @@ export default function Appointments() {
   const startVisitFromAppointment = async (appointment: Appointment) => {
     if (appointment.status === "cancelled" || appointment.status === "completed") {
       toast({
-        title: "RDV non démarrable",
-        description: "Ce rendez-vous est déjà terminé ou annulé.",
+        title: t("appointments.cannotStart"),
+        description: t("appointments.alreadyDoneOrCancelled"),
         variant: "destructive",
       });
       return;
@@ -217,19 +227,19 @@ export default function Appointments() {
         client_id: appointment.client_id,
         animal_id: appointment.animal_id || null,
         appointment_id: appointment.id,
-        reason: appointment.notes || def.label,
+        reason: appointment.notes || getVisitServiceLabel(def, tm),
         visit_date: appointment.appointment_date,
         initial_service: {
           service_code: def.code,
-          service_label: def.label,
+          service_label: getVisitServiceLabel(def, tm),
           amount: resolveServiceAmount(def.code, settings.servicePrices),
         },
       });
       navigate(`/visites/${visit.id}`);
     } catch (e: any) {
       toast({
-        title: "Impossible de démarrer la visite",
-        description: e?.message || "Erreur inattendue",
+        title: t("appointments.cannotStartVisit"),
+        description: e?.message || t("appointments.unexpectedError"),
         variant: "destructive",
       });
     }
@@ -250,7 +260,7 @@ export default function Appointments() {
         const dateKey = field === "date" ? fieldValue : getAppointmentDate(appointment);
         const timeKey = field === "time" ? fieldValue : getAppointmentTime(appointment);
         if (!dateKey || !timeKey) {
-          toast({ title: "Erreur", description: "Date ou heure invalide", variant: "destructive" });
+          toast({ title: tc("error"), description: t("appointments.invalidDateOrTime"), variant: "destructive" });
           setEditingField(null);
           return;
         }
@@ -261,9 +271,9 @@ export default function Appointments() {
         data = { status: fieldValue as Appointment["status"] };
       }
       await updateAppointmentMutation.mutateAsync({ id, data });
-      toast({ title: "Modifié", description: "Rendez-vous mis à jour" });
+      toast({ title: t("appointments.updated"), description: t("appointments.updated") });
     } catch (error) {
-      toast({ title: "Erreur", description: "Impossible de mettre à jour", variant: "destructive" });
+      toast({ title: tc("error"), description: tc("somethingWentWrong"), variant: "destructive" });
     }
     setEditingField(null);
   };
@@ -282,15 +292,15 @@ export default function Appointments() {
     try {
       await deleteAppointmentMutation.mutateAsync(appointmentToDelete.id);
       toast({
-        title: "Rendez-vous supprimé",
-        description: `Le rendez-vous pour ${animalName} a été supprimé.`,
+        title: t("appointments.deleted"),
+        description: t("appointments.deletedBody"),
       });
       setShowDeleteConfirm(false);
       setAppointmentToDelete(null);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le rendez-vous",
+        title: tc("error"),
+        description: tc("somethingWentWrong"),
         variant: "destructive",
       });
     }
@@ -380,14 +390,14 @@ export default function Appointments() {
     <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6 lg:space-y-8">
       <AppPageHeader
         icon={Calendar}
-        title="Rendez-vous"
-        description="Planifiez et gérez tous vos rendez-vous vétérinaires"
+        title={t("appointments.title")}
+        description={t("appointments.description")}
         actions={
           canWrite ? (
             <Button onClick={() => openNewAppointment()} className="gap-2 rounded-full">
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nouveau Rendez-vous</span>
-              <span className="sm:hidden">Nouveau RDV</span>
+              <span className="hidden sm:inline">{t("appointments.new")}</span>
+              <span className="sm:hidden">{t("appointments.newShort")}</span>
             </Button>
           ) : null
         }
@@ -396,8 +406,8 @@ export default function Appointments() {
       {/* Toggle List / Calendrier */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
       <div className="flex gap-2">
-        <Button variant={viewMode==='list'?'default':'outline'} onClick={()=>setViewMode('list')} size="sm" className="flex-1 sm:flex-none">Liste</Button>
-        <Button variant={viewMode==='calendar'?'default':'outline'} onClick={()=>setViewMode('calendar')} size="sm" className="flex-1 sm:flex-none">Calendrier</Button>
+        <Button variant={viewMode==='list'?'default':'outline'} onClick={()=>setViewMode('list')} size="sm" className="flex-1 sm:flex-none">{t("appointments.list")}</Button>
+        <Button variant={viewMode==='calendar'?'default':'outline'} onClick={()=>setViewMode('calendar')} size="sm" className="flex-1 sm:flex-none">{t("appointments.calendar")}</Button>
       </div>
       
       {viewMode === 'list' && (
@@ -409,7 +419,7 @@ export default function Appointments() {
           className="gap-1 sm:gap-2 flex-1 sm:flex-none"
         >
           <Grid className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Cartes</span>
+          <span className="hidden sm:inline">{ts("display.modes.cards")}</span>
         </Button>
         <Button 
           size="sm" 
@@ -418,7 +428,7 @@ export default function Appointments() {
           className="gap-1 sm:gap-2 flex-1 sm:flex-none"
         >
           <List className="h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="hidden sm:inline">Tableau</span>
+          <span className="hidden sm:inline">{ts("display.modes.table")}</span>
         </Button>
         </div>
       )}
@@ -450,7 +460,7 @@ export default function Appointments() {
         }}
         occupiedSlots={occupiedSlots}
         showTimeSlots={true}
-        title="Calendrier clinique"
+        title={t("appointments.clinicCalendar")}
         icon={<Calendar className="h-5 w-5" />}
       />
       ) : (
@@ -460,7 +470,7 @@ export default function Appointments() {
           <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           <div>
-            <p className="text-xs sm:text-sm text-muted-foreground">Aujourd'hui</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t("appointments.kpi.today")}</p>
             <p className="text-lg sm:text-2xl font-bold">{todayAppointments.length}</p>
           </div>
           </div>
@@ -472,7 +482,7 @@ export default function Appointments() {
           <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
           <div>
-            <p className="text-xs sm:text-sm text-muted-foreground">À venir</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t("appointments.kpi.upcoming")}</p>
             <p className="text-lg sm:text-2xl font-bold">{upcomingAppointments.length}</p>
           </div>
           </div>
@@ -482,10 +492,10 @@ export default function Appointments() {
         <Card>
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
           <div>
-            <p className="text-xs sm:text-sm text-muted-foreground">En retard</p>
-            <p className="text-lg sm:text-2xl font-bold">{overdueAppointments.length}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t("appointments.kpi.completed")}</p>
+            <p className="text-lg sm:text-2xl font-bold">{completedAppointments.length}</p>
           </div>
           </div>
         </CardContent>
@@ -494,10 +504,10 @@ export default function Appointments() {
         <Card>
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+          <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
           <div>
-            <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
-            <p className="text-lg sm:text-2xl font-bold">{appointments.length}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">{t("appointments.kpi.cancelled")}</p>
+            <p className="text-lg sm:text-2xl font-bold">{cancelledAppointments.length}</p>
           </div>
           </div>
         </CardContent>
@@ -510,7 +520,7 @@ export default function Appointments() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
         <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-        Filtres et Recherche
+        {tc("filters")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4">
@@ -520,7 +530,7 @@ export default function Appointments() {
           <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Client, animal, motif..."
+            placeholder={t("appointments.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -529,30 +539,30 @@ export default function Appointments() {
         </div>
         
         <div className="space-y-2">
-          <Label>Statut</Label>
+          <Label>{tc("status")}</Label>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="scheduled">Planifié</SelectItem>
-            <SelectItem value="confirmed">Confirmé</SelectItem>
-            <SelectItem value="completed">Terminé</SelectItem>
-            <SelectItem value="cancelled">Annulé</SelectItem>
-            <SelectItem value="no-show">Absent</SelectItem>
+            <SelectItem value="all">{t("appointments.filters.allStatuses")}</SelectItem>
+            <SelectItem value="scheduled">{tc("scheduled")}</SelectItem>
+            <SelectItem value="confirmed">{tc("confirmed")}</SelectItem>
+            <SelectItem value="completed">{tc("completed")}</SelectItem>
+            <SelectItem value="cancelled">{tc("cancelled")}</SelectItem>
+            <SelectItem value="no-show">{tc("noShow")}</SelectItem>
           </SelectContent>
           </Select>
         </div>
         
         <div className="space-y-2">
-          <Label>Type</Label>
+          <Label>{t("appointments.typeLabel")}</Label>
           <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les types</SelectItem>
+            <SelectItem value="all">{t("appointments.filters.allTypes")}</SelectItem>
             {appointmentTypes.map((type) => (
               <SelectItem key={type} value={type.toLowerCase().replace(/\s+/g, '-')}>
                 {type}
@@ -563,13 +573,13 @@ export default function Appointments() {
         </div>
 
         <div className="space-y-2">
-          <Label>Espèce</Label>
+          <Label>{t("appointments.speciesFilter")}</Label>
           <Select value={filterSpecies} onValueChange={setFilterSpecies}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes espèces</SelectItem>
+            <SelectItem value="all">{t("appointments.allSpecies")}</SelectItem>
             {animalSpecies.map((species) => (
               <SelectItem key={species} value={species}>
                 {species}
@@ -600,8 +610,8 @@ export default function Appointments() {
         <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
           <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-          <p>Aucun rendez-vous trouvé</p>
-          <p className="text-sm">Commencez par créer votre premier rendez-vous</p>
+          <p>{t("appointments.empty")}</p>
+          <p className="text-sm">{t("appointments.emptyHint")}</p>
         </CardContent>
         </Card>
       ) : displayMode === 'cards' ? (
@@ -641,7 +651,7 @@ export default function Appointments() {
                 <span className="ml-1">{typeLabels[appointment.appointment_type as keyof typeof typeLabels] || appointment.appointment_type}</span>
                 </div>
                 <div>
-                <span className="text-muted-foreground">Durée:</span>
+                <span className="text-muted-foreground">{t("appointments.durationLabel")}:</span>
                 <span className="ml-1">{appointment.duration_minutes || 30} min</span>
                 </div>
               </div>
@@ -682,7 +692,7 @@ export default function Appointments() {
                   className="gap-1 w-full sm:w-auto"
                 >
                   <CheckCircle className="h-3 w-3" />
-                  Confirmer
+                  {tc("confirm")}
                 </Button>
                 <Button 
                   size="sm" 
@@ -691,7 +701,7 @@ export default function Appointments() {
                   className="gap-1 text-red-600 w-full sm:w-auto"
                 >
                   <XCircle className="h-3 w-3" />
-                  Annuler
+                  {tc("cancel")}
                 </Button>
                 </>
               )}
@@ -716,7 +726,7 @@ export default function Appointments() {
                 className="gap-1 text-red-600 w-full sm:w-auto"
               >
                 <Trash2 className="h-3 w-3" />
-                Supprimer
+                {tc("delete")}
               </Button>
               )}
               </div>
@@ -732,12 +742,12 @@ export default function Appointments() {
           <table className="w-full">
             <thead className="border-b">
             <tr className="text-left">
-              <th className="p-2 sm:p-4 font-medium">Client / Animal</th>
-              <th className="p-2 sm:p-4 font-medium">Date & Heure</th>
-              <th className="p-2 sm:p-4 font-medium">Type</th>
-              <th className="p-2 sm:p-4 font-medium">Statut</th>
-              <th className="p-2 sm:p-4 font-medium">Motif</th>
-              <th className="p-2 sm:p-4 font-medium">Actions</th>
+              <th className="p-2 sm:p-4 font-medium">{t("appointments.columns.client")} / {t("appointments.columns.animal")}</th>
+              <th className="p-2 sm:p-4 font-medium">{t("appointments.columns.date")}</th>
+              <th className="p-2 sm:p-4 font-medium">{t("appointments.columns.type")}</th>
+              <th className="p-2 sm:p-4 font-medium">{t("appointments.columns.status")}</th>
+              <th className="p-2 sm:p-4 font-medium">{t("appointments.reason")}</th>
+              <th className="p-2 sm:p-4 font-medium">{t("appointments.columns.actions")}</th>
             </tr>
             </thead>
             <tbody>
@@ -833,11 +843,11 @@ export default function Appointments() {
                     <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                    <SelectItem value="scheduled">Planifié</SelectItem>
-                    <SelectItem value="confirmed">Confirmé</SelectItem>
-                    <SelectItem value="completed">Terminé</SelectItem>
-                    <SelectItem value="cancelled">Annulé</SelectItem>
-                    <SelectItem value="no-show">Absent</SelectItem>
+                    <SelectItem value="scheduled">{tc("scheduled")}</SelectItem>
+                    <SelectItem value="confirmed">{tc("confirmed")}</SelectItem>
+                    <SelectItem value="completed">{tc("completed")}</SelectItem>
+                    <SelectItem value="cancelled">{tc("cancelled")}</SelectItem>
+                    <SelectItem value="no-show">{tc("noShow")}</SelectItem>
                     </SelectContent>
                   </Select>
                   ) : (
@@ -862,7 +872,7 @@ export default function Appointments() {
                     onChange={e => setFieldValue(e.target.value)}
                     onBlur={handleFieldSave}
                     autoFocus
-                    placeholder="Motif du rendez-vous"
+                    placeholder={t("appointments.reasonPlaceholder")}
                   />
                   ) : (
                   <>
@@ -883,7 +893,7 @@ export default function Appointments() {
                       size="sm"
                       onClick={() => startVisitFromAppointment(appointment)}
                       disabled={createVisit.isPending}
-                      title="Démarrer visite"
+                      title={t("appointments.startVisit")}
                     >
                       <Stethoscope className="h-3 w-3" />
                     </Button>
@@ -957,22 +967,19 @@ export default function Appointments() {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-        <DialogTitle>Confirmer la suppression</DialogTitle>
+        <DialogTitle>{t("appointments.deleteConfirmTitle")}</DialogTitle>
         </DialogHeader>
         {appointmentToDelete && (
         <div className="space-y-4">
           <p className="text-gray-600">
-          Êtes-vous sûr de vouloir supprimer le rendez-vous pour <strong>{getAnimalName(appointmentToDelete)}</strong> ?
-          </p>
-          <p className="text-sm text-red-600">
-          Cette action est irréversible.
+          {t("appointments.deleteConfirmBody", { date: formatDate(appointmentToDelete.appointment_date) })}
           </p>
           <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-            Annuler
+            {tc("cancel")}
           </Button>
           <Button variant="destructive" onClick={confirmDeleteAppointment}>
-            Supprimer
+            {tc("delete")}
           </Button>
           </div>
         </div>

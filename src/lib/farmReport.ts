@@ -1,4 +1,6 @@
 // @ts-nocheck
+import i18n from "@/i18n";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { buildWatermarkHtml } from "@/lib/printWatermark";
 import { buildReportDocument, buildDefaultFooter } from "@/lib/reportStyles";
 
@@ -15,15 +17,42 @@ export type FarmSectionKey =
 
 export type FarmTemplate = "complete" | "summary" | "sanitary" | "inventory";
 
+const t = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(key, { ns: "app", ...opts });
+
+/** Section keys — labels resolved at call time via i18n. */
+export const FARM_SECTION_KEYS: FarmSectionKey[] = [
+  "identity",
+  "herd",
+  "batches",
+  "infrastructures",
+  "interventions",
+  "events",
+  "photos",
+];
+
+/** Prefer getFarmSectionLabels() for translated labels */
 export const FARM_SECTION_LABELS: Record<FarmSectionKey, string> = {
-  identity: "Exploitation",
-  herd: "Cheptel actif",
-  batches: "Lots",
-  infrastructures: "Infrastructures",
-  interventions: "Interventions",
-  events: "Évènements sanitaires",
-  photos: "Photos",
+  identity: "identity",
+  herd: "herd",
+  batches: "batches",
+  infrastructures: "infrastructures",
+  interventions: "interventions",
+  events: "events",
+  photos: "photos",
 };
+
+export function getFarmSectionLabels(): Record<FarmSectionKey, string> {
+  return {
+    identity: t("farms.print.sections.identity"),
+    herd: t("farms.print.sections.herd"),
+    batches: t("farms.print.sections.batches"),
+    infrastructures: t("farms.print.sections.infrastructures"),
+    interventions: t("farms.print.sections.interventions"),
+    events: t("farms.print.sections.events"),
+    photos: t("farms.print.sections.photos"),
+  };
+}
 
 export const FARM_TEMPLATES: Record<FarmTemplate, Record<FarmSectionKey, boolean>> = {
   complete: {
@@ -51,7 +80,7 @@ const ALL_SECTIONS: Record<FarmSectionKey, boolean> = {
 
 const fmtDate = (d?: string | Date | null) => {
   if (!d) return "—";
-  try { return new Date(d).toLocaleDateString("fr-FR"); } catch { return String(d); }
+  try { return new Date(d).toLocaleDateString(getBcp47Locale(i18n.language)); } catch { return String(d); }
 };
 
 interface BuildArgs {
@@ -84,7 +113,7 @@ export function buildFarmReportHtml({
 
   const byCat: Record<string, number> = {};
   activeBatches.forEach((b) => {
-    const k = b.category || b.species || "Non catégorisé";
+    const k = b.category || b.species || t("farms.print.uncategorized");
     byCat[k] = (byCat[k] || 0) + (b.animal_count || 0);
   });
 
@@ -100,20 +129,22 @@ export function buildFarmReportHtml({
   );
 
   const sectionsHtml: string[] = [];
+  const L = "farms.print.labels";
+  const C = "farms.print.cols";
 
   if (sections.identity) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>Exploitation</h2>
+    <h2>${t("farms.print.sections.identity")}</h2>
     <table class="info">
-      <tr><th>Nom</th><td>${farm.farm_name ?? "—"}</td><th>Propriétaire</th><td>${ownerName ?? "—"}</td></tr>
-      <tr><th>Types d'élevage</th><td colspan="3"><div class="badges">${farmTypes.map(t=>`<span>${t}</span>`).join("") || "—"}</div></td></tr>
-      <tr><th>Production</th><td>${farm.production_type ?? "—"}</td><th>Logement</th><td>${farm.housing_type ?? "—"}</td></tr>
-      <tr><th>Adresse</th><td>${farm.address ?? "—"}</td><th>Surface</th><td>${farm.surface_hectares != null ? farm.surface_hectares+" ha" : "—"}</td></tr>
-      <tr><th>Téléphone</th><td>${farm.phone ?? "—"}</td><th>Email</th><td>${farm.email ?? "—"}</td></tr>
-      <tr><th>N° enregistrement</th><td>${farm.registration_number ?? "—"}</td><th>Statut</th><td>${farm.active ? "Actif" : "Inactif"}</td></tr>
+      <tr><th>${t(`${L}.name`)}</th><td>${farm.farm_name ?? "—"}</td><th>${t(`${L}.owner`)}</th><td>${ownerName ?? "—"}</td></tr>
+      <tr><th>${t(`${L}.farmTypes`)}</th><td colspan="3"><div class="badges">${farmTypes.map(tp=>`<span>${tp}</span>`).join("") || "—"}</div></td></tr>
+      <tr><th>${t(`${L}.production`)}</th><td>${farm.production_type ?? "—"}</td><th>${t(`${L}.housing`)}</th><td>${farm.housing_type ?? "—"}</td></tr>
+      <tr><th>${t(`${L}.address`)}</th><td>${farm.address ?? "—"}</td><th>${t(`${L}.surface`)}</th><td>${farm.surface_hectares != null ? farm.surface_hectares+" "+t(`${L}.hectaresUnit`) : "—"}</td></tr>
+      <tr><th>${t(`${L}.phone`)}</th><td>${farm.phone ?? "—"}</td><th>${t(`${L}.email`)}</th><td>${farm.email ?? "—"}</td></tr>
+      <tr><th>${t(`${L}.registration`)}</th><td>${farm.registration_number ?? "—"}</td><th>${t(`${L}.status`)}</th><td>${farm.active ? t("farms.print.active") : t("farms.print.inactive")}</td></tr>
     </table>
-    ${farm.certifications?.length ? `<p><strong>Certifications :</strong> ${farm.certifications.join(", ")}</p>` : ""}
+    ${farm.certifications?.length ? `<p><strong>${t(`${L}.certifications`)}</strong> ${farm.certifications.join(", ")}</p>` : ""}
     ${farm.notes ? `<p>${farm.notes}</p>` : ""}
   </section>`);
   }
@@ -121,16 +152,16 @@ export function buildFarmReportHtml({
   if (sections.herd) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>Cheptel actif</h2>
+    <h2>${t("farms.print.herdTitle")}</h2>
     <div class="kpis">
-      <div class="kpi"><div class="l">Total cheptel actif</div><div class="v">${totalActive}</div></div>
-      <div class="kpi"><div class="l">Lots actifs</div><div class="v">${activeBatches.length}</div></div>
-      <div class="kpi"><div class="l">Infrastructures</div><div class="v">${infrastructures.length}</div></div>
-      <div class="kpi"><div class="l">Interventions</div><div class="v">${filteredInterventions.length}</div></div>
+      <div class="kpi"><div class="l">${t("farms.print.totalHerd")}</div><div class="v">${totalActive}</div></div>
+      <div class="kpi"><div class="l">${t("farms.print.activeBatches")}</div><div class="v">${activeBatches.length}</div></div>
+      <div class="kpi"><div class="l">${t("farms.print.infrastructures")}</div><div class="v">${infrastructures.length}</div></div>
+      <div class="kpi"><div class="l">${t("farms.print.interventions")}</div><div class="v">${filteredInterventions.length}</div></div>
     </div>
     ${Object.keys(byCat).length ? `
     <table class="data" style="margin-top:10px">
-      <thead><tr><th>Catégorie</th><th>Effectif</th><th>%</th></tr></thead>
+      <thead><tr><th>${t(`${C}.category`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.percent`)}</th></tr></thead>
       <tbody>
         ${Object.entries(byCat).map(([k,v]) => `
           <tr><td>${k}</td><td>${v}</td><td>${totalActive ? Math.round((v/totalActive)*100) : 0}%</td></tr>`).join("")}
@@ -142,10 +173,10 @@ export function buildFarmReportHtml({
   if (sections.batches) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>Lots (${batches.length})</h2>
-    ${batches.length === 0 ? `<p class="muted">Aucun lot.</p>` : `
+    <h2>${t("farms.print.batchesHeading", { count: batches.length })}</h2>
+    ${batches.length === 0 ? `<p class="muted">${t("farms.print.empty.batches")}</p>` : `
     <table class="data">
-      <thead><tr><th>Nom</th><th>Type</th><th>Catégorie</th><th>Espèce</th><th>Effectif</th><th>Emplacement</th><th>Statut</th></tr></thead>
+      <thead><tr><th>${t(`${C}.name`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.category`)}</th><th>${t(`${C}.species`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.location`)}</th><th>${t(`${C}.status`)}</th></tr></thead>
       <tbody>
         ${batches.map(b => `<tr>
           <td>${b.name ?? "—"}</td>
@@ -164,16 +195,16 @@ export function buildFarmReportHtml({
   if (sections.infrastructures) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>Infrastructures (${infrastructures.length})</h2>
-    ${infrastructures.length === 0 ? `<p class="muted">Aucune infrastructure.</p>` : `
+    <h2>${t("farms.print.infraHeading", { count: infrastructures.length })}</h2>
+    ${infrastructures.length === 0 ? `<p class="muted">${t("farms.print.empty.infra")}</p>` : `
     <table class="data">
-      <thead><tr><th>Nom</th><th>Type</th><th>Capacité</th><th>Surface</th><th>Notes</th></tr></thead>
+      <thead><tr><th>${t(`${C}.name`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.capacity`)}</th><th>${t(`${C}.surface`)}</th><th>${t(`${C}.notes`)}</th></tr></thead>
       <tbody>
         ${infrastructures.map(i => `<tr>
           <td>${i.name ?? "—"}</td>
           <td>${i.infra_type ?? "—"}</td>
           <td>${i.capacity ?? "—"}</td>
-          <td>${i.surface_sqm ? i.surface_sqm+" m²" : "—"}</td>
+          <td>${i.surface_sqm ? i.surface_sqm+" "+t("farms.print.sqmUnit") : "—"}</td>
           <td>${i.notes ?? ""}</td>
         </tr>`).join("")}
       </tbody>
@@ -184,10 +215,10 @@ export function buildFarmReportHtml({
   if (sections.interventions) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>Interventions (${filteredInterventions.length})</h2>
-    ${filteredInterventions.length === 0 ? `<p class="muted">Aucune intervention.</p>` : `
+    <h2>${t("farms.print.interventionsHeading", { count: filteredInterventions.length })}</h2>
+    ${filteredInterventions.length === 0 ? `<p class="muted">${t("farms.print.empty.interventions")}</p>` : `
     <table class="data">
-      <thead><tr><th>Date</th><th>Type</th><th>Nature</th><th>Effectif</th><th>Diagnostic</th><th>Traitement</th><th>Coût</th></tr></thead>
+      <thead><tr><th>${t(`${C}.date`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.nature`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.diagnosis`)}</th><th>${t(`${C}.treatment`)}</th><th>${t(`${C}.cost`)}</th></tr></thead>
       <tbody>
         ${filteredInterventions.map(i => `<tr>
           <td>${fmtDate(i.intervention_date)}</td>
@@ -206,10 +237,10 @@ export function buildFarmReportHtml({
   if (sections.events) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>Évènements sanitaires (${filteredEvents.length})</h2>
-    ${filteredEvents.length === 0 ? `<p class="muted">Aucun évènement.</p>` : `
+    <h2>${t("farms.print.eventsHeading", { count: filteredEvents.length })}</h2>
+    ${filteredEvents.length === 0 ? `<p class="muted">${t("farms.print.empty.events")}</p>` : `
     <table class="data">
-      <thead><tr><th>Date</th><th>Type</th><th>Produit</th><th>Dose</th><th>Effectif</th><th>Notes</th></tr></thead>
+      <thead><tr><th>${t(`${C}.date`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.product`)}</th><th>${t(`${C}.dose`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.notes`)}</th></tr></thead>
       <tbody>
         ${filteredEvents.map(e => `<tr>
           <td>${fmtDate(e.event_date)}</td>
@@ -228,25 +259,24 @@ export function buildFarmReportHtml({
     const photos: string[] = farm.photos || [];
     sectionsHtml.push(`
   <section class="block">
-    <h2>Photos (${photos.length})</h2>
-    ${photos.length === 0 ? `<p class="muted">Aucune photo.</p>` : `
+    <h2>${t("farms.print.photosHeading", { count: photos.length })}</h2>
+    ${photos.length === 0 ? `<p class="muted">${t("farms.print.empty.photos")}</p>` : `
     <div class="photos">
       ${photos.map((src, i) => `
         <div class="photo-item">
-          <div class="photo-label">Photo ${i + 1}</div>
-          <img src="${src}" alt="Photo exploitation ${i + 1}" />
+          <div class="photo-label">${t("farms.print.photoLabel", { n: i + 1 })}</div>
+          <img src="${src}" alt="${t("farms.print.photoAlt", { n: i + 1 })}" />
         </div>`).join("")}
     </div>`}
   </section>`);
   }
 
   return buildReportDocument({
-    title: `Rapport exploitation – ${farm.farm_name}`,
+    title: t("farms.print.docTitle", { name: farm.farm_name }),
     watermarkHtml: buildWatermarkHtml(!!isFree),
-    headerTitle: "Rapport d'exploitation",
+    headerTitle: t("farms.print.headerTitle"),
     clinic,
     sectionsHtml: sectionsHtml.join("\n"),
     footerHtml: buildDefaultFooter(clinic.clinicName, false),
   });
 }
-

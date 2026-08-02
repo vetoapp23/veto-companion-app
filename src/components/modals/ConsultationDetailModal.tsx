@@ -11,6 +11,7 @@ import { useUpdateConsultation, usePrescriptionsByAnimal } from "@/hooks/useData
 import { compressPhoto, estimateDataUrlBytes, recordStorageChange } from "@/lib/photoCompression";
 import { roundTemperature, formatTemperature, temperatureInputValue } from "@/lib/utils";
 import { Edit, Save, X, Loader2, ImagePlus, Pill } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,8 @@ interface Props {
 }
 
 export function ConsultationDetailModal({ open, onOpenChange, consultation }: Props) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const update = useUpdateConsultation();
   const animalId = consultation?.animal_id || "";
@@ -67,10 +70,10 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
           photos: form.photos?.length ? form.photos : null,
         } as any,
       });
-      toast({ title: "✓ Consultation mise à jour" });
+      toast({ title: t("alerts.consultationUpdatedCheck") });
       setEditing(false);
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -83,9 +86,9 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
       const bytes = results.reduce((s, u) => s + estimateDataUrlBytes(u), 0);
       setForm((p: any) => ({ ...p, photos: [...(p.photos || []), ...results] }));
       recordStorageChange("consultation", bytes, results.length).catch(() => {});
-      toast({ title: `✓ ${results.length} photo(s) ajoutée(s)` });
+      toast({ title: t("alerts.photosAddedCheck", { count: results.length }) });
     } catch (e: any) {
-      toast({ title: "Erreur photos", description: e.message, variant: "destructive" });
+      toast({ title: t("alerts.photosError"), description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -98,23 +101,23 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
           <DialogHeader>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <DialogTitle>Consultation du {fmt(consultation.consultation_date)}</DialogTitle>
+                <DialogTitle>{t("forms.consultationOf", { date: fmt(consultation.consultation_date) })}</DialogTitle>
                 <DialogDescription>
                   <Badge variant="outline">{consultation.consultation_type || "routine"}</Badge>
                 </DialogDescription>
               </div>
               {!editing ? (
                 <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-                  <Edit className="h-4 w-4 mr-1" /> Modifier
+                  <Edit className="h-4 w-4 mr-1" /> {tc("edit")}
                 </Button>
               ) : (
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEditing(false)} disabled={update.isPending}>
-                    <X className="h-4 w-4 mr-1" /> Annuler
+                    <X className="h-4 w-4 mr-1" /> {tc("cancel")}
                   </Button>
                   <Button size="sm" onClick={handleSave} disabled={update.isPending}>
                     {update.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-                    Enregistrer
+                    {tc("save")}
                   </Button>
                 </div>
               )}
@@ -123,38 +126,38 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
 
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-3 gap-3">
-              <Field label="Date">
+              <Field label={tc("date")}>
                 {editing ? (
                   <Input type="date" value={form.consultation_date} onChange={(e) => setForm({ ...form, consultation_date: e.target.value })} />
                 ) : <span>{fmt(consultation.consultation_date)}</span>}
               </Field>
-              <Field label="Poids (kg)">
+              <Field label={t("forms.weightKg")}>
                 {editing ? <Input type="number" step="0.1" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
                   : <span>{consultation.weight ?? "—"}</span>}
               </Field>
-              <Field label="Température (°C)">
+              <Field label={t("forms.temperatureC")}>
                 {editing ? <Input type="number" step="0.01" value={form.temperature} onChange={(e) => setForm({ ...form, temperature: e.target.value })} />
                   : <span>{formatTemperature(consultation.temperature)}</span>}
               </Field>
             </div>
 
-            <Field label="Symptômes">
+            <Field label={t("print.consultation.symptoms")}>
               {editing ? <Textarea rows={2} value={form.symptoms} onChange={(e) => setForm({ ...form, symptoms: e.target.value })} />
                 : <p className="whitespace-pre-line">{consultation.symptoms || "—"}</p>}
             </Field>
-            <Field label="Diagnostic">
+            <Field label={t("forms.diagnosisLabel")}>
               {editing ? <Textarea rows={2} value={form.diagnosis} onChange={(e) => setForm({ ...form, diagnosis: e.target.value })} />
                 : <p className="whitespace-pre-line">{consultation.diagnosis || "—"}</p>}
             </Field>
-            <Field label="Traitement">
+            <Field label={t("forms.treatmentShort")}>
               {editing ? <Textarea rows={2} value={form.treatment} onChange={(e) => setForm({ ...form, treatment: e.target.value })} />
                 : <p className="whitespace-pre-line">{consultation.treatment || "—"}</p>}
             </Field>
-            <Field label="Suivi">
+            <Field label={t("forms.followUpShort")}>
               {editing ? <Input value={form.follow_up_notes} onChange={(e) => setForm({ ...form, follow_up_notes: e.target.value })} />
                 : <p>{consultation.follow_up_notes || "—"}</p>}
             </Field>
-            <Field label="Notes">
+            <Field label={tc("notes")}>
               {editing ? <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
                 : <p className="whitespace-pre-line">{consultation.notes || "—"}</p>}
             </Field>
@@ -163,17 +166,17 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
               <div className="rounded-md border p-3 space-y-2">
                 <div className="flex items-center gap-2 font-medium">
                   <Pill className="h-4 w-4" />
-                  Ordonnance liée
+                  {t("forms.linkedPrescription")}
                 </div>
                 {linkedPrescriptions.map((p: any) => {
                   const meds = Array.isArray(p.medications) ? p.medications : [];
                   return (
                     <div key={p.id} className="space-y-1.5">
                       {p.diagnosis && (
-                        <p className="text-xs text-muted-foreground">Diagnostic : {p.diagnosis}</p>
+                        <p className="text-xs text-muted-foreground">{t("dossier.diagnosis")} {p.diagnosis}</p>
                       )}
                       {meds.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Aucun médicament</p>
+                        <p className="text-xs text-muted-foreground">{t("forms.noMedication")}</p>
                       ) : (
                         <ul className="space-y-1">
                           {meds.map((m: any) => (
@@ -197,11 +200,11 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Photos ({form.photos?.length || 0})</Label>
+                <Label>{t("forms.photos", { count: form.photos?.length || 0 })}</Label>
                 {editing && (
                   <label className="inline-flex items-center gap-1 cursor-pointer text-xs text-primary hover:underline">
                     <ImagePlus className="h-4 w-4" />
-                    {uploading ? "Compression…" : "Ajouter"}
+                    {uploading ? t("forms.compressing") : tc("add")}
                     <input
                       type="file"
                       accept="image/*"
@@ -233,7 +236,7 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-xs text-muted-foreground">Aucune photo.</p>}
+              ) : <p className="text-xs text-muted-foreground">{t("forms.noPhotos")}</p>}
             </div>
           </div>
         </DialogContent>

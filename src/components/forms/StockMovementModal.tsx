@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStock } from "@/hooks/useStock";
 import { useSettings } from "@/contexts/SettingsContext";
 import { TrendingUp, TrendingDown, RotateCcw, ArrowRightLeft, Package, MapPin, AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // UI-compatible types for the existing interface
 interface StockItem {
@@ -60,66 +61,12 @@ interface StockMovementModalProps {
   onMovementAdded?: () => void;
 }
 
-// Types de mouvements
-const movementTypes = [
-  { 
-    value: 'in', 
-    label: 'Entrée', 
-    icon: TrendingUp, 
-    description: 'Ajout de stock (achat, retour, etc.)' 
-  },
-  { 
-    value: 'out', 
-    label: 'Sortie', 
-    icon: TrendingDown, 
-    description: 'Utilisation, vente, perte, etc.' 
-  },
-  { 
-    value: 'adjustment', 
-    label: 'Ajustement', 
-    icon: RotateCcw, 
-    description: 'Correction d\'inventaire' 
-  },
-  { 
-    value: 'transfer', 
-    label: 'Transfert', 
-    icon: ArrowRightLeft, 
-    description: 'Déplacement entre emplacements' 
-  }
+const MOVEMENT_TYPE_META = [
+  { value: 'in' as const, icon: TrendingUp, labelKey: 'in', descKey: 'inDesc' },
+  { value: 'out' as const, icon: TrendingDown, labelKey: 'out', descKey: 'outDesc' },
+  { value: 'adjustment' as const, icon: RotateCcw, labelKey: 'adjustment', descKey: 'adjustmentDesc' },
+  { value: 'transfer' as const, icon: ArrowRightLeft, labelKey: 'transfer', descKey: 'transferDesc' },
 ];
-
-// Raisons communes par type de mouvement
-const commonReasons = {
-  in: [
-    'Achat fournisseur',
-    'Retour client',
-    'Inventaire initial',
-    'Don/échantillon',
-    'Transfert entrant',
-    'Autre'
-  ],
-  out: [
-    'Utilisation consultation',
-    'Vente client',
-    'Périmé/expiré',
-    'Cassé/endommagé',
-    'Vol/perte',
-    'Transfert sortant',
-    'Autre'
-  ],
-  adjustment: [
-    'Correction inventaire',
-    'Comptage physique',
-    'Erreur saisie',
-    'Autre'
-  ],
-  transfer: [
-    'Changement emplacement',
-    'Transfert entre sites',
-    'Réorganisation stock',
-    'Autre'
-  ]
-};
 
 export function StockMovementModal({
   open,
@@ -129,11 +76,36 @@ export function StockMovementModal({
   rawStockItems: rawStockItemsProp,
   onMovementAdded,
 }: StockMovementModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const hook = useStock();
   const addStockMovementRaw = addStockMovementFn || hook.addStockMovement;
   const rawStockItems = rawStockItemsProp || hook.stockItems;
   const { settings } = useSettings();
   const { toast } = useToast();
+
+  const movementTypes = useMemo(
+    () =>
+      MOVEMENT_TYPE_META.map((m) => ({
+        value: m.value,
+        icon: m.icon,
+        label: t(`stock.movement.types.${m.labelKey}`),
+        description: t(`stock.movement.types.${m.descKey}`),
+      })),
+    [t]
+  );
+
+  const commonReasons = useMemo(
+    () => ({
+      in: t("stock.movement.reasons.in", { returnObjects: true }) as string[],
+      out: t("stock.movement.reasons.out", { returnObjects: true }) as string[],
+      adjustment: t("stock.movement.reasons.adjustment", { returnObjects: true }) as string[],
+      transfer: t("stock.movement.reasons.transfer", { returnObjects: true }) as string[],
+    }),
+    [t]
+  );
+
+  const OTHER_PERFORMER = "__other__";
 
   // Helper function to find database item ID from compatibility ID
   const findDatabaseItemId = (compatibilityId: number): string | null => {
@@ -195,8 +167,8 @@ export function StockMovementModal({
     
     if (formData.quantity <= 0) {
       toast({
-        title: "Erreur",
-        description: "La quantité doit être supérieure à 0.",
+        title: tc("error"),
+        description: t("stock.movement.qtyPositive"),
         variant: "destructive",
       });
       return;
@@ -204,8 +176,8 @@ export function StockMovementModal({
 
     if (!formData.reason.trim()) {
       toast({
-        title: "Erreur",
-        description: "La raison du mouvement est requise.",
+        title: tc("error"),
+        description: t("stock.movement.reasonRequired"),
         variant: "destructive",
       });
       return;
@@ -218,8 +190,8 @@ export function StockMovementModal({
     } else if (formData.type === 'out') {
       if (formData.quantity > item.currentStock) {
         toast({
-          title: "Erreur",
-          description: `Stock insuffisant. Stock disponible: ${item.currentStock}`,
+          title: tc("error"),
+          description: t("stock.movement.insufficient", { count: item.currentStock }),
           variant: "destructive",
         });
         return;
@@ -229,7 +201,7 @@ export function StockMovementModal({
       newStock = formData.quantity;
     }
 
-    const performedByValue = formData.performedBy === "Autre" ? customPerformedBy : formData.performedBy;
+    const performedByValue = formData.performedBy === OTHER_PERFORMER ? customPerformedBy : formData.performedBy;
     
     const movementData = {
       itemId: item.id,
@@ -279,64 +251,60 @@ export function StockMovementModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Mouvement de stock
+            {t("stock.movement.title")}
           </DialogTitle>
           <DialogDescription>
-            Enregistrer un mouvement pour "{item.name}"
+            {t("stock.movement.description", { name: item.name })}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Informations de l'item */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-600" />
-              Élément concerné
+              {t("stock.movement.itemConcerned")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="bg-white p-3 rounded-lg border">
-                <div className="text-sm text-muted-foreground mb-1">Stock actuel</div>
+                <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.currentStock")}</div>
                 <div className="font-semibold text-lg">{item.currentStock} {item.unit}</div>
               </div>
               <div className="bg-white p-3 rounded-lg border">
-                <div className="text-sm text-muted-foreground mb-1">Stock minimum</div>
+                <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.minimumStock")}</div>
                 <div className="font-semibold text-lg">{item.minimumStock} {item.unit}</div>
               </div>
               <div className="bg-white p-3 rounded-lg border">
-                <div className="text-sm text-muted-foreground mb-1">Emplacement</div>
+                <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.location")}</div>
                 <div className="font-semibold text-lg flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
-                  {item.location || 'Non défini'}
+                  {item.location || t("stock.movement.notDefined")}
                 </div>
               </div>
               <div className="bg-white p-3 rounded-lg border">
-                <div className="text-sm text-muted-foreground mb-1">Prix d'achat</div>
+                <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.purchasePrice")}</div>
                 <div className="font-semibold text-lg text-blue-600">{item.purchasePrice.toFixed(2)} {settings.currency}</div>
               </div>
               <div className="bg-white p-3 rounded-lg border">
-                <div className="text-sm text-muted-foreground mb-1">Prix de vente</div>
+                <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.sellingPrice")}</div>
                 <div className="font-semibold text-lg text-green-600">{item.sellingPrice.toFixed(2)} {settings.currency}</div>
               </div>
               <div className="bg-white p-3 rounded-lg border">
-                <div className="text-sm text-muted-foreground mb-1">Valeur totale</div>
+                <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.totalValue")}</div>
                 <div className="font-semibold text-lg text-purple-600">{item.totalValue.toFixed(2)} {settings.currency}</div>
               </div>
             </div>
           </div>
 
-          {/* Formulaire principal */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Colonne gauche */}
             <div className="space-y-4">
-              {/* Type de mouvement */}
               <div className="space-y-2">
-                <Label className="text-base font-medium">Type de mouvement *</Label>
+                <Label className="text-base font-medium">{t("stock.movement.type")}</Label>
                 <Select 
                   value={formData.type} 
                   onValueChange={(value) => handleChange('type', value)}
                 >
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Sélectionner le type de mouvement" />
+                    <SelectValue placeholder={t("stock.movement.typePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {movementTypes.map(type => {
@@ -357,9 +325,8 @@ export function StockMovementModal({
                 </Select>
               </div>
 
-              {/* Quantité */}
               <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-base font-medium">Quantité *</Label>
+                <Label htmlFor="quantity" className="text-base font-medium">{t("stock.movement.quantity")}</Label>
                 <div className="flex items-center gap-3">
                   <Input
                     id="quantity"
@@ -376,10 +343,9 @@ export function StockMovementModal({
                   </div>
                 </div>
                 
-                {/* Aperçu du nouveau stock */}
                 {formData.quantity > 0 && (
                   <div className="bg-muted p-3 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">Nouveau stock après mouvement:</div>
+                    <div className="text-sm text-muted-foreground mb-1">{t("stock.movement.stockAfter")}</div>
                     <div className={`text-lg font-semibold ${
                       getCurrentStockAfterMovement() <= item.minimumStock ? 'text-orange-600' : 'text-green-600'
                     }`}>
@@ -388,25 +354,24 @@ export function StockMovementModal({
                     {getCurrentStockAfterMovement() <= item.minimumStock && (
                       <div className="text-xs text-orange-600 mt-1 flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" />
-                        Stock bas - Seuil minimum atteint
+                        {t("stock.movement.lowStock")}
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Raison */}
               <div className="space-y-2">
-                <Label htmlFor="reason" className="text-base font-medium">Raison *</Label>
+                <Label htmlFor="reason" className="text-base font-medium">{t("stock.movement.reason")}</Label>
                 <Select 
                   value={formData.reason} 
                   onValueChange={(value) => handleChange('reason', value)}
                 >
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Sélectionner une raison" />
+                    <SelectValue placeholder={t("stock.movement.reasonPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {commonReasons[formData.type]?.map(reason => (
+                    {(commonReasons[formData.type] || []).map(reason => (
                       <SelectItem key={reason} value={reason}>
                         {reason}
                       </SelectItem>
@@ -416,29 +381,26 @@ export function StockMovementModal({
               </div>
             </div>
 
-            {/* Colonne droite */}
             <div className="space-y-4">
-              {/* Référence */}
               <div className="space-y-2">
-                <Label htmlFor="reference" className="text-base font-medium">Référence</Label>
+                <Label htmlFor="reference" className="text-base font-medium">{t("stock.movement.reference")}</Label>
                 <Input
                   id="reference"
                   value={formData.reference}
                   onChange={(e) => handleChange('reference', e.target.value)}
-                  placeholder="ex: Facture #12345, Consultation #678"
+                  placeholder={t("stock.movement.referencePlaceholder")}
                   className="h-12"
                 />
               </div>
 
-              {/* Effectué par */}
               <div className="space-y-2">
-                <Label htmlFor="performedBy" className="text-base font-medium">Effectué par</Label>
+                <Label htmlFor="performedBy" className="text-base font-medium">{t("stock.movement.performedBy")}</Label>
                 <Select 
                   value={formData.performedBy} 
                   onValueChange={(value) => handleChange('performedBy', value)}
                 >
                   <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Sélectionner un vétérinaire" />
+                    <SelectValue placeholder={t("stock.movement.selectVet")} />
                   </SelectTrigger>
                   <SelectContent>
                     {settings.veterinarians
@@ -448,12 +410,12 @@ export function StockMovementModal({
                           {vet.name}
                         </SelectItem>
                       ))}
-                    <SelectItem value="Autre">Autre (saisie manuelle)</SelectItem>
+                    <SelectItem value={OTHER_PERFORMER}>{t("stock.movement.otherManual")}</SelectItem>
                   </SelectContent>
                 </Select>
-                {formData.performedBy === "Autre" && (
+                {formData.performedBy === OTHER_PERFORMER && (
                   <Input
-                    placeholder="Nom du responsable"
+                    placeholder={t("stock.movement.responsibleName")}
                     value={customPerformedBy}
                     onChange={(e) => setCustomPerformedBy(e.target.value)}
                     className="h-10 mt-2"
@@ -461,14 +423,13 @@ export function StockMovementModal({
                 )}
               </div>
 
-              {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes" className="text-base font-medium">Notes</Label>
+                <Label htmlFor="notes" className="text-base font-medium">{tc("notes")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => handleChange('notes', e.target.value)}
-                  placeholder="Notes supplémentaires..."
+                  placeholder={t("stock.movement.notesPlaceholder")}
                   rows={4}
                   className="resize-none"
                 />
@@ -483,14 +444,14 @@ export function StockMovementModal({
               onClick={() => onOpenChange(false)}
               className="h-12 px-6"
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               type="submit"
               className="h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
               <TrendingUp className="h-4 w-4 mr-2" />
-              Enregistrer le mouvement
+              {t("stock.movement.save")}
             </Button>
           </div>
         </form>
@@ -498,3 +459,4 @@ export function StockMovementModal({
     </Dialog>
   );
 }
+

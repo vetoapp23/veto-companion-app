@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ interface FarmInterventionEditModalProps {
 }
 
 const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInterventionEditModalProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { updateFarmIntervention, farms } = useClients();
   const { toast } = useToast();
   
@@ -59,8 +62,8 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
     
     if (!formData.farmId || !formData.type || !formData.date || !formData.animals || !formData.description) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
+        title: tc("error"),
+        description: t("farms.ui.requiredFieldsError"),
         variant: "destructive"
       });
       return;
@@ -81,8 +84,8 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
     updateFarmIntervention(intervention.id, updatedIntervention);
     
     toast({
-      title: "Succès",
-      description: "Intervention mise à jour avec succès"
+      title: tc("success"),
+      description: t("farms.ui.interventionUpdatedSuccess")
     });
     
     onOpenChange(false);
@@ -96,19 +99,19 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier l'Intervention</DialogTitle>
+          <DialogTitle>{t("farms.editIntervention")}</DialogTitle>
           <DialogDescription>
-            Modifiez les informations de l'intervention du {new Date(intervention.date).toLocaleDateString('fr-FR')}
+            {t("farms.ui.editInterventionDesc", { date: new Date(intervention.date).toLocaleDateString() })}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Exploitation *</Label>
+              <Label>{t("farms.ui.farmRequired")}</Label>
               <Select value={formData.farmId} onValueChange={(value) => handleChange("farmId", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner l'exploitation" />
+                  <SelectValue placeholder={t("farms.ui.selectFarmPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {farms.map(farm => (
@@ -120,18 +123,18 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Type d'intervention *</Label>
+              <Label>{t("farms.interventionType")}</Label>
               <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
+                  <SelectValue placeholder={t("farms.ui.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vaccination">Vaccination</SelectItem>
-                  <SelectItem value="controle">Contrôle sanitaire</SelectItem>
-                  <SelectItem value="urgence">Urgence</SelectItem>
-                  <SelectItem value="chirurgie">Chirurgie</SelectItem>
-                  <SelectItem value="prevention">Prévention</SelectItem>
-                  <SelectItem value="consultation">Consultation</SelectItem>
+                  <SelectItem value="vaccination">{t("farms.types.vaccination")}</SelectItem>
+                  <SelectItem value="controle">{t("farms.types.controle")}</SelectItem>
+                  <SelectItem value="urgence">{t("farms.types.urgence")}</SelectItem>
+                  <SelectItem value="chirurgie">{t("farms.types.chirurgie")}</SelectItem>
+                  <SelectItem value="prevention">{t("farms.types.prevention")}</SelectItem>
+                  <SelectItem value="consultation">{t("farms.types.consultation")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -139,7 +142,7 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">{tc("date")} *</Label>
               <Input
                 id="date"
                 type="date"
@@ -149,16 +152,16 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
               />
             </div>
             <div className="space-y-2">
-              <Label>Statut</Label>
+              <Label>{tc("status")}</Label>
               <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">Programmé</SelectItem>
-                  <SelectItem value="ongoing">En cours</SelectItem>
-                  <SelectItem value="completed">Terminé</SelectItem>
-                  <SelectItem value="cancelled">Annulé</SelectItem>
+                  <SelectItem value="scheduled">{t("farms.status.scheduled")}</SelectItem>
+                  <SelectItem value="ongoing">{t("farms.status.ongoing")}</SelectItem>
+                  <SelectItem value="completed">{t("farms.status.completed")}</SelectItem>
+                  <SelectItem value="cancelled">{t("farms.status.cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -166,17 +169,17 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="animals">Animaux concernés *</Label>
+              <Label htmlFor="animals">{t("farms.animalsConcerned")} *</Label>
               <Input
                 id="animals"
                 value={formData.animals}
                 onChange={(e) => handleChange("animals", e.target.value)}
-                placeholder="ex: 50 vaches, 100 porcs..."
+                placeholder={t("farms.animalsPlaceholder")}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="veterinarian">Vétérinaire *</Label>
+              <Label htmlFor="veterinarian">{t("farms.ui.veterinarian")} *</Label>
               <Input
                 id="veterinarian"
                 value={formData.veterinarian}
@@ -187,30 +190,30 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description">{tc("description")} *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
               rows={3}
-              placeholder="Détails de l'intervention, observations, traitements..."
+              placeholder={t("farms.ui.interventionDescPlaceholder")}
               required
             />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="followUp">Suivi recommandé</Label>
+              <Label htmlFor="followUp">{t("farms.ui.recommendedFollowUp")}</Label>
               <Textarea
                 id="followUp"
                 value={formData.followUp}
                 onChange={(e) => handleChange("followUp", e.target.value)}
                 rows={2}
-                placeholder="Recommandations, prochain contrôle..."
+                placeholder={t("farms.ui.followUpPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cost">Coût (€)</Label>
+              <Label htmlFor="cost">{t("farms.cost", { currency: "€" })}</Label>
               <Input
                 id="cost"
                 type="number"
@@ -225,22 +228,22 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
           
           {selectedFarm && (
             <div className="p-4 bg-muted rounded-lg">
-              <h4 className="font-medium mb-2">Informations de l'exploitation</h4>
+              <h4 className="font-medium mb-2">{t("farms.ui.farmInfoTitle")}</h4>
               <div className="text-sm text-muted-foreground">
-                <p><strong>Nom:</strong> {selectedFarm.name}</p>
-                <p><strong>Propriétaire:</strong> {selectedFarm.owner}</p>
-                <p><strong>Type:</strong> {selectedFarm.type}</p>
-                <p><strong>Adresse:</strong> {selectedFarm.address}</p>
+                <p><strong>{t("farms.ui.farmInfoName")}</strong> {selectedFarm.name}</p>
+                <p><strong>{t("farms.ui.farmInfoOwner")}</strong> {selectedFarm.owner}</p>
+                <p><strong>{t("farms.ui.farmInfoType")}</strong> {selectedFarm.type}</p>
+                <p><strong>{t("farms.ui.farmInfoAddress")}</strong> {selectedFarm.address}</p>
               </div>
             </div>
           )}
           
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
-              Mettre à jour
+              {t("farms.ui.saveChanges")}
             </Button>
           </div>
         </form>

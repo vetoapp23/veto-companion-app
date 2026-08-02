@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ interface FarmDetailDrawerProps {
 }
 
 const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawerProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { canWrite, guardWrite } = useWriteAccess("can_manage_farms");
   const [showPrint, setShowPrint] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);
@@ -48,7 +51,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
   const byCategory = useMemo(() => {
     const m: Record<string, number> = {};
     activeBatches.forEach((b: any) => {
-      const k = b.category || b.species || "Non catégorisé";
+      const k = b.category || b.species || t("farms.print.uncategorized");
       m[k] = (m[k] || 0) + (b.animal_count || 0);
     });
     return Object.entries(m).sort((a, b) => b[1] - a[1]);
@@ -71,49 +74,49 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           <SheetDescription className="flex flex-wrap gap-2 items-center">
             {farmTypes.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}
             {farm.production_type && <Badge variant="outline">{farm.production_type}</Badge>}
-            {farm.active ? <Badge>Actif</Badge> : <Badge variant="destructive">Inactif</Badge>}
+            {farm.active ? <Badge>{t("farms.print.active")}</Badge> : <Badge variant="destructive">{t("farms.print.inactive")}</Badge>}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex gap-2 mt-4 flex-wrap">
           {canWrite && onEdit && (
             <Button size="sm" onClick={() => onEdit?.(farm)} variant="outline">
-              <Pencil className="h-4 w-4 mr-2" /> Modifier
+              <Pencil className="h-4 w-4 mr-2" /> {tc("edit")}
             </Button>
           )}
           {canWrite && (
             <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingIntervention(null); setInterventionOpen(true); }}>
-              <Stethoscope className="h-4 w-4 mr-2" /> Nouvelle intervention
+              <Stethoscope className="h-4 w-4 mr-2" /> {t("farms.ui.drawer.newIntervention")}
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={() => setShowPrint(true)}>
-            <FileText className="h-4 w-4 mr-2" /> Rapport PDF / Imprimer
+            <FileText className="h-4 w-4 mr-2" /> {t("farms.ui.drawer.printReport")}
           </Button>
         </div>
 
         <Tabs defaultValue="overview" className="mt-6">
           <TabsList className="grid grid-cols-6 w-full">
-            <TabsTrigger value="overview">Vue</TabsTrigger>
-            <TabsTrigger value="batches">Lots ({activeBatches.length}/{batches.length})</TabsTrigger>
-            <TabsTrigger value="infra">Infra ({infrastructures.length})</TabsTrigger>
-            <TabsTrigger value="interventions">Inter. ({interventions.length})</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline ({events.length})</TabsTrigger>
-            <TabsTrigger value="photos">Photos ({(farm.photos || []).length})</TabsTrigger>
+            <TabsTrigger value="overview">{t("farms.ui.drawer.tabOverview")}</TabsTrigger>
+            <TabsTrigger value="batches">{t("farms.ui.drawer.tabBatches")} ({activeBatches.length}/{batches.length})</TabsTrigger>
+            <TabsTrigger value="infra">{t("farms.ui.drawer.tabInfra")} ({infrastructures.length})</TabsTrigger>
+            <TabsTrigger value="interventions">{t("farms.ui.drawer.tabInterventions")} ({interventions.length})</TabsTrigger>
+            <TabsTrigger value="timeline">{t("farms.ui.drawer.tabTimeline")} ({events.length})</TabsTrigger>
+            <TabsTrigger value="photos">{t("farms.ui.drawer.tabPhotos")} ({(farm.photos || []).length})</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <KpiBlock label="Cheptel actif" value={totalActiveAnimals} />
-              <KpiBlock label="Lots actifs" value={activeBatches.length} />
-              <KpiBlock label="Interventions" value={interventions.length} />
-              <KpiBlock label="Surface (ha)" value={farm.surface_hectares ?? "—"} />
+              <KpiBlock label={t("farms.ui.drawer.activeHerd")} value={totalActiveAnimals} />
+              <KpiBlock label={t("farms.ui.drawer.activeBatches")} value={activeBatches.length} />
+              <KpiBlock label={t("farms.print.interventions")} value={interventions.length} />
+              <KpiBlock label={t("farms.ui.drawer.surfaceHa")} value={farm.surface_hectares ?? "—"} />
             </div>
 
             {byCategory.length > 0 && (
               <Card>
                 <CardContent className="pt-4">
-                  <div className="text-xs text-muted-foreground mb-2">Répartition par catégorie (lots actifs)</div>
+                  <div className="text-xs text-muted-foreground mb-2">{t("farms.ui.drawer.categoryBreakdown")}</div>
                   <div className="space-y-1.5">
                     {byCategory.map(([k, v]) => {
                       const pct = totalActiveAnimals ? Math.round((v / totalActiveAnimals) * 100) : 0;
@@ -138,7 +141,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                 {farm.coordinates && <Info icon={<MapPin className="h-4 w-4" />} text={`GPS: ${farm.coordinates}`} />}
                 {farm.phone && <Info icon={<Phone className="h-4 w-4" />} text={farm.phone} />}
                 {farm.email && <Info icon={<Mail className="h-4 w-4" />} text={farm.email} />}
-                {farm.housing_type && <Info icon={<Tractor className="h-4 w-4" />} text={`Logement: ${farm.housing_type}`} />}
+                {farm.housing_type && <Info icon={<Tractor className="h-4 w-4" />} text={t("farms.ui.drawer.housingLabel", { type: farm.housing_type })} />}
                 {farm.registration_number && <Info icon={<Users2 className="h-4 w-4" />} text={`N° ${farm.registration_number}`} />}
                 {farm.certifications?.length > 0 && (
                   <div className="flex flex-wrap gap-1 pt-1">
@@ -155,18 +158,18 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
             {canWrite && (
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingBatch(null); setBatchOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" /> Ajouter un lot
+                  <Plus className="h-4 w-4 mr-2" /> {t("farms.ui.drawer.addBatch")}
                 </Button>
               </div>
             )}
-            {batches.length === 0 && <EmptyState text="Aucun lot. Créez votre premier lot/troupeau." />}
+            {batches.length === 0 && <EmptyState text={t("farms.ui.drawer.noBatches")} />}
             {batches.map((b) => (
               <Card key={b.id}>
                 <CardContent className="pt-4 flex items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="font-medium flex items-center gap-2">
                       {b.name}
-                      <Badge variant="secondary">{b.animal_count} animaux</Badge>
+                      <Badge variant="secondary">{t("farms.ui.drawer.animalsBadge", { count: b.animal_count })}</Badge>
                       {b.status !== "active" && <Badge variant="outline">{b.status}</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
@@ -184,7 +187,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => {
                         if (!guardWrite()) return;
-                        confirm("Supprimer ce lot ?") && delBatch.mutate(b.id);
+                        confirm(t("farms.ui.drawer.deleteBatchConfirm")) && delBatch.mutate(b.id);
                       }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -200,11 +203,11 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
             {canWrite && (
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingIntervention(null); setInterventionOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" /> Nouvelle intervention
+                  <Plus className="h-4 w-4 mr-2" /> {t("farms.ui.drawer.newIntervention")}
                 </Button>
               </div>
             )}
-            {interventions.length === 0 && <EmptyState text="Aucune intervention enregistrée." />}
+            {interventions.length === 0 && <EmptyState text={t("farms.ui.drawer.noInterventions")} />}
             {interventions.map((i: any) => (
               <Card key={i.id}>
                 <CardContent className="pt-4 space-y-1">
@@ -216,7 +219,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       </div>
                       <div className="text-xs text-muted-foreground flex gap-3">
                         <Calendar className="h-3 w-3 inline" /> {formatDate(i.intervention_date)}
-                        {(i.affected_count ?? i.animal_count) && <span>· {i.affected_count ?? i.animal_count} animaux</span>}
+                        {(i.affected_count ?? i.animal_count) && <span>· {t("farms.ui.drawer.animalsBadge", { count: i.affected_count ?? i.animal_count })}</span>}
                         {i.cost && <span>· {i.cost} MAD</span>}
                       </div>
                     </div>
@@ -227,7 +230,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => {
                           if (!guardWrite()) return;
-                          confirm("Supprimer cette intervention ?") && delIntervention.mutate(i.id);
+                          confirm(t("farms.ui.drawer.deleteInterventionConfirm")) && delIntervention.mutate(i.id);
                         }}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -235,8 +238,8 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                     )}
                   </div>
                   {i.description && <p className="text-sm">{i.description}</p>}
-                  {i.diagnosis && <p className="text-sm"><b>Diagnostic:</b> {i.diagnosis}</p>}
-                  {i.treatment && <p className="text-sm"><b>Traitement:</b> {i.treatment}</p>}
+                  {i.diagnosis && <p className="text-sm"><b>{t("farms.print.cols.diagnosis")}:</b> {i.diagnosis}</p>}
+                  {i.treatment && <p className="text-sm"><b>{t("farms.print.cols.treatment")}:</b> {i.treatment}</p>}
                   {i.medications_used?.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {i.medications_used.map((m: string) => <Badge key={m} variant="secondary">{m}</Badge>)}
@@ -249,7 +252,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
 
           {/* TIMELINE health events */}
           <TabsContent value="timeline" className="space-y-3">
-            {events.length === 0 && <EmptyState text="Aucun évènement sanitaire enregistré." />}
+            {events.length === 0 && <EmptyState text={t("farms.ui.drawer.noHealthEvents")} />}
             {events.map((e) => (
               <Card key={e.id}>
                 <CardContent className="pt-4 flex items-start justify-between gap-3">
@@ -260,7 +263,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {formatDate(e.event_date)}
-                      {e.affected_count && ` · ${e.affected_count} animaux`}
+                      {e.affected_count && ` · ${t("farms.ui.drawer.animalsBadge", { count: e.affected_count })}`}
                       {e.dose && ` · ${e.dose}`}
                     </div>
                     {e.notes && <p className="text-sm">{e.notes}</p>}
@@ -268,7 +271,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                   {canWrite && (
                     <Button size="icon" variant="ghost" onClick={() => {
                       if (!guardWrite()) return;
-                      confirm("Supprimer ?") && delEvent.mutate(e.id);
+                      confirm(t("farms.ui.drawer.deleteConfirm")) && delEvent.mutate(e.id);
                     }}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -283,11 +286,11 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
             {canWrite && (
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => { if (!guardWrite()) return; setEditingInfra(null); setInfraOpen(true); }}>
-                  <Plus className="h-4 w-4 mr-2" /> Ajouter une infrastructure
+                  <Plus className="h-4 w-4 mr-2" /> {t("farms.ui.drawer.addInfra")}
                 </Button>
               </div>
             )}
-            {infrastructures.length === 0 && <EmptyState text="Aucune infrastructure. Ajoutez écuries, poulaillers, bassins…" />}
+            {infrastructures.length === 0 && <EmptyState text={t("farms.ui.drawer.noInfra")} />}
             {infrastructures.map((inf: any) => (
               <Card key={inf.id}>
                 <CardContent className="pt-4 flex items-start justify-between gap-3">
@@ -297,8 +300,8 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       <Badge variant="secondary">{inf.infra_type}</Badge>
                     </div>
                     <div className="text-xs text-muted-foreground flex flex-wrap gap-3">
-                      {typeof inf.capacity === "number" && <span>Capacité : {inf.capacity}</span>}
-                      {typeof inf.surface_sqm === "number" && <span>· {inf.surface_sqm} m²</span>}
+                      {typeof inf.capacity === "number" && <span>{t("farms.ui.drawer.capacityLabel", { count: inf.capacity })}</span>}
+                      {typeof inf.surface_sqm === "number" && <span>· {inf.surface_sqm} {t("farms.print.sqmUnit")}</span>}
                       {inf.location && <span>· {inf.location}</span>}
                     </div>
                     {inf.notes && <p className="text-xs">{inf.notes}</p>}
@@ -317,7 +320,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => {
                         if (!guardWrite()) return;
-                        confirm("Supprimer ?") && delInfra.mutate(inf.id);
+                        confirm(t("farms.ui.drawer.deleteConfirm")) && delInfra.mutate(inf.id);
                       }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -331,12 +334,12 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
           {/* PHOTOS */}
           <TabsContent value="photos" className="space-y-3">
             {(!farm.photos || farm.photos.length === 0) && (
-              <EmptyState text="Aucune photo. Utilisez « Modifier » pour ajouter des photos à l'exploitation." />
+              <EmptyState text={t("farms.ui.drawer.noPhotosHint")} />
             )}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {(farm.photos || []).map((src: string, i: number) => (
                 <a key={i} href={src} target="_blank" rel="noreferrer" className="block">
-                  <img src={src} alt={`Photo ${i + 1}`} className="w-full h-40 object-cover rounded border hover:opacity-90" />
+                  <img src={src} alt={t("farms.ui.drawer.photoAlt", { n: i + 1 })} className="w-full h-40 object-cover rounded border hover:opacity-90" />
                 </a>
               ))}
             </div>

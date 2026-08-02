@@ -1,6 +1,11 @@
 import QRCode from "qrcode";
+import i18n from "@/i18n";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { supabase } from "@/lib/supabase";
 import { siteUrl } from "@/components/SeoHead";
+
+const t = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(key, { ns: "medical", ...opts });
 
 export type MedicalShareOwner = {
   first_name: string;
@@ -166,7 +171,7 @@ export function buildMedicalSharePayload(input: {
   const first =
     cleanStr(owner.first_name) ||
     cleanStr(String(owner.name || "").split(" ")[0]) ||
-    "Propriétaire";
+    t("sharePayload.ownerFallback");
   const last =
     cleanStr(owner.last_name) ||
     cleanStr(String(owner.name || "").split(" ").slice(1).join(" ")) ||
@@ -175,9 +180,12 @@ export function buildMedicalSharePayload(input: {
 
   const notesParts = [
     cleanStr(animal.notes),
-    cleanStr(animal.medical_history) && `Antécédents : ${cleanStr(animal.medical_history)}`,
+    cleanStr(animal.medical_history) &&
+      t("sharePayload.historyPrefix", { text: cleanStr(animal.medical_history) }),
     Array.isArray(animal.allergies) && animal.allergies.length
-      ? `Allergies : ${(animal.allergies as string[]).join(", ")}`
+      ? t("sharePayload.allergiesPrefix", {
+          text: (animal.allergies as string[]).join(", "),
+        })
       : undefined,
   ].filter(Boolean);
 
@@ -199,8 +207,8 @@ export function buildMedicalSharePayload(input: {
       client_type: cleanStr(owner.client_type) || "particulier",
     },
     animal: {
-      name: cleanStr(animal.name) || "Animal",
-      species: cleanStr(animal.species) || cleanStr(animal.type) || "Autre",
+      name: cleanStr(animal.name) || t("sharePayload.animalFallback"),
+      species: cleanStr(animal.species) || cleanStr(animal.type) || t("sharePayload.speciesOther"),
       breed: cleanStr(animal.breed),
       color: cleanStr(animal.color),
       sex: cleanStr(animal.sex) || cleanStr(animal.gender),
@@ -213,7 +221,7 @@ export function buildMedicalSharePayload(input: {
       tattoo_number: cleanStr(animal.tattoo_number ?? animal.tattoo),
       sterilized: Boolean(animal.sterilized),
       sterilization_date: toDateKey(animal.sterilization_date),
-      status: cleanStr(animal.status) || "vivant",
+      status: cleanStr(animal.status) || t("sharePayload.statusAlive"),
       notes: notesParts.join("\n") || undefined,
     },
   };
@@ -272,7 +280,7 @@ export function buildMedicalSharePayload(input: {
     payload.consultations = input.consultations
       .map((c) => {
         const consultation_type =
-          cleanStr(c.consultation_type) || "Consultation";
+          cleanStr(c.consultation_type) || t("sharePayload.consultation");
         return {
           consultation_date: cleanStr(c.consultation_date) || toDateKey(c.consultation_date),
           consultation_type,
@@ -394,29 +402,28 @@ export function buildTransferQrSectionHtml(opts: {
   expiresAt?: string;
 }): string {
   const expiresLabel = opts.expiresAt
-    ? new Date(opts.expiresAt).toLocaleDateString("fr-FR")
+    ? new Date(opts.expiresAt).toLocaleDateString(getBcp47Locale(i18n.language))
     : "—";
   const codeBlock = opts.shortCode
-    ? `<p style="margin:8px 0 6px;"><strong>Code de transfert :</strong>
+    ? `<p style="margin:8px 0 6px;"><strong>${t("print.dossier.transferCodeLabel")}</strong>
          <span style="font-family:ui-monospace,monospace;font-size:18px;letter-spacing:0.12em;font-weight:700;">${opts.shortCode}</span>
        </p>
        <p style="margin:0 0 8px;font-size:11px;color:#64748b;">
-         Dans VetoCrm : Animaux → Importer dossier (QR) → saisissez ce code.
+         ${t("print.dossier.transferCodeHint")}
        </p>`
     : "";
   return `
     <section class="block" style="page-break-inside:avoid;margin-top:18px;">
-      <h2>Transfert de dossier (QR)</h2>
+      <h2>${t("print.dossier.transferQrHeading")}</h2>
       <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-        <img src="${opts.qrDataUrl}" alt="QR transfert dossier" width="140" height="140"
+        <img src="${opts.qrDataUrl}" alt="${t("dossier.qrAlt")}" width="140" height="140"
           style="width:140px;height:140px;border:1px solid #e5e7eb;border-radius:8px;" />
         <div style="flex:1;min-width:200px;font-size:12px;line-height:1.45;">
           <p style="margin:0 0 8px;">
-            Scannez ce QR, ou saisissez le code court dans
-            <strong>Animaux → Importer dossier (QR)</strong>.
+            ${t("print.dossier.transferQrScanHint")}
           </p>
           ${codeBlock}
-          <p style="margin:0 0 6px;"><strong>Valable jusqu’au :</strong> ${expiresLabel}</p>
+          <p style="margin:0 0 6px;"><strong>${t("print.dossier.validUntilColon")}</strong> ${expiresLabel}</p>
           <p style="margin:0;word-break:break-all;color:#64748b;font-size:10px;">${opts.importUrl}</p>
         </div>
       </div>

@@ -26,10 +26,17 @@ import {
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useUpdateUserProfile } from '@/hooks/useDatabase';
+import { SUPPORTED_LANGS, type AppLanguage } from '@/i18n';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
   const { user, logout, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const { i18n } = useTranslation();
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: tSettings } = useTranslation("settings");
   const { data: userProfile, isLoading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const updateProfileMutation = useUpdateUserProfile();
   const [isEditing, setIsEditing] = useState(false);
@@ -82,9 +89,19 @@ export default function Profile() {
       showPhone: true,
       showAddress: false
     },
-    language: 'fr',
+    language: (i18n.language?.split("-")[0] || "fr") as AppLanguage,
     timezone: 'Africa/Casablanca'
   });
+
+  // Keep preferences.language in sync with app i18n
+  useEffect(() => {
+    const lng = (i18n.language?.split("-")[0] || "fr") as AppLanguage;
+    if (SUPPORTED_LANGS.includes(lng)) {
+      setPreferences((prev) =>
+        prev.language === lng ? prev : { ...prev, language: lng }
+      );
+    }
+  }, [i18n.language]);
 
   const handleSaveProfile = async () => {
     try {
@@ -105,14 +122,14 @@ export default function Profile() {
       ]);
       
       toast({
-        title: "Profil mis à jour",
-        description: "Vos informations personnelles ont été sauvegardées avec succès.",
+        title: t("profile.updated"),
+        description: t("profile.updatedBody"),
       });
       setIsEditing(false);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de sauvegarder le profil.",
+        title: tc("error"),
+        description: error instanceof Error ? error.message : t("profile.saveError"),
         variant: "destructive"
       });
     }
@@ -121,16 +138,16 @@ export default function Profile() {
   const handleChangePassword = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas.",
+        title: tc("error"),
+        description: t("profile.passwordMismatch"),
         variant: "destructive"
       });
       return;
     }
     
     toast({
-      title: "Mot de passe modifié",
-      description: "Votre mot de passe a été mis à jour avec succès.",
+      title: t("profile.passwordChanged"),
+      description: t("profile.passwordChangedBody"),
     });
     setIsChangingPassword(false);
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -138,8 +155,8 @@ export default function Profile() {
 
   const handleSavePreferences = () => {
     toast({
-      title: "Préférences sauvegardées",
-      description: "Vos préférences ont été mises à jour.",
+      title: t("profile.prefsSaved"),
+      description: t("profile.prefsSavedBody"),
     });
   };
 
@@ -194,13 +211,13 @@ export default function Profile() {
     <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 space-y-6">
       <AppPageHeader
         icon={User}
-        title="Mon profil"
-        description="Gérez vos informations personnelles et préférences"
+        title={t("profile.title")}
+        description={t("profile.description")}
         actions={
           isEditing ? (
             <>
               <Button variant="outline" onClick={() => setIsEditing(false)} className="rounded-full">
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button
                 onClick={handleSaveProfile}
@@ -212,13 +229,13 @@ export default function Profile() {
                 ) : (
                   <Save className="h-4 w-4" />
                 )}
-                {updateProfileMutation.isPending ? "Sauvegarde..." : "Sauvegarder"}
+                {updateProfileMutation.isPending ? t("profile.saving") : t("profile.save")}
               </Button>
             </>
           ) : (
             <Button onClick={() => setIsEditing(true)} className="gap-2 rounded-full">
               <Edit className="h-4 w-4" />
-              Modifier
+              {tc("edit")}
             </Button>
           )
         }
@@ -229,8 +246,8 @@ export default function Profile() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
         <User className="h-5 w-5" />
-        Informations Personnelles
-        </CardTitle>
+        {t("profile.personalInfo")}
+      </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Avatar et Informations de base */}
@@ -353,6 +370,19 @@ export default function Profile() {
         />
         </div>
       </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            {tSettings("language.title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">{tSettings("language.description")}</p>
+          <LanguageSwitcher />
+        </CardContent>
       </Card>
     </div>
   );

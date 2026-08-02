@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, Heart, AlertTriangle, CheckCircle, ClipboardList } from "lucide-react";
 import { format, isSameDay } from "date-fns";
-import { fr } from "date-fns/locale";
 import { generateTimeSlots, isWorkingDay } from "@/utils/scheduleUtils";
 import { parseLocalDateKey, toLocalDateKey } from "@/lib/dateLocal";
 import type { ClinicCalendarEvent } from "@/lib/clinicCalendar";
 import { useScheduleSettings } from "@/hooks/useAppSettings";
 import { dbScheduleToUi } from "@/lib/scheduleSettings";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 export type CalendarEvent = ClinicCalendarEvent;
 
@@ -80,11 +81,13 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
   onDateClick,
   onTimeSlotClick,
   showTimeSlots = false,
-  title = "Calendrier",
+  title,
   icon = <Calendar className="h-5 w-5" />,
   occupiedSlots = [],
 }) => {
   const { data: dbSchedule } = useScheduleSettings();
+  const { t } = useTranslation("app");
+  const { dateFns } = useAppLocale();
   const scheduleSettings = useMemo(() => dbScheduleToUi(dbSchedule), [dbSchedule]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(toLocalDateKey(new Date()));
@@ -151,40 +154,43 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               {icon}
-              {title}
+              {title ?? t("calendar.title")}
             </CardTitle>
             <div className="flex items-center justify-between sm:gap-2">
               <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
                 ←
               </Button>
               <span className="font-medium text-sm sm:text-base px-2 sm:min-w-[140px] text-center capitalize">
-                {format(currentDate, "MMMM yyyy", { locale: fr })}
+                {format(currentDate, "MMMM yyyy", { locale: dateFns })}
               </span>
               <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
                 →
               </Button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 text-[10px] sm:text-xs text-muted-foreground pt-2">
+          <div
+            aria-label={t("calendar.legend")}
+            className="flex flex-wrap gap-3 text-[10px] sm:text-xs text-muted-foreground pt-2"
+          >
             <span className="inline-flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-blue-500" /> RDV
+              <span className="h-2 w-2 rounded-full bg-blue-500" /> {t("appointments.title")}
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-teal-500" /> Visite
+              <span className="h-2 w-2 rounded-full bg-teal-500" /> {t("visits.singular")}
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-yellow-500" /> Vaccin
+              <span className="h-2 w-2 rounded-full bg-yellow-500" /> {t("vaccinations.title")}
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-purple-500" /> Antiparasitaire
+              <span className="h-2 w-2 rounded-full bg-purple-500" /> {t("antiparasites.title")}
             </span>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"].map((day) => (
+            {["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map((day) => (
               <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1">
-                {day}
+                {t(`calendar.weekdaysShort.${day}`)}
               </div>
             ))}
           </div>
@@ -247,13 +253,13 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
           <CardHeader className="pb-2">
             <CardTitle className="text-base capitalize">
               {selectedDateObj
-                ? format(selectedDateObj, "EEEE d MMMM yyyy", { locale: fr })
+                ? format(selectedDateObj, "EEEE d MMMM yyyy", { locale: dateFns })
                 : selectedDate}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {(eventsByDate[selectedDate] || []).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucun événement ce jour.</p>
+              <p className="text-sm text-muted-foreground">{t("calendar.empty")}</p>
             ) : (
               (eventsByDate[selectedDate] || []).map((event) => (
                 <button
@@ -291,13 +297,13 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
 
             {showTimeSlots && (
               <div className="pt-2 border-t space-y-2">
-                <p className="text-sm font-medium">Créneaux</p>
+                <p className="text-sm font-medium">{t("calendar.slotLabels.available")}</p>
                 {!selectedIsWorkingDay ? (
                   <p className="text-sm text-muted-foreground">
-                    Jour fermé — hors jours de travail configurés.
+                    {t("calendar.nonWorking")}
                   </p>
                 ) : timeSlots.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aucun créneau configuré.</p>
+                  <p className="text-sm text-muted-foreground">{t("calendar.empty")}</p>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {timeSlots.map((slot) => (
@@ -306,7 +312,7 @@ export const UnifiedCalendar: React.FC<UnifiedCalendarProps> = ({
                         size="sm"
                         variant={slot.available ? "outline" : "ghost"}
                         disabled={!slot.available}
-                        title={slot.isLunchBreak ? "Pause déjeuner" : undefined}
+                        title={slot.isLunchBreak ? t("calendar.lunchBreak") : undefined}
                         onClick={() => onTimeSlotClick?.(selectedDate, slot.time)}
                       >
                         {slot.time}

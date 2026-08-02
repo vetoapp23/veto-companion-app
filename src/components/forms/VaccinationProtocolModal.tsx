@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useClients, VaccinationProtocol } from '@/contexts/ClientContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { Plus, Shield, Edit } from 'lucide-react';
 
 interface VaccinationProtocolModalProps {
@@ -22,6 +23,8 @@ export default function VaccinationProtocolModal({
   protocol,
   mode 
 }: VaccinationProtocolModalProps) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   const { addVaccinationProtocol, updateVaccinationProtocol } = useClients();
   const { settings } = useSettings();
   const { toast } = useToast();
@@ -33,7 +36,7 @@ export default function VaccinationProtocolModal({
     vaccineType: '',
     description: '',
     manufacturer: '',
-    intervals: [{ offsetDays: 365, label: '1 an (intervalle par défaut)' }],
+    intervals: [{ offsetDays: 365, label: t('forms.defaultInterval1Year') }],
     ageRequirement: '',
     notes: '',
     isActive: true
@@ -61,8 +64,8 @@ export default function VaccinationProtocolModal({
     
     if (!formData.name || !formData.species || !formData.vaccineType || !formData.description) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
+        title: tc("error"),
+        description: t("alerts.fillRequiredFields"),
         variant: "destructive"
       });
       return;
@@ -82,8 +85,8 @@ export default function VaccinationProtocolModal({
       });
 
       toast({
-        title: "Protocole créé",
-        description: `Le protocole ${formData.name} a été créé avec succès`,
+        title: t("alerts.protocolCreated"),
+        description: t("alerts.protocolCreatedBody", { name: formData.name }),
       });
     } else if (protocol) {
       updateVaccinationProtocol(protocol.id, {
@@ -99,8 +102,8 @@ export default function VaccinationProtocolModal({
       });
 
       toast({
-        title: "Protocole modifié",
-        description: `Le protocole ${formData.name} a été modifié avec succès`,
+        title: t("alerts.protocolUpdated"),
+        description: t("alerts.protocolUpdatedBody", { name: formData.name }),
       });
     }
 
@@ -111,7 +114,7 @@ export default function VaccinationProtocolModal({
       vaccineType: '',
       description: '',
       manufacturer: '',
-      intervals: [{ offsetDays: 365, label: '1 an (intervalle par défaut)' }],
+      intervals: [{ offsetDays: 365, label: t('forms.defaultInterval1Year') }],
       ageRequirement: '',
       notes: '',
       isActive: true
@@ -150,7 +153,7 @@ export default function VaccinationProtocolModal({
         {children || (
           <Button className="gap-2">
             {mode === 'create' ? <Plus className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
-            {mode === 'create' ? 'Nouveau Protocole' : 'Modifier'}
+            {mode === 'create' ? t('forms.newProtocolShort') : tc('edit')}
           </Button>
         )}
       </DialogTrigger>
@@ -158,7 +161,7 @@ export default function VaccinationProtocolModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            {mode === 'create' ? 'Nouveau Protocole Vaccinal' : 'Modifier le Protocole'}
+            {mode === 'create' ? t('forms.newVaccinationProtocol') : t('forms.editVaccinationProtocol')}
           </DialogTitle>
         </DialogHeader>
 
@@ -166,24 +169,24 @@ export default function VaccinationProtocolModal({
           {/* Informations générales */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Nom du vaccin *</Label>
+              <Label htmlFor="name">{t("forms.vaccineNameRequired")}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex: DHPP, FVRCP, Rage..."
+                placeholder={t("forms.vaccineNameEx")}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="species">Espèce *</Label>
+              <Label htmlFor="species">{t("forms.speciesRequired")}</Label>
               <Select 
                 value={formData.species} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, species: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une espèce" />
+                  <SelectValue placeholder={t("forms.selectSpecies")} />
                 </SelectTrigger>
                 <SelectContent>
                   {speciesList.map(species => (
@@ -198,41 +201,41 @@ export default function VaccinationProtocolModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="vaccineType">Type de vaccin *</Label>
+              <Label htmlFor="vaccineType">{t("forms.vaccineTypeRequired")}</Label>
               <Select 
                 value={formData.vaccineType} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, vaccineType: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Type de vaccin" />
+                  <SelectValue placeholder={t("forms.vaccineTypeRequired")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="core">Essentiel (Core)</SelectItem>
-                  <SelectItem value="non-core">Optionnel (Non-core)</SelectItem>
-                  <SelectItem value="rabies">Rage</SelectItem>
-                  <SelectItem value="custom">Personnalisé</SelectItem>
+                  <SelectItem value="core">{t("forms.vaccineTypeCore")}</SelectItem>
+                  <SelectItem value="non-core">{t("forms.vaccineTypeNonCore")}</SelectItem>
+                  <SelectItem value="rabies">{t("forms.vaccineTypeRabies")}</SelectItem>
+                  <SelectItem value="custom">{t("forms.vaccineTypeCustom")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="manufacturer">Fabricant</Label>
+              <Label htmlFor="manufacturer">{t("forms.manufacturer")}</Label>
               <Input
                 id="manufacturer"
                 value={formData.manufacturer}
                 onChange={(e) => setFormData(prev => ({ ...prev, manufacturer: e.target.value }))}
-                placeholder="Ex: Zoetis, Merial, Virbac..."
+                placeholder={t("forms.manufacturerPlaceholder")}
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description">{tc("description")} *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Description du vaccin et des maladies qu'il prévient..."
+              placeholder={t("forms.vaccineDescriptionPlaceholder")}
               rows={3}
               required
             />
@@ -240,14 +243,18 @@ export default function VaccinationProtocolModal({
 
           {/* Étapes du protocole : définir nombre et unité, label généré automatiquement */}
           <div className="space-y-4">
-            <Label>Étapes du protocole</Label>
+            <Label>{t("forms.protocolSteps")}</Label>
             {(formData.intervals || []).map((it: any, idx: number) => {
-              // Déduire count et unit
               let count = it.offsetDays;
               let unit: 'days' | 'weeks' | 'months' = 'days';
               if (it.offsetDays % 30 === 0 && it.offsetDays !== 0) { count = it.offsetDays / 30; unit = 'months'; }
               else if (it.offsetDays % 7 === 0 && it.offsetDays !== 0) { count = it.offsetDays / 7; unit = 'weeks'; }
-              const label = `${count} ${unit === 'weeks' ? 'semaine(s)' : unit === 'months' ? 'mois' : 'jour(s)'}`;
+              const label =
+                unit === 'weeks'
+                  ? t('forms.intervalLabelWeeks', { count })
+                  : unit === 'months'
+                    ? t('forms.intervalLabelMonths', { count })
+                    : t('forms.intervalLabelDays', { count });
               return (
                 <div key={idx} className="grid grid-cols-4 gap-2 items-center">
                   <Input
@@ -275,9 +282,9 @@ export default function VaccinationProtocolModal({
                   }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="days">Jours</SelectItem>
-                      <SelectItem value="weeks">Semaines</SelectItem>
-                      <SelectItem value="months">Mois</SelectItem>
+                      <SelectItem value="days">{t("forms.unitDays")}</SelectItem>
+                      <SelectItem value="weeks">{t("forms.unitWeeks")}</SelectItem>
+                      <SelectItem value="months">{t("forms.unitMonths")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <div className="p-2">{label}</div>
@@ -294,27 +301,27 @@ export default function VaccinationProtocolModal({
               ...prev,
               intervals: [...(prev.intervals || []), { offsetDays: 0 }]
             }))}>
-              <Plus className="h-4 w-4" /> Ajouter une étape
+              <Plus className="h-4 w-4" /> {t("forms.addStep")}
             </Button>
           </div>
 
           <div>
-            <Label htmlFor="ageRequirement">Âge requis</Label>
+            <Label htmlFor="ageRequirement">{t("forms.ageRequirement")}</Label>
             <Input
               id="ageRequirement"
               value={formData.ageRequirement}
               onChange={(e) => setFormData(prev => ({ ...prev, ageRequirement: e.target.value }))}
-              placeholder="Ex: À partir de 6 semaines"
+              placeholder={t("forms.ageRequirementEx")}
             />
           </div>
 
           <div>
-            <Label htmlFor="notes">Notes supplémentaires</Label>
+            <Label htmlFor="notes">{t("forms.extraNotes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Informations complémentaires, contre-indications, etc..."
+              placeholder={t("forms.protocolNotesFullPlaceholder")}
               rows={2}
             />
           </div>
@@ -326,16 +333,16 @@ export default function VaccinationProtocolModal({
               checked={formData.isActive}
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
             />
-            <Label htmlFor="isActive">Protocole actif</Label>
+            <Label htmlFor="isActive">{t("forms.protocolActive")}</Label>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
               <Shield className="h-4 w-4 mr-2" />
-              {mode === 'create' ? 'Créer le protocole' : 'Modifier le protocole'}
+              {mode === 'create' ? t('forms.createProtocol') : t('forms.editProtocolBtn')}
             </Button>
           </div>
         </form>

@@ -27,6 +27,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from '@/components/ListDateFilter';
 import { matchesListDateFilter, toLocalDateKey, type ListDateFilterState } from '@/lib/dateLocal';
 import { useDisplayPreference } from '@/hooks/use-display-preference';
+import { useTranslation } from 'react-i18next';
+import { useAppLocale } from '@/i18n/useAppLocale';
 
 type HistoryItemType =
   | 'consultation'
@@ -35,15 +37,11 @@ type HistoryItemType =
   | 'visit'
   | 'farm_intervention';
 
-const TYPE_LABELS: Record<HistoryItemType, string> = {
-  consultation: 'Consultation',
-  vaccination: 'Vaccination',
-  antiparasitic: 'Antiparasitaire',
-  visit: 'Visite',
-  farm_intervention: 'Intervention élevage',
-};
-
 const History = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: ts } = useTranslation("settings");
+  const { bcp47 } = useAppLocale();
   const navigate = useNavigate();
   const { data: consultations = [] } = useConsultations();
   const { data: prescriptions = [] } = usePrescriptions();
@@ -64,7 +62,7 @@ const History = () => {
       petId: dbPrescription.animal_id,
       petName: dbPrescription.animal?.name || '',
       date: dbPrescription.prescription_date,
-      prescribedBy: 'Non spécifié', // TODO: Add veterinarian name
+      prescribedBy: tc("notSpecified"), // TODO: Add veterinarian name
       diagnosis: dbPrescription.diagnosis || '',
       medications: dbPrescription.medications?.map((med: any) => ({
         id: med.id,
@@ -104,6 +102,14 @@ const History = () => {
   const [selectedPrescription, setSelectedPrescription] = useState<any>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const getTypeLabel = (type: HistoryItemType) =>
+    t(`history.types.${type === 'farm_intervention' ? 'farm' : type}`);
+  const getPrescriptionStatusLabel = (status: string) =>
+    status === 'active'
+      ? tc("active")
+      : status === 'completed'
+        ? tc("completed")
+        : tc("discontinued");
 
   const clientNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -140,7 +146,7 @@ const History = () => {
       petType: c.animal?.species || '',
       client: `${c.client?.first_name || ''} ${c.client?.last_name || ''}`.trim(),
       type: 'consultation' as HistoryItemType,
-      title: c.diagnosis || c.consultation_type || 'Consultation',
+      title: c.diagnosis || c.consultation_type || t("history.types.consultation"),
       veterinarian: '—',
       details: [c.symptoms, c.treatment].filter(Boolean).join(' · ') || c.notes || '',
       cost: c.cost || 0,
@@ -157,7 +163,7 @@ const History = () => {
         petType,
         client,
         type: 'vaccination' as HistoryItemType,
-        title: v.vaccine_name || 'Vaccination',
+        title: v.vaccine_name || t("history.types.vaccination"),
         veterinarian: v.administered_by || '—',
         details: [
           v.vaccine_type,
@@ -226,7 +232,7 @@ const History = () => {
           ? `${owner.first_name || ''} ${owner.last_name || ''}`.trim()
           : '—',
         type: 'farm_intervention' as HistoryItemType,
-        title: fi.intervention_type || 'Intervention élevage',
+        title: fi.intervention_type || t("history.types.farm"),
         veterinarian: '—',
         details: [fi.protocol_type, fi.description, fi.diagnosis, fi.treatment]
           .filter(Boolean)
@@ -251,6 +257,7 @@ const History = () => {
     farmInterventions,
     animalById,
     clientNameById,
+    t,
   ]);
 
   // Historique des prescriptions dynamique
@@ -263,7 +270,7 @@ const History = () => {
     dosage: p.medications?.[0]?.dosage || '',
     frequency: p.medications?.[0]?.frequency || '',
     duration: p.medications?.[0]?.duration || '',
-    veterinarian: 'Non spécifié',
+    veterinarian: tc("notSpecified"),
     status: p.status as string
   }));
 
@@ -335,8 +342,8 @@ const History = () => {
     <div className="container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-7xl">
       <AppPageHeader
         icon={FileText}
-        title="Historique médical"
-        description="Consultations, vaccins, antiparasitaires, visites et interventions élevage"
+        title={t("history.title")}
+        description={t("history.description")}
         actions={
           <>
             <Button
@@ -346,7 +353,7 @@ const History = () => {
               className="gap-2 rounded-full"
             >
               <Grid className="h-4 w-4" />
-              Cartes
+              {ts("display.modes.cards")}
             </Button>
             <Button
               size="sm"
@@ -355,7 +362,7 @@ const History = () => {
               className="gap-2 rounded-full"
             >
               <List className="h-4 w-4" />
-              Tableau
+              {ts("display.modes.table")}
             </Button>
           </>
         }
@@ -365,23 +372,23 @@ const History = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
         <Search className="h-5 w-5" />
-        Rechercher
+        {t("history.title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Input 
-          placeholder="Rechercher par nom, animal, diagnostic..."
+          placeholder={t("history.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         
         <Select value={filterPet} onValueChange={setFilterPet}>
           <SelectTrigger>
-          <SelectValue placeholder="Filtrer par animal" />
+          <SelectValue placeholder={t("history.filterPet")} />
           </SelectTrigger>
           <SelectContent>
-          <SelectItem value="all">Tous les animaux</SelectItem>
+          <SelectItem value="all">{t("history.filters.allPets")}</SelectItem>
           {petOptions.map(petName => (
             <SelectItem key={petName} value={petName}>{petName}</SelectItem>
           ))}
@@ -390,15 +397,15 @@ const History = () => {
         
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger>
-          <SelectValue placeholder="Filtrer par type" />
+          <SelectValue placeholder={t("history.filterType")} />
           </SelectTrigger>
           <SelectContent>
-          <SelectItem value="all">Tous types</SelectItem>
-          <SelectItem value="consultation">Consultations</SelectItem>
-          <SelectItem value="vaccination">Vaccinations</SelectItem>
-          <SelectItem value="antiparasitic">Antiparasitaires</SelectItem>
-          <SelectItem value="visit">Visites</SelectItem>
-          <SelectItem value="farm_intervention">Interventions élevage</SelectItem>
+          <SelectItem value="all">{t("history.filters.allTypes")}</SelectItem>
+          <SelectItem value="consultation">{t("history.types.consultation")}</SelectItem>
+          <SelectItem value="vaccination">{t("history.types.vaccination")}</SelectItem>
+          <SelectItem value="antiparasitic">{t("history.types.antiparasitic")}</SelectItem>
+          <SelectItem value="visit">{t("history.types.visit")}</SelectItem>
+          <SelectItem value="farm_intervention">{t("history.types.farm")}</SelectItem>
           </SelectContent>
         </Select>
         </div>
@@ -415,18 +422,18 @@ const History = () => {
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="medical" className="gap-2">
         <Calendar className="h-4 w-4" />
-        Historique Médical
+        {t("history.tabs.all")}
         </TabsTrigger>
         <TabsTrigger value="prescriptions" className="gap-2">
         <Heart className="h-4 w-4" />
-        Prescriptions
+        {t("history.tabs.prescriptions")}
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="medical" className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h3 className="text-lg font-semibold">
-          Historique médical ({filteredHistory.length} entrées)
+          {t("history.title")} ({filteredHistory.length})
         </h3>
         </div>
         
@@ -441,11 +448,11 @@ const History = () => {
                 <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium text-sm sm:text-base">
-                  {new Date(item.date).toLocaleDateString('fr-FR')}
+                  {new Date(item.date).toLocaleDateString(bcp47)}
                 </span>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                {TYPE_LABELS[item.type as HistoryItemType] || item.type}
+                {getTypeLabel(item.type as HistoryItemType)}
                 </Badge>
               </div>
               
@@ -456,9 +463,9 @@ const History = () => {
                   <Heart className="h-3 w-3" />
                   {item.petName}
                 </span>
-                <span>Client: {item.client}</span>
+                <span>{tc("client")}: {item.client}</span>
                 {item.veterinarian && item.veterinarian !== '—' && (
-                  <span>Vétérinaire: {item.veterinarian}</span>
+                  <span>{tc("veterinarian")}: {item.veterinarian}</span>
                 )}
                 </div>
               </div>
@@ -471,7 +478,7 @@ const History = () => {
               
               {item.cost > 0 && (
                 <div className="text-sm">
-                <span className="font-medium">Coût: {item.cost} MAD</span>
+                <span className="font-medium">{tc("amount")}: {item.cost} MAD</span>
                 </div>
               )}
               </div>
@@ -493,24 +500,24 @@ const History = () => {
             <table className="w-full min-w-[600px]">
             <thead className="border-b">
               <tr className="text-left">
-              <th className="p-4 font-medium">Date</th>
-              <th className="p-4 font-medium">Type</th>
-              <th className="p-4 font-medium">Titre</th>
-              <th className="p-4 font-medium">Animal</th>
-              <th className="p-4 font-medium">Client</th>
-              <th className="p-4 font-medium">Vétérinaire</th>
-              <th className="p-4 font-medium">Actions</th>
+              <th className="p-4 font-medium">{t("history.columns.date")}</th>
+              <th className="p-4 font-medium">{t("history.columns.type")}</th>
+              <th className="p-4 font-medium">{t("history.columns.summary")}</th>
+              <th className="p-4 font-medium">{t("history.columns.pet")}</th>
+              <th className="p-4 font-medium">{t("history.columns.client")}</th>
+              <th className="p-4 font-medium">{t("history.labels.veterinarian")}</th>
+              <th className="p-4 font-medium">{t("history.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {filteredHistory.map((item) => (
               <tr key={item.id} className="border-b hover:bg-muted/50">
                 <td className="p-4">
-                {new Date(item.date).toLocaleDateString('fr-FR')}
+                {new Date(item.date).toLocaleDateString(bcp47)}
                 </td>
                 <td className="p-4">
                 <Badge variant="outline" className="text-xs">
-                  {TYPE_LABELS[item.type as HistoryItemType] || item.type}
+                  {getTypeLabel(item.type as HistoryItemType)}
                 </Badge>
                 </td>
                 <td className="p-4">
@@ -542,7 +549,7 @@ const History = () => {
       <TabsContent value="prescriptions" className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h3 className="text-lg font-semibold">
-          Historique des prescriptions ({filteredPrescriptions.length} entrées)
+          {t("history.prescriptionsTitle")} ({filteredPrescriptions.length})
         </h3>
         <div className="flex gap-2 w-full sm:w-auto">
           <Button 
@@ -552,7 +559,7 @@ const History = () => {
           className="gap-2 flex-1 sm:flex-none"
           >
           <Grid className="h-4 w-4" />
-          Cartes
+          {ts("display.modes.cards")}
           </Button>
           <Button 
           size="sm" 
@@ -561,7 +568,7 @@ const History = () => {
           className="gap-2 flex-1 sm:flex-none"
           >
           <List className="h-4 w-4" />
-          Tableau
+          {ts("display.modes.table")}
           </Button>
         </div>
         </div>
@@ -577,15 +584,14 @@ const History = () => {
                 <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium text-sm sm:text-base">
-                  {new Date(prescription.date).toLocaleDateString('fr-FR')}
+                  {new Date(prescription.date).toLocaleDateString(bcp47)}
                 </span>
                 </div>
                 <Badge 
                 variant="outline"
                 className={statusStyles[prescription.status as keyof typeof statusStyles]}
                 >
-                {prescription.status === 'active' ? 'Actif' :
-                 prescription.status === 'completed' ? 'Terminé' : 'Arrêté'}
+                {getPrescriptionStatusLabel(prescription.status)}
                 </Badge>
               </div>
               
@@ -596,20 +602,20 @@ const History = () => {
                   <Heart className="h-3 w-3" />
                   {prescription.petName}
                 </span>
-                <span>Client: {prescription.client}</span>
-                <span>Prescrit par: {prescription.veterinarian}</span>
+                <span>{tc("client")}: {prescription.client}</span>
+                <span>{t("history.labels.veterinarian")}: {prescription.veterinarian}</span>
                 </div>
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
-                <span className="font-medium">Dosage:</span> {prescription.dosage}
+                <span className="font-medium">{t("prescriptionsList.labels.dosage")}:</span> {prescription.dosage}
                 </div>
                 <div>
-                <span className="font-medium">Fréquence:</span> {prescription.frequency}
+                <span className="font-medium">{t("accounting.suggestions.frequency")}:</span> {prescription.frequency}
                 </div>
                 <div>
-                <span className="font-medium">Durée:</span> {prescription.duration}
+                <span className="font-medium">{t("prescriptionsList.labels.duration")}:</span> {prescription.duration}
                 </div>
               </div>
               </div>
@@ -648,34 +654,33 @@ const History = () => {
             <table className="w-full min-w-[600px]">
             <thead className="border-b">
               <tr className="text-left">
-              <th className="p-4 font-medium">Date</th>
-              <th className="p-4 font-medium">Statut</th>
-              <th className="p-4 font-medium">Médicament</th>
-              <th className="p-4 font-medium">Animal</th>
-              <th className="p-4 font-medium">Client</th>
-              <th className="p-4 font-medium">Dosage</th>
-              <th className="p-4 font-medium">Durée</th>
-              <th className="p-4 font-medium">Actions</th>
+              <th className="p-4 font-medium">{t("history.columns.date")}</th>
+              <th className="p-4 font-medium">{t("history.columns.status")}</th>
+              <th className="p-4 font-medium">{t("prescriptionsList.labels.medications")}</th>
+              <th className="p-4 font-medium">{t("history.columns.pet")}</th>
+              <th className="p-4 font-medium">{t("history.columns.client")}</th>
+              <th className="p-4 font-medium">{t("prescriptionsList.labels.dosage")}</th>
+              <th className="p-4 font-medium">{t("prescriptionsList.labels.duration")}</th>
+              <th className="p-4 font-medium">{t("history.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {filteredPrescriptions.map((prescription) => (
               <tr key={prescription.id} className="border-b hover:bg-muted/50">
                 <td className="p-4">
-                {new Date(prescription.date).toLocaleDateString('fr-FR')}
+                {new Date(prescription.date).toLocaleDateString(bcp47)}
                 </td>
                 <td className="p-4">
                 <Badge 
                   variant="outline"
                   className={statusStyles[prescription.status as keyof typeof statusStyles]}
                 >
-                  {prescription.status === 'active' ? 'Actif' :
-                   prescription.status === 'completed' ? 'Terminé' : 'Arrêté'}
+                  {getPrescriptionStatusLabel(prescription.status)}
                 </Badge>
                 </td>
                 <td className="p-4">
                 <div className="font-medium">{prescription.medication}</div>
-                <div className="text-sm text-muted-foreground">Prescrit par: {prescription.veterinarian}</div>
+                <div className="text-sm text-muted-foreground">{t("history.labels.veterinarian")}: {prescription.veterinarian}</div>
                 </td>
                 <td className="p-4">
                 <div className="flex items-center gap-2">

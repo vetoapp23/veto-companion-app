@@ -10,6 +10,7 @@ import { useClients, useAnimals, useUpdateConsultation, type Consultation } from
 import type { CreateConsultationData } from "@/lib/database";
 import { useSettings } from "@/contexts/SettingsContext";
 import { roundTemperature, temperatureInputValue } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface ConsultationEditModalProps {
   open: boolean;
@@ -23,6 +24,8 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
   const updateConsultationMutation = useUpdateConsultation();
   const { toast } = useToast();
   const { settings } = useSettings();
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   
   const [formData, setFormData] = useState({
     client_id: "",
@@ -90,8 +93,8 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
     
     if (!consultation) {
       toast({
-        title: "Erreur",
-        description: "Aucune consultation sélectionnée pour modification.",
+        title: tc("error"),
+        description: t("forms.noConsultationToEdit"),
         variant: "destructive",
       });
       return;
@@ -104,36 +107,36 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
     if (formData.weight) {
       const weight = parseFloat(formData.weight);
       if (isNaN(weight) || weight <= 0 || weight > 999.9) {
-        validationErrors.push("Le poids doit être un nombre valide entre 0.1 et 999.9 kg");
+        validationErrors.push(t("alerts.weightInvalid"));
       }
     }
     
     if (formData.temperature) {
       const temperature = parseFloat(formData.temperature);
       if (isNaN(temperature) || temperature < 30 || temperature > 50) {
-        validationErrors.push("La température doit être un nombre valide entre 30°C et 50°C");
+        validationErrors.push(t("alerts.temperatureInvalid"));
       }
     }
     
     // Validate text field lengths
     if (formData.symptoms && formData.symptoms.length > 1000) {
-      validationErrors.push("Les symptômes ne peuvent pas dépasser 1000 caractères");
+      validationErrors.push(t("alerts.symptomsTooLong"));
     }
     
     if (formData.diagnosis && formData.diagnosis.length > 1000) {
-      validationErrors.push("Le diagnostic ne peut pas dépasser 1000 caractères");
+      validationErrors.push(t("alerts.diagnosisTooLong"));
     }
     
     if (formData.treatment && formData.treatment.length > 1000) {
-      validationErrors.push("Le traitement ne peut pas dépasser 1000 caractères");
+      validationErrors.push(t("alerts.treatmentTooLong"));
     }
     
     if (formData.notes && formData.notes.length > 2000) {
-      validationErrors.push("Les notes ne peuvent pas dépasser 2000 caractères");
+      validationErrors.push(t("alerts.notesTooLong"));
     }
     
     if (formData.follow_up_notes && formData.follow_up_notes.length > 500) {
-      validationErrors.push("Les notes de suivi ne peuvent pas dépasser 500 caractères");
+      validationErrors.push(t("alerts.followUpTooLong"));
     }
     
     // Validate follow-up date if provided
@@ -143,24 +146,24 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
       oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
       
       if (followUpDate > oneYearFromNow) {
-        validationErrors.push("La date de suivi ne peut pas être plus d'un an dans le futur");
+        validationErrors.push(t("alerts.followUpDateTooFar"));
       }
       
       const consultationDate = new Date(consultation.consultation_date);
       if (followUpDate < consultationDate) {
-        validationErrors.push("La date de suivi ne peut pas être antérieure à la date de consultation");
+        validationErrors.push(t("alerts.followUpDateBeforeConsultation"));
       }
     }
     
     // Validate status
     const validStatuses = ["scheduled", "in-progress", "completed", "cancelled"];
     if (formData.status && !validStatuses.includes(formData.status)) {
-      validationErrors.push("Le statut sélectionné n'est pas valide");
+      validationErrors.push(t("alerts.invalidStatus"));
     }
     
     if (validationErrors.length > 0) {
       toast({
-        title: "Erreurs de validation",
+        title: t("alerts.validationErrors"),
         description: validationErrors.join(". "),
         variant: "destructive",
       });
@@ -190,33 +193,32 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
       });
 
       toast({
-        title: "Consultation modifiée",
-        description: "La consultation a été modifiée avec succès.",
+        title: t("alerts.consultationUpdated"),
+        description: t("alerts.editConsultationSuccessBody"),
       });
 
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error updating consultation:', error);
       
-      let errorMessage = "Une erreur est survenue lors de la modification de la consultation.";
+      let errorMessage = t("alerts.editConsultationGenericError");
       
-      // Handle specific error types
       if (error?.message) {
         if (error.message.includes('not found') || error.message.includes('does not exist')) {
-          errorMessage = "Cette consultation n'existe plus. Elle a peut-être été supprimée.";
+          errorMessage = t("alerts.consultationGone");
         } else if (error.message.includes('foreign key constraint')) {
-          errorMessage = "Erreur: Le client ou l'animal associé n'existe plus. Veuillez actualiser la page.";
+          errorMessage = t("alerts.clientOrAnimalGone");
         } else if (error.message.includes('network')) {
-          errorMessage = "Erreur de connexion. Vérifiez votre connexion internet et réessayez.";
+          errorMessage = t("alerts.connectionProblem");
         } else if (error.message.includes('permission') || error.message.includes('unauthorized')) {
-          errorMessage = "Vous n'avez pas les permissions nécessaires pour modifier cette consultation.";
+          errorMessage = t("alerts.noPermissionEditConsultation");
         } else if (error.message.includes('version') || error.message.includes('conflict')) {
-          errorMessage = "Cette consultation a été modifiée par un autre utilisateur. Veuillez actualiser et réessayer.";
+          errorMessage = t("alerts.consultationConflict");
         }
       }
       
       toast({
-        title: "Erreur lors de la modification",
+        title: t("alerts.editConsultationError"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -230,30 +232,30 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier la consultation</DialogTitle>
+          <DialogTitle>{t("forms.editConsultation")}</DialogTitle>
           <DialogDescription>
-            Modifiez les informations de la consultation
+            {t("forms.editConsultationInfo")}
           </DialogDescription>
         </DialogHeader>
 
         {!consultation ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <p>Aucune consultation sélectionnée</p>
+            <p>{t("forms.noConsultationSelected")}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
           {/* Read-only consultation context */}
           <div className="bg-muted/50 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Consultation pour:</h4>
+            <h4 className="font-medium mb-2">{t("forms.consultationFor")}</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-muted-foreground">Client:</span>{' '}
+                <span className="text-muted-foreground">{t("forms.clientLabel")}</span>{' '}
                 <span className="font-medium">
                   {clients.find(c => c.id === formData.client_id)?.first_name} {clients.find(c => c.id === formData.client_id)?.last_name}
                 </span>
               </div>
               <div>
-                <span className="text-muted-foreground">Animal:</span>{' '}
+                <span className="text-muted-foreground">{t("forms.animalLabelShort")}</span>{' '}
                 <span className="font-medium">
                   {availablePets.find(a => a.id === formData.animal_id)?.name} ({availablePets.find(a => a.id === formData.animal_id)?.species})
                 </span>
@@ -263,7 +265,7 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="consultation_date">Date de consultation</Label>
+              <Label htmlFor="consultation_date">{t("forms.consultationDate")}</Label>
               <Input
                 id="consultation_date"
                 type="date"
@@ -271,22 +273,22 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
                 onChange={handleChange}
                 className="bg-muted/50"
                 readOnly
-                title="La date ne peut pas être modifiée"
+                title={t("forms.dateReadOnlyTitle")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="consultation_type">Type de consultation</Label>
+              <Label htmlFor="consultation_type">{t("forms.consultationType")}</Label>
               <Select value={formData.consultation_type} onValueChange={(value) => handleSelectChange('consultation_type', value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="routine">Routine</SelectItem>
-                  <SelectItem value="emergency">Urgence</SelectItem>
-                  <SelectItem value="follow-up">Suivi</SelectItem>
-                  <SelectItem value="vaccination">Vaccination</SelectItem>
-                  <SelectItem value="surgery">Chirurgie</SelectItem>
+                  <SelectItem value="routine">{t("forms.consultationTypes.routine")}</SelectItem>
+                  <SelectItem value="emergency">{t("forms.consultationTypes.emergency")}</SelectItem>
+                  <SelectItem value="follow-up">{t("forms.consultationTypes.followUp")}</SelectItem>
+                  <SelectItem value="vaccination">{t("forms.consultationTypes.vaccination")}</SelectItem>
+                  <SelectItem value="surgery">{t("forms.consultationTypes.surgery")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -294,138 +296,138 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="weight">Poids (kg)</Label>
+              <Label htmlFor="weight">{t("forms.weightKg")}</Label>
               <Input
                 id="weight"
                 type="number"
                 step="0.1"
                 min="0.1"
                 max="999.9"
-                placeholder="Ex: 25.5"
+                placeholder={t("forms.weightExample")}
                 value={formData.weight}
                 onChange={handleChange}
-                title="Poids en kilogrammes (0.1 à 999.9 kg)"
+                title={t("forms.weightTitle")}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="temperature">Température (°C)</Label>
+              <Label htmlFor="temperature">{t("forms.temperatureC")}</Label>
               <Input
                 id="temperature"
                 type="number"
                 step="0.01"
                 min="30"
                 max="50"
-                placeholder="Ex: 38.50"
+                placeholder={t("forms.temperatureExample")}
                 value={formData.temperature}
                 onChange={handleChange}
-                title="Température corporelle (30°C à 50°C)"
+                title={t("forms.temperatureTitle")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="symptoms">Symptômes</Label>
+            <Label htmlFor="symptoms">{t("forms.symptomsLabel")}</Label>
             <Textarea
               id="symptoms"
-              placeholder="Décrivez les symptômes observés..."
+              placeholder={t("forms.symptomsDescPlaceholder")}
               value={formData.symptoms}
               onChange={handleChange}
               rows={3}
               maxLength={1000}
-              title="Maximum 1000 caractères"
+              title={t("forms.maxChars", { count: 1000 })}
             />
             <div className="text-xs text-muted-foreground text-right">
-              {(formData.symptoms || '').length}/1000 caractères
+              {t("forms.charsCount", { count: (formData.symptoms || '').length, max: 1000 })}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="diagnosis">Diagnostic</Label>
+            <Label htmlFor="diagnosis">{t("forms.diagnosisLabel")}</Label>
             <Textarea
               id="diagnosis"
-              placeholder="Diagnostic posé..."
+              placeholder={t("forms.diagnosisPosedPlaceholder")}
               value={formData.diagnosis}
               onChange={handleChange}
               rows={3}
               maxLength={1000}
-              title="Maximum 1000 caractères"
+              title={t("forms.maxChars", { count: 1000 })}
             />
             <div className="text-xs text-muted-foreground text-right">
-              {(formData.diagnosis || '').length}/1000 caractères
+              {t("forms.charsCount", { count: (formData.diagnosis || '').length, max: 1000 })}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="treatment">Traitement</Label>
+            <Label htmlFor="treatment">{t("forms.treatmentShort")}</Label>
             <Textarea
               id="treatment"
-              placeholder="Traitement prescrit..."
+              placeholder={t("forms.treatmentPrescribedPlaceholder")}
               value={formData.treatment}
               onChange={handleChange}
               rows={3}
               maxLength={1000}
-              title="Maximum 1000 caractères"
+              title={t("forms.maxChars", { count: 1000 })}
             />
             <div className="text-xs text-muted-foreground text-right">
-              {(formData.treatment || '').length}/1000 caractères
+              {t("forms.charsCount", { count: (formData.treatment || '').length, max: 1000 })}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="follow_up_date">Date de suivi</Label>
+            <Label htmlFor="follow_up_date">{t("forms.followUpDate")}</Label>
             <Input
               id="follow_up_date"
               type="date"
               value={formData.follow_up_date}
               onChange={handleChange}
-              title="Date recommandée pour le prochain suivi"
+              title={t("forms.followUpDateTitle")}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="follow_up_notes">Notes de suivi</Label>
+            <Label htmlFor="follow_up_notes">{t("forms.followUpNotes")}</Label>
             <Textarea
               id="follow_up_notes"
-              placeholder="Notes pour le suivi..."
+              placeholder={t("forms.followUpNotesPlaceholder")}
               value={formData.follow_up_notes}
               onChange={handleChange}
               rows={2}
               maxLength={500}
-              title="Maximum 500 caractères"
+              title={t("forms.maxChars", { count: 500 })}
             />
             <div className="text-xs text-muted-foreground text-right">
-              {(formData.follow_up_notes || '').length}/500 caractères
+              {t("forms.charsCount", { count: (formData.follow_up_notes || '').length, max: 500 })}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes supplémentaires</Label>
+            <Label htmlFor="notes">{t("forms.additionalNotes")}</Label>
             <Textarea
               id="notes"
-              placeholder="Notes supplémentaires..."
+              placeholder={t("forms.additionalNotesPlaceholder")}
               value={formData.notes}
               onChange={handleChange}
               rows={2}
               maxLength={2000}
-              title="Maximum 2000 caractères"
+              title={t("forms.maxChars", { count: 2000 })}
             />
             <div className="text-xs text-muted-foreground text-right">
-              {(formData.notes || '').length}/2000 caractères
+              {t("forms.charsCount", { count: (formData.notes || '').length, max: 2000 })}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">Statut</Label>
+            <Label htmlFor="status">{tc("status")}</Label>
             <Select value={formData.status} onValueChange={(value) => handleSelectChange('status', value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="scheduled">Programmé</SelectItem>
-                <SelectItem value="in-progress">En cours</SelectItem>
-                <SelectItem value="completed">Terminé</SelectItem>
-                <SelectItem value="cancelled">Annulé</SelectItem>
+                <SelectItem value="scheduled">{t("forms.consultationStatuses.scheduled")}</SelectItem>
+                <SelectItem value="in-progress">{t("forms.consultationStatuses.inProgress")}</SelectItem>
+                <SelectItem value="completed">{t("forms.consultationStatuses.completed")}</SelectItem>
+                <SelectItem value="cancelled">{t("forms.consultationStatuses.cancelled")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -437,13 +439,13 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
               onClick={() => onOpenChange(false)}
               disabled={updateConsultationMutation.isPending}
             >
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button 
               type="submit" 
               disabled={updateConsultationMutation.isPending || !consultation}
             >
-              {updateConsultationMutation.isPending ? "Modification..." : "Modifier"}
+              {updateConsultationMutation.isPending ? tc("saving") : tc("edit")}
             </Button>
           </div>
         </form>

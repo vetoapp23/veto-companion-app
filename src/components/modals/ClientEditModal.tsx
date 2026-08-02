@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Client, useClients } from "@/contexts/ClientContext";
+import { useTranslation } from "react-i18next";
 
 interface ClientEditModalProps {
   open: boolean;
@@ -16,6 +17,8 @@ interface ClientEditModalProps {
 export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalProps) {
   const { updateClient } = useClients();
   const { toast } = useToast();
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -59,8 +62,8 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
     updateClient(client.id, formData);
     
     toast({
-      title: "Client modifié",
-      description: `Les informations de ${formData.firstName} ${formData.lastName} ont été mises à jour.`,
+      title: t("clients.updated"),
+      description: t("clients.updatedBody", { name: `${formData.firstName} ${formData.lastName}` }),
     });
     
     onOpenChange(false);
@@ -72,13 +75,13 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Modifier Client</DialogTitle>
+          <DialogTitle>{t("clients.editTitle")}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">Prénom *</Label>
+              <Label htmlFor="firstName">{t("clients.firstNameLabel")}</Label>
               <Input
                 id="firstName"
                 value={formData.firstName}
@@ -87,7 +90,7 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Nom *</Label>
+              <Label htmlFor="lastName">{t("clients.lastNameLabel")}</Label>
               <Input
                 id="lastName"
                 value={formData.lastName}
@@ -99,7 +102,7 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{tc("email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -108,7 +111,7 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone *</Label>
+              <Label htmlFor="phone">{t("clients.phoneLabel")}</Label>
               <Input
                 id="phone"
                 value={formData.phone}
@@ -119,7 +122,7 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="address">Adresse</Label>
+            <Label htmlFor="address">{tc("address")}</Label>
             <Input
               id="address"
               value={formData.address}
@@ -129,7 +132,7 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="city">Ville</Label>
+              <Label htmlFor="city">{tc("city")}</Label>
               <Input
                 id="city"
                 value={formData.city}
@@ -137,7 +140,7 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="postalCode">Code postal</Label>
+              <Label htmlFor="postalCode">{t("clients.postalCode")}</Label>
               <Input
                 id="postalCode"
                 value={formData.postalCode}
@@ -147,31 +150,31 @@ export function ClientEditModal({ open, onOpenChange, client }: ClientEditModalP
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="idNumber">N° pièce d'identité</Label>
+            <Label htmlFor="idNumber">{t("clients.idNumber")}</Label>
             <Input
               id="idNumber"
               value={formData.idNumber}
               onChange={handleChange}
-              placeholder="Numéro de carte d'identité, passeport, etc."
+              placeholder={t("clients.idNumberPlaceholder")}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={handleChange}
-              placeholder="Notes additionnelles..."
+              placeholder={t("clients.notesPlaceholder")}
             />
           </div>
           
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
-              Sauvegarder
+              {tc("save")}
             </Button>
           </div>
         </form>

@@ -3,14 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Heart, Dog, Cat, Fish, Bird } from 'lucide-react';
 import { useAnimals } from '@/hooks/useDatabase';
+import { useTranslation } from "react-i18next";
 
 export function PetSpeciesChart() {
   const { data: pets = [] } = useAnimals();
+  const { t } = useTranslation("app");
 
   // Calculer les données par espèce
   const speciesData = React.useMemo(() => {
     const speciesCounts = pets.reduce((acc, pet) => {
-      const species = pet.species || 'Autre';
+      const species = pet.species || t("charts.petSpecies.other");
       acc[species] = (acc[species] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -22,7 +24,7 @@ export function PetSpeciesChart() {
       value: count,
       color: colors[index % colors.length]
     }));
-  }, [pets]);
+  }, [pets, t]);
 
   // Calculer les statistiques
   const totalPets = pets.length;
@@ -60,7 +62,7 @@ export function PetSpeciesChart() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">Répartition par Espèce</CardTitle>
+        <CardTitle className="text-base font-medium">{t("charts.petSpecies.title")}</CardTitle>
         <Heart className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -87,7 +89,7 @@ export function PetSpeciesChart() {
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
                 }}
-                formatter={(value: number) => [value, 'Animaux']}
+                formatter={(value: number) => [value, t("charts.petSpecies.tooltip")]}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -95,13 +97,13 @@ export function PetSpeciesChart() {
         
         <div className="mt-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Total d'animaux</span>
+            <span className="text-sm text-muted-foreground">{t("charts.clientGrowth.totalPets")}</span>
             <span className="font-medium">{totalPets}</span>
           </div>
           
           {mostCommonSpecies && (
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Espèce la plus commune</span>
+            <span className="text-sm text-muted-foreground">{t("charts.petSpecies.title")}</span>
               <div className="flex items-center gap-2">
                 {getSpeciesIcon(mostCommonSpecies.name)}
                 <span className="font-medium">{mostCommonSpecies.name}</span>
@@ -110,12 +112,12 @@ export function PetSpeciesChart() {
           )}
           
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Âge moyen</span>
-            <span className="font-medium">{averageAge.toFixed(1)} ans</span>
+            <span className="text-sm text-muted-foreground">{t("pets.age", { age: averageAge.toFixed(1) })}</span>
+            <span className="font-medium">{averageAge.toFixed(1)}</span>
           </div>
           
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Répartition détaillée</h4>
+            <h4 className="text-sm font-medium">{t("charts.petSpecies.title")}</h4>
             {speciesData.slice(0, 5).map((species, index) => (
               <div key={index} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">

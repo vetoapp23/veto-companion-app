@@ -2,9 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  useSuperAdminStats,
-} from "@/hooks/useSuperAdminData";
+import { useSuperAdminStats } from "@/hooks/useSuperAdminData";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchBillingOverview, formatMad } from "@/lib/superAdmin";
 import {
@@ -18,6 +16,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function planBadge(code: string) {
   return <Badge variant="secondary" className="font-mono text-xs">{code}</Badge>;
@@ -74,6 +73,7 @@ export default function SuperAdminOverview() {
     staleTime: 60_000,
   });
   const qc = useQueryClient();
+  const { t } = useTranslation("settings");
 
   return (
     <div className="space-y-4">
@@ -84,21 +84,31 @@ export default function SuperAdminOverview() {
           className="rounded-full gap-2"
           onClick={() => qc.invalidateQueries({ queryKey: ["super-admin"] })}
         >
-          <RefreshCw className="h-3.5 w-3.5" /> Actualiser
+          <RefreshCw className="h-3.5 w-3.5" /> {t("superAdmin.overview.refresh")}
         </Button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard icon={Building2} label="Cliniques" value={stats.totalOrgs} sub={`${stats.paidOrgs} payantes · ${stats.freeOrgs} free`} />
-        <StatCard icon={Users} label="Utilisateurs" value={stats.totalUsers} sub={`${stats.pendingUsers} en attente`} />
-        <StatCard icon={UserCheck} label="Clients (total)" value={stats.totalClients} />
-        <StatCard icon={PawPrint} label="Animaux" value={stats.totalAnimals} />
-        <StatCard icon={Package} label="Stockage" value={`${stats.totalStorageMb} Mo`} />
+        <StatCard
+          icon={Building2}
+          label={t("superAdmin.overview.clinics")}
+          value={stats.totalOrgs}
+          sub={t("superAdmin.overview.clinicsSub", { paid: stats.paidOrgs, free: stats.freeOrgs })}
+        />
+        <StatCard
+          icon={Users}
+          label={t("superAdmin.overview.users")}
+          value={stats.totalUsers}
+          sub={t("superAdmin.overview.usersSub", { pending: stats.pendingUsers })}
+        />
+        <StatCard icon={UserCheck} label={t("superAdmin.overview.clientsTotal")} value={stats.totalClients} />
+        <StatCard icon={PawPrint} label={t("superAdmin.overview.animals")} value={stats.totalAnimals} />
+        <StatCard icon={Package} label={t("superAdmin.overview.storage")} value={`${stats.totalStorageMb} Mo`} />
         <StatCard
           icon={AlertTriangle}
-          label="Limites clients"
+          label={t("superAdmin.overview.clientLimits")}
           value={stats.orgsAtClientLimit}
-          sub="cliniques au plafond"
+          sub={t("superAdmin.overview.clientLimitsSub")}
           warn={stats.orgsAtClientLimit > 0}
         />
       </div>
@@ -107,19 +117,19 @@ export default function SuperAdminOverview() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
-              <CreditCard className="h-4 w-4" /> MRR estimé
+              <CreditCard className="h-4 w-4" /> {t("superAdmin.overview.estimatedMrr")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-display">
               {billing.isLoading ? "…" : formatMad(Number(billing.data?.estimated_mrr_mad ?? 0))}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Basé sur les prix plan (MAD mensuel)</p>
+            <p className="text-xs text-muted-foreground mt-1">{t("superAdmin.overview.mrrHint")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Paiements en retard</CardTitle>
+            <CardTitle className="text-sm">{t("superAdmin.overview.pastDue")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-display text-amber-600">
@@ -129,7 +139,7 @@ export default function SuperAdminOverview() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Trials ≤ 7 j</CardTitle>
+            <CardTitle className="text-sm">{t("superAdmin.overview.trialsEnding")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-display">{billing.data?.trials_ending_7d ?? 0}</div>
@@ -140,7 +150,7 @@ export default function SuperAdminOverview() {
       {stats.byPlan.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Répartition par plan</CardTitle>
+            <CardTitle className="text-sm">{t("superAdmin.overview.planDistribution")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -163,17 +173,17 @@ export default function SuperAdminOverview() {
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline" className="rounded-full">
           <Link to="/super-admin/organizations">
-            Gérer les cliniques <ExternalLink className="h-3.5 w-3.5 ml-1" />
+            {t("superAdmin.overview.manageClinics")} <ExternalLink className="h-3.5 w-3.5 ml-1" />
           </Link>
         </Button>
         <Button asChild variant="outline" className="rounded-full">
           <Link to="/super-admin/users">
-            Approuver des users <ExternalLink className="h-3.5 w-3.5 ml-1" />
+            {t("superAdmin.overview.approveUsers")} <ExternalLink className="h-3.5 w-3.5 ml-1" />
           </Link>
         </Button>
         <Button asChild variant="outline" className="rounded-full">
           <Link to="/super-admin/billing">
-            Billing <ExternalLink className="h-3.5 w-3.5 ml-1" />
+            {t("superAdmin.nav.billing")} <ExternalLink className="h-3.5 w-3.5 ml-1" />
           </Link>
         </Button>
       </div>

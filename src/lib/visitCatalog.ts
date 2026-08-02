@@ -14,6 +14,7 @@ import {
   Shield,
   type LucideIcon,
 } from "lucide-react";
+import type { TFunction } from "i18next";
 
 export type VisitServiceCode =
   | "consultation"
@@ -307,3 +308,37 @@ export const VISIT_SERVICE_STATUS_LABELS: Record<string, string> = {
   done: "Fait",
   skipped: "Ignoré",
 };
+
+/**
+ * Localized presentation helpers. The catalog keeps its French labels as
+ * fallbacks because labels are also persisted with visit-service records.
+ */
+export function getVisitServiceLabel(
+  service: Pick<VisitServiceDef, "code" | "label">,
+  t: TFunction
+): string {
+  return t(`visitCatalog.services.${service.code}.label`, {
+    defaultValue: service.label,
+  });
+}
+
+export function getVisitServiceDescription(
+  service: Pick<VisitServiceDef, "code" | "description">,
+  t: TFunction
+): string {
+  return t(`visitCatalog.services.${service.code}.description`, {
+    defaultValue: service.description,
+  });
+}
+
+export function getVisitStatusLabel(status: string, t: TFunction): string {
+  return t(`visitCatalog.visitStatus.${status}`, {
+    defaultValue: VISIT_STATUS_LABELS[status] || status,
+  });
+}
+
+export function getVisitServiceStatusLabel(status: string, t: TFunction): string {
+  return t(`visitCatalog.serviceStatus.${status}`, {
+    defaultValue: VISIT_SERVICE_STATUS_LABELS[status] || status,
+  });
+}

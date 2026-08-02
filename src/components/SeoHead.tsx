@@ -1,7 +1,14 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const SITE_URL = (import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || "https://vetocrm.com").replace(/\/$/, "");
 const DEFAULT_OG = `${SITE_URL}/og-cover.jpg`;
+
+const OG_LOCALE: Record<string, string> = {
+  fr: "fr_FR",
+  en: "en_US",
+  es: "es_ES",
+};
 
 export type SeoProps = {
   title: string;
@@ -54,9 +61,12 @@ export function useSeo({
   type = "website",
   jsonLd,
 }: SeoProps) {
+  const { i18n } = useTranslation();
   useEffect(() => {
     const url = `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+    const lang = (i18n.language || "fr").split("-")[0];
     document.title = title;
+    document.documentElement.lang = lang;
 
     upsertMeta("name", "description", description);
     upsertMeta("name", "robots", noIndex ? "noindex, nofollow" : "index, follow, max-image-preview:large");
@@ -65,7 +75,7 @@ export function useSeo({
     upsertMeta("property", "og:type", type);
     upsertMeta("property", "og:url", url);
     upsertMeta("property", "og:image", image);
-    upsertMeta("property", "og:locale", "fr_FR");
+    upsertMeta("property", "og:locale", OG_LOCALE[lang] || "fr_FR");
     upsertMeta("property", "og:site_name", "VetoCrm");
     upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", title);
@@ -76,7 +86,7 @@ export function useSeo({
     if (jsonLd) {
       upsertJsonLd("vetocrm-jsonld", Array.isArray(jsonLd) ? jsonLd : jsonLd);
     }
-  }, [title, description, path, image, noIndex, type, jsonLd]);
+  }, [title, description, path, image, noIndex, type, jsonLd, i18n.language]);
 }
 
 export function siteUrl(path = "/") {

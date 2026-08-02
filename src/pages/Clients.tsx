@@ -27,6 +27,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAnimalSpecies, useClientTypes } from '@/hooks/useAppSettings';
 import type { Client as DBClient, Animal, CreateClientData } from "@/lib/database";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 // Interface matching the old UI structure
 interface ClientUI {
@@ -82,7 +84,7 @@ const convertDatabaseClient = (dbClient: DBClient, animals: Animal[]): ClientUI 
     address: dbClient.address || '',
     city: dbClient.city,
     pets,
-    lastVisit: new Date(dbClient.updated_at).toLocaleDateString('fr-FR'),
+    lastVisit: dbClient.updated_at || '',
     totalVisits: 0, // Placeholder - would need consultation data
     // Store original DB ID for updates
     dbId: dbClient.id
@@ -90,6 +92,10 @@ const convertDatabaseClient = (dbClient: DBClient, animals: Animal[]): ClientUI 
 };
 
 const ClientsContent = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { t: ts } = useTranslation("settings");
+  const { bcp47 } = useAppLocale();
   const { data: dbClients = [], isLoading: clientsLoading } = useClients();
   const { data: animals = [], isLoading: animalsLoading } = useAnimals();
   const updateClientMutation = useUpdateClient();
@@ -180,16 +186,16 @@ const ClientsContent = () => {
       await deleteClientMutation.mutateAsync(clientToDelete.dbId);
       
       toast({
-        title: "Client supprimé",
-        description: `${clientToDelete.name} a été supprimé avec succès`,
+        title: t("clients.deleted"),
+        description: t("clients.deletedBody", { name: clientToDelete.name }),
       });
       
       setShowDeleteAlert(false);
       setClientToDelete(null);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur lors de la suppression du client",
+        title: tc("error"),
+        description: error instanceof Error ? error.message : t("clients.deleteError"),
         variant: "destructive"
       });
     }
@@ -222,8 +228,8 @@ const ClientsContent = () => {
     
     if (!selectedClient || !editForm.first_name || !editForm.last_name) {
       toast({
-        title: "Erreur",
-        description: "Le prénom et le nom sont obligatoires",
+        title: tc("error"),
+        description: t("clients.nameRequired"),
         variant: "destructive"
       });
       return;
@@ -236,16 +242,16 @@ const ClientsContent = () => {
       });
       
       toast({
-        title: "Client modifié",
-        description: `${editForm.first_name} ${editForm.last_name} a été modifié avec succès`,
+        title: t("clients.updated"),
+        description: t("clients.updatedBody", { name: `${editForm.first_name} ${editForm.last_name}` }),
       });
       
       setShowEditModal(false);
       setSelectedClient(null);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: error instanceof Error ? error.message : "Erreur lors de la modification du client",
+        title: tc("error"),
+        description: error instanceof Error ? error.message : t("clients.updateError"),
         variant: "destructive"
       });
     }
@@ -257,7 +263,7 @@ const ClientsContent = () => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Chargement des clients...</p>
+            <p className="text-muted-foreground">{t("clients.loading")}</p>
           </div>
         </div>
       </div>
@@ -268,8 +274,8 @@ const ClientsContent = () => {
     <div className="container mx-auto px-4 sm:px-6 py-8 space-y-8">
       <AppPageHeader
         icon={Users}
-        title="Clients"
-        description="Gérez tous vos clients et leurs informations"
+        title={t("clients.title")}
+        description={t("clients.description")}
         actions={
           <>
             <Button
@@ -279,7 +285,7 @@ const ClientsContent = () => {
               className="gap-2 rounded-full"
             >
               <Grid className="h-4 w-4" />
-              Cartes
+              {ts("display.modes.cards")}
             </Button>
             <Button
               size="sm"
@@ -288,12 +294,12 @@ const ClientsContent = () => {
               className="gap-2 rounded-full"
             >
               <List className="h-4 w-4" />
-              Tableau
+              {ts("display.modes.table")}
             </Button>
             {canWriteClients && (
               <Button className="gap-2 rounded-full" onClick={() => setShowClientModal(true)}>
                 <Plus className="h-4 w-4" />
-                Nouveau Client
+                {t("clients.new")}
               </Button>
             )}
           </>
@@ -304,23 +310,23 @@ const ClientsContent = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
         <Search className="h-5 w-5" />
-        Rechercher un client
+        {t("clients.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row gap-4">
           <Input 
-            placeholder="Rechercher par nom, email ou ville..."
+            placeholder={t("clients.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1"
           />
           <Select value={speciesFilter} onValueChange={setSpeciesFilter}>
             <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Filtrer par espèce" />
+              <SelectValue placeholder={t("clients.filterSpecies")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes espèces</SelectItem>
+              <SelectItem value="all">{t("clients.allSpecies")}</SelectItem>
               {animalSpecies.map((species) => (
                 <SelectItem key={species} value={species}>
                   {species}
@@ -367,7 +373,7 @@ const ClientsContent = () => {
               <div className="space-y-2">
               <h4 className="font-medium flex items-center justify-center sm:justify-start gap-2">
                 <Heart className="h-4 w-4 text-primary" />
-                Animaux ({client.pets.length})
+                {t("clients.petsCount", { count: client.pets.length })}
               </h4>
               <div className="flex gap-2 flex-wrap justify-center sm:justify-start">
                 {client.pets.length > 0 ? (
@@ -377,14 +383,14 @@ const ClientsContent = () => {
                   </Badge>
                 ))
                 ) : (
-                <span className="text-sm text-muted-foreground">Aucun animal enregistré</span>
+                <span className="text-sm text-muted-foreground">{t("clients.none")}</span>
                 )}
               </div>
               </div>
               
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm justify-center sm:justify-start">
               <span>
-                <strong>Dernière visite:</strong> {client.lastVisit}
+                <strong>{t("clients.lastVisit")}:</strong> {client.lastVisit ? new Date(client.lastVisit).toLocaleDateString(bcp47) : "—"}
               </span>
               <span>
                 <strong>Total visites:</strong> {client.totalVisits}
@@ -402,7 +408,7 @@ const ClientsContent = () => {
               <>
                 <Button size="sm" variant="outline" className="gap-2" onClick={() => handleEdit(client)}>
                   <Edit className="h-4 w-4" />
-                  Modifier
+                  {tc("edit")}
                 </Button>
                 <Button 
                   size="sm" 
@@ -411,7 +417,7 @@ const ClientsContent = () => {
                   onClick={() => handleDelete(client)}
                 >
                   <Trash2 className="h-4 w-4" />
-                  Supprimer
+                  {tc("delete")}
                 </Button>
               </>
             )}
@@ -428,12 +434,12 @@ const ClientsContent = () => {
           <table className="w-full">
           <thead className="border-b">
             <tr className="text-left">
-            <th className="p-2 sm:p-4 font-medium">Client</th>
-            <th className="p-2 sm:p-4 font-medium hidden sm:table-cell">Contact</th>
-            <th className="p-2 sm:p-4 font-medium hidden md:table-cell">Animaux</th>
-            <th className="p-2 sm:p-4 font-medium hidden lg:table-cell">Dernière visite</th>
-            <th className="p-2 sm:p-4 font-medium hidden lg:table-cell">Total visites</th>
-            <th className="p-2 sm:p-4 font-medium">Actions</th>
+            <th className="p-2 sm:p-4 font-medium">{t("clients.columns.name")}</th>
+            <th className="p-2 sm:p-4 font-medium hidden sm:table-cell">{t("clients.columns.email")}</th>
+            <th className="p-2 sm:p-4 font-medium hidden md:table-cell">{t("clients.columns.pets")}</th>
+            <th className="p-2 sm:p-4 font-medium hidden lg:table-cell">{tc("lastUpdated")}</th>
+            <th className="p-2 sm:p-4 font-medium hidden lg:table-cell">{tc("total")}</th>
+            <th className="p-2 sm:p-4 font-medium">{t("clients.columns.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -467,12 +473,12 @@ const ClientsContent = () => {
                   </Badge>
                 ))
                 ) : (
-                <span className="text-xs text-muted-foreground">Aucun</span>
+                <span className="text-xs text-muted-foreground">{t("clients.none")}</span>
                 )}
               </div>
               </td>
               <td className="p-2 sm:p-4 hidden lg:table-cell text-sm">
-              {client.lastVisit}
+              {client.lastVisit ? new Date(client.lastVisit).toLocaleDateString(bcp47) : "—"}
               </td>
               <td className="p-2 sm:p-4 hidden lg:table-cell text-sm">
               {client.totalVisits}
@@ -519,7 +525,7 @@ const ClientsContent = () => {
         <Card className="w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-          Profil Client - {selectedClient.name}
+          {t("clients.profileTitle")} - {selectedClient.name}
           <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
             ✕
           </Button>
@@ -528,28 +534,28 @@ const ClientsContent = () => {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium">Nom complet</label>
+            <label className="text-sm font-medium">{tc("name")}</label>
             <p>{selectedClient.name}</p>
           </div>
           <div>
-            <label className="text-sm font-medium">Email</label>
+            <label className="text-sm font-medium">{t("clients.card.email")}</label>
             <p>{selectedClient.email}</p>
           </div>
           <div>
-            <label className="text-sm font-medium">Téléphone</label>
+            <label className="text-sm font-medium">{t("clients.card.phone")}</label>
             <p>{selectedClient.phone}</p>
           </div>
           <div>
-            <label className="text-sm font-medium">Ville</label>
+            <label className="text-sm font-medium">{tc("city")}</label>
             <p>{selectedClient.city}</p>
           </div>
           </div>
           <div>
-          <label className="text-sm font-medium">Adresse</label>
+          <label className="text-sm font-medium">{t("clients.card.address")}</label>
           <p>{selectedClient.address}</p>
           </div>
           <div>
-          <label className="text-sm font-medium">Animaux ({selectedClient.pets.length})</label>
+          <label className="text-sm font-medium">{t("clients.card.pets")} ({selectedClient.pets.length})</label>
           <div className="flex gap-2 flex-wrap mt-2">
             {selectedClient.pets.map((pet, index) => (
             <Badge key={pet.id || index} variant="secondary">
@@ -561,7 +567,7 @@ const ClientsContent = () => {
           <div className="flex flex-col sm:flex-row gap-2 pt-4">
           {canWriteClients && (
             <>
-              <Button onClick={() => handleEditFromView()} className="w-full sm:w-auto">Modifier</Button>
+              <Button onClick={() => handleEditFromView()} className="w-full sm:w-auto">{tc("edit")}</Button>
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -572,7 +578,7 @@ const ClientsContent = () => {
                 }} 
                 className="w-full sm:w-auto text-destructive hover:text-destructive-foreground hover:bg-destructive"
               >
-                Supprimer
+                {tc("delete")}
               </Button>
             </>
           )}
@@ -589,7 +595,7 @@ const ClientsContent = () => {
         <Card className="w-full max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-          Modifier Client - {selectedClient.name}
+          {tc("edit")} - {selectedClient.name}
           <Button variant="ghost" size="sm" onClick={() => setShowEditModal(false)}>
             ✕
           </Button>
@@ -599,12 +605,12 @@ const ClientsContent = () => {
           <form onSubmit={handleSaveEdit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-            <Label htmlFor="edit_first_name">Prénom *</Label>
+            <Label htmlFor="edit_first_name">{t("clients.firstNameLabel")}</Label>
             <Input
               id="edit_first_name"
               value={editForm.first_name}
               onChange={(e) => setEditForm(prev => ({ ...prev, first_name: e.target.value }))}
-              placeholder="Prénom du client"
+              placeholder={t("clients.firstNamePlaceholder")}
               required
             />
             </div>
@@ -615,7 +621,7 @@ const ClientsContent = () => {
               id="edit_last_name"
               value={editForm.last_name}
               onChange={(e) => setEditForm(prev => ({ ...prev, last_name: e.target.value }))}
-              placeholder="Nom du client"
+              placeholder={t("clients.lastNamePlaceholder")}
               required
             />
             </div>
@@ -632,7 +638,7 @@ const ClientsContent = () => {
             </div>
             
             <div className="space-y-2">
-            <Label htmlFor="edit_phone">Téléphone</Label>
+            <Label htmlFor="edit_phone">{t("clients.phoneLabel")}</Label>
             <Input
               id="edit_phone"
               value={editForm.phone || ''}
@@ -642,7 +648,7 @@ const ClientsContent = () => {
             </div>
             
             <div className="space-y-2">
-            <Label htmlFor="edit_mobile_phone">Téléphone mobile</Label>
+            <Label htmlFor="edit_mobile_phone">{t("clients.mobilePhoneLabel")}</Label>
             <Input
               id="edit_mobile_phone"
               value={editForm.mobile_phone || ''}
@@ -668,7 +674,7 @@ const ClientsContent = () => {
             id="edit_address"
             value={editForm.address || ''}
             onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
-            placeholder="Adresse complète"
+            placeholder={t("clients.addressPlaceholder")}
             />
           </div>
           
@@ -692,7 +698,7 @@ const ClientsContent = () => {
               }
             >
               <SelectTrigger>
-              <SelectValue placeholder="Type de client" />
+              <SelectValue placeholder={t("clients.clientType")} />
               </SelectTrigger>
               <SelectContent>
               {clientTypes.map((type) => (
@@ -711,7 +717,7 @@ const ClientsContent = () => {
             id="edit_notes"
             value={editForm.notes || ''}
             onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Notes supplémentaires..."
+            placeholder={t("clients.notesPlaceholder")}
             rows={3}
             />
           </div>
@@ -728,7 +734,7 @@ const ClientsContent = () => {
               Modification...
               </>
             ) : (
-              'Enregistrer'
+              tc("save")
             )}
             </Button>
             <Button 
@@ -738,7 +744,7 @@ const ClientsContent = () => {
             disabled={updateClientMutation.isPending}
             className="w-full sm:flex-1"
             >
-            Annuler
+            {tc("cancel")}
             </Button>
           </div>
           </form>
@@ -751,14 +757,13 @@ const ClientsContent = () => {
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogTitle>{t("clients.deleteConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer le client <strong>{clientToDelete?.name}</strong> ?
-              Cette action est irréversible et supprimera définitivement toutes les données associées à ce client.
+              {t("clients.deleteConfirmBody", { name: clientToDelete?.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -770,7 +775,7 @@ const ClientsContent = () => {
                   Suppression...
                 </>
               ) : (
-                'Supprimer'
+                tc("delete")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

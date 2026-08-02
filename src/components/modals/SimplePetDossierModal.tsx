@@ -26,6 +26,8 @@ import { NewPrescriptionModal } from "@/components/forms/NewPrescriptionModal";
 import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
 import { ConsultationDetailModal } from "@/components/modals/ConsultationDetailModal";
 import { ImageIcon } from "lucide-react";
+import { useAppLocale } from "@/i18n/useAppLocale";
+import { useTranslation } from "react-i18next";
 
 interface PetUI {
   id: number;
@@ -56,6 +58,9 @@ interface SimplePetDossierModalProps {
 }
 
 export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDossierModalProps) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
   const [activeTab, setActiveTab] = useState("overview");
   const [showPrint, setShowPrint] = useState(false);
   const [showConsultation, setShowConsultation] = useState(false);
@@ -71,12 +76,21 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
   const { data: antiparasitics = [] } = useAntiparasiticsByAnimal(animalId);
   const { data: prescriptions = [] } = usePrescriptionsByAnimal(animalId);
 
+  const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(bcp47) : "—");
+
   if (!pet) return null;
 
-  const age = pet.birthDate ? calculateAge(pet.birthDate) : "Non renseigné";
-  const currentWeight = pet.weight ? `${pet.weight} kg` : "Non renseigné";
+  const age = pet.birthDate ? calculateAge(pet.birthDate) : tc("notSpecified");
+  const currentWeight = pet.weight ? `${pet.weight} kg` : tc("notSpecified");
   const lastConsult = consultations[0];
-  const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
+  const sexLabel =
+    pet.gender === "male" ? tc("male") : pet.gender === "female" ? tc("female") : "—";
+  const statusLabel =
+    pet.status === "healthy"
+      ? t("petDossier.healthy")
+      : pet.status === "treatment"
+        ? t("petDossier.inTreatment")
+        : t("petDossier.urgent");
 
   // build animal-like object for print modal
   const animalForPrint = {
@@ -85,7 +99,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
     species: pet.type,
     breed: pet.breed,
     color: pet.color,
-    sex: pet.gender === "male" ? "Mâle" : pet.gender === "female" ? "Femelle" : undefined,
+    sex: pet.gender === "male" || pet.gender === "female" ? sexLabel : undefined,
     weight: pet.weight,
     birth_date: pet.birthDate,
     microchip_number: pet.microchip,
@@ -128,7 +142,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                 {pet.name}
               </span>
               <span className="text-sm font-normal text-muted-foreground">
-                Dossier médical · {pet.owner}
+                {t("petDossier.subtitle", { owner: pet.owner })}
               </span>
             </DialogTitle>
             <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
@@ -142,7 +156,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                 className="gap-2 w-full sm:w-auto justify-center"
               >
                 <Printer className="h-4 w-4" />
-                Imprimer Dossier / QR
+                {t("petDossier.printQr")}
               </Button>
             </div>
           </DialogHeader>
@@ -151,11 +165,11 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
           <Card>
             <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                <QuickAction icon={Stethoscope} label="Consult." color="text-emerald-600" onClick={() => setShowConsultation(true)} />
-                <QuickAction icon={Syringe} label="Vaccin" color="text-blue-600" onClick={() => setShowVaccination(true)} />
-                <QuickAction icon={AlertCircle} label="Anti-P." color="text-orange-600" onClick={() => setShowAntiparasitic(true)} />
-                <QuickAction icon={ClipboardList} label="Ordo." color="text-purple-600" onClick={() => setShowPrescription(true)} />
-                <QuickAction icon={CalendarPlus} label="RDV" color="text-pink-600" onClick={() => setShowAppointment(true)} />
+                <QuickAction icon={Stethoscope} label={t("petDossier.quickConsult")} color="text-emerald-600" onClick={() => setShowConsultation(true)} />
+                <QuickAction icon={Syringe} label={t("petDossier.quickVaccin")} color="text-blue-600" onClick={() => setShowVaccination(true)} />
+                <QuickAction icon={AlertCircle} label={t("petDossier.quickAnti")} color="text-orange-600" onClick={() => setShowAntiparasitic(true)} />
+                <QuickAction icon={ClipboardList} label={t("petDossier.quickRx")} color="text-purple-600" onClick={() => setShowPrescription(true)} />
+                <QuickAction icon={CalendarPlus} label={t("petDossier.quickAppt")} color="text-pink-600" onClick={() => setShowAppointment(true)} />
               </div>
             </CardContent>
           </Card>
@@ -165,38 +179,38 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
               <TabsList className="inline-flex w-max min-w-full sm:grid sm:w-full sm:grid-cols-7 h-auto gap-1 p-1">
                 <TabsTrigger value="overview" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <Activity className="h-3.5 w-3.5" />
-                  Vue
+                  {t("petDossier.tabOverview")}
                 </TabsTrigger>
                 <TabsTrigger value="historique" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  Historique
+                  {t("petDossier.tabHistory")}
                 </TabsTrigger>
                 <TabsTrigger value="consultations" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <Stethoscope className="h-3.5 w-3.5" />
-                  Consult.
+                  {t("petDossier.tabConsult")}
                 </TabsTrigger>
                 <TabsTrigger value="vaccinations" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <Syringe className="h-3.5 w-3.5" />
-                  Vaccins
+                  {t("petDossier.tabVaccines")}
                 </TabsTrigger>
                 <TabsTrigger value="antiparasites" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <AlertCircle className="h-3.5 w-3.5" />
-                  Anti-P.
+                  {t("petDossier.tabAnti")}
                 </TabsTrigger>
                 <TabsTrigger value="prescriptions" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <FileText className="h-3.5 w-3.5" />
-                  Ordo.
+                  {t("petDossier.tabRx")}
                 </TabsTrigger>
                 <TabsTrigger value="pedigree" className="shrink-0 text-xs sm:text-sm px-2.5 py-2 gap-1">
                   <Award className="h-3.5 w-3.5" />
-                  Pédigrée
+                  {t("petDossier.tabPedigree")}
                 </TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="overview" className="space-y-4 mt-3">
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-base">Informations générales</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-base">{t("petDossier.generalInfo")}</CardTitle></CardHeader>
                 <CardContent>
                   <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                     <Avatar className="h-20 w-20 sm:h-28 sm:w-28 mx-auto sm:mx-0 shrink-0">
@@ -208,27 +222,27 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm w-full">
                       <div className="space-y-2">
                         <h3 className="font-semibold text-lg text-center sm:text-left">{pet.name}</h3>
-                        <div><span className="font-medium text-muted-foreground">Type :</span> {pet.type}</div>
-                        <div><span className="font-medium text-muted-foreground">Race :</span> {pet.breed || "—"}</div>
-                        <div><span className="font-medium text-muted-foreground">Sexe :</span> {pet.gender === "male" ? "Mâle" : pet.gender === "female" ? "Femelle" : "—"}</div>
-                        <div><span className="font-medium text-muted-foreground">Âge :</span> {age}</div>
-                        <div><span className="font-medium text-muted-foreground">Naissance :</span> {pet.birthDate || "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.type")}</span> {pet.type}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.race")}</span> {pet.breed || "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.sex")}</span> {sexLabel}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.age")}</span> {age}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.birth")}</span> {pet.birthDate || "—"}</div>
                       </div>
                       <div className="space-y-2">
-                        <div><span className="font-medium text-muted-foreground">Couleur :</span> {pet.color || "—"}</div>
-                        <div><span className="font-medium text-muted-foreground">Poids :</span> {currentWeight}</div>
-                        <div><span className="font-medium text-muted-foreground">N° puce :</span> {pet.microchip || "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.color")}</span> {pet.color || "—"}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.weight")}</span> {currentWeight}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.microchip")}</span> {pet.microchip || "—"}</div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-muted-foreground">Statut :</span>
+                          <span className="font-medium text-muted-foreground">{t("petDossier.status")}</span>
                           <Badge variant={pet.status === "healthy" ? "default" : pet.status === "treatment" ? "secondary" : "destructive"}>
-                            {pet.status === "healthy" ? "En bonne santé" : pet.status === "treatment" ? "En traitement" : "Urgent"}
+                            {statusLabel}
                           </Badge>
                         </div>
                         <div className="flex items-start gap-2">
                           <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <span><span className="font-medium text-muted-foreground">Propriétaire :</span> {pet.owner}</span>
+                          <span><span className="font-medium text-muted-foreground">{t("petDossier.owner")}</span> {pet.owner}</span>
                         </div>
-                        <div><span className="font-medium text-muted-foreground">Dernière visite :</span> {lastConsult ? fmt(lastConsult.consultation_date) : "Aucune"}</div>
+                        <div><span className="font-medium text-muted-foreground">{t("petDossier.lastVisit")}</span> {lastConsult ? fmt(lastConsult.consultation_date) : t("petDossier.none")}</div>
                       </div>
                     </div>
                   </div>
@@ -236,15 +250,15 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
               </Card>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Consultations</p><p className="text-xl sm:text-2xl font-bold">{consultations.length}</p></CardContent></Card>
-                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Vaccinations</p><p className="text-xl sm:text-2xl font-bold">{vaccinations.length}</p></CardContent></Card>
-                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Antiparasitaires</p><p className="text-xl sm:text-2xl font-bold">{antiparasitics.length}</p></CardContent></Card>
-                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">Ordonnances</p><p className="text-xl sm:text-2xl font-bold">{prescriptions.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">{t("petDossier.consultations")}</p><p className="text-xl sm:text-2xl font-bold">{consultations.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">{t("petDossier.vaccinations")}</p><p className="text-xl sm:text-2xl font-bold">{vaccinations.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">{t("petDossier.antiparasitics")}</p><p className="text-xl sm:text-2xl font-bold">{antiparasitics.length}</p></CardContent></Card>
+                <Card><CardContent className="p-3 sm:p-4"><p className="text-xs text-muted-foreground">{t("petDossier.prescriptions")}</p><p className="text-xl sm:text-2xl font-bold">{prescriptions.length}</p></CardContent></Card>
               </div>
 
               {pet.medicalNotes && (
                 <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Notes / antécédents</CardTitle></CardHeader>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">{t("petDossier.notesHistory")}</CardTitle></CardHeader>
                   <CardContent><p className="text-sm whitespace-pre-line">{pet.medicalNotes}</p></CardContent>
                 </Card>
               )}
@@ -252,13 +266,13 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
 
             <TabsContent value="historique" className="space-y-2">
               <Card>
-                <CardHeader><CardTitle>Frise chronologique</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{t("petDossier.timeline")}</CardTitle></CardHeader>
                 <CardContent>
                   {(() => {
                     const events = [
-                      ...consultations.map((c: any) => ({ d: c.consultation_date, t: "Consultation", l: c.diagnosis || c.consultation_type, color: "bg-emerald-500" })),
-                      ...vaccinations.map((v: any) => ({ d: v.vaccination_date, t: "Vaccination", l: v.vaccine_name, color: "bg-blue-500" })),
-                      ...antiparasitics.map((a: any) => ({ d: a.treatment_date, t: "Antiparasitaire", l: a.product_name, color: "bg-orange-500" })),
+                      ...consultations.map((c: any) => ({ d: c.consultation_date, t: t("petDossier.eventConsultation"), l: c.diagnosis || c.consultation_type, color: "bg-emerald-500" })),
+                      ...vaccinations.map((v: any) => ({ d: v.vaccination_date, t: t("petDossier.eventVaccination"), l: v.vaccine_name, color: "bg-blue-500" })),
+                      ...antiparasitics.map((a: any) => ({ d: a.treatment_date, t: t("petDossier.eventAntiparasitic"), l: a.product_name, color: "bg-orange-500" })),
                       ...prescriptions.map((p: any) => {
                         const meds = (p.medications || [])
                           .map((m: any) => m.medication_name)
@@ -266,13 +280,13 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                           .join(", ");
                         return {
                           d: p.prescription_date,
-                          t: "Ordonnance",
-                          l: meds || p.diagnosis || "Prescription",
+                          t: t("petDossier.eventPrescription"),
+                          l: meds || p.diagnosis || t("petDossier.eventPrescriptionAlt"),
                           color: "bg-purple-500",
                         };
                       }),
                     ].filter(e => e.d).sort((a, b) => (a.d < b.d ? 1 : -1));
-                    if (events.length === 0) return <p className="text-sm text-muted-foreground">Aucun événement enregistré</p>;
+                    if (events.length === 0) return <p className="text-sm text-muted-foreground">{t("petDossier.noEvents")}</p>;
                     return (
                       <ul className="space-y-2">
                         {events.map((e, i) => (
@@ -295,11 +309,11 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
             <TabsContent value="consultations" className="space-y-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Consultations ({consultations.length})</CardTitle>
-                  <Button size="sm" onClick={() => setShowConsultation(true)} className="gap-2"><Plus className="h-4 w-4" />Nouvelle</Button>
+                  <CardTitle>{t("petDossier.consultations")} ({consultations.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowConsultation(true)} className="gap-2"><Plus className="h-4 w-4" />{t("petDossier.new")}</Button>
                 </CardHeader>
                 <CardContent>
-                  {consultations.length === 0 ? <p className="text-sm text-muted-foreground">Aucune consultation.</p> :
+                  {consultations.length === 0 ? <p className="text-sm text-muted-foreground">{t("petDossier.noConsultations")}</p> :
                   <div className="space-y-2">
                     {consultations.map((c: any) => {
                       const linkedRx = prescriptions.filter((p: any) => p.consultation_id === c.id);
@@ -319,19 +333,19 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                               </span>
                             )}
                             {linkedRx.length > 0 && (
-                              <Badge variant="secondary" className="text-xs">Ordonnance</Badge>
+                              <Badge variant="secondary" className="text-xs">{t("petDossier.prescription")}</Badge>
                             )}
                             <span className="text-muted-foreground text-xs">{c.consultation_type}</span>
                           </div>
                         </div>
-                        {c.diagnosis && <div className="mt-1"><strong>Diagnostic :</strong> {c.diagnosis}</div>}
-                        {c.treatment && <div><strong>Traitement :</strong> {c.treatment}</div>}
+                        {c.diagnosis && <div className="mt-1"><strong>{t("petDossier.diagnosis")}</strong> {c.diagnosis}</div>}
+                        {c.treatment && <div><strong>{t("petDossier.treatment")}</strong> {c.treatment}</div>}
                         {linkedRx.map((p: any) => {
                           const meds = (p.medications || []).map((m: any) => m.medication_name).filter(Boolean);
                           if (meds.length === 0) return null;
                           return (
                             <div key={p.id} className="mt-1 text-xs text-muted-foreground">
-                              <strong>Médicaments :</strong> {meds.join(", ")}
+                              <strong>{t("petDossier.medications")}</strong> {meds.join(", ")}
                             </div>
                           );
                         })}
@@ -346,16 +360,16 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
             <TabsContent value="vaccinations" className="space-y-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Vaccinations ({vaccinations.length})</CardTitle>
-                  <Button size="sm" onClick={() => setShowVaccination(true)} className="gap-2"><Plus className="h-4 w-4" />Nouvelle</Button>
+                  <CardTitle>{t("petDossier.vaccinations")} ({vaccinations.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowVaccination(true)} className="gap-2"><Plus className="h-4 w-4" />{t("petDossier.new")}</Button>
                 </CardHeader>
                 <CardContent>
-                  {vaccinations.length === 0 ? <p className="text-sm text-muted-foreground">Aucune vaccination.</p> :
+                  {vaccinations.length === 0 ? <p className="text-sm text-muted-foreground">{t("petDossier.noVaccinations")}</p> :
                   <div className="space-y-2">
                     {vaccinations.map((v: any) => (
                       <div key={v.id} className="border rounded p-3 text-sm">
                         <div className="flex justify-between"><span className="font-medium">{v.vaccine_name}</span><span className="text-muted-foreground">{fmt(v.vaccination_date)}</span></div>
-                        <div className="text-xs text-muted-foreground">Type : {v.vaccine_type || "—"} · Lot : {v.batch_number || "—"} · Rappel : {fmt(v.next_due_date)}</div>
+                        <div className="text-xs text-muted-foreground">{t("petDossier.typeLabel")} {v.vaccine_type || "—"} · {t("petDossier.batch")} {v.batch_number || "—"} · {t("petDossier.booster")} {fmt(v.next_due_date)}</div>
                       </div>
                     ))}
                   </div>}
@@ -366,16 +380,16 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
             <TabsContent value="antiparasites" className="space-y-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Antiparasitaires ({antiparasitics.length})</CardTitle>
-                  <Button size="sm" onClick={() => setShowAntiparasitic(true)} className="gap-2"><Plus className="h-4 w-4" />Nouveau</Button>
+                  <CardTitle>{t("petDossier.antiparasitics")} ({antiparasitics.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowAntiparasitic(true)} className="gap-2"><Plus className="h-4 w-4" />{t("petDossier.newM")}</Button>
                 </CardHeader>
                 <CardContent>
-                  {antiparasitics.length === 0 ? <p className="text-sm text-muted-foreground">Aucun traitement.</p> :
+                  {antiparasitics.length === 0 ? <p className="text-sm text-muted-foreground">{t("petDossier.noTreatments")}</p> :
                   <div className="space-y-2">
                     {antiparasitics.map((a: any) => (
                       <div key={a.id} className="border rounded p-3 text-sm">
                         <div className="flex justify-between"><span className="font-medium">{a.product_name}</span><span className="text-muted-foreground">{fmt(a.treatment_date)}</span></div>
-                        <div className="text-xs text-muted-foreground">{a.parasite_type || "—"} · {a.active_ingredient || ""} · Prochain : {fmt(a.next_treatment_date)}</div>
+                        <div className="text-xs text-muted-foreground">{a.parasite_type || "—"} · {a.active_ingredient || ""} · {t("petDossier.next")} {fmt(a.next_treatment_date)}</div>
                       </div>
                     ))}
                   </div>}
@@ -386,11 +400,11 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
             <TabsContent value="prescriptions" className="space-y-2">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Ordonnances ({prescriptions.length})</CardTitle>
-                  <Button size="sm" onClick={() => setShowPrescription(true)} className="gap-2"><Plus className="h-4 w-4" />Nouvelle</Button>
+                  <CardTitle>{t("petDossier.prescriptions")} ({prescriptions.length})</CardTitle>
+                  <Button size="sm" onClick={() => setShowPrescription(true)} className="gap-2"><Plus className="h-4 w-4" />{t("petDossier.new")}</Button>
                 </CardHeader>
                 <CardContent>
-                  {prescriptions.length === 0 ? <p className="text-sm text-muted-foreground">Aucune ordonnance.</p> :
+                  {prescriptions.length === 0 ? <p className="text-sm text-muted-foreground">{t("petDossier.noPrescriptions")}</p> :
                   <div className="space-y-3">
                     {prescriptions.map((p: any) => {
                       const meds = Array.isArray(p.medications) ? p.medications : [];
@@ -401,22 +415,22 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                             <Badge variant="outline">{p.status || "active"}</Badge>
                           </div>
                           {p.diagnosis && (
-                            <div><span className="text-muted-foreground">Diagnostic :</span> {p.diagnosis}</div>
+                            <div><span className="text-muted-foreground">{t("petDossier.diagnosis")}</span> {p.diagnosis}</div>
                           )}
                           {meds.length === 0 ? (
-                            <p className="text-muted-foreground text-xs">Aucun médicament enregistré</p>
+                            <p className="text-muted-foreground text-xs">{t("dossier.noMedication")}</p>
                           ) : (
                             <ul className="space-y-1.5 border-t pt-2">
                               {meds.map((m: any) => (
                                 <li key={m.id} className="rounded bg-muted/40 px-2 py-1.5">
-                                  <div className="font-medium">{m.medication_name || "Médicament"}</div>
+                                  <div className="font-medium">{m.medication_name || t("petDossier.medication")}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {[
                                       m.dosage,
                                       m.frequency,
-                                      m.duration ? `pendant ${m.duration}` : null,
-                                      m.quantity ? `Qté : ${m.quantity}` : null,
-                                    ].filter(Boolean).join(" · ") || "Posologie non renseignée"}
+                                      m.duration ? t("petDossier.forDuration", { duration: m.duration }) : null,
+                                      m.quantity ? t("petDossier.qty", { qty: m.quantity }) : null,
+                                    ].filter(Boolean).join(" · ") || t("petDossier.dosageMissing")}
                                   </div>
                                   {m.instructions && (
                                     <div className="text-xs text-muted-foreground mt-0.5">{m.instructions}</div>
@@ -426,7 +440,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
                             </ul>
                           )}
                           {p.notes && (
-                            <div className="text-xs text-muted-foreground border-t pt-2">Notes : {p.notes}</div>
+                            <div className="text-xs text-muted-foreground border-t pt-2">{t("petDossier.notes")} {p.notes}</div>
                           )}
                         </div>
                       );
@@ -443,7 +457,7 @@ export function SimplePetDossierModal({ open, onOpenChange, pet }: SimplePetDoss
 
           <div className="flex justify-stretch sm:justify-end pt-2 pb-[env(safe-area-inset-bottom)]">
             <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
-              Fermer
+              {t("petDossier.close")}
             </Button>
           </div>
         </DialogContent>

@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Upload, Trash2, Edit, Eye, Plus } from 'lucide-react';
+import { Camera, Trash2, Edit, Eye, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { getBcp47Locale } from '@/i18n/useAppLocale';
 
 interface FarmPhoto {
   id: string;
@@ -24,6 +26,8 @@ interface FarmPhotoManagerProps {
 }
 
 const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosChange, farmName }) => {
+  const { t, i18n } = useTranslation('app');
+  const { t: tc } = useTranslation('common');
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
@@ -43,7 +47,7 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
       const photo: FarmPhoto = {
         id: `photo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         url: '',
-        description: uploadForm.description || `Photo de ${farmName}`,
+        description: uploadForm.description || t('farmPhotos.photoOf', { name: farmName }),
         category: uploadForm.category,
         uploadedAt: new Date().toISOString()
       };
@@ -63,8 +67,8 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
     setIsUploadDialogOpen(false);
     
     toast({
-      title: "Photos ajoutées",
-      description: `${newPhotos.length} photo(s) ajoutée(s) à l'exploitation ${farmName}`,
+      title: t('farmPhotos.addedTitle'),
+      description: t('farmPhotos.addedBody', { count: newPhotos.length, name: farmName }),
     });
   };
 
@@ -73,8 +77,8 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
     onPhotosChange(updatedPhotos);
     
     toast({
-      title: "Photo supprimée",
-      description: "La photo a été supprimée avec succès",
+      title: t('farmPhotos.deletedTitle'),
+      description: t('farmPhotos.deletedBody'),
     });
   };
 
@@ -102,20 +106,13 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
     setUploadForm({ description: '', category: 'general' });
 
     toast({
-      title: "Photo modifiée",
-      description: "La photo a été modifiée avec succès",
+      title: t('farmPhotos.editedTitle'),
+      description: t('farmPhotos.editedBody'),
     });
   };
 
-  const getCategoryLabel = (category: FarmPhoto['category']) => {
-    const labels = {
-      cheptel: 'Cheptel',
-      batiments: 'Bâtiments',
-      equipements: 'Équipements',
-      general: 'Général'
-    };
-    return labels[category];
-  };
+  const getCategoryLabel = (category: FarmPhoto['category']) =>
+    t(`farmPhotos.categories.${category}`);
 
   const getCategoryColor = (category: FarmPhoto['category']) => {
     const colors = {
@@ -137,12 +134,11 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
 
   return (
     <div className="space-y-6">
-      {/* En-tête avec bouton d'ajout */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Photos de l'exploitation</h3>
+          <h3 className="text-lg font-semibold">{t('farmPhotos.title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Gérez les photos de votre exploitation, du cheptel et des équipements
+            {t('farmPhotos.subtitle')}
           </p>
         </div>
         
@@ -150,26 +146,26 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
-              Ajouter des photos
+              {t('farmPhotos.add')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Ajouter des photos</DialogTitle>
+              <DialogTitle>{t('farmPhotos.addTitle')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="photo-description">Description</Label>
+                <Label htmlFor="photo-description">{tc('description')}</Label>
                 <Input
                   id="photo-description"
-                  placeholder="Description des photos"
+                  placeholder={t('farmPhotos.descriptionPlaceholder')}
                   value={uploadForm.description}
                   onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
                 />
               </div>
               
               <div>
-                <Label htmlFor="photo-category">Catégorie</Label>
+                <Label htmlFor="photo-category">{tc('category')}</Label>
                 <Select
                   value={uploadForm.category}
                   onValueChange={(value: FarmPhoto['category']) => 
@@ -180,16 +176,16 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cheptel">Cheptel</SelectItem>
-                    <SelectItem value="batiments">Bâtiments</SelectItem>
-                    <SelectItem value="equipements">Équipements</SelectItem>
-                    <SelectItem value="general">Général</SelectItem>
+                    <SelectItem value="cheptel">{t('farmPhotos.categories.cheptel')}</SelectItem>
+                    <SelectItem value="batiments">{t('farmPhotos.categories.batiments')}</SelectItem>
+                    <SelectItem value="equipements">{t('farmPhotos.categories.equipements')}</SelectItem>
+                    <SelectItem value="general">{t('farmPhotos.categories.general')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="photo-files">Sélectionner des photos</Label>
+                <Label htmlFor="photo-files">{t('farmPhotos.selectPhotos')}</Label>
                 <Input
                   id="photo-files"
                   type="file"
@@ -205,14 +201,13 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
         </Dialog>
       </div>
 
-      {/* Affichage des photos par catégorie */}
       {photos.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
             <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Aucune photo ajoutée</p>
+            <p className="text-muted-foreground">{t('farmPhotos.empty')}</p>
             <p className="text-sm text-muted-foreground">
-              Commencez par ajouter des photos de votre exploitation
+              {t('farmPhotos.emptyHint')}
             </p>
           </CardContent>
         </Card>
@@ -226,7 +221,7 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
                     {getCategoryLabel(category as FarmPhoto['category'])}
                   </Badge>
                   <span className="text-sm text-muted-foreground">
-                    ({categoryPhotos.length} photo{categoryPhotos.length > 1 ? 's' : ''})
+                    {t('farmPhotos.photoCount', { count: categoryPhotos.length })}
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -241,7 +236,6 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
                           className="w-full h-full object-cover"
                         />
                         
-                        {/* Overlay avec actions */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <Button
                             size="sm"
@@ -270,7 +264,7 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
                       <div className="mt-2">
                         <p className="text-sm font-medium truncate">{photo.description}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(photo.uploadedAt).toLocaleDateString()}
+                          {new Date(photo.uploadedAt).toLocaleDateString(getBcp47Locale(i18n.language))}
                         </p>
                       </div>
                     </div>
@@ -282,11 +276,10 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
         </div>
       )}
 
-      {/* Modal d'édition */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Modifier la photo</DialogTitle>
+            <DialogTitle>{t('farmPhotos.editTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {editingPhoto && (
@@ -300,7 +293,7 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
             )}
             
             <div>
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">{tc('description')}</Label>
               <Input
                 id="edit-description"
                 value={uploadForm.description}
@@ -309,7 +302,7 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
             </div>
             
             <div>
-              <Label htmlFor="edit-category">Catégorie</Label>
+              <Label htmlFor="edit-category">{tc('category')}</Label>
               <Select
                 value={uploadForm.category}
                 onValueChange={(value: FarmPhoto['category']) => 
@@ -320,20 +313,20 @@ const FarmPhotoManager: React.FC<FarmPhotoManagerProps> = ({ photos, onPhotosCha
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cheptel">Cheptel</SelectItem>
-                  <SelectItem value="batiments">Bâtiments</SelectItem>
-                  <SelectItem value="equipements">Équipements</SelectItem>
-                  <SelectItem value="general">Général</SelectItem>
+                  <SelectItem value="cheptel">{t('farmPhotos.categories.cheptel')}</SelectItem>
+                  <SelectItem value="batiments">{t('farmPhotos.categories.batiments')}</SelectItem>
+                  <SelectItem value="equipements">{t('farmPhotos.categories.equipements')}</SelectItem>
+                  <SelectItem value="general">{t('farmPhotos.categories.general')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Annuler
+                {tc('cancel')}
               </Button>
               <Button onClick={handleSaveEdit}>
-                Enregistrer
+                {tc('save')}
               </Button>
             </div>
           </div>

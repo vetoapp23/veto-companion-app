@@ -11,9 +11,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, FileText } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useToast } from "@/hooks/use-toast";
+import { getDateFnsLocale } from "@/i18n/dateLocale";
 import { formatSourceLabel } from "@/lib/accountingLedger";
 import {
   accountingEntryKey,
@@ -23,7 +25,6 @@ import {
   type AccountingReportEntry,
 } from "@/lib/accountingReport";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 
 interface PrintAccountingReportModalProps {
   open: boolean;
@@ -40,11 +41,14 @@ export function PrintAccountingReportModal({
   startDate,
   endDate,
 }: PrintAccountingReportModalProps) {
+  const { t, i18n } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const dateLocale = getDateFnsLocale(i18n.language);
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
   const { toast } = useToast();
 
-  /** Clés des lignes exclues du PDF */
+  /** Keys of lines excluded from the PDF */
   const [excludedKeys, setExcludedKeys] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -52,13 +56,14 @@ export function PrintAccountingReportModal({
   }, [open, startDate, endDate, entries]);
 
   const sortedEntries = useMemo(() => {
+    const loc = (i18n.language || "fr").split("-")[0];
     return [...entries].sort((a, b) => {
       const da = a.date.slice(0, 10);
       const db = b.date.slice(0, 10);
       if (da !== db) return da.localeCompare(db);
-      return (a.description || "").localeCompare(b.description || "", "fr");
+      return (a.description || "").localeCompare(b.description || "", loc);
     });
-  }, [entries]);
+  }, [entries, i18n.language]);
 
   const includedEntries = useMemo(
     () => sortedEntries.filter((e) => !excludedKeys.has(accountingEntryKey(e))),
@@ -118,9 +123,9 @@ export function PrintAccountingReportModal({
       await printHtml(html);
     } catch (e: any) {
       toast({
-        title: "Export impossible",
+        title: t("accounting.print.modal.exportFailed"),
         description:
-          e?.message || "Autorisez les popups pour enregistrer le PDF.",
+          e?.message || t("accounting.print.modal.exportFailedBody"),
         variant: "destructive",
       });
     }
@@ -128,19 +133,18 @@ export function PrintAccountingReportModal({
 
   const handleDownloadPdf = async () => {
     toast({
-      title: "Enregistrer en PDF",
-      description:
-        "Dans la boîte d'impression, choisissez « Enregistrer au format PDF ».",
+      title: t("accounting.print.modal.savePdfTitle"),
+      description: t("accounting.print.modal.savePdfBody"),
     });
     await openPrintDialog();
   };
 
   const typeBadge = (type: AccountingReportEntry["type"]) => {
     if (type === "revenue")
-      return <Badge className="bg-green-600 hover:bg-green-600">Recette</Badge>;
+      return <Badge className="bg-green-600 hover:bg-green-600">{t("accounting.print.types.revenue")}</Badge>;
     if (type === "valuation")
-      return <Badge className="bg-blue-600 hover:bg-blue-600">Valorisation</Badge>;
-    return <Badge variant="destructive">Charge</Badge>;
+      return <Badge className="bg-blue-600 hover:bg-blue-600">{t("accounting.print.types.valuation")}</Badge>;
+    return <Badge variant="destructive">{t("accounting.print.types.expense")}</Badge>;
   };
 
   return (
@@ -149,53 +153,52 @@ export function PrintAccountingReportModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Exporter le bilan comptable (PDF)
+            {t("accounting.print.modal.title")}
           </DialogTitle>
           <DialogDescription>
-            Décochez les lignes à exclure du rapport, puis générez le PDF
-            (logo et informations de la clinique inclus).
+            {t("accounting.print.modal.desc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="rounded-lg border bg-muted/40 px-3 py-2 text-sm flex flex-wrap gap-x-4 gap-y-1">
           <span>
-            Période :{" "}
+            {t("accounting.print.modal.period")} :{" "}
             <strong>
               {startDate
                 ? format(new Date(`${startDate}T00:00:00`), "dd/MM/yyyy", {
-                    locale: fr,
+                    locale: dateLocale,
                   })
                 : "—"}{" "}
               →{" "}
               {endDate
                 ? format(new Date(`${endDate}T00:00:00`), "dd/MM/yyyy", {
-                    locale: fr,
+                    locale: dateLocale,
                   })
                 : "—"}
             </strong>
           </span>
           <span>
-            Incluses : <strong>{includedEntries.length}</strong> /{" "}
+            {t("accounting.print.modal.included")} : <strong>{includedEntries.length}</strong> /{" "}
             {sortedEntries.length}
           </span>
           <span>
-            CA : <strong className="text-green-700">{formatCurrency(totals.totalRevenue)}</strong>
+            {t("accounting.print.modal.ca")} : <strong className="text-green-700">{formatCurrency(totals.totalRevenue)}</strong>
           </span>
           <span>
-            Charges :{" "}
+            {t("accounting.print.modal.expenses")} :{" "}
             <strong className="text-red-700">{formatCurrency(totals.totalExpenses)}</strong>
           </span>
           <span>
-            Résultat : <strong>{formatCurrency(totals.netIncome)}</strong>
+            {t("accounting.print.modal.result")} : <strong>{formatCurrency(totals.netIncome)}</strong>
           </span>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={includeAll}>
-            Tout inclure
+            {t("accounting.print.modal.includeAll")}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={excludeAll}>
-            Tout exclure
+            {t("accounting.print.modal.excludeAll")}
           </Button>
           <Button
             type="button"
@@ -203,7 +206,7 @@ export function PrintAccountingReportModal({
             size="sm"
             onClick={() => excludeByType("valuation")}
           >
-            Exclure valorisations
+            {t("accounting.print.modal.excludeValuations")}
           </Button>
           <Button
             type="button"
@@ -211,7 +214,7 @@ export function PrintAccountingReportModal({
             size="sm"
             onClick={() => excludeByType("expense")}
           >
-            Exclure charges
+            {t("accounting.print.modal.excludeExpenses")}
           </Button>
           <Button
             type="button"
@@ -219,7 +222,7 @@ export function PrintAccountingReportModal({
             size="sm"
             onClick={() => excludeByType("revenue")}
           >
-            Exclure recettes
+            {t("accounting.print.modal.excludeRevenue")}
           </Button>
         </div>
 
@@ -227,7 +230,7 @@ export function PrintAccountingReportModal({
           <div className="divide-y">
             {sortedEntries.length === 0 && (
               <p className="p-4 text-sm text-muted-foreground">
-                Aucune écriture sur cette période.
+                {t("accounting.print.modal.empty")}
               </p>
             )}
             {sortedEntries.map((entry) => {
@@ -252,7 +255,7 @@ export function PrintAccountingReportModal({
                         {format(
                           new Date(`${entry.date.slice(0, 10)}T00:00:00`),
                           "dd/MM/yyyy",
-                          { locale: fr }
+                          { locale: dateLocale }
                         )}
                       </span>
                       <span className="text-xs text-muted-foreground">
@@ -283,7 +286,7 @@ export function PrintAccountingReportModal({
 
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+            {tc("cancel")}
           </Button>
           <Button
             type="button"
@@ -291,11 +294,11 @@ export function PrintAccountingReportModal({
             disabled={includedEntries.length === 0}
           >
             <Download className="h-4 w-4 mr-2" />
-            Générer le PDF
+            {t("accounting.print.modal.generatePdf")}
           </Button>
         </div>
         <p className="text-[11px] text-muted-foreground -mt-2">
-          Astuce : dans la boîte d’impression, choisissez « Enregistrer au format PDF ».
+          {t("accounting.print.modal.tip")}
         </p>
       </DialogContent>
     </Dialog>

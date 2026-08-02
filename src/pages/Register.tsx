@@ -10,9 +10,11 @@ import {
   Loader2, Building2, UserPlus, Check, Sparkles, HardDrive, Users, ArrowLeft, ArrowRight,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { SeoHead } from "@/components/SeoHead";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -46,15 +48,10 @@ function formatStorage(mb: number) {
   return mb >= 1024 ? `${(mb / 1024).toFixed(mb % 1024 === 0 ? 0 : 1)} Go` : `${mb} Mo`;
 }
 
-function formatPrice(amount: number, currency: Currency) {
-  if (amount === 0) return "Gratuit";
-  const s = CURRENCY_SYMBOL[currency];
-  return currency === "MAD" ? `${amount} ${s}` : `${s}${amount}`;
-}
-
 type Step = "plan" | "account";
 
 const Register = () => {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -80,6 +77,12 @@ const Register = () => {
     phone: "",
     organizationCode: "",
   });
+
+  const formatPrice = (amount: number, curr: Currency) => {
+    if (amount === 0) return t("register.free");
+    const s = CURRENCY_SYMBOL[curr];
+    return curr === "MAD" ? `${amount} ${s}` : `${s}${amount}`;
+  };
 
   useEffect(() => {
     (async () => {
@@ -114,15 +117,15 @@ const Register = () => {
 
     try {
       if (!formData.fullName || !formData.email || !formData.password)
-        throw new Error("Veuillez remplir tous les champs obligatoires");
+        throw new Error(t("register.errors.requiredFields"));
       if (formData.password !== formData.confirmPassword)
-        throw new Error("Les mots de passe ne correspondent pas");
+        throw new Error(t("register.errors.passwordMismatch"));
       if (formData.password.length < 8)
-        throw new Error("Le mot de passe doit contenir au moins 8 caractères");
+        throw new Error(t("register.errors.passwordMin"));
       if (isJoiningOrganization && !formData.organizationCode)
-        throw new Error("Veuillez entrer le code d'organisation");
+        throw new Error(t("register.errors.orgCodeRequired"));
       if (!isJoiningOrganization && !formData.clinicName)
-        throw new Error("Veuillez entrer le nom de votre clinique");
+        throw new Error(t("register.errors.clinicNameRequired"));
 
       const { data: flagRow } = await supabase
         .from("platform_settings" as any)
@@ -130,7 +133,7 @@ const Register = () => {
         .eq("key", "feature_flags")
         .maybeSingle();
       if ((flagRow as any)?.value?.block_registrations) {
-        throw new Error("Les inscriptions sont temporairement fermées. Réessayez plus tard.");
+        throw new Error(t("register.errors.registrationsClosed"));
       }
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -138,7 +141,7 @@ const Register = () => {
         password: formData.password,
       });
       if (authError) throw authError;
-      if (!authData.user) throw new Error("Erreur lors de la création du compte");
+      if (!authData.user) throw new Error(t("register.errors.accountCreate"));
 
       const { data: profileData, error: profileError } = await supabase.rpc("create_user_profile", {
         p_user_id: authData.user.id,
@@ -153,7 +156,7 @@ const Register = () => {
 
       if (profileError) throw new Error(profileError.message);
       if (profileData && !(profileData as any).success)
-        throw new Error((profileData as any).error || "Erreur lors de la création du profil");
+        throw new Error((profileData as any).error || t("register.errors.profileCreate"));
 
       // Pour les admins (créateurs d'organisation), pré-enregistrer le pack choisi.
       if (!isJoiningOrganization && (profileData as any)?.organization_id && selectedPlan !== "free") {
@@ -163,18 +166,18 @@ const Register = () => {
       }
 
       toast({
-        title: "Inscription réussie !",
+        title: t("register.successTitle"),
         description: isJoiningOrganization
-          ? "Vérifiez votre email pour confirmer votre compte."
-          : `Compte créé avec le pack ${currentPlan?.name ?? selectedPlan}. Vérifiez votre email pour confirmer.`,
+          ? t("register.successJoin")
+          : t("register.successCreate", { name: currentPlan?.name ?? selectedPlan }),
       });
 
       navigate("/login");
     } catch (error) {
       console.error("Registration error:", error);
       toast({
-        title: "Erreur d'inscription",
-        description: error instanceof Error ? error.message : "Une erreur est survenue",
+        title: t("register.errorTitle"),
+        description: error instanceof Error ? error.message : t("register.errors.accountCreate"),
         variant: "destructive",
       });
     } finally {
@@ -187,18 +190,21 @@ const Register = () => {
     return (
       <div className="marketing-shell min-h-screen px-4 py-10">
         <SeoHead
-          title="Inscription — Choisir un pack VetoCrm"
-          description="Créez votre clinique sur VetoCrm. Choisissez un pack gratuit ou payant et démarrez votre CRM vétérinaire en quelques minutes."
+          title={t("seo.registerPlanTitle")}
+          description={t("seo.registerPlanDescription")}
           path="/register"
         />
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <Link to="/" className="mk-brand inline-block mb-4 text-2xl">
+          <div className="flex items-center justify-between mb-6">
+            <Link to="/" className="mk-brand text-2xl">
               Veto<span>Crm</span>
             </Link>
-            <h1 className="mk-display text-3xl md:text-4xl font-bold mb-2">Choisissez votre pack</h1>
+            <LanguageSwitcher variant="marketing" />
+          </div>
+          <div className="text-center mb-8">
+            <h1 className="mk-display text-3xl md:text-4xl font-bold mb-2">{t("register.choosePlanTitle")}</h1>
             <p style={{ color: "var(--mk-muted)" }}>
-              Démarrez gratuitement, évoluez quand vous voulez. Annulation à tout moment.
+              {t("register.choosePlanSub")}
             </p>
             <div className="flex justify-center gap-2 mt-4">
               {(["MAD", "EUR", "USD"] as Currency[]).map((c) => (
@@ -236,7 +242,7 @@ const Register = () => {
                     {plan.is_highlighted && (
                       <Badge className="absolute -top-2 left-1/2 -translate-x-1/2">
                         <Sparkles className="h-3 w-3 mr-1" />
-                        Populaire
+                        {t("register.popular")}
                       </Badge>
                     )}
                     <CardHeader>
@@ -247,20 +253,18 @@ const Register = () => {
                       <div className="pt-2">
                         <span className="text-3xl font-bold">{formatPrice(price, currency)}</span>
                         {price > 0 && (
-                          <span className="text-xs text-muted-foreground">/mois</span>
+                          <span className="text-xs text-muted-foreground">{t("register.perMonth")}</span>
                         )}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
                       <div className="flex items-center gap-2">
                         <HardDrive className="h-4 w-4 text-muted-foreground" />
-                        <span>{formatStorage(plan.storage_mb)} photos</span>
+                        <span>{t("register.storagePhotos", { size: formatStorage(plan.storage_mb) })}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {plan.max_users} utilisateur{plan.max_users > 1 ? "s" : ""}
-                        </span>
+                        <span>{t("register.users", { count: plan.max_users })}</span>
                       </div>
                       <ul className="space-y-1 pt-2 border-t">
                         {(plan.features || []).slice(0, 4).map((f, i) => (
@@ -286,18 +290,18 @@ const Register = () => {
               }}
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              Je rejoins une clinique existante
+              {t("register.joinExistingClinic")}
             </Button>
             <Button onClick={() => setStep("account")} size="lg">
-              Continuer
+              {t("register.continue")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            Déjà un compte ?{" "}
+            {t("register.alreadyHaveAccount")}{" "}
             <Link to="/login" className="text-primary hover:underline font-medium">
-              Connectez-vous
+              {t("register.signIn")}
             </Link>
           </p>
         </div>
@@ -309,185 +313,190 @@ const Register = () => {
   return (
     <div className="marketing-shell min-h-screen flex items-center justify-center px-4 py-8">
       <SeoHead
-        title="Créer un compte — VetoCrm"
-        description="Inscrivez votre clinique ou rejoignez une équipe sur VetoCrm, le CRM des vétérinaires."
+        title={t("seo.registerAccountTitle")}
+        description={t("seo.registerAccountDescription")}
         path="/register"
       />
-      <Card className="w-full max-w-2xl rounded-2xl border shadow-[var(--shadow-card)]">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            {isJoiningOrganization ? (
-              <div className="p-3 bg-primary/10 rounded-full">
-                <UserPlus className="h-10 w-10 text-primary" />
-              </div>
-            ) : (
-              <div className="p-3 bg-primary/10 rounded-full">
-                <Building2 className="h-10 w-10 text-primary" />
-              </div>
-            )}
-          </div>
-          <Link to="/" className="mk-brand text-lg mb-2 inline-block">
+      <div className="w-full max-w-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <Link to="/" className="mk-brand text-lg">
             Veto<span>Crm</span>
           </Link>
-          <CardTitle className="mk-display text-3xl font-bold">
-            {isJoiningOrganization ? "Rejoindre une clinique" : "Créez votre compte"}
-          </CardTitle>
-          <CardDescription className="text-base">
-            {isJoiningOrganization
-              ? "Inscription en tant qu'assistant vétérinaire"
-              : currentPlan
-              ? `Pack sélectionné : ${currentPlan.name}`
-              : "Inscription clinique"}
-          </CardDescription>
-          {!isJoiningOrganization && (
-            <Button
-              variant="link"
-              size="sm"
-              className="mx-auto"
-              onClick={() => setStep("plan")}
-            >
-              <ArrowLeft className="mr-1 h-3 w-3" />
-              Changer de pack
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRegister} className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase">
-                Informations personnelles
-              </h3>
-              <div>
-                <Label htmlFor="fullName">Nom complet *</Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="Dr. Jean Dupont"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@exemple.com"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Mot de passe *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Minimum 8 caractères"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    setFormData({ ...formData, confirmPassword: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            {isJoiningOrganization && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase">
-                  Code d'organisation
-                </h3>
-                <div>
-                  <Label htmlFor="organizationCode">
-                    Code fourni par votre administrateur *
-                  </Label>
-                  <Input
-                    id="organizationCode"
-                    value={formData.organizationCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, organizationCode: e.target.value })
-                    }
-                    placeholder="ABC123"
-                    required
-                  />
+          <LanguageSwitcher variant="marketing" />
+        </div>
+        <Card className="w-full rounded-2xl border shadow-[var(--shadow-card)]">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              {isJoiningOrganization ? (
+                <div className="p-3 bg-primary/10 rounded-full">
+                  <UserPlus className="h-10 w-10 text-primary" />
                 </div>
-              </div>
-            )}
-
-            {!isJoiningOrganization && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase">
-                  Informations de la clinique
-                </h3>
-                <div>
-                  <Label htmlFor="clinicName">Nom de la clinique *</Label>
-                  <Input
-                    id="clinicName"
-                    value={formData.clinicName}
-                    onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
-                    placeholder="Clinique Vétérinaire Centrale"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="clinicAddress">Adresse</Label>
-                  <Input
-                    id="clinicAddress"
-                    value={formData.clinicAddress}
-                    onChange={(e) =>
-                      setFormData({ ...formData, clinicAddress: e.target.value })
-                    }
-                    placeholder="123 Rue Example, Ville"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Téléphone</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+212 6 12 34 56 78"
-                  />
-                </div>
-              </div>
-            )}
-
-            <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Inscription en cours...
-                </>
               ) : (
-                <>
-                  {isJoiningOrganization ? "Rejoindre la clinique" : "Créer mon compte"}
-                </>
+                <div className="p-3 bg-primary/10 rounded-full">
+                  <Building2 className="h-10 w-10 text-primary" />
+                </div>
               )}
-            </Button>
-          </form>
+            </div>
+            <CardTitle className="mk-display text-3xl font-bold">
+              {isJoiningOrganization ? t("register.joinClinicTitle") : t("register.createAccountTitle")}
+            </CardTitle>
+            <CardDescription className="text-base">
+              {isJoiningOrganization
+                ? t("register.joinAsAssistant")
+                : currentPlan
+                ? t("register.selectedPlan", { name: currentPlan.name })
+                : t("register.clinicSignup")}
+            </CardDescription>
+            {!isJoiningOrganization && (
+              <Button
+                variant="link"
+                size="sm"
+                className="mx-auto"
+                onClick={() => setStep("plan")}
+              >
+                <ArrowLeft className="mr-1 h-3 w-3" />
+                {t("register.changePlan")}
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleRegister} className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase">
+                  {t("register.personalInfo")}
+                </h3>
+                <div>
+                  <Label htmlFor="fullName">{t("register.fullName")}</Label>
+                  <Input
+                    id="fullName"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder="Dr. Jean Dupont"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">{t("register.emailRequired")}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="email@exemple.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">{t("register.passwordRequired")}</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder={t("register.passwordMinHint")}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData({ ...formData, confirmPassword: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="mt-8 text-center space-y-2 pt-6 border-t">
-            <p className="text-sm text-muted-foreground">
-              Vous avez déjà un compte ?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
-                Connectez-vous
-              </Link>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+              {isJoiningOrganization && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase">
+                    {t("register.orgCodeSection")}
+                  </h3>
+                  <div>
+                    <Label htmlFor="organizationCode">
+                      {t("register.orgCodeLabel")}
+                    </Label>
+                    <Input
+                      id="organizationCode"
+                      value={formData.organizationCode}
+                      onChange={(e) =>
+                        setFormData({ ...formData, organizationCode: e.target.value })
+                      }
+                      placeholder="ABC123"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!isJoiningOrganization && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase">
+                    {t("register.clinicInfo")}
+                  </h3>
+                  <div>
+                    <Label htmlFor="clinicName">{t("register.clinicName")}</Label>
+                    <Input
+                      id="clinicName"
+                      value={formData.clinicName}
+                      onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
+                      placeholder="Clinique Vétérinaire Centrale"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="clinicAddress">{t("register.address")}</Label>
+                    <Input
+                      id="clinicAddress"
+                      value={formData.clinicAddress}
+                      onChange={(e) =>
+                        setFormData({ ...formData, clinicAddress: e.target.value })
+                      }
+                      placeholder="123 Rue Example, Ville"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">{t("register.phone")}</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+212 6 12 34 56 78"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {t("register.registering")}
+                  </>
+                ) : (
+                  <>
+                    {isJoiningOrganization ? t("register.joinClinic") : t("register.createAccount")}
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-8 text-center space-y-2 pt-6 border-t">
+              <p className="text-sm text-muted-foreground">
+                {t("register.haveAccount")}{" "}
+                <Link to="/login" className="text-primary hover:underline font-medium">
+                  {t("register.signIn")}
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

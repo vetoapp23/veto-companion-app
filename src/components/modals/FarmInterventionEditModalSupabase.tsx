@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ const FarmInterventionEditModalSupabase = ({
   onOpenChange, 
   intervention 
 }: FarmInterventionEditModalSupabaseProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -78,15 +81,15 @@ const FarmInterventionEditModalSupabase = ({
   ];
 
   const interventionTypeLabels: Record<string, string> = {
-    vaccination: "Vaccination",
-    traitement_preventif: "Traitement préventif",
-    traitement_curatif: "Traitement curatif", 
-    chirurgie: "Chirurgie",
-    diagnostic: "Diagnostic",
-    suivi_reproduction: "Suivi reproduction",
-    consultation_generale: "Consultation générale",
-    urgence: "Urgence",
-    autre: "Autre"
+    vaccination: t("farms.supabaseInterventionTypes.vaccination"),
+    traitement_preventif: t("farms.supabaseInterventionTypes.traitement_preventif"),
+    traitement_curatif: t("farms.supabaseInterventionTypes.traitement_curatif"),
+    chirurgie: t("farms.supabaseInterventionTypes.chirurgie"),
+    diagnostic: t("farms.supabaseInterventionTypes.diagnostic"),
+    suivi_reproduction: t("farms.supabaseInterventionTypes.suivi_reproduction"),
+    consultation_generale: t("farms.supabaseInterventionTypes.consultation_generale"),
+    urgence: t("farms.supabaseInterventionTypes.urgence"),
+    autre: t("farms.supabaseInterventionTypes.autre")
   };
 
   // Fetch farms when modal opens
@@ -133,8 +136,8 @@ const FarmInterventionEditModalSupabase = ({
     } catch (error) {
       console.error('Error fetching farms:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de charger les exploitations",
+        title: tc("error"),
+        description: t("farms.ui.loadFarmsError"),
         variant: "destructive",
       });
     }
@@ -164,8 +167,8 @@ const FarmInterventionEditModalSupabase = ({
 
     if (!formData.intervention_type) {
       toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner un type d'intervention",
+        title: tc("error"),
+        description: t("farms.ui.selectInterventionTypeError"),
         variant: "destructive",
       });
       return;
@@ -173,8 +176,8 @@ const FarmInterventionEditModalSupabase = ({
 
     if (!formData.intervention_date) {
       toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner une date d'intervention",
+        title: tc("error"),
+        description: t("farms.ui.selectInterventionDateError"),
         variant: "destructive",
       });
       return;
@@ -204,16 +207,16 @@ const FarmInterventionEditModalSupabase = ({
       if (error) throw error;
 
       toast({
-        title: "Succès",
-        description: "Intervention mise à jour avec succès",
+        title: tc("success"),
+        description: t("farms.ui.interventionUpdatedSuccess"),
       });
 
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error updating intervention:', error);
       toast({
-        title: "Erreur",
-        description: error.message || "Impossible de mettre à jour l'intervention",
+        title: tc("error"),
+        description: error.message || t("farms.ui.updateInterventionError"),
         variant: "destructive",
       });
     } finally {
@@ -250,23 +253,23 @@ const FarmInterventionEditModalSupabase = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier l'Intervention</DialogTitle>
+          <DialogTitle>{t("farms.editIntervention")}</DialogTitle>
           <DialogDescription>
-            Modifier les détails de l'intervention vétérinaire
+            {t("farms.ui.editInterventionDescGeneric")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="farm_id">Exploitation</Label>
+              <Label htmlFor="farm_id">{t("farms.selectFarm")}</Label>
               <Select 
                 value={formData.farm_id} 
                 onValueChange={(value) => handleChange('farm_id', value)}
                 disabled // Usually don't allow changing farm for existing intervention
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une exploitation" />
+                  <SelectValue placeholder={t("farms.selectFarm")} />
                 </SelectTrigger>
                 <SelectContent>
                   {farms.map((farm) => (
@@ -279,7 +282,7 @@ const FarmInterventionEditModalSupabase = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="intervention_date">Date d'intervention *</Label>
+              <Label htmlFor="intervention_date">{t("farms.ui.interventionDate")}</Label>
               <Input
                 id="intervention_date"
                 type="date"
@@ -292,13 +295,13 @@ const FarmInterventionEditModalSupabase = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="intervention_type">Type d'intervention *</Label>
+              <Label htmlFor="intervention_type">{t("farms.interventionType")}</Label>
               <Select 
                 value={formData.intervention_type} 
                 onValueChange={(value) => handleChange('intervention_type', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
+                  <SelectValue placeholder={t("farms.ui.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {interventionTypes.map((type) => (
@@ -311,62 +314,62 @@ const FarmInterventionEditModalSupabase = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="animal_count">Nombre d'animaux</Label>
+              <Label htmlFor="animal_count">{t("farms.ui.animalCount")}</Label>
               <Input
                 id="animal_count"
                 type="number"
                 value={formData.animal_count}
                 onChange={(e) => handleChange('animal_count', e.target.value)}
-                placeholder="Nombre d'animaux concernés"
+                placeholder={t("farms.ui.animalsCountPlaceholder")}
                 min="1"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{tc("description")}</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleChange('description', e.target.value)}
-              placeholder="Description de l'intervention..."
+              placeholder={t("farms.interventionDescPlaceholder")}
               rows={2}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="diagnosis">Diagnostic</Label>
+            <Label htmlFor="diagnosis">{t("farms.ui.diagnosis")}</Label>
             <Textarea
               id="diagnosis"
               value={formData.diagnosis}
               onChange={(e) => handleChange('diagnosis', e.target.value)}
-              placeholder="Diagnostic vétérinaire..."
+              placeholder={t("farms.ui.diagnosisPlaceholder")}
               rows={2}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="treatment">Traitement</Label>
+            <Label htmlFor="treatment">{t("farms.ui.treatment")}</Label>
             <Textarea
               id="treatment"
               value={formData.treatment}
               onChange={(e) => handleChange('treatment', e.target.value)}
-              placeholder="Traitement prescrit..."
+              placeholder={t("farms.ui.treatmentPlaceholder")}
               rows={2}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Médicaments utilisés</Label>
+            <Label>{t("farms.medicationsUsed")}</Label>
             <div className="flex gap-2">
               <Input
                 value={medicationInput}
                 onChange={(e) => setMedicationInput(e.target.value)}
-                placeholder="Nom du médicament"
+                placeholder={t("farms.medicationNamePlaceholder")}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addMedication())}
               />
               <Button type="button" onClick={addMedication} variant="outline">
-                Ajouter
+                {tc("add")}
               </Button>
             </div>
             {formData.medications_used.length > 0 && (
@@ -392,7 +395,7 @@ const FarmInterventionEditModalSupabase = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cost">Coût (MAD)</Label>
+              <Label htmlFor="cost">{t("farms.cost", { currency: "MAD" })}</Label>
               <Input
                 id="cost"
                 type="number"
@@ -405,7 +408,7 @@ const FarmInterventionEditModalSupabase = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="follow_up_date">Date de suivi</Label>
+              <Label htmlFor="follow_up_date">{t("farms.ui.followUpDate")}</Label>
               <Input
                 id="follow_up_date"
                 type="date"
@@ -416,22 +419,22 @@ const FarmInterventionEditModalSupabase = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Notes additionnelles..."
+              placeholder={t("farms.notesComplementary")}
               rows={2}
             />
           </div>
 
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Mise à jour..." : "Mettre à jour"}
+              {loading ? t("farms.ui.updating") : t("farms.ui.saveChanges")}
             </Button>
           </div>
         </form>

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { useFarms, useCreateFarm, useUpdateFarm, useDeleteFarm, useClients, type Farm, type Client } from '@/hooks/useDatabase';
 
 const FarmManagement: React.FC = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { user } = useAuth();
   const { data: farmSettings, isLoading: settingsLoading } = useFarmManagementSettings();
   
@@ -73,7 +76,7 @@ const FarmManagement: React.FC = () => {
       return `${farm.clients.first_name} ${farm.clients.last_name}`;
     }
     const client = clients.find(c => c.id === farm.client_id);
-    return client ? `${client.first_name} ${client.last_name}` : 'Client inconnu';
+    return client ? `${client.first_name} ${client.last_name}` : t("farms.ui.management.unknownClient");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,15 +104,15 @@ const FarmManagement: React.FC = () => {
         });
         
         toast({
-          title: 'Succès',
-          description: 'Ferme mise à jour avec succès.',
+          title: tc("success"),
+          description: t("farms.ui.management.farmUpdated"),
         });
       } else {
         await createFarmMutation.mutateAsync(farmData);
         
         toast({
-          title: 'Succès',
-          description: 'Ferme créée avec succès.',
+          title: tc("success"),
+          description: t("farms.ui.management.farmCreated"),
         });
       }
 
@@ -119,8 +122,8 @@ const FarmManagement: React.FC = () => {
     } catch (error) {
       console.error('Error saving farm:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible d\'enregistrer la ferme.',
+        title: tc("error"),
+        description: t("farms.ui.management.saveError"),
         variant: 'destructive',
       });
     }
@@ -146,20 +149,20 @@ const FarmManagement: React.FC = () => {
   };
 
   const handleDelete = async (farmId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette ferme ?')) return;
+    if (!confirm(t("farms.ui.management.deleteConfirm"))) return;
 
     try {
       await deleteFarmMutation.mutateAsync(farmId);
       
       toast({
-        title: 'Succès',
-        description: 'Ferme supprimée avec succès.',
+        title: tc("success"),
+        description: t("farms.ui.management.farmDeleted"),
       });
     } catch (error) {
       console.error('Error deleting farm:', error);
       toast({
-        title: 'Erreur',
-        description: 'Impossible de supprimer la ferme.',
+        title: tc("error"),
+        description: t("farms.ui.management.deleteError"),
         variant: 'destructive',
       });
     }
@@ -189,29 +192,29 @@ const FarmManagement: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Chargement...</div>;
+    return <div className="flex justify-center items-center h-64">{tc("loading")}</div>;
   }
 
   return (
     <div className="container mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestion des Fermes</h1>
+        <h1 className="text-2xl font-bold">{t("farms.managementTitle")}</h1>
         <Button onClick={() => setShowForm(true)} disabled={showForm}>
           <Plus className="h-4 w-4 mr-2" />
-          Nouvelle Ferme
+          {t("farms.newFarm")}
         </Button>
       </div>
 
       {showForm && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{editingFarm ? 'Modifier la Ferme' : 'Nouvelle Ferme'}</CardTitle>
+            <CardTitle>{editingFarm ? t("farms.ui.management.editFarmCardTitle") : t("farms.ui.management.newFarmCardTitle")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="farm_name">Nom de la ferme *</Label>
+                  <Label htmlFor="farm_name">{t("farms.ui.management.farmNameLabel")}</Label>
                   <Input
                     id="farm_name"
                     value={formData.farm_name}
@@ -221,10 +224,10 @@ const FarmManagement: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="client_id">Client propriétaire *</Label>
+                  <Label htmlFor="client_id">{t("farms.ui.management.ownerClientLabel")}</Label>
                   <Select value={formData.client_id} onValueChange={(value) => setFormData({ ...formData, client_id: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un client" />
+                      <SelectValue placeholder={t("farms.ui.management.selectClient")} />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client) => (
@@ -237,10 +240,10 @@ const FarmManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="farm_type">Type de ferme</Label>
+                  <Label htmlFor="farm_type">{t("farms.ui.management.farmTypeLabel")}</Label>
                   <Select value={formData.farm_type} onValueChange={(value) => setFormData({ ...formData, farm_type: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner le type" />
+                      <SelectValue placeholder={t("farms.ui.selectType")} />
                     </SelectTrigger>
                     <SelectContent>
                       {farmTypes.map((type) => (
@@ -253,7 +256,7 @@ const FarmManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="registration_number">Numéro d'enregistrement</Label>
+                  <Label htmlFor="registration_number">{t("farms.registrationNumber")}</Label>
                   <Input
                     id="registration_number"
                     value={formData.registration_number}
@@ -262,7 +265,7 @@ const FarmManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="phone">Téléphone</Label>
+                  <Label htmlFor="phone">{tc("phone")}</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -272,7 +275,7 @@ const FarmManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{tc("email")}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -282,7 +285,7 @@ const FarmManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="herd_size">Taille du cheptel</Label>
+                  <Label htmlFor="herd_size">{t("farms.ui.herdSize")}</Label>
                   <Input
                     id="herd_size"
                     type="number"
@@ -293,7 +296,7 @@ const FarmManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label>Certifications</Label>
+                  <Label>{t("farms.certifications")}</Label>
                   <div className="grid grid-cols-2 gap-3 mt-2">
                     {(farmSettings?.certification_types || ['Bio', 'Label Rouge', 'Standard']).map((cert) => (
                       <div key={cert} className="flex items-center space-x-2">
@@ -321,7 +324,7 @@ const FarmManagement: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="address">Adresse</Label>
+                <Label htmlFor="address">{tc("address")}</Label>
                 <Textarea
                   id="address"
                   value={formData.address}
@@ -331,7 +334,7 @@ const FarmManagement: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{tc("notes")}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
@@ -342,10 +345,10 @@ const FarmManagement: React.FC = () => {
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={handleCancel}>
-                  Annuler
+                  {tc("cancel")}
                 </Button>
                 <Button type="submit">
-                  {editingFarm ? 'Mettre à jour' : 'Créer'}
+                  {editingFarm ? t("farms.ui.saveChanges") : tc("create")}
                 </Button>
               </div>
             </form>
@@ -393,19 +396,19 @@ const FarmManagement: React.FC = () => {
                 
                 {farm.herd_size > 0 && (
                   <p className="text-sm">
-                    <strong>Cheptel:</strong> {farm.herd_size} animaux
+                    <strong>{t("farms.ui.management.herdLabel")}</strong> {t("farms.ui.herdSizeAnimals", { count: farm.herd_size })}
                   </p>
                 )}
                 
                 {farm.registration_number && (
                   <p className="text-sm">
-                    <strong>N° enregistrement:</strong> {farm.registration_number}
+                    <strong>{t("farms.ui.management.registrationShort")}</strong> {farm.registration_number}
                   </p>
                 )}
                 
                 {farm.certifications && farm.certifications.length > 0 && (
                   <div className="text-sm">
-                    <strong>Certifications:</strong>
+                    <strong>{t("farms.certifications")}:</strong>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {farm.certifications.map((cert, index) => (
                         <span key={index} className="bg-secondary px-2 py-1 rounded-sm text-xs">
@@ -429,13 +432,13 @@ const FarmManagement: React.FC = () => {
         <Card className="text-center py-12">
           <CardContent>
             <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg font-medium mb-2">Aucune ferme enregistrée</p>
+            <p className="text-lg font-medium mb-2">{t("farms.ui.management.noFarmsRegistered")}</p>
             <p className="text-muted-foreground mb-4">
-              Commencez par créer votre première ferme.
+              {t("farms.ui.management.noFarmsHint")}
             </p>
             <Button onClick={() => setShowForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Créer une ferme
+              {t("farms.ui.management.createFarmBtn")}
             </Button>
           </CardContent>
         </Card>

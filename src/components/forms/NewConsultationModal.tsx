@@ -25,6 +25,7 @@ import type { Animal, Client, CreateConsultationData } from "@/lib/database";
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 import { Loader2 } from "lucide-react";
 import { roundTemperature, temperatureInputValue } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface NewConsultationModalProps {
   open: boolean;
@@ -34,6 +35,8 @@ interface NewConsultationModalProps {
 }
 
 export function NewConsultationModal({ open, onOpenChange, prefillData, onCreated }: NewConsultationModalProps) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: animals = [], isLoading: animalsLoading } = useAnimals();
   const createConsultationMutation = useCreateConsultation();
@@ -110,22 +113,22 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
     const validationErrors: string[] = [];
     
     if (!formData.clientId) {
-      validationErrors.push("Veuillez sélectionner un client");
+      validationErrors.push(t("alerts.selectClient"));
     }
     
     if (!formData.animalId) {
-      validationErrors.push("Veuillez sélectionner un animal");
+      validationErrors.push(t("alerts.selectAnimal"));
     }
     
     if (!formData.date) {
-      validationErrors.push("Veuillez sélectionner une date de consultation");
+      validationErrors.push(t("alerts.selectConsultationDate"));
     } else {
       const consultationDate = new Date(formData.date);
       const oneYearFromNow = new Date();
       oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
       
       if (consultationDate > oneYearFromNow) {
-        validationErrors.push("La date de consultation ne peut pas être plus d'un an dans le futur");
+        validationErrors.push(t("alerts.consultationDateTooFar"));
       }
     }
     
@@ -133,41 +136,41 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
     if (formData.weight) {
       const weight = parseFloat(formData.weight);
       if (isNaN(weight) || weight <= 0 || weight > 999.9) {
-        validationErrors.push("Le poids doit être un nombre valide entre 0.1 et 999.9 kg");
+        validationErrors.push(t("alerts.weightInvalid"));
       }
     }
     
     if (formData.temperature) {
       const temperature = parseFloat(formData.temperature);
       if (isNaN(temperature) || temperature < 30 || temperature > 50) {
-        validationErrors.push("La température doit être un nombre valide entre 30°C et 50°C");
+        validationErrors.push(t("alerts.temperatureInvalid"));
       }
     }
     
     // Validate text field lengths
     if (formData.symptoms && formData.symptoms.length > 1000) {
-      validationErrors.push("Les symptômes ne peuvent pas dépasser 1000 caractères");
+      validationErrors.push(t("alerts.symptomsTooLong"));
     }
     
     if (formData.diagnosis && formData.diagnosis.length > 1000) {
-      validationErrors.push("Le diagnostic ne peut pas dépasser 1000 caractères");
+      validationErrors.push(t("alerts.diagnosisTooLong"));
     }
     
     if (formData.treatment && formData.treatment.length > 1000) {
-      validationErrors.push("Le traitement ne peut pas dépasser 1000 caractères");
+      validationErrors.push(t("alerts.treatmentTooLong"));
     }
     
     if (formData.notes && formData.notes.length > 2000) {
-      validationErrors.push("Les notes ne peuvent pas dépasser 2000 caractères");
+      validationErrors.push(t("alerts.notesTooLong"));
     }
     
     if (formData.followUp && formData.followUp.length > 500) {
-      validationErrors.push("Les notes de suivi ne peuvent pas dépasser 500 caractères");
+      validationErrors.push(t("alerts.followUpTooLong"));
     }
     
     if (validationErrors.length > 0) {
       toast({
-        title: "⚠ Formulaire incomplet",
+        title: t("alerts.formIncomplete"),
         description: validationErrors[0], // Show first error
         variant: "destructive",
       });
@@ -181,16 +184,16 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
           prescriptionMeds = buildPrescriptionMedPayload(rxMedications, stockItems);
         } catch (stockErr: any) {
           toast({
-            title: "Stock insuffisant",
-            description: stockErr?.message || "Impossible de générer l'ordonnance.",
+            title: t("alerts.insufficientStock"),
+            description: stockErr?.message || t("alerts.cannotGeneratePrescription"),
             variant: "destructive",
           });
           return;
         }
         if (prescriptionMeds.length === 0) {
           toast({
-            title: "Ordonnance incomplete",
-            description: "Ajoutez au moins un médicament, ou désactivez l'ordonnance.",
+            title: t("forms.prescriptionIncomplete"),
+            description: t("alerts.prescriptionIncompleteBody"),
             variant: "destructive",
           });
           return;
@@ -263,11 +266,11 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
       }
 
       toast({
-        title: withPrescription && rxCreated ? "✓ Consultation + ordonnance" : "✓ Consultation enregistrée",
+        title: withPrescription && rxCreated ? t("alerts.consultationWithRx") : t("alerts.consultationSaved"),
         description:
           withPrescription && rxCreated
-            ? `Consultation et ordonnance créées pour ${animalLabel}.`
-            : `La consultation pour ${animalLabel} a été sauvegardée.`,
+            ? t("alerts.consultationWithRxBody", { name: animalLabel })
+            : t("alerts.consultationSavedBody", { name: animalLabel }),
       });
 
       // Reset form
@@ -295,29 +298,29 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
     } catch (error: any) {
       console.error('Error creating consultation:', error);
       
-      let errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
+      let errorMessage = t("alerts.unexpectedError");
       
       // Handle specific error types
       if (error?.message) {
         const errorMsg = error.message.toLowerCase();
         
         if (errorMsg.includes('foreign key') || errorMsg.includes('constraint')) {
-          errorMessage = "Le client ou l'animal sélectionné n'existe plus. Veuillez actualiser la page.";
+          errorMessage = t("alerts.clientOrAnimalGone");
         } else if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connection')) {
-          errorMessage = "Problème de connexion. Vérifiez votre connexion internet et réessayez.";
+          errorMessage = t("alerts.connectionProblem");
         } else if (errorMsg.includes('permission') || errorMsg.includes('unauthorized') || errorMsg.includes('authorized')) {
-          errorMessage = "Vous n'avez pas les permissions nécessaires pour créer une consultation.";
+          errorMessage = t("alerts.noPermissionConsultation");
         } else if (errorMsg.includes('duplicate') || errorMsg.includes('already exists')) {
-          errorMessage = "Une consultation similaire existe déjà pour cette date et cet animal.";
+          errorMessage = t("alerts.duplicateConsultation");
         } else if (errorMsg.includes('authentication')) {
-          errorMessage = "Votre session a expiré. Veuillez vous reconnecter.";
+          errorMessage = t("alerts.sessionExpired");
         } else if (error.message.length < 100) {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: "⚠ Impossible d'enregistrer la consultation",
+        title: t("alerts.cannotSaveConsultation"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -352,16 +355,16 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nouvelle Consultation</DialogTitle>
+            <DialogTitle>{t("forms.newConsultation")}</DialogTitle>
             <DialogDescription>
-              Enregistrez une nouvelle consultation vétérinaire.
+              {t("forms.consultationDesc")}
             </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Client *</Label>
+                <Label>{tc("client")} *</Label>
                 <div className="flex gap-2">
                   <Select 
                     value={formData.clientId.toString()} 
@@ -369,11 +372,11 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                     disabled={clientsLoading}
                   >
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={clientsLoading ? "Chargement des clients..." : "Sélectionner le client"} />
+                      <SelectValue placeholder={clientsLoading ? t("forms.loadingClients") : t("forms.selectClient")} />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.length === 0 && !clientsLoading ? (
-                        <SelectItem value="__none__" disabled>Aucun client disponible</SelectItem>
+                        <SelectItem value="__none__" disabled>{t("forms.noClients")}</SelectItem>
                       ) : (
                         clients.map(client => (
                           <SelectItem key={client.id} value={client.id}>
@@ -397,7 +400,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
               </div>
               
               <div className="space-y-2">
-                <Label>Animal *</Label>
+                <Label>{tc("animal")} *</Label>
                 <div className="flex gap-2">
                   <Select 
                     value={formData.animalId} 
@@ -407,17 +410,17 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder={
                         !formData.clientId 
-                          ? "Sélectionnez d'abord un client"
+                          ? t("forms.selectClientFirst")
                           : animalsLoading 
-                            ? "Chargement des animaux..."
+                            ? t("forms.loadingAnimals")
                             : availablePets.length === 0
-                              ? "Aucun animal pour ce client"
-                              : "Sélectionner l'animal"
+                              ? t("forms.noAnimalsForClient")
+                              : t("forms.selectAnimal")
                       } />
                     </SelectTrigger>
                     <SelectContent>
                       {availablePets.length === 0 && formData.clientId && !animalsLoading ? (
-                        <SelectItem value="__none__" disabled>Aucun animal pour ce client</SelectItem>
+                        <SelectItem value="__none__" disabled>{t("forms.noAnimalsForClient")}</SelectItem>
                       ) : (
                         availablePets.map(animal => (
                           <SelectItem key={animal.id} value={animal.id}>
@@ -441,7 +444,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="date">Date *</Label>
+                <Label htmlFor="date">{tc("date")} *</Label>
                 <Input
                   id="date"
                   type="date"
@@ -454,7 +457,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="weight">Poids (kg)</Label>
+                <Label htmlFor="weight">{t("forms.weightKg")}</Label>
                 <Input
                   id="weight"
                   type="number"
@@ -468,7 +471,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="temperature">Température (°C)</Label>
+                <Label htmlFor="temperature">{t("forms.temperatureC")}</Label>
                 <Input
                   id="temperature"
                   type="number"
@@ -484,50 +487,50 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="symptoms">Symptômes observés</Label>
+              <Label htmlFor="symptoms">{t("forms.symptomsLabel")}</Label>
               <Textarea
                 id="symptoms"
                 value={formData.symptoms}
                 onChange={handleChange}
-                placeholder="Symptômes observés, comportement anormal..."
+                placeholder={t("forms.symptomsPlaceholder")}
                 rows={3}
                 maxLength={1000}
                 title="Maximum 1000 caractères"
               />
               <div className="text-xs text-muted-foreground text-right">
-                {formData.symptoms.length}/1000 caractères
+                {t("forms.charsCount", { count: formData.symptoms.length, max: 1000 })}
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="diagnosis">Diagnostic</Label>
+              <Label htmlFor="diagnosis">{t("forms.diagnosisLabel")}</Label>
               <Textarea
                 id="diagnosis"
                 value={formData.diagnosis}
                 onChange={handleChange}
-                placeholder="Diagnostic établi..."
+                placeholder={t("forms.diagnosisPlaceholder")}
                 rows={3}
                 maxLength={1000}
                 title="Maximum 1000 caractères"
               />
               <div className="text-xs text-muted-foreground text-right">
-                {formData.diagnosis.length}/1000 caractères
+                {t("forms.charsCount", { count: formData.diagnosis.length, max: 1000 })}
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="treatment">Traitement administré</Label>
+              <Label htmlFor="treatment">{t("forms.treatmentAdministeredLabel")}</Label>
               <Textarea
                 id="treatment"
                 value={formData.treatment}
                 onChange={handleChange}
-                placeholder="Traitements, injections, interventions..."
+                placeholder={t("forms.treatmentPlaceholder")}
                 rows={3}
                 maxLength={1000}
                 title="Maximum 1000 caractères"
               />
               <div className="text-xs text-muted-foreground text-right">
-                {formData.treatment.length}/1000 caractères
+                {t("forms.charsCount", { count: formData.treatment.length, max: 1000 })}
               </div>
             </div>
 
@@ -537,10 +540,10 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                 <div className="space-y-1">
                   <Label htmlFor="with-prescription" className="flex items-center gap-2 text-base font-semibold cursor-pointer">
                     <Pill className="h-4 w-4 text-primary" />
-                    Générer une ordonnance
+                    {t("forms.generatePrescription")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Optionnel — laissez désactivé pour enregistrer la consultation seule.
+                    {t("forms.generatePrescriptionHint")}
                   </p>
                 </div>
                 <Switch
@@ -560,38 +563,38 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="followUp">Suivi recommandé</Label>
+              <Label htmlFor="followUp">{t("forms.followUpLabel")}</Label>
               <Input
                 id="followUp"
                 value={formData.followUp}
                 onChange={handleChange}
-                placeholder="ex: Contrôle dans 1 semaine"
+                placeholder={t("forms.followUpPlaceholder")}
                 maxLength={500}
                 title="Maximum 500 caractères"
               />
               <div className="text-xs text-muted-foreground text-right">
-                {formData.followUp.length}/500 caractères
+                {t("forms.charsCount", { count: formData.followUp.length, max: 500 })}
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes additionnelles</Label>
+              <Label htmlFor="notes">{t("forms.additionalNotes")}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                placeholder="Notes diverses, recommandations..."
+                placeholder={t("forms.additionalNotesPlaceholder")}
                 rows={3}
                 maxLength={2000}
                 title="Maximum 2000 caractères"
               />
               <div className="text-xs text-muted-foreground text-right">
-                {formData.notes.length}/2000 caractères
+                {t("forms.charsCount", { count: formData.notes.length, max: 2000 })}
               </div>
             </div>
             {/* Photos upload */}
             <div className="space-y-2 col-span-2">
-              <Label>Photos de la consultation</Label>
+              <Label>{t("forms.consultationPhotos")}</Label>
               <input
                 type="file"
                 accept="image/*"
@@ -621,10 +624,10 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                     const totalBytes = results.reduce((s, u) => s + estimateDataUrlBytes(u), 0);
                     setFormData(prev => ({ ...prev, photos: [...prev.photos, ...results] }));
                     recordStorageChange("consultation", totalBytes, results.length).catch(() => {});
-                    toast({ title: "✓ Photos ajoutées", description: `${results.length} photo(s) prête(s) à enregistrer.` });
+                    toast({ title: t("alerts.photosAdded"), description: t("alerts.photosAddedBody", { count: results.length }) });
                   } catch (err: any) {
                     console.error("[consultation] photo upload error", err);
-                    toast({ title: "Erreur photos", description: err?.message || "Impossible de traiter les images", variant: "destructive" });
+                    toast({ title: t("alerts.photosError"), description: err?.message || t("alerts.cannotProcessImages"), variant: "destructive" });
                   } finally {
                     setUploadingPhotos(false);
                     e.target.value = "";
@@ -634,7 +637,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
               />
               {uploadingPhotos && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Compression des photos…
+                  <Loader2 className="h-3 w-3 animate-spin" /> {t("forms.compressingPhotos")}
                 </div>
               )}
               {formData.photos.length > 0 && (
@@ -662,7 +665,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                 onClick={() => onOpenChange(false)}
                 disabled={createConsultationMutation.isPending || createPrescriptionMutation.isPending}
               >
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button 
                 type="submit" 
@@ -677,12 +680,12 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
                 }
               >
                 {createConsultationMutation.isPending || createPrescriptionMutation.isPending
-                  ? "Enregistrement..."
+                  ? tc("saving")
                   : uploadingPhotos
-                    ? "Photos en cours..."
+                    ? tc("processing")
                     : withPrescription
-                      ? "Enregistrer + ordonnance"
-                      : "Enregistrer Consultation"}
+                      ? t("forms.generatePrescription")
+                      : tc("save")}
               </Button>
             </div>
           </form>
@@ -703,10 +706,10 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pill className="h-5 w-5" />
-              Ordonnance créée
+              {t("forms.prescriptionCreated")}
             </DialogTitle>
             <DialogDescription>
-              La consultation et l&apos;ordonnance ont été enregistrées. Vous pouvez imprimer ou télécharger maintenant.
+              {t("forms.prescriptionCreatedDesc")}
             </DialogDescription>
           </DialogHeader>
           {createdRxForPrint && (

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { recordStockMovement } from '@/lib/stockMovements';
+import i18n from '@/i18n';
 
 // Database types that map to existing Supabase schema
 export interface DatabaseStockItem {
@@ -183,7 +184,7 @@ export const useStock = () => {
       const normalized = (data || []).map((row: any) => ({
         id: row.id,
         stock_item_id: row.stock_item_id,
-        item_name: row.item_name || row.stock_items?.name || 'Article',
+        item_name: row.item_name || row.stock_items?.name || i18n.t('stock.toasts.itemFallback', { ns: 'app' }),
         movement_type: row.movement_type,
         quantity: Number(row.quantity) || 0,
         reason: row.reason,
@@ -307,7 +308,7 @@ export const useStock = () => {
             item_name: data.name,
             movement_type: 'in',
             quantity: initialQty,
-            reason: 'Inventaire initial',
+            reason: i18n.t('stock.toasts.initialInventory', { ns: 'app' }),
             performed_by: user.id,
             updateQuantity: false,
           });
@@ -325,16 +326,16 @@ export const useStock = () => {
       });
       
       toast({
-        title: "Succès",
-        description: "Article ajouté au stock",
+        title: i18n.t('success', { ns: 'common' }),
+        description: i18n.t('stock.toasts.itemAdded', { ns: 'app' }),
       });
 
       return data;
     } catch (err: any) {
       console.error('Error adding stock item:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible d'ajouter l'article",
+        title: i18n.t('error', { ns: 'common' }),
+        description: i18n.t('stock.toasts.itemAddError', { ns: 'app' }),
         variant: "destructive",
       });
       return null;
@@ -375,16 +376,16 @@ export const useStock = () => {
       });
       
       toast({
-        title: "Succès",
-        description: "Article mis à jour",
+        title: i18n.t('success', { ns: 'common' }),
+        description: i18n.t('stock.toasts.itemUpdated', { ns: 'app' }),
       });
 
       return data;
     } catch (err: any) {
       console.error('Error updating stock item:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour l'article",
+        title: i18n.t('error', { ns: 'common' }),
+        description: i18n.t('stock.toasts.itemUpdateError', { ns: 'app' }),
         variant: "destructive",
       });
       return null;
@@ -419,16 +420,16 @@ export const useStock = () => {
       setStockItems(prev => prev.filter(item => item.id !== id));
       
       toast({
-        title: "Succès",
-        description: "Article supprimé du stock",
+        title: i18n.t('success', { ns: 'common' }),
+        description: i18n.t('stock.toasts.itemDeleted', { ns: 'app' }),
       });
 
       return true;
     } catch (err: any) {
       console.error('Error deleting stock item:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'article",
+        title: i18n.t('error', { ns: 'common' }),
+        description: i18n.t('stock.toasts.itemDeleteError', { ns: 'app' }),
         variant: "destructive",
       });
       return false;
@@ -473,16 +474,16 @@ export const useStock = () => {
       await fetchStockItems();
 
       toast({
-        title: "Succès",
-        description: "Mouvement de stock enregistré",
+        title: i18n.t('success', { ns: 'common' }),
+        description: i18n.t('stock.toasts.movementRecorded', { ns: 'app' }),
       });
 
       return data;
     } catch (err: any) {
       console.error('Error adding stock movement:', err);
       toast({
-        title: "Erreur",
-        description: err?.message || "Impossible d'enregistrer le mouvement",
+        title: i18n.t('error', { ns: 'common' }),
+        description: err?.message || i18n.t('stock.toasts.movementError', { ns: 'app' }),
         variant: "destructive",
       });
       return null;
@@ -565,16 +566,16 @@ export const useStock = () => {
       await fetchSuppliers(); // Refresh list
       
       toast({
-        title: "Succès",
-        description: "Fournisseur ajouté",
+        title: i18n.t('success', { ns: 'common' }),
+        description: i18n.t('stock.toasts.supplierAdded', { ns: 'app' }),
       });
 
       return data;
     } catch (err: any) {
       console.error('Error adding supplier:', err);
       toast({
-        title: "Erreur",
-        description: "Impossible d'ajouter le fournisseur",
+        title: i18n.t('error', { ns: 'common' }),
+        description: i18n.t('stock.toasts.supplierAddError', { ns: 'app' }),
         variant: "destructive",
       });
       return null;

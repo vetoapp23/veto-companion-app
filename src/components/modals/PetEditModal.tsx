@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Pet, useClients } from "@/contexts/ClientContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useTranslation } from "react-i18next";
 
 interface PetEditModalProps {
   open: boolean;
@@ -21,6 +22,8 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
   const { updatePet, clients } = useClients();
   const { settings } = useSettings();
   const { toast } = useToast();
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const [formData, setFormData] = useState({
     name: "",
     type: "",
@@ -108,8 +111,8 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
     });
 
     toast({
-      title: "Animal modifié",
-      description: `Les informations de ${formData.name} ont été mises à jour.`,
+      title: t("pets.updateSuccess"),
+      description: t("pets.updatedBody", { name: formData.name }),
     });
 
     onOpenChange(false);
@@ -121,13 +124,13 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier Animal</DialogTitle>
+          <DialogTitle>{t("pets.editTitle")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom de l'animal *</Label>
+              <Label htmlFor="name">{t("pets.animalNameLabel")}</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -136,7 +139,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Type d'animal *</Label>
+              <Label>{t("pets.speciesTypeLabel")}</Label>
               <Select value={formData.type} onValueChange={(value) => handleSelectChange("type", value)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -161,7 +164,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="breed">Race</Label>
+              <Label htmlFor="breed">{t("pets.columns.breed")}</Label>
               <Input
                 id="breed"
                 value={formData.breed}
@@ -169,14 +172,14 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Sexe</Label>
+              <Label>{tc("sex")}</Label>
               <Select value={formData.gender} onValueChange={(value) => handleSelectChange("gender", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le sexe" />
+                  <SelectValue placeholder={t("pets.selectSex")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="male">Mâle</SelectItem>
-                  <SelectItem value="female">Femelle</SelectItem>
+                  <SelectItem value="male">{t("pets.sexMale")}</SelectItem>
+                  <SelectItem value="female">{t("pets.sexFemale")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -184,7 +187,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="birthDate">Date de naissance</Label>
+              <Label htmlFor="birthDate">{t("pets.birthDate")}</Label>
               <Input
                 id="birthDate"
                 type="date"
@@ -194,7 +197,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weight">Poids (kg)</Label>
+              <Label htmlFor="weight">{tc("weight")} ({tc("kg")})</Label>
               <Input
                 id="weight"
                 value={formData.weight}
@@ -205,7 +208,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="color">Couleur</Label>
+              <Label htmlFor="color">{t("pets.color")}</Label>
               <Input
                 id="color"
                 value={formData.color}
@@ -219,7 +222,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Propriétaire *</Label>
+              <Label>{t("pets.ownerRequiredLabel")}</Label>
               <Select value={formData.ownerId.toString()} onValueChange={(value) => handleSelectChange("ownerId", value)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -234,22 +237,22 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Statut de santé</Label>
+              <Label>{t("pets.healthStatusLabel")}</Label>
               <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="healthy">En bonne santé</SelectItem>
-                  <SelectItem value="treatment">En traitement</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="healthy">{t("pets.statusHealthy")}</SelectItem>
+                  <SelectItem value="treatment">{t("pets.statusTreatment")}</SelectItem>
+                  <SelectItem value="urgent">{t("pets.statusUrgent")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="microchip">Numéro de puce électronique</Label>
+            <Label htmlFor="microchip">{t("pets.microchipNumberLabel")}</Label>
             <Input
               id="microchip"
               value={formData.microchip}
@@ -258,16 +261,15 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="medicalNotes">Notes médicales</Label>
+            <Label htmlFor="medicalNotes">{t("pets.medicalNotes")}</Label>
             <Textarea
               id="medicalNotes"
               value={formData.medicalNotes}
               onChange={handleChange}
-              placeholder="Allergies, conditions médicales, notes importantes..."
+              placeholder={t("pets.medicalNotesPlaceholder")}
             />
           </div>
 
-          {/* Section Pedigree */}
           <div className="space-y-4 border-t pt-4">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -277,103 +279,66 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
                   setFormData(prev => ({ ...prev, hasPedigree: checked as boolean }))
                 }
               />
-              <Label htmlFor="hasPedigree" className="text-lg font-medium">Cet animal a un pedigree officiel</Label>
+              <Label htmlFor="hasPedigree" className="text-lg font-medium">{t("pets.hasPedigree")}</Label>
             </div>
 
             {formData.hasPedigree && (
               <div className="space-y-4 pl-6 border-l-2 border-primary/20">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="officialName">Nom officiel</Label>
+                    <Label htmlFor="officialName">{t("pets.officialName")}</Label>
                     <Input
                       id="officialName"
                       value={formData.officialName}
                       onChange={handleChange}
-                      placeholder="Nom officiel du pedigree"
+                      placeholder={t("pets.officialNamePlaceholder")}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="pedigreeNumber">N° pedigree/LOF</Label>
+                    <Label htmlFor="pedigreeNumber">{t("pets.pedigreeNumber")}</Label>
                     <Input
                       id="pedigreeNumber"
                       value={formData.pedigreeNumber}
                       onChange={handleChange}
-                      placeholder="Numéro de pedigree"
+                      placeholder={t("pets.pedigreeNumberPlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="breeder">Éleveur</Label>
+                  <Label htmlFor="breeder">{t("pets.breeder")}</Label>
                   <Input
                     id="breeder"
                     value={formData.breeder}
                     onChange={handleChange}
-                    placeholder="Nom de l'éleveur"
+                    placeholder={t("pets.breederPlaceholder")}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  {/* Père */}
                   <div className="space-y-3">
-                    <h4 className="font-medium text-sm">Père</h4>
+                    <h4 className="font-medium text-sm">{t("pets.sire")}</h4>
                     <div className="space-y-2">
-                      <Input
-                        placeholder="Nom du père"
-                        value={formData.fatherName}
-                        onChange={handleChange}
-                      />
-                      <Input
-                        placeholder="N° pedigree du père"
-                        value={formData.fatherPedigree}
-                        onChange={handleChange}
-                      />
-                      <Input
-                        placeholder="Race du père"
-                        value={formData.fatherBreed}
-                        onChange={handleChange}
-                      />
-                      <Textarea
-                        placeholder="Titres du père"
-                        value={formData.fatherTitles}
-                        onChange={handleChange}
-                        rows={2}
-                      />
+                      <Input placeholder={t("pets.sireNamePlaceholder")} value={formData.fatherName} onChange={handleChange} id="fatherName" />
+                      <Input placeholder={t("pets.sirePedigreePlaceholder")} value={formData.fatherPedigree} onChange={handleChange} id="fatherPedigree" />
+                      <Input placeholder={t("pets.sireBreedPlaceholder")} value={formData.fatherBreed} onChange={handleChange} id="fatherBreed" />
+                      <Textarea placeholder={t("pets.sireTitlesPlaceholder")} value={formData.fatherTitles} onChange={handleChange} id="fatherTitles" rows={2} />
                     </div>
                   </div>
 
-                  {/* Mère */}
                   <div className="space-y-3">
-                    <h4 className="font-medium text-sm">Mère</h4>
+                    <h4 className="font-medium text-sm">{t("pets.dam")}</h4>
                     <div className="space-y-2">
-                      <Input
-                        placeholder="Nom de la mère"
-                        value={formData.motherName}
-                        onChange={handleChange}
-                      />
-                      <Input
-                        placeholder="N° pedigree de la mère"
-                        value={formData.motherPedigree}
-                        onChange={handleChange}
-                      />
-                      <Input
-                        placeholder="Race de la mère"
-                        value={formData.motherBreed}
-                        onChange={handleChange}
-                      />
-                      <Textarea
-                        placeholder="Titres de la mère"
-                        value={formData.motherTitles}
-                        onChange={handleChange}
-                        rows={2}
-                      />
+                      <Input placeholder={t("pets.damNamePlaceholder")} value={formData.motherName} onChange={handleChange} id="motherName" />
+                      <Input placeholder={t("pets.damPedigreePlaceholder")} value={formData.motherPedigree} onChange={handleChange} id="motherPedigree" />
+                      <Input placeholder={t("pets.damBreedPlaceholder")} value={formData.motherBreed} onChange={handleChange} id="motherBreed" />
+                      <Textarea placeholder={t("pets.damTitlesPlaceholder")} value={formData.motherTitles} onChange={handleChange} id="motherTitles" rows={2} />
                     </div>
                   </div>
                 </div>
 
-                {/* Photo du document pedigree */}
                 <div className="space-y-2">
-                  <Label>Document pedigree</Label>
+                  <Label>{t("pets.pedigreeDocument")}</Label>
                   <input
                     type="file"
                     accept="image/*"
@@ -386,7 +351,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
                     }}
                   />
                   {formData.pedigreePhoto && (
-                    <img src={formData.pedigreePhoto} alt="Document pedigree" className="h-32 w-auto object-contain rounded border" />
+                    <img src={formData.pedigreePhoto} alt={t("pets.pedigreeDocumentAlt")} className="h-32 w-auto object-contain rounded border" />
                   )}
                 </div>
               </div>
@@ -395,10 +360,10 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
-              Sauvegarder
+              {tc("save")}
             </Button>
           </div>
         </form>

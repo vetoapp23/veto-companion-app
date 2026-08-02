@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import i18n from "@/i18n"
+import { getBcp47Locale } from "@/i18n/useAppLocale"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -11,12 +13,15 @@ export function cn(...inputs: ClassValue[]) {
  * @returns L'âge en années et mois
  */
 export function calculateAge(birthDate: string): string {
-  if (!birthDate) return "Âge inconnu";
+  const t = (key: string, opts?: Record<string, unknown>) =>
+    i18n.t(key, { ns: "common", ...opts });
+
+  if (!birthDate) return t("ageUnknown");
   
   const birth = new Date(birthDate);
   const today = new Date();
   
-  if (isNaN(birth.getTime())) return "Date invalide";
+  if (isNaN(birth.getTime())) return t("invalidDate");
   
   let years = today.getFullYear() - birth.getFullYear();
   let months = today.getMonth() - birth.getMonth();
@@ -30,13 +35,13 @@ export function calculateAge(birthDate: string): string {
   if (years === 0) {
     if (months === 0) {
       const days = Math.floor((today.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
-      return `${days} jour${days > 1 ? 's' : ''}`;
+      return t("ageDays", { count: days });
     }
-    return `${months} mois`;
+    return t("ageMonths", { count: months });
   } else if (months === 0) {
-    return `${years} an${years > 1 ? 's' : ''}`;
+    return t("ageYears", { count: years });
   } else {
-    return `${years} an${years > 1 ? 's' : ''} et ${months} mois`;
+    return t("ageYearsAndMonths", { years, months });
   }
 }
 
@@ -70,12 +75,12 @@ export function calculateAgeInYears(birthDate: string): number {
  * @returns Date formatée
  */
 export function formatDate(dateString: string): string {
-  if (!dateString) return "Non renseigné";
+  if (!dateString) return i18n.t("notSpecified", { ns: "common" });
   
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "Date invalide";
+  if (isNaN(date.getTime())) return i18n.t("invalidDate", { ns: "common" });
   
-  return date.toLocaleDateString('fr-FR', {
+  return date.toLocaleDateString(getBcp47Locale(i18n.language), {
     year: 'numeric',
     month: 'long',
     day: 'numeric'

@@ -26,10 +26,12 @@ import {
   type MedicalShareView,
 } from "@/lib/medicalShare";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 
 const QR_READER_ID = "medical-share-qr-reader";
 
 export default function ImportMedicalDossier() {
+  const { t } = useTranslation("medical");
   const { token: routeToken = "" } = useParams<{ token?: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -96,7 +98,7 @@ export default function ImportMedicalDossier() {
         }
       } catch (e: any) {
         if (!cancelled) {
-          setError(e?.message || "Impossible de charger le partage");
+          setError(e?.message || t("import.loadShareFailed"));
           setView(null);
         }
       } finally {
@@ -112,8 +114,8 @@ export default function ImportMedicalDossier() {
     const token = parseMedicalShareToken(raw);
     if (!token) {
       toast({
-        title: "Lien invalide",
-        description: "Collez l’URL du QR (…/import/dossier/…) ou le jeton.",
+        title: t("import.invalidLink"),
+        description: t("import.invalidLinkBody"),
         variant: "destructive",
       });
       return;
@@ -129,16 +131,12 @@ export default function ImportMedicalDossier() {
     const host = window.location.hostname;
     const isLocal = host === "localhost" || host === "127.0.0.1";
     if (!window.isSecureContext && !isLocal) {
-      setScanError(
-        "La caméra nécessite une connexion sécurisée (HTTPS). Collez le lien sous le QR, ou ouvrez VetoCrm en https."
-      );
+      setScanError(t("import.cameraHttps"));
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setScanError(
-        "Ce navigateur ne permet pas l’accès caméra. Collez le lien sous le QR, ou utilisez Chrome / Safari récent."
-      );
+      setScanError(t("import.cameraUnsupported"));
       return;
     }
 
@@ -180,16 +178,11 @@ export default function ImportMedicalDossier() {
       const name = e?.name || "";
       const msg = String(e?.message || e || "");
       if (name === "NotAllowedError" || /permission|denied|notallowed/i.test(msg)) {
-        setScanError(
-          "Accès caméra refusé. Autorisez la caméra dans le navigateur, ou collez le lien sous le QR."
-        );
+        setScanError(t("import.cameraDenied"));
       } else if (name === "NotFoundError" || /not found|no camera|requested device/i.test(msg)) {
-        setScanError("Aucune caméra détectée. Collez le lien affiché sous le QR.");
+        setScanError(t("import.cameraNotFound"));
       } else {
-        setScanError(
-          msg ||
-            "Impossible d’ouvrir la caméra. Collez le lien sous le QR, ou scannez avec l’appareil photo du téléphone."
-        );
+        setScanError(msg || t("import.cameraOpenFailed"));
       }
     }
   };
@@ -201,17 +194,17 @@ export default function ImportMedicalDossier() {
       const result = await importMedicalShare(routeToken);
       await queryClient.invalidateQueries();
       toast({
-        title: "Dossier importé",
+        title: t("import.imported"),
         description: [
-          result.created_client ? "Nouveau propriétaire créé." : "Propriétaire existant réutilisé.",
-          result.created_animal ? "Nouvel animal créé." : "Animal existant (puce) réutilisé.",
+          result.created_client ? t("import.createdOwner") : t("import.reusedOwner"),
+          result.created_animal ? t("import.createdPet") : t("import.reusedPet"),
           `${result.imported.vaccinations} vaccins, ${result.imported.antiparasitics} antiparasitaires, ${result.imported.consultations} consultations.`,
         ].join(" "),
       });
       navigate("/pets", { replace: true });
     } catch (e: any) {
       toast({
-        title: "Import impossible",
+        title: t("import.importFailed"),
         description: e?.message || "Une erreur est survenue",
         variant: "destructive",
       });
@@ -227,19 +220,19 @@ export default function ImportMedicalDossier() {
   const invalidReason =
     view && !view.valid
       ? view.revoked
-        ? "Ce lien a été révoqué."
+        ? t("import.revoked")
         : view.expired
-          ? "Ce lien a expiré."
+          ? t("import.expired")
           : view.exhausted
-            ? "Ce lien a atteint le nombre maximal d’imports."
-            : "Ce lien n’est plus valide."
+            ? t("import.maxImports")
+            : t("import.noLongerValid")
       : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <SeoHead
-        title="Importer un dossier médical"
-        description="Importer un dossier animal partagé via QR VetoCrm"
+        title={t("import.seoTitle")}
+        description={t("import.seoDescription")}
         path={routeToken ? `/import/dossier/${routeToken}` : "/import/dossier"}
         noIndex
       />
@@ -247,10 +240,10 @@ export default function ImportMedicalDossier() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
             <QrCode className="h-5 w-5" />
-            Import dossier médical
+            {t("import.title")}
           </CardTitle>
           <CardDescription>
-            Transfert sécurisé entre cliniques VetoCrm (copie, pas de lien live).
+            {t("import.subtitle")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -258,18 +251,18 @@ export default function ImportMedicalDossier() {
             <>
               <Alert>
                 <ClipboardPaste className="h-4 w-4" />
-                <AlertTitle>Comment importer ?</AlertTitle>
+                <AlertTitle>{t("import.howTitle")}</AlertTitle>
                 <AlertDescription className="space-y-1 text-sm">
-                  <p>1. Saisissez le <strong>code à 8 caractères</strong> reçu (comme un code clinique), ou</p>
-                  <p>2. Collez le lien / scannez le QR.</p>
+                  <p>{t("import.howStep1")}</p>
+                  <p>{t("import.howStep2")}</p>
                 </AlertDescription>
               </Alert>
 
               <div className="space-y-2">
-                <Label htmlFor="share-link">Code de transfert</Label>
+                <Label htmlFor="share-link">{t("import.transferCode")}</Label>
                 <Input
                   id="share-link"
-                  placeholder="Ex. K7M2P9QX"
+                  placeholder={t("import.codePlaceholder")}
                   value={pasteValue}
                   autoCapitalize="characters"
                   autoCorrect="off"
@@ -281,11 +274,11 @@ export default function ImportMedicalDossier() {
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Vous pouvez aussi coller l’URL complète du partage.
+                  {t("import.pasteUrlHint")}
                 </p>
                 <Button className="w-full gap-2" onClick={() => void goToToken(pasteValue)}>
                   <ArrowRight className="h-4 w-4" />
-                  Continuer
+                  {t("import.continue")}
                 </Button>
               </div>
 
@@ -299,7 +292,7 @@ export default function ImportMedicalDossier() {
                       onClick={() => void startCamera()}
                     >
                       <Camera className="h-4 w-4" />
-                      Scanner le QR (caméra)
+                      {t("import.scanQr")}
                     </Button>
                   ) : (
                     <Button
@@ -308,7 +301,7 @@ export default function ImportMedicalDossier() {
                       className="gap-2 w-full"
                       onClick={() => void stopCamera()}
                     >
-                      Arrêter la caméra
+                      {t("import.stopCamera")}
                     </Button>
                   )}
                 </div>
@@ -324,30 +317,30 @@ export default function ImportMedicalDossier() {
 
               <div className="pt-2 text-center">
                 <Button variant="ghost" asChild>
-                  <Link to={isAuthenticated ? "/pets" : "/"}>Retour</Link>
+                  <Link to={isAuthenticated ? "/pets" : "/"}>{t("import.back")}</Link>
                 </Button>
               </div>
             </>
           ) : loading ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
-              Chargement du partage…
+              {t("import.loadingShare")}
             </div>
           ) : error ? (
             <>
               <Alert variant="destructive">
-                <AlertTitle>Lien invalide</AlertTitle>
+                <AlertTitle>{t("import.invalidLink")}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/import/dossier">Essayer un autre lien</Link>
+                <Link to="/import/dossier">{t("import.tryAnother")}</Link>
               </Button>
             </>
           ) : view ? (
             <>
               {invalidReason && (
                 <Alert variant="destructive">
-                  <AlertTitle>Import indisponible</AlertTitle>
+                  <AlertTitle>{t("import.unavailable")}</AlertTitle>
                   <AlertDescription>{invalidReason}</AlertDescription>
                 </Alert>
               )}
@@ -356,12 +349,14 @@ export default function ImportMedicalDossier() {
                 <div className="flex flex-wrap gap-2">
                   {view.source_clinic_name && (
                     <Badge variant="secondary" className="text-foreground">
-                      Origine : {view.source_clinic_name}
+                      {t("import.origin", { clinic: view.source_clinic_name })}
                     </Badge>
                   )}
                   {view.expires_at && (
                     <Badge variant="outline" className="border-border text-foreground">
-                      Expire le {new Date(view.expires_at).toLocaleDateString("fr-FR")}
+                      {t("import.expiresOn", {
+                        date: new Date(view.expires_at).toLocaleDateString(),
+                      })}
                     </Badge>
                   )}
                   {view.short_code && (
@@ -372,7 +367,7 @@ export default function ImportMedicalDossier() {
                 </div>
                 <div className="space-y-1.5">
                   <p>
-                    <span className="font-semibold">Animal :</span>{" "}
+                    <span className="font-semibold">{t("import.animal")}</span>{" "}
                     {summary?.animal_name || "—"}
                     <span className="text-muted-foreground">
                       {" "}
@@ -381,18 +376,20 @@ export default function ImportMedicalDossier() {
                     </span>
                   </p>
                   <p>
-                    <span className="font-semibold">Propriétaire :</span>{" "}
+                    <span className="font-semibold">{t("import.owner")}</span>{" "}
                     {summary?.owner_name || "—"}
                   </p>
                   {summary?.microchip_number && (
                     <p>
-                      <span className="font-semibold">Puce :</span> {summary.microchip_number}
+                      <span className="font-semibold">{t("import.microchip")}</span> {summary.microchip_number}
                     </p>
                   )}
                   <p className="text-muted-foreground pt-1 border-t border-border">
-                    Contenu : {summary?.vaccinations_count ?? 0} vaccins ·{" "}
-                    {summary?.antiparasitics_count ?? 0} antiparasitaires ·{" "}
-                    {summary?.consultations_count ?? 0} consultations
+                    {t("import.contentSummary", {
+                      vax: summary?.vaccinations_count ?? 0,
+                      anti: summary?.antiparasitics_count ?? 0,
+                      consult: summary?.consultations_count ?? 0,
+                    })}
                   </p>
                 </div>
               </div>
@@ -400,13 +397,13 @@ export default function ImportMedicalDossier() {
               {!isAuthenticated || !user ? (
                 <Alert>
                   <LogIn className="h-4 w-4" />
-                  <AlertTitle>Connexion requise</AlertTitle>
+                  <AlertTitle>{t("import.loginRequired")}</AlertTitle>
                   <AlertDescription className="space-y-3">
                     <p>
-                      Connectez-vous à la clinique destinataire pour importer ce dossier.
+                      {t("import.loginRequiredBody")}
                     </p>
                     <Button asChild>
-                      <Link to={loginHref}>Se connecter</Link>
+                      <Link to={loginHref}>{t("import.signIn")}</Link>
                     </Button>
                   </AlertDescription>
                 </Alert>
@@ -414,10 +411,9 @@ export default function ImportMedicalDossier() {
                 <div className="space-y-3">
                   <Alert>
                     <ShieldCheck className="h-4 w-4" />
-                    <AlertTitle>Prêt à importer</AlertTitle>
+                    <AlertTitle>{t("import.readyTitle")}</AlertTitle>
                     <AlertDescription>
-                      Les données seront copiées dans votre clinique. Un animal déjà présent
-                      (même n° de puce) sera réutilisé ; l’historique manquant sera ajouté.
+                      {t("import.readyBody")}
                     </AlertDescription>
                   </Alert>
                   <Button
@@ -430,17 +426,17 @@ export default function ImportMedicalDossier() {
                     ) : (
                       <ArrowRight className="h-4 w-4" />
                     )}
-                    Ajouter à ma clinique
+                    {t("import.addToClinic")}
                   </Button>
                 </div>
               ) : null}
 
               <div className="pt-2 text-center space-x-2">
                 <Button variant="ghost" asChild>
-                  <Link to="/import/dossier">Autre lien</Link>
+                  <Link to="/import/dossier">{t("import.tryAnother")}</Link>
                 </Button>
                 <Button variant="ghost" asChild>
-                  <Link to={isAuthenticated ? "/pets" : "/"}>Retour</Link>
+                  <Link to={isAuthenticated ? "/pets" : "/"}>{t("import.back")}</Link>
                 </Button>
               </div>
             </>

@@ -17,8 +17,11 @@ import FarmDetailDrawer from "@/components/modals/FarmDetailDrawer";
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from "@/components/ListDateFilter";
 import { matchesListDateFilter, type ListDateFilterState } from "@/lib/dateLocal";
 import { useWriteAccess } from "@/components/RoleGuard";
+import { useTranslation } from "react-i18next";
 
 const FarmPage = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const { canWrite, guardWrite } = useWriteAccess("can_manage_farms");
   const { data: farms = [], isLoading } = useFarms();
@@ -86,12 +89,12 @@ const FarmPage = () => {
 
   const onDelete = async (farm: any) => {
     if (!guardWrite()) return;
-    if (!confirm(`Supprimer l'exploitation « ${farm.farm_name} » ?`)) return;
+    if (!confirm(t("farms.deleteConfirm", { name: farm.farm_name }))) return;
     try {
       await deleteFarm.mutateAsync(farm.id);
-      toast({ title: "✓ Exploitation supprimée" });
+      toast({ title: t("farms.deleted") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -99,8 +102,8 @@ const FarmPage = () => {
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
       <AppPageHeader
         icon={Tractor}
-        title="Fermes"
-        description="Pilotez exploitations, lots, interventions et suivi sanitaire collectif."
+        title={t("farms.title")}
+        description={t("farms.description")}
         actions={
           canWrite ? (
             <>
@@ -112,7 +115,7 @@ const FarmPage = () => {
                   setInterventionOpen(true);
                 }}
               >
-                <Stethoscope className="h-4 w-4 mr-2" /> Intervention
+                <Stethoscope className="h-4 w-4 mr-2" /> {t("farms.intervention")}
               </Button>
               <Button
                 className="rounded-full"
@@ -122,7 +125,7 @@ const FarmPage = () => {
                   setNewFarmOpen(true);
                 }}
               >
-                <Plus className="h-4 w-4 mr-2" /> Nouvelle exploitation
+                <Plus className="h-4 w-4 mr-2" /> {t("farms.newFarm")}
               </Button>
             </>
           ) : undefined
@@ -131,10 +134,10 @@ const FarmPage = () => {
 
       {/* KPIs */}
       <div className="app-kpi-grid grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi icon={<Tractor className="h-5 w-5" />} label="Exploitations" value={kpis.totalFarms} />
-        <Kpi icon={<Users2 className="h-5 w-5" />} label="Cheptel total" value={kpis.totalHerd} />
-        <Kpi icon={<Stethoscope className="h-5 w-5" />} label="Interventions ce mois" value={kpis.monthlyInterventions} />
-        <Kpi icon={<MapPin className="h-5 w-5" />} label="Types d'élevage" value={farmTypes.length} />
+        <Kpi icon={<Tractor className="h-5 w-5" />} label={t("farms.kpiFarms")} value={kpis.totalFarms} />
+        <Kpi icon={<Users2 className="h-5 w-5" />} label={t("farms.kpiHerd")} value={kpis.totalHerd} />
+        <Kpi icon={<Stethoscope className="h-5 w-5" />} label={t("farms.interventionsThisMonth")} value={kpis.monthlyInterventions} />
+        <Kpi icon={<MapPin className="h-5 w-5" />} label={t("farms.kpiFarmTypes")} value={farmTypes.length} />
       </div>
 
       {/* Filters */}
@@ -143,12 +146,12 @@ const FarmPage = () => {
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Rechercher une exploitation…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9" placeholder={t("farms.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <select className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-              <option value="all">Tous les types</option>
-              {farmTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="all">{t("farms.allTypes")}</option>
+              {farmTypes.map((ft) => <option key={ft} value={ft}>{ft}</option>)}
             </select>
           </div>
           <ListDateFilter
@@ -159,7 +162,7 @@ const FarmPage = () => {
           />
           {dateFilter.period !== "all" && (
             <p className="text-[11px] text-muted-foreground">
-              Affiche les exploitations ayant une intervention sur la période choisie.
+              {t("farms.periodFilterHint")}
             </p>
           )}
         </CardContent>
@@ -167,10 +170,10 @@ const FarmPage = () => {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-center text-muted-foreground py-12">Chargement…</p>
+        <p className="text-center text-muted-foreground py-12">{tc("loading")}</p>
       ) : filtered.length === 0 ? (
         <Card><CardContent className="py-12 text-center text-muted-foreground">
-          Aucune exploitation. Créez votre première exploitation pour commencer.
+          {t("farms.empty")}
         </CardContent></Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -215,7 +218,7 @@ const FarmPage = () => {
                   {f.address && <div className="flex items-center gap-2"><MapPin className="h-3 w-3" />{f.address}</div>}
                   {f.phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3" />{f.phone}</div>}
                   <div className="flex gap-3 pt-1">
-                    {typeof f.herd_size === "number" && <span><b>{f.herd_size}</b> animaux</span>}
+                    {typeof f.herd_size === "number" && <span>{t("farms.animalsCount", { count: f.herd_size })}</span>}
                     {typeof f.surface_hectares === "number" && <span><b>{f.surface_hectares}</b> ha</span>}
                   </div>
                 </div>

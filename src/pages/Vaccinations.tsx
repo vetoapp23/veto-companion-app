@@ -45,8 +45,9 @@ import {
   Loader2
 } from 'lucide-react';
 import { format, isBefore, addDays, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
+import { useAppLocale } from '@/i18n/useAppLocale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ListDateFilter, DEFAULT_LIST_DATE_FILTER } from '@/components/ListDateFilter';
 import { matchesListDateFilter, type ListDateFilterState } from '@/lib/dateLocal';
@@ -102,16 +103,11 @@ const getStatusIcon = (status: DoseListStatus) => {
   }
 };
 
-const getStatusLabel = (status: DoseListStatus) => {
-  switch (status) {
-    case 'administered': return 'Administré';
-    case 'overdue': return 'En retard';
-    case 'planned': return 'Planifié';
-    default: return status;
-  }
-};
-
 export default function Vaccinations() {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
+  const { dateFns } = useAppLocale();
+  const getStatusLabel = (status: DoseListStatus) => t(`vaccinations.status.${status}`);
   // Data fetching hooks
   const { data: vaccinations = [], isLoading: vaccinationsLoading } = useVaccinations();
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
@@ -194,10 +190,10 @@ export default function Vaccinations() {
     for (const animalId of animalIds) {
       const animal = animals.find((a) => a.id === animalId);
       const client = clients.find((c) => c.id === animal?.client_id);
-      const petName = animal?.name || 'Animal inconnu';
+      const petName = animal?.name || t("vaccinations.unknownPet");
       const clientName = client
         ? `${client.first_name} ${client.last_name}`
-        : 'Client inconnu';
+        : t("vaccinations.unknownClient");
 
       const animalVax = byAnimal.get(animalId) || [];
       const animalApts = aptsByAnimal.get(animalId) || [];
@@ -236,6 +232,7 @@ export default function Vaccinations() {
     appointmentsLoading,
     animalsLoading,
     clientsLoading,
+    t,
   ]);
 
   const stats = useMemo(() => {
@@ -286,8 +283,8 @@ export default function Vaccinations() {
     if (vaccinationToDelete) {
       deleteVaccinationMutation.mutate(vaccinationToDelete.id);
       toast({
-        title: "Vaccination supprimée",
-        description: `La vaccination ${vaccinationToDelete.vaccine_name} a été supprimée avec succès.`,
+        title: t("vaccinations.deletedTitle"),
+        description: t("vaccinations.deletedBody"),
       });
       setShowDeleteConfirm(false);
       setVaccinationToDelete(null);
@@ -314,7 +311,7 @@ export default function Vaccinations() {
         const notes = buildVaccinationNotes({
           doseLabel: dose.doseLabel,
           plannedReminders: [],
-          userNotes: 'Marqué fait depuis la liste Vaccinations',
+          userNotes: t("vaccinations.markDoneNote"),
         });
         await createVaccinationMutation.mutateAsync({
           animal_id: dose.animalId,
@@ -345,15 +342,15 @@ export default function Vaccinations() {
       }
 
       toast({
-        title: 'Dose administrée',
-        description: `${dose.vaccineName} · ${dose.doseLabel} — même ligne mise à jour.`,
+        title: t("vaccinations.doseAdministeredTitle"),
+        description: t("vaccinations.doseAdministeredBody"),
       });
       setShowVaccinationDetails(false);
       setSelectedDose(null);
     } catch (e: any) {
       toast({
-        title: 'Impossible de marquer fait',
-        description: e?.message || 'Erreur lors de l’enregistrement.',
+        title: t("vaccinations.cannotMarkDone"),
+        description: e?.message || t("vaccinations.cannotMarkDoneBody"),
         variant: 'destructive',
       });
     } finally {
@@ -381,7 +378,7 @@ export default function Vaccinations() {
         <Card>
           <CardContent className="p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Chargement des données de vaccination...</p>
+            <p>{t("vaccinations.loading")}</p>
           </CardContent>
         </Card>
       </div>
@@ -392,13 +389,13 @@ export default function Vaccinations() {
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <AppPageHeader
         icon={Syringe}
-        title="Vaccinations"
-        description="Suivi et planification des vaccinations"
+        title={t("vaccinations.title")}
+        description={t("vaccinations.description")}
         actions={
           <>
             <Button onClick={exportVaccinationData} variant="outline" className="gap-2 rounded-full">
               <Download className="h-4 w-4" />
-              Exporter
+              {t("vaccinations.export")}
             </Button>
             {canWrite && <NewVaccinationModal />}
           </>
@@ -414,7 +411,7 @@ export default function Vaccinations() {
           <Syringe className="h-5 sm:h-6 w-5 sm:w-6 text-primary" />
           </div>
           <div>
-          <p className="text-sm font-medium text-muted-foreground">Total</p>
+          <p className="text-sm font-medium text-muted-foreground">{t("vaccinations.kpi.total")}</p>
           <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
           </div>
         </div>
@@ -428,7 +425,7 @@ export default function Vaccinations() {
           <CheckCircle className="h-5 sm:h-6 w-5 sm:w-6 text-green-600" />
           </div>
           <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Administrées</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("vaccinations.kpi.administered")}</p>
           <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.administered}</p>
           </div>
         </div>
@@ -442,7 +439,7 @@ export default function Vaccinations() {
           <AlertTriangle className="h-5 sm:h-6 w-5 sm:w-6 text-red-600" />
           </div>
           <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">En Retard</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("vaccinations.kpi.overdue")}</p>
           <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.overdue}</p>
           </div>
         </div>
@@ -456,7 +453,7 @@ export default function Vaccinations() {
           <Clock className="h-5 sm:h-6 w-5 sm:w-6 text-orange-600" />
           </div>
           <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Prochaines 30j</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("vaccinations.kpi.next30")}</p>
           <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.upcoming}</p>
           </div>
         </div>
@@ -470,7 +467,7 @@ export default function Vaccinations() {
           <Calendar className="h-5 sm:h-6 w-5 sm:w-6 text-purple-600" />
           </div>
           <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Planifiées</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{t("vaccinations.kpi.planned")}</p>
           <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.planned}</p>
           </div>
         </div>
@@ -483,11 +480,11 @@ export default function Vaccinations() {
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="overview" className="flex items-center gap-2 text-xs sm:text-sm">
         <TrendingUp className="h-3 sm:h-4 w-3 sm:w-4" />
-        Vue d'ensemble
+        {t("vaccinations.tabs.overview")}
         </TabsTrigger>
         <TabsTrigger value="protocols" className="flex items-center gap-2 text-xs sm:text-sm">
         <Shield className="h-3 sm:h-4 w-3 sm:w-4" />
-        Protocoles
+        {t("vaccinations.tabs.protocols")}
         </TabsTrigger>
        
       </TabsList>
@@ -501,7 +498,7 @@ export default function Vaccinations() {
             <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Rechercher animal, client, vaccin..."
+              placeholder={t("vaccinations.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -513,10 +510,10 @@ export default function Vaccinations() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous statuts</SelectItem>
-              <SelectItem value="administered">Administrées</SelectItem>
-              <SelectItem value="planned">Planifiées</SelectItem>
-              <SelectItem value="overdue">En retard</SelectItem>
+              <SelectItem value="all">{t("vaccinations.filters.allStatuses")}</SelectItem>
+              <SelectItem value="administered">{t("vaccinations.status.administered")}</SelectItem>
+              <SelectItem value="planned">{t("vaccinations.status.planned")}</SelectItem>
+              <SelectItem value="overdue">{t("vaccinations.status.overdue")}</SelectItem>
             </SelectContent>
             </Select>
             
@@ -525,7 +522,7 @@ export default function Vaccinations() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes espèces</SelectItem>
+              <SelectItem value="all">{t("vaccinations.filters.allSpecies")}</SelectItem>
               {animalSpecies.map((species) => (
                 <SelectItem key={species} value={species}>
                   {species}
@@ -567,7 +564,7 @@ export default function Vaccinations() {
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
               <Syringe className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>Aucune dose trouvée</p>
+              <p>{t("vaccinations.empty")}</p>
             </CardContent>
           </Card>
         ) : viewMode === 'cards' ? (
@@ -611,7 +608,7 @@ export default function Vaccinations() {
               
               <div className="flex items-center gap-2 text-sm text-gray-600">
               <Calendar className="h-4 w-4" />
-              <span>Date: {format(parseISO(dose.date), 'dd/MM/yyyy', { locale: fr })}</span>
+              <span>{t("vaccinations.dateLabel")}: {format(parseISO(dose.date), 'dd/MM/yyyy', { locale: dateFns })}</span>
               </div>
 
               {dose.administeredBy && (
@@ -633,7 +630,7 @@ export default function Vaccinations() {
               }}
               >
               <Eye className="h-4 w-4 mr-1" />
-              Détails
+              {tc("details")}
               </Button>
               {canWrite && dose.listStatus !== 'administered' && (
               <Button
@@ -641,7 +638,7 @@ export default function Vaccinations() {
                 variant="default"
                 disabled={markingDoneId === dose.rowKey}
                 onClick={() => handleMarkDone(dose)}
-                title="Marquer fait"
+                title={t("vaccinations.markDone")}
               >
                 {markingDoneId === dose.rowKey ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -656,7 +653,7 @@ export default function Vaccinations() {
                 size="sm"
                 variant="outline"
                 onClick={() => openEditVaccination(dose.vaccinationRecord!)}
-                title="Modifier"
+                title={t("vaccinations.editTitle")}
                 >
                 <Edit className="h-4 w-4" />
                 </Button>
@@ -682,12 +679,12 @@ export default function Vaccinations() {
             <Table>
             <TableHeader>
               <TableRow>
-              <TableHead>Animal</TableHead>
-              <TableHead>Vaccin</TableHead>
-              <TableHead>Dose</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>{t("vaccinations.columns.pet")}</TableHead>
+              <TableHead>{t("vaccinations.columns.vaccine")}</TableHead>
+              <TableHead>{t("vaccinations.doseDetails.label")}</TableHead>
+              <TableHead>{t("vaccinations.columns.date")}</TableHead>
+              <TableHead>{t("vaccinations.columns.status")}</TableHead>
+              <TableHead>{t("vaccinations.columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -708,7 +705,7 @@ export default function Vaccinations() {
                 </TableCell>
                 <TableCell className="font-medium">{dose.vaccineName}</TableCell>
                 <TableCell>{dose.doseLabel}</TableCell>
-                <TableCell>{format(parseISO(dose.date), 'dd/MM/yyyy')}</TableCell>
+                <TableCell>{format(parseISO(dose.date), 'dd/MM/yyyy', { locale: dateFns })}</TableCell>
                 <TableCell>
                 <Badge className={getStatusColor(dose.listStatus)}>
                   {getStatusIcon(dose.listStatus)}
@@ -733,7 +730,7 @@ export default function Vaccinations() {
                     variant="default"
                     disabled={markingDoneId === dose.rowKey}
                     onClick={() => handleMarkDone(dose)}
-                    title="Marquer fait"
+                    title={t("vaccinations.markDone")}
                   >
                     {markingDoneId === dose.rowKey ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -748,7 +745,7 @@ export default function Vaccinations() {
                     size="sm"
                     variant="outline"
                     onClick={() => openEditVaccination(dose.vaccinationRecord!)}
-                    title="Modifier"
+                    title={t("vaccinations.editTitle")}
                     >
                     <Edit className="h-4 w-4" />
                     </Button>
@@ -780,7 +777,7 @@ export default function Vaccinations() {
           <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Protocoles Vaccinaux ({vaccinationProtocols.length})
+            {t("vaccinations.protocols")} ({vaccinationProtocols.length})
           </div>
           {canWrite && <VaccinationProtocolModal mode="create" />}
           </CardTitle>
@@ -794,16 +791,16 @@ export default function Vaccinations() {
               <div className="flex items-start justify-between">
                 <h4 className="font-semibold">{protocol.vaccine_name}</h4>
                 {!protocol.active && (
-                <Badge variant="secondary" className="text-xs">Inactif</Badge>
+                <Badge variant="secondary" className="text-xs">{t("vaccinations.inactive")}</Badge>
                 )}
               </div>
-              <p className="text-sm text-gray-600">Espèce: {protocol.species}</p>
-              <p className="text-sm text-gray-600">Type: {protocol.vaccine_type}</p>
+              <p className="text-sm text-gray-600">{t("vaccinations.protocolMeta.species", { species: protocol.species })}</p>
+              <p className="text-sm text-gray-600">{t("vaccinations.columns.vaccine")}: {protocol.vaccine_type}</p>
               {protocol.frequency && (
-                <p className="text-sm text-gray-600">Fréquence: {protocol.frequency}</p>
+                <p className="text-sm text-gray-600">{t("vaccinations.protocolMeta.frequency", { frequency: protocol.frequency })}</p>
               )}
               {protocol.age_recommendation && (
-                <p className="text-sm text-gray-600">Âge: {protocol.age_recommendation}</p>
+                <p className="text-sm text-gray-600">{tc("age")}: {protocol.age_recommendation}</p>
               )}
               {protocol.notes && (
                 <p className="text-xs text-gray-500 mt-2">{protocol.notes}</p>
@@ -813,7 +810,7 @@ export default function Vaccinations() {
                 <VaccinationProtocolModal mode="edit" protocol={protocol}>
                 <Button size="sm" variant="outline" className="flex-1">
                   <Edit className="h-4 w-4 mr-1" />
-                  Modifier
+                  {tc("edit")}
                 </Button>
                 </VaccinationProtocolModal>
               </div>
@@ -826,12 +823,12 @@ export default function Vaccinations() {
           {vaccinationProtocols.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Aucun protocole vaccinal configuré</p>
+            <p>{t("vaccinations.emptyProtocols")}</p>
             {canWrite && (
             <VaccinationProtocolModal mode="create">
             <Button className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
-              Créer un protocole
+              {t("vaccinations.createProtocol")}
             </Button>
             </VaccinationProtocolModal>
             )}
@@ -848,33 +845,33 @@ export default function Vaccinations() {
       <Dialog open={showVaccinationDetails} onOpenChange={setShowVaccinationDetails}>
       <DialogContent className="max-w-2xl w-full mx-4">
         <DialogHeader>
-        <DialogTitle>Détails de la dose</DialogTitle>
+        <DialogTitle>{t("vaccinations.doseDetails.title")}</DialogTitle>
         </DialogHeader>
         {selectedDose && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="font-medium">Animal:</p>
+            <p className="font-medium">{t("vaccinations.columns.pet")}:</p>
             <p>{selectedDose.petName}</p>
           </div>
           <div>
-            <p className="font-medium">Client:</p>
+            <p className="font-medium">{t("vaccinations.columns.client")}:</p>
             <p>{selectedDose.clientName}</p>
           </div>
           <div>
-            <p className="font-medium">Vaccin:</p>
+            <p className="font-medium">{t("vaccinations.columns.vaccine")}:</p>
             <p>{selectedDose.vaccineName}</p>
           </div>
           <div>
-            <p className="font-medium">Dose:</p>
+            <p className="font-medium">{t("vaccinations.doseDetails.label")}:</p>
             <p>{selectedDose.doseLabel}</p>
           </div>
           <div>
-            <p className="font-medium">Date:</p>
-            <p>{format(parseISO(selectedDose.date), 'dd/MM/yyyy', { locale: fr })}</p>
+            <p className="font-medium">{t("vaccinations.doseDetails.date")}:</p>
+            <p>{format(parseISO(selectedDose.date), 'dd/MM/yyyy', { locale: dateFns })}</p>
           </div>
           <div>
-            <p className="font-medium">Statut:</p>
+            <p className="font-medium">{t("vaccinations.columns.status")}:</p>
             <Badge className={getStatusColor(selectedDose.listStatus)}>
               {getStatusIcon(selectedDose.listStatus)}
               <span className="ml-1">{getStatusLabel(selectedDose.listStatus)}</span>
@@ -882,14 +879,14 @@ export default function Vaccinations() {
           </div>
           {selectedDose.administeredBy && (
             <div>
-            <p className="font-medium">Administré par:</p>
+            <p className="font-medium">{t("vaccinations.status.administered")}:</p>
             <p>{selectedDose.administeredBy}</p>
             </div>
           )}
           </div>
           {selectedDose.notes && (
           <div>
-            <p className="font-medium">Notes:</p>
+            <p className="font-medium">{t("vaccinations.doseDetails.notes")}:</p>
             <p className="text-gray-600">{selectedDose.notes}</p>
           </div>
           )}
@@ -906,7 +903,7 @@ export default function Vaccinations() {
                 ) : (
                   <CheckCircle className="h-4 w-4 mr-2" />
                 )}
-                Marquer fait
+                {t("vaccinations.markDone")}
               </Button>
             )}
             {canWrite && selectedDose.vaccinationRecord && (
@@ -915,7 +912,7 @@ export default function Vaccinations() {
                 onClick={() => openEditVaccination(selectedDose.vaccinationRecord!)}
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Modifier
+                {tc("edit")}
               </Button>
             )}
             <CertificateVaccinationPrintDynamic animalId={selectedDose.animalId} />
@@ -943,22 +940,22 @@ export default function Vaccinations() {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
       <DialogContent className="max-w-md w-full mx-4">
         <DialogHeader>
-        <DialogTitle>Confirmer la suppression</DialogTitle>
+        <DialogTitle>{t("vaccinations.deleteConfirmTitle")}</DialogTitle>
         </DialogHeader>
         {vaccinationToDelete && (
         <div className="space-y-4">
           <p className="text-gray-600">
-          Êtes-vous sûr de vouloir supprimer la vaccination <strong>{vaccinationToDelete.vaccine_name}</strong> ?
+          {t("vaccinations.deleteConfirmBody")}
           </p>
           <p className="text-sm text-red-600">
-          Cette action est irréversible.
+          {tc("cannotUndo")}
           </p>
           <div className="flex flex-col sm:flex-row justify-end gap-2">
           <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-full sm:w-auto">
-            Annuler
+            {tc("cancel")}
           </Button>
           <Button variant="destructive" onClick={confirmDeleteVaccination} className="w-full sm:w-auto">
-            Supprimer
+            {t("vaccinations.deleteConfirmAction")}
           </Button>
           </div>
         </div>

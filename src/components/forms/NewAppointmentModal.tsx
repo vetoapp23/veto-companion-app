@@ -11,6 +11,8 @@ import { useClients, useAnimals, useCreateAppointment, type Client, type Animal 
 import { useAppointmentTypes } from "@/hooks/useAppSettings";
 import { NewClientModal } from "./NewClientModal";
 import { localDateTimeToISO, todayLocalKey } from "@/lib/dateLocal";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 interface NewAppointmentModalProps {
   open: boolean;
@@ -30,6 +32,10 @@ export function NewAppointmentModal({
   prefillType,
   prefillReason,
 }: NewAppointmentModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tm } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
   const { data: clients = [] } = useClients();
   const { data: animals = [] } = useAnimals();
   const createAppointment = useCreateAppointment();
@@ -68,8 +74,8 @@ export function NewAppointmentModal({
 
     if (!formData.clientId) {
       toast({
-        title: "Client manquant",
-        description: "Veuillez sélectionner un client.",
+        title: t("appointments.clientMissing"),
+        description: t("appointments.clientMissingBody"),
         variant: "destructive",
       });
       return;
@@ -77,8 +83,8 @@ export function NewAppointmentModal({
 
     if (!formData.date) {
       toast({
-        title: "Date manquante",
-        description: "Veuillez choisir une date pour le rendez-vous.",
+        title: t("appointments.dateMissing"),
+        description: t("appointments.dateMissingBody"),
         variant: "destructive",
       });
       return;
@@ -86,8 +92,8 @@ export function NewAppointmentModal({
 
     if (!formData.time) {
       toast({
-        title: "Heure manquante",
-        description: "Veuillez choisir une heure pour le rendez-vous.",
+        title: t("appointments.timeMissing"),
+        description: t("appointments.timeMissingBody"),
         variant: "destructive",
       });
       return;
@@ -99,9 +105,8 @@ export function NewAppointmentModal({
 
     if (appointmentDateTime < now) {
       toast({
-        title: "Date invalide",
-        description:
-          "Vous ne pouvez pas créer un rendez-vous dans le passé. Veuillez choisir une date future.",
+        title: t("appointments.dateInvalid"),
+        description: t("appointments.dateInvalidBody"),
         variant: "destructive",
       });
       return;
@@ -122,38 +127,37 @@ export function NewAppointmentModal({
       });
 
       toast({
-        title: "✓ Rendez-vous créé",
-        description: `Le rendez-vous a été enregistré pour le ${appointmentDateTime.toLocaleDateString("fr-FR")} à ${formData.time}.`,
+        title: t("appointments.createdSuccess"),
+        description: t("appointments.createdSuccessBody", {
+          date: appointmentDateTime.toLocaleDateString(bcp47),
+          time: formData.time,
+        }),
       });
 
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error creating appointment:", error);
 
-      let errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
+      let errorMessage = tc("unexpectedError");
 
       if (error?.message) {
         const errorMsg = error.message.toLowerCase();
 
         if (errorMsg.includes("duplicate") || errorMsg.includes("conflict")) {
-          errorMessage =
-            "Un rendez-vous existe déjà à cette date et heure. Veuillez choisir un autre créneau.";
+          errorMessage = t("appointments.duplicateSlot");
         } else if (errorMsg.includes("client") || errorMsg.includes("animal")) {
-          errorMessage =
-            "Le client ou l'animal sélectionné n'est pas valide. Veuillez rafraîchir la page.";
+          errorMessage = t("appointments.invalidClientOrAnimal");
         } else if (errorMsg.includes("network") || errorMsg.includes("fetch")) {
-          errorMessage =
-            "Problème de connexion. Vérifiez votre connexion internet et réessayez.";
+          errorMessage = tc("connectionProblem");
         } else if (errorMsg.includes("permission") || errorMsg.includes("authorized")) {
-          errorMessage =
-            "Vous n'avez pas les permissions nécessaires pour créer un rendez-vous.";
+          errorMessage = t("appointments.noPermissionCreate");
         } else if (error.message.length < 100) {
           errorMessage = error.message;
         }
       }
 
       toast({
-        title: "⚠ Impossible de créer le rendez-vous",
+        title: t("appointments.cannotCreate"),
         description: errorMessage,
         variant: "destructive",
       });
@@ -187,10 +191,10 @@ export function NewAppointmentModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Nouveau Rendez-vous
+              {t("appointments.new")}
             </DialogTitle>
             <DialogDescription>
-              Planifiez un nouveau rendez-vous pour un client (animal optionnel)
+              {t("appointments.newDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -199,12 +203,12 @@ export function NewAppointmentModal({
               <div className="space-y-2">
                 <Label htmlFor="client" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Client *
+                  {tc("client")} *
                 </Label>
                 <div className="flex gap-2">
                   <Select value={formData.clientId} onValueChange={handleClientChange}>
                     <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Sélectionner un client" />
+                      <SelectValue placeholder={tm("forms.selectClient")} />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client) => (
@@ -220,8 +224,8 @@ export function NewAppointmentModal({
                     variant="outline"
                     className="shrink-0"
                     onClick={() => setShowClientModal(true)}
-                    title="Nouveau client"
-                    aria-label="Ajouter un nouveau client"
+                    title={t("clients.new")}
+                    aria-label={t("clients.new")}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -231,7 +235,7 @@ export function NewAppointmentModal({
               <div className="space-y-2">
                 <Label htmlFor="animal" className="flex items-center gap-2">
                   <Heart className="h-4 w-4" />
-                  Animal (optionnel)
+                  {tc("animal")} ({tc("optional")})
                 </Label>
                 <Select
                   value={formData.animalId || "__none__"}
@@ -244,7 +248,7 @@ export function NewAppointmentModal({
                   disabled={!formData.clientId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un animal (optionnel)" />
+                    <SelectValue placeholder={tm("forms.selectAnimalOptional")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">Aucun animal</SelectItem>
@@ -264,7 +268,7 @@ export function NewAppointmentModal({
                 <div className="space-y-2">
                   <Label htmlFor="date" className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Date *
+                    {tc("date")} *
                   </Label>
                   <Input
                     id="date"
@@ -279,7 +283,7 @@ export function NewAppointmentModal({
                 <div className="space-y-2">
                   <Label htmlFor="time" className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Heure *
+                    {tc("time")} *
                   </Label>
                   <Input
                     id="time"
@@ -292,7 +296,7 @@ export function NewAppointmentModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="appointmentType">Type de rendez-vous</Label>
+                <Label htmlFor="appointmentType">{t("appointments.appointmentType")}</Label>
                 <Select
                   value={formData.appointmentType}
                   onValueChange={(value) =>
@@ -300,7 +304,7 @@ export function NewAppointmentModal({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Type de rendez-vous" />
+                    <SelectValue placeholder={t("appointments.appointmentType")} />
                   </SelectTrigger>
                   <SelectContent>
                     {appointmentTypes.map((type) => (
@@ -313,10 +317,10 @@ export function NewAppointmentModal({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes (optionnel)</Label>
+                <Label htmlFor="notes">{t("appointments.notesOptional")}</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Notes additionnelles sur le rendez-vous..."
+                  placeholder={t("appointments.notesPlaceholder")}
                   value={formData.notes}
                   onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                   rows={3}
@@ -331,18 +335,18 @@ export function NewAppointmentModal({
                 onClick={() => onOpenChange(false)}
                 disabled={createAppointment.isPending}
               >
-                Annuler
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={createAppointment.isPending} className="gap-2">
                 {createAppointment.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Création...
+                    {tc("processing")}
                   </>
                 ) : (
                   <>
                     <Calendar className="h-4 w-4" />
-                    Créer le rendez-vous
+                    {t("appointments.new")}
                   </>
                 )}
               </Button>

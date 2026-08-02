@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,8 @@ import {
 import type { Animal, CreateAnimalData } from "@/lib/database";
 
 const AnimalsPage = () => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { data: animals, isLoading, error } = useAnimals();
   const { data: clients } = useClients();
   const { currentView } = useDisplayPreference('animals');
@@ -47,6 +50,14 @@ const AnimalsPage = () => {
   const updateAnimalMutation = useUpdateAnimal();
   const deleteAnimalMutation = useDeleteAnimal();
   const { toast } = useToast();
+
+  const sexLabel = (sex?: string | null) => {
+    if (!sex) return "";
+    if (["Mâle", "Male", "Macho"].includes(sex)) return t("animalsWithSettings.sexMale");
+    if (["Femelle", "Female", "Hembra"].includes(sex)) return t("animalsWithSettings.sexFemale");
+    if (["Inconnu", "Unknown", "Desconocido"].includes(sex)) return t("animalsWithSettings.sexUnknown");
+    return sex;
+  };
 
   // Animal form data
   const [animalForm, setAnimalForm] = useState<CreateAnimalData>({
@@ -84,8 +95,8 @@ const AnimalsPage = () => {
     
     if (!animalForm.client_id || !animalForm.name || !animalForm.species) {
       toast({
-        title: "Erreur",
-        description: "Le propriétaire, le nom et l'espèce sont obligatoires",
+        title: tc("error"),
+        description: t("animalsWithSettings.ownerNameSpeciesRequired"),
         variant: "destructive"
       });
       return;
@@ -95,8 +106,8 @@ const AnimalsPage = () => {
       await createAnimalMutation.mutateAsync(animalForm);
       
       toast({
-        title: "Animal créé",
-        description: `${animalForm.name} a été ajouté avec succès`,
+        title: t("animalsWithSettings.createdTitle"),
+        description: t("animalsWithSettings.createdBody", { name: animalForm.name }),
       });
       
       setShowCreateModal(false);
@@ -115,7 +126,7 @@ const AnimalsPage = () => {
       });
     } catch (error: any) {
       toast({
-        title: "Erreur",
+        title: tc("error"),
         description: error.message,
         variant: "destructive"
       });
@@ -134,15 +145,15 @@ const AnimalsPage = () => {
       });
       
       toast({
-        title: "Animal mis à jour",
-        description: `${animalForm.name} a été modifié avec succès`,
+        title: t("animalsWithSettings.updatedTitle"),
+        description: t("animalsWithSettings.updatedBody", { name: animalForm.name }),
       });
       
       setShowEditModal(false);
       setSelectedAnimal(null);
     } catch (error: any) {
       toast({
-        title: "Erreur",
+        title: tc("error"),
         description: error.message,
         variant: "destructive"
       });
@@ -150,7 +161,7 @@ const AnimalsPage = () => {
   };
 
   const handleDeleteAnimal = async (animal: Animal) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${animal.name} ?`)) {
+    if (!confirm(t("animalsWithSettings.deleteConfirm", { name: animal.name }))) {
       return;
     }
 
@@ -158,12 +169,12 @@ const AnimalsPage = () => {
       await deleteAnimalMutation.mutateAsync(animal.id);
       
       toast({
-        title: "Animal supprimé",
-        description: `${animal.name} a été supprimé`,
+        title: t("animalsWithSettings.deletedTitle"),
+        description: t("animalsWithSettings.deletedBody", { name: animal.name }),
       });
     } catch (error: any) {
       toast({
-        title: "Erreur",
+        title: tc("error"),
         description: error.message,
         variant: "destructive"
       });
@@ -197,13 +208,13 @@ const AnimalsPage = () => {
     <form onSubmit={isEdit ? handleUpdateAnimal : handleCreateAnimal} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="client_id">Propriétaire *</Label>
+          <Label htmlFor="client_id">{t("animalsWithSettings.owner")}</Label>
           <Select
             value={animalForm.client_id}
             onValueChange={(value) => setAnimalForm(prev => ({ ...prev, client_id: value }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un client" />
+              <SelectValue placeholder={t("animalsWithSettings.selectClient")} />
             </SelectTrigger>
             <SelectContent>
               {clients?.map(client => (
@@ -216,24 +227,24 @@ const AnimalsPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="name">Nom *</Label>
+          <Label htmlFor="name">{t("animalsWithSettings.name")}</Label>
           <Input
             id="name"
             value={animalForm.name}
             onChange={(e) => setAnimalForm(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="Nom de l'animal"
+            placeholder={t("animalsWithSettings.namePlaceholder")}
             required
           />
         </div>
 
         <div>
-          <Label htmlFor="species">Espèce *</Label>
+          <Label htmlFor="species">{t("animalsWithSettings.species")}</Label>
           <Select
             value={animalForm.species}
             onValueChange={(value) => setAnimalForm(prev => ({ ...prev, species: value, breed: '' }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner une espèce" />
+              <SelectValue placeholder={t("animalsWithSettings.selectSpecies")} />
             </SelectTrigger>
             <SelectContent>
               {animalSpecies.map(species => (
@@ -246,13 +257,13 @@ const AnimalsPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="breed">Race</Label>
+          <Label htmlFor="breed">{t("animalsWithSettings.breed")}</Label>
           <Select
             value={animalForm.breed}
             onValueChange={(value) => setAnimalForm(prev => ({ ...prev, breed: value }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner une race" />
+              <SelectValue placeholder={t("animalsWithSettings.selectBreed")} />
             </SelectTrigger>
             <SelectContent>
               {availableBreeds.map(breed => (
@@ -265,13 +276,13 @@ const AnimalsPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="color">Couleur</Label>
+          <Label htmlFor="color">{t("animalsWithSettings.color")}</Label>
           <Select
             value={animalForm.color}
             onValueChange={(value) => setAnimalForm(prev => ({ ...prev, color: value }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner une couleur" />
+              <SelectValue placeholder={t("animalsWithSettings.selectColor")} />
             </SelectTrigger>
             <SelectContent>
               {animalColors.map(color => (
@@ -284,36 +295,36 @@ const AnimalsPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="sex">Sexe</Label>
+          <Label htmlFor="sex">{t("animalsWithSettings.sex")}</Label>
           <Select
             value={animalForm.sex}
             onValueChange={(value) => setAnimalForm(prev => ({ ...prev, sex: value }))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Sélectionner le sexe" />
+              <SelectValue placeholder={t("animalsWithSettings.selectSex")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Mâle">Mâle</SelectItem>
-              <SelectItem value="Femelle">Femelle</SelectItem>
-              <SelectItem value="Inconnu">Inconnu</SelectItem>
+              <SelectItem value="Mâle">{t("animalsWithSettings.sexMale")}</SelectItem>
+              <SelectItem value="Femelle">{t("animalsWithSettings.sexFemale")}</SelectItem>
+              <SelectItem value="Inconnu">{t("animalsWithSettings.sexUnknown")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div>
-          <Label htmlFor="weight">Poids (kg)</Label>
+          <Label htmlFor="weight">{t("animalsWithSettings.weightKg")}</Label>
           <Input
             id="weight"
             type="number"
             step="0.1"
             value={animalForm.weight}
             onChange={(e) => setAnimalForm(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
-            placeholder="Poids en kg"
+            placeholder={t("animalsWithSettings.weightPlaceholder")}
           />
         </div>
 
         <div>
-          <Label htmlFor="birth_date">Date de naissance</Label>
+          <Label htmlFor="birth_date">{t("animalsWithSettings.birthDate")}</Label>
           <Input
             id="birth_date"
             type="date"
@@ -323,12 +334,12 @@ const AnimalsPage = () => {
         </div>
 
         <div>
-          <Label htmlFor="microchip_number">Numéro de puce</Label>
+          <Label htmlFor="microchip_number">{t("animalsWithSettings.microchip")}</Label>
           <Input
             id="microchip_number"
             value={animalForm.microchip_number}
             onChange={(e) => setAnimalForm(prev => ({ ...prev, microchip_number: e.target.value }))}
-            placeholder="Numéro de puce électronique"
+            placeholder={t("animalsWithSettings.microchipPlaceholder")}
           />
         </div>
 
@@ -338,17 +349,17 @@ const AnimalsPage = () => {
             checked={animalForm.sterilized}
             onCheckedChange={(checked) => setAnimalForm(prev => ({ ...prev, sterilized: checked }))}
           />
-          <Label htmlFor="sterilized">Stérilisé(e)</Label>
+          <Label htmlFor="sterilized">{t("animalsWithSettings.sterilized")}</Label>
         </div>
       </div>
 
       <div>
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">{t("animalsWithSettings.notes")}</Label>
         <Textarea
           id="notes"
           value={animalForm.notes}
           onChange={(e) => setAnimalForm(prev => ({ ...prev, notes: e.target.value }))}
-          placeholder="Notes additionnelles..."
+          placeholder={t("animalsWithSettings.notesPlaceholder")}
           rows={3}
         />
       </div>
@@ -365,7 +376,7 @@ const AnimalsPage = () => {
             }
           }}
         >
-          Annuler
+          {tc("cancel")}
         </Button>
         <Button 
           type="submit" 
@@ -374,10 +385,10 @@ const AnimalsPage = () => {
           {createAnimalMutation.isPending || updateAnimalMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isEdit ? "Mise à jour..." : "Création..."}
+              {isEdit ? t("animalsWithSettings.updating") : t("animalsWithSettings.creating")}
             </>
           ) : (
-            isEdit ? "Mettre à jour" : "Créer"
+            isEdit ? t("animalsWithSettings.update") : t("animalsWithSettings.create")
           )}
         </Button>
       </div>
@@ -395,7 +406,7 @@ const AnimalsPage = () => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-500">Erreur lors du chargement des animaux</p>
+        <p className="text-red-500">{t("animalsWithSettings.loadError")}</p>
       </div>
     );
   }
@@ -407,10 +418,10 @@ const AnimalsPage = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <PawPrint className="h-8 w-8" />
-            Animaux
+            {t("animalsWithSettings.title")}
           </h1>
           <p className="text-muted-foreground">
-            Gestion des animaux et de leurs informations
+            {t("animalsWithSettings.description")}
           </p>
         </div>
         
@@ -419,12 +430,12 @@ const AnimalsPage = () => {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Nouvel animal
+                {t("animalsWithSettings.new")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Ajouter un nouvel animal</DialogTitle>
+                <DialogTitle>{t("animalsWithSettings.addTitle")}</DialogTitle>
               </DialogHeader>
               <AnimalFormDialog />
             </DialogContent>
@@ -437,7 +448,7 @@ const AnimalsPage = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Rechercher un animal..."
+            placeholder={t("animalsWithSettings.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -469,16 +480,16 @@ const AnimalsPage = () => {
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Configuration dynamique activée</p>
+                <p className="text-sm font-medium">{t("animalsWithSettings.dynamicConfig")}</p>
                 <p className="text-xs text-muted-foreground">
-                  Les espèces, races et couleurs sont configurables dans les paramètres
+                  {t("animalsWithSettings.dynamicConfigHint")}
                 </p>
               </div>
             </div>
             <div className="flex gap-4 text-xs text-muted-foreground">
-              <span>{animalSpecies.length} espèces</span>
-              <span>{Object.keys(animalBreeds).length} groupes de races</span>
-              <span>{animalColors.length} couleurs</span>
+              <span>{t("animalsWithSettings.speciesCount", { count: animalSpecies.length })}</span>
+              <span>{t("animalsWithSettings.breedGroupsCount", { count: Object.keys(animalBreeds).length })}</span>
+              <span>{t("animalsWithSettings.colorsCount", { count: animalColors.length })}</span>
             </div>
           </div>
         </CardContent>
@@ -489,21 +500,21 @@ const AnimalsPage = () => {
         <Card>
           <CardContent className="text-center py-8">
             <PawPrint className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Aucun animal trouvé</h3>
+            <h3 className="text-lg font-semibold mb-2">{t("animalsWithSettings.empty")}</h3>
             <p className="text-muted-foreground mb-4">
-              {searchTerm ? "Aucun animal ne correspond à votre recherche." : "Commencez par ajouter votre premier animal."}
+              {searchTerm ? t("animalsWithSettings.emptySearch") : t("animalsWithSettings.emptyHint")}
             </p>
             {!searchTerm && (
               <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
-                    Ajouter un animal
+                    {t("animalsWithSettings.addAnimal")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Ajouter un nouvel animal</DialogTitle>
+                    <DialogTitle>{t("animalsWithSettings.addTitle")}</DialogTitle>
                   </DialogHeader>
                   <AnimalFormDialog />
                 </DialogContent>
@@ -544,32 +555,32 @@ const AnimalsPage = () => {
                 <div className="space-y-2">
                   {animal.breed && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Race:</span>
+                      <span className="text-muted-foreground">{t("animalsWithSettings.breed")}:</span>
                       <span>{animal.breed}</span>
                     </div>
                   )}
                   {animal.color && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Couleur:</span>
+                      <span className="text-muted-foreground">{t("animalsWithSettings.color")}:</span>
                       <span>{animal.color}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Propriétaire:</span>
+                    <span className="text-muted-foreground">{t("animalsWithSettings.ownerLabel")}:</span>
                     <span>{animal.owner_name}</span>
                   </div>
                   {animal.weight && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Poids:</span>
+                      <span className="text-muted-foreground">{t("animalsWithSettings.weightLabel")}:</span>
                       <span>{animal.weight} kg</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex gap-2 mt-3">
-                  <Badge variant="secondary">{animal.sex}</Badge>
+                  <Badge variant="secondary">{sexLabel(animal.sex)}</Badge>
                   {animal.sterilized && (
-                    <Badge variant="outline">Stérilisé</Badge>
+                    <Badge variant="outline">{t("animalsWithSettings.sterilizedBadge")}</Badge>
                   )}
                 </div>
               </CardContent>
@@ -582,14 +593,14 @@ const AnimalsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Espèce</TableHead>
-                  <TableHead>Race</TableHead>
-                  <TableHead>Couleur</TableHead>
-                  <TableHead>Sexe</TableHead>
-                  <TableHead>Propriétaire</TableHead>
-                  <TableHead>Poids</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.name")}</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.species")}</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.breed")}</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.color")}</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.sex")}</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.owner")}</TableHead>
+                  <TableHead>{t("animalsWithSettings.columns.weight")}</TableHead>
+                  <TableHead className="text-right">{t("animalsWithSettings.columns.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -600,7 +611,7 @@ const AnimalsPage = () => {
                     <TableCell>{animal.breed || '-'}</TableCell>
                     <TableCell>{animal.color || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{animal.sex}</Badge>
+                      <Badge variant="secondary">{sexLabel(animal.sex)}</Badge>
                     </TableCell>
                     <TableCell>{animal.owner_name}</TableCell>
                     <TableCell>{animal.weight ? `${animal.weight} kg` : '-'}</TableCell>
@@ -629,7 +640,7 @@ const AnimalsPage = () => {
       <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Détails de l'animal</DialogTitle>
+            <DialogTitle>{t("animalsWithSettings.viewTitle")}</DialogTitle>
           </DialogHeader>
           {selectedAnimal && (
             <div className="space-y-4">
@@ -647,42 +658,42 @@ const AnimalsPage = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Race</Label>
-                  <p className="text-sm">{selectedAnimal.breed || 'Non spécifiée'}</p>
+                  <Label>{t("animalsWithSettings.breed")}</Label>
+                  <p className="text-sm">{selectedAnimal.breed || t("animalsWithSettings.notSpecified")}</p>
                 </div>
                 <div>
-                  <Label>Couleur</Label>
-                  <p className="text-sm">{selectedAnimal.color || 'Non spécifiée'}</p>
+                  <Label>{t("animalsWithSettings.color")}</Label>
+                  <p className="text-sm">{selectedAnimal.color || t("animalsWithSettings.notSpecified")}</p>
                 </div>
                 <div>
-                  <Label>Sexe</Label>
-                  <p className="text-sm">{selectedAnimal.sex}</p>
+                  <Label>{t("animalsWithSettings.sex")}</Label>
+                  <p className="text-sm">{sexLabel(selectedAnimal.sex)}</p>
                 </div>
                 <div>
-                  <Label>Poids</Label>
-                  <p className="text-sm">{selectedAnimal.weight ? `${selectedAnimal.weight} kg` : 'Non spécifié'}</p>
+                  <Label>{t("animalsWithSettings.weightLabel")}</Label>
+                  <p className="text-sm">{selectedAnimal.weight ? `${selectedAnimal.weight} kg` : t("animalsWithSettings.notSpecified")}</p>
                 </div>
                 <div>
-                  <Label>Date de naissance</Label>
-                  <p className="text-sm">{selectedAnimal.birth_date || 'Non spécifiée'}</p>
+                  <Label>{t("animalsWithSettings.birthDate")}</Label>
+                  <p className="text-sm">{selectedAnimal.birth_date || t("animalsWithSettings.notSpecified")}</p>
                 </div>
                 <div>
-                  <Label>Numéro de puce</Label>
-                  <p className="text-sm">{selectedAnimal.microchip_number || 'Non spécifié'}</p>
+                  <Label>{t("animalsWithSettings.microchip")}</Label>
+                  <p className="text-sm">{selectedAnimal.microchip_number || t("animalsWithSettings.notSpecified")}</p>
                 </div>
                 <div>
-                  <Label>Stérilisation</Label>
-                  <p className="text-sm">{selectedAnimal.sterilized ? 'Oui' : 'Non'}</p>
+                  <Label>{t("animalsWithSettings.sterilization")}</Label>
+                  <p className="text-sm">{selectedAnimal.sterilized ? tc("yes") : tc("no")}</p>
                 </div>
                 <div>
-                  <Label>Propriétaire</Label>
+                  <Label>{t("animalsWithSettings.ownerLabel")}</Label>
                   <p className="text-sm">{selectedAnimal.owner_name}</p>
                 </div>
               </div>
 
               {selectedAnimal.notes && (
                 <div>
-                  <Label>Notes</Label>
+                  <Label>{t("animalsWithSettings.notes")}</Label>
                   <p className="text-sm bg-muted p-3 rounded">{selectedAnimal.notes}</p>
                 </div>
               )}
@@ -695,7 +706,7 @@ const AnimalsPage = () => {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Modifier l'animal</DialogTitle>
+            <DialogTitle>{t("animalsWithSettings.editTitle")}</DialogTitle>
           </DialogHeader>
           <AnimalFormDialog isEdit />
         </DialogContent>

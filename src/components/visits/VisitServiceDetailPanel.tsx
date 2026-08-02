@@ -18,6 +18,7 @@ import type { VisitService } from "@/lib/visits";
 import { getServiceDef, type VisitServiceDef } from "@/lib/visitCatalog";
 import { compressPhoto, recordStorageChange, estimateDataUrlBytes } from "@/lib/photoCompression";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type Details = Record<string, string>;
 
@@ -64,6 +65,8 @@ export function VisitServiceDetailPanel({
   onOpenRx,
 }: VisitServiceDetailPanelProps) {
   const { toast } = useToast();
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   const def = getServiceDef(service.service_code);
   const panel = def?.panel || "generic";
   const fileRef = useRef<HTMLInputElement>(null);
@@ -110,13 +113,13 @@ export function VisitServiceDetailPanel({
       setAttachments(next);
       recordStorageChange("consultation", totalBytes, results.length).catch(() => {});
       toast({
-        title: "Images ajoutées",
-        description: `${results.length} image(s). Enregistrez pour sauvegarder.`,
+        title: t("visitServicePanel.imagesAdded"),
+        description: t("visitServicePanel.imagesAddedDesc", { count: results.length }),
       });
     } catch (e: any) {
       toast({
-        title: "Erreur images",
-        description: e?.message || "Impossible de traiter les images",
+        title: t("visitServicePanel.photosError"),
+        description: e?.message || t("alerts.cannotProcessImages"),
         variant: "destructive",
       });
     } finally {
@@ -139,24 +142,41 @@ export function VisitServiceDetailPanel({
         markDone,
       });
       toast({
-        title: markDone ? "Prestation enregistrée" : "Modifications enregistrées",
+        title: markDone ? t("visitServicePanel.serviceSaved") : t("visitServicePanel.changesSaved"),
         description:
           panel === "imaging" || panel === "lab"
-            ? "Synchronisé avec le dossier médical de l'animal."
+            ? t("visitServicePanel.syncedToRecord")
             : undefined,
       });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e?.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e?.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const realizeLabel = (panelKey: string) => {
+    switch (panelKey) {
+      case "clinical":
+        return t("visitServicePanel.openConsultation");
+      case "vaccination":
+        return t("visitServicePanel.saveVaccine");
+      case "antiparasitic":
+        return t("visitServicePanel.saveTreatment");
+      case "prescription":
+        return t("visitServicePanel.writePrescription");
+      case "farm":
+        return t("visitServicePanel.openFarmIntervention");
+      default:
+        return t("visitServicePanel.realize");
     }
   };
 
   const AmountField = (
     <div className="space-y-2">
       <Label>
-        Montant ({currency})
-        {perHead ? " — prix unitaire / tête" : ""}
+        {t("visitServicePanel.amountLabel", { currency })}
+        {perHead ? t("visitServicePanel.perHeadUnit") : ""}
       </Label>
       <Input
         type="number"
@@ -176,13 +196,13 @@ export function VisitServiceDetailPanel({
 
   const ImageGallery = (
     <div className="space-y-2">
-      <Label>Images / clichés</Label>
+      <Label>{t("visitServicePanel.imagesLabel")}</Label>
       <div className="flex flex-wrap gap-2">
         {attachments.map((src, idx) => (
           <div key={idx} className="relative group">
             <img
               src={src}
-              alt={`cliché ${idx + 1}`}
+              alt={t("visitServicePanel.imageAlt", { n: idx + 1 })}
               className="h-20 w-20 object-cover rounded-md border"
             />
             {!readOnly && (
@@ -190,7 +210,7 @@ export function VisitServiceDetailPanel({
                 type="button"
                 onClick={() => removeImage(idx)}
                 className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-90 hover:opacity-100"
-                aria-label="Supprimer l'image"
+                aria-label={t("visitServicePanel.removeImageAria")}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -209,7 +229,7 @@ export function VisitServiceDetailPanel({
             ) : (
               <>
                 <ImagePlus className="h-5 w-5" />
-                <span className="text-[10px]">Ajouter</span>
+                <span className="text-[10px]">{tc("add")}</span>
               </>
             )}
           </button>
@@ -227,7 +247,7 @@ export function VisitServiceDetailPanel({
       )}
       {!readOnly && (
         <p className="text-[11px] text-muted-foreground">
-          JPG / PNG — compressées automatiquement. Cliquez Enregistrer pour les sauvegarder.
+          {t("visitServicePanel.compressHint")}
         </p>
       )}
     </div>
@@ -251,7 +271,7 @@ export function VisitServiceDetailPanel({
             onClick={() => savePanel(true)}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Enregistrer & marquer fait
+            {t("visitServicePanel.saveAndMarkDone")}
           </Button>
         )}
 
@@ -263,28 +283,28 @@ export function VisitServiceDetailPanel({
             onClick={() => savePanel(false)}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Mettre à jour
+            {t("visitServicePanel.update")}
           </Button>
         )}
 
         {!needsInlineSave(panel) && service.status !== "done" && (
           <Button variant="secondary" className="gap-2" onClick={onMarkDone}>
             <Check className="h-4 w-4" />
-            Marquer fait
+            {t("visitServicePanel.markDone")}
           </Button>
         )}
 
         {service.status !== "skipped" && service.status !== "done" && (
           <Button variant="outline" className="gap-2" onClick={onSkip}>
             <SkipForward className="h-4 w-4" />
-            Ignorer
+            {t("visitServicePanel.skip")}
           </Button>
         )}
 
         {panel === "prescription" && service.status !== "done" && onOpenRx && (
           <Button variant="outline" className="gap-2" onClick={onOpenRx}>
             <Pill className="h-4 w-4" />
-            Ordonnance
+            {t("visitServicePanel.prescription")}
           </Button>
         )}
 
@@ -307,14 +327,13 @@ export function VisitServiceDetailPanel({
 
       {panel === "clinical" && (
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-          <p className="font-medium">Compte-rendu clinique</p>
+          <p className="font-medium">{t("visitServicePanel.clinicalReport")}</p>
           <p className="text-muted-foreground text-xs">
-            Ouvrez le formulaire de consultation pour saisir symptômes, diagnostic, traitement
-            et photos.
+            {t("visitServicePanel.clinicalHint")}
           </p>
           {service.reference_id && (
             <p className="text-xs text-muted-foreground pt-1">
-              Consultation liée · {service.reference_id.slice(0, 8)}…
+              {t("visitServicePanel.consultationLinked", { ref: service.reference_id.slice(0, 8) })}
             </p>
           )}
         </div>
@@ -322,43 +341,42 @@ export function VisitServiceDetailPanel({
 
       {panel === "vaccination" && (
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-          <p className="font-medium">Vaccination</p>
+          <p className="font-medium">{t("visitServicePanel.vaccination")}</p>
           <p className="text-muted-foreground text-xs">
-            <strong>Enregistrer vaccin</strong> : saisie complète (lot, protocole, rappels).
-            <br />
-            <strong>Marquer fait</strong> : pour un RDV de rappel, enregistre la dose sur le
-            certificat de vaccination.
+            {t("visitServicePanel.vaccinationHint", {
+              saveVaccine: t("visitServicePanel.saveVaccine"),
+              markDone: t("visitServicePanel.markDone"),
+            })}
           </p>
         </div>
       )}
 
       {panel === "antiparasitic" && (
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-          <p className="font-medium">Traitement antiparasitaire</p>
+          <p className="font-medium">{t("visitServicePanel.antiparasitic")}</p>
           <p className="text-muted-foreground text-xs">
-            <strong>Enregistrer traitement</strong> : saisie complète (produit, plan, rappels).
-            <br />
-            <strong>Marquer fait</strong> : pour un RDV de rappel, enregistre le traitement sur
-            le certificat antiparasitaire.
+            {t("visitServicePanel.antiparasiticHint", {
+              saveTreatment: t("visitServicePanel.saveTreatment"),
+              markDone: t("visitServicePanel.markDone"),
+            })}
           </p>
         </div>
       )}
 
       {panel === "prescription" && (
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-          <p className="font-medium">Ordonnance</p>
+          <p className="font-medium">{t("visitServicePanel.prescription")}</p>
           <p className="text-muted-foreground text-xs">
-            Prescrivez les médicaments liés au stock. Le montant peut être mis à jour
-            automatiquement.
+            {t("visitServicePanel.prescriptionHint")}
           </p>
         </div>
       )}
 
       {panel === "farm" && (
         <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-          <p className="font-medium">Intervention d&apos;élevage</p>
+          <p className="font-medium">{t("visitServicePanel.farmIntervention")}</p>
           <p className="text-muted-foreground text-xs">
-            Ouvrez le formulaire d&apos;intervention ferme (lot, prophylaxie, coût…).
+            {t("visitServicePanel.farmHint")}
           </p>
         </div>
       )}
@@ -366,27 +384,26 @@ export function VisitServiceDetailPanel({
       {panel === "imaging" && (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground rounded-lg border bg-muted/30 p-2">
-            À l&apos;enregistrement, cet examen est ajouté au <strong>dossier médical</strong>{" "}
-            de l&apos;animal (comme une consultation de type {def?.label || "imagerie"}).
+            {t("visitServicePanel.imagingSyncHint", { type: def?.label || "imagerie" })}
           </p>
           <div className="space-y-2">
-            <Label>Région / zone anatomique</Label>
+            <Label>{t("visitServicePanel.regionLabel")}</Label>
             <Input
               value={details.region || ""}
               onChange={(e) => setDetail("region", e.target.value)}
-              placeholder="ex. Thorax, membre antérieur G…"
+              placeholder={t("visitServicePanel.regionPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Technique / incidences</Label>
+            <Label>{t("visitServicePanel.techniqueLabel")}</Label>
             <Input
               value={details.technique || ""}
               onChange={(e) => setDetail("technique", e.target.value)}
-              placeholder="ex. Face + profil, Doppler…"
+              placeholder={t("visitServicePanel.techniquePlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Compte-rendu / findings</Label>
+            <Label>{t("visitServicePanel.findingsLabel")}</Label>
             <Textarea
               rows={4}
               value={details.findings || notes}
@@ -394,7 +411,7 @@ export function VisitServiceDetailPanel({
                 setDetail("findings", e.target.value);
                 setNotes(e.target.value);
               }}
-              placeholder="Observations radiographiques / échographiques…"
+              placeholder={t("visitServicePanel.findingsPlaceholder")}
             />
           </div>
           {ImageGallery}
@@ -404,19 +421,18 @@ export function VisitServiceDetailPanel({
       {panel === "lab" && (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground rounded-lg border bg-muted/30 p-2">
-            À l&apos;enregistrement, les résultats sont ajoutés au{" "}
-            <strong>dossier médical</strong> de l&apos;animal.
+            {t("visitServicePanel.labSyncHint")}
           </p>
           <div className="space-y-2">
-            <Label>Analyses demandées</Label>
+            <Label>{t("visitServicePanel.testsLabel")}</Label>
             <Input
               value={details.tests || ""}
               onChange={(e) => setDetail("tests", e.target.value)}
-              placeholder="ex. NFS, biochimie, test FIV/FeLV…"
+              placeholder={t("visitServicePanel.testsPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Résultats</Label>
+            <Label>{t("visitServicePanel.resultsLabel")}</Label>
             <Textarea
               rows={4}
               value={details.results || notes}
@@ -424,15 +440,15 @@ export function VisitServiceDetailPanel({
                 setDetail("results", e.target.value);
                 setNotes(e.target.value);
               }}
-              placeholder="Résultats et interprétation…"
+              placeholder={t("visitServicePanel.resultsPlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Laboratoire / référence</Label>
+            <Label>{t("visitServicePanel.labRefLabel")}</Label>
             <Input
               value={details.lab_ref || ""}
               onChange={(e) => setDetail("lab_ref", e.target.value)}
-              placeholder="Labo externe, n° dossier…"
+              placeholder={t("visitServicePanel.labRefPlaceholder")}
             />
           </div>
         </div>
@@ -441,20 +457,20 @@ export function VisitServiceDetailPanel({
       {panel === "grooming" && (
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label>Prestation réalisée</Label>
+            <Label>{t("visitServicePanel.serviceDoneLabel")}</Label>
             <Input
               value={details.service_done || ""}
               onChange={(e) => setDetail("service_done", e.target.value)}
-              placeholder="ex. Coupe, bain, détartrage…"
+              placeholder={t("visitServicePanel.serviceDonePlaceholder")}
             />
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
+            <Label>{tc("notes")}</Label>
             <Textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Observations, comportement…"
+              placeholder={t("visitServicePanel.groomingPlaceholder")}
             />
           </div>
         </div>
@@ -462,12 +478,12 @@ export function VisitServiceDetailPanel({
 
       {panel === "generic" && (
         <div className="space-y-2">
-          <Label>Notes / compte-rendu</Label>
+          <Label>{t("visitServicePanel.genericNotesLabel")}</Label>
           <Textarea
             rows={4}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Détails de l'acte…"
+            placeholder={t("visitServicePanel.genericNotesPlaceholder")}
           />
         </div>
       )}
@@ -476,7 +492,9 @@ export function VisitServiceDetailPanel({
 
       {service.reference_id && panel !== "clinical" && (
         <p className="text-xs text-muted-foreground">
-          Lié à {service.reference_type} · {service.reference_id.slice(0, 8)}…
+          {t("visitServicePanel.linkedTo", {
+            ref: `${service.reference_type} · ${service.reference_id.slice(0, 8)}…`,
+          })}
         </p>
       )}
     </div>
@@ -496,21 +514,4 @@ function needsRealize(def?: VisitServiceDef) {
 
 function needsInlineSave(panel: string) {
   return panel === "imaging" || panel === "lab" || panel === "grooming" || panel === "generic";
-}
-
-function realizeLabel(panel: string) {
-  switch (panel) {
-    case "clinical":
-      return "Ouvrir consultation";
-    case "vaccination":
-      return "Enregistrer vaccin";
-    case "antiparasitic":
-      return "Enregistrer traitement";
-    case "prescription":
-      return "Rédiger ordonnance";
-    case "farm":
-      return "Ouvrir intervention";
-    default:
-      return "Réaliser";
-  }
 }

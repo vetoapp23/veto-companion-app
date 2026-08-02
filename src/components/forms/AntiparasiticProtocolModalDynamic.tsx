@@ -13,6 +13,7 @@ import { Shield, Loader2 } from 'lucide-react';
 import type { AntiparasiticProtocol, BoosterScheduleEntry } from '@/lib/database';
 import BoosterScheduleEditor from './BoosterScheduleEditor';
 import { ComboboxFreeText } from '@/components/ui/combobox-freetext';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_ROUTES_ANTIPARASITIC = ['spot_on', 'oral', 'injection', 'spray', 'collier', 'shampoing'];
 
@@ -27,11 +28,12 @@ export default function AntiparasiticProtocolModalDynamic({
   onOpenChange, 
   editingProtocol 
 }: AntiparasiticProtocolModalDynamicProps) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
   const createProtocol = useCreateAntiparasiticProtocol();
   const updateProtocol = useUpdateAntiparasiticProtocol();
   const { toast } = useToast();
 
-  // Dynamic settings
   const { data: animalSpecies = [], isLoading: speciesLoading } = useAnimalSpecies();
   const { data: parasiteTypes = [], isLoading: typesLoading } = useParasiteTypes();
 
@@ -50,10 +52,9 @@ export default function AntiparasiticProtocolModalDynamic({
     active: true,
   });
   const [boosterSchedule, setBoosterSchedule] = useState<BoosterScheduleEntry[]>([
-    { label: '1er traitement', offset_days: 0 },
+    { label: t("forms.firstTreatmentLabel"), offset_days: 0 },
   ]);
 
-  // Pre-fill form for editing
   useEffect(() => {
     if (editingProtocol) {
       setFormData({
@@ -63,10 +64,10 @@ export default function AntiparasiticProtocolModalDynamic({
         activeIngredient: editingProtocol.active_ingredient || '',
         administrationRoute: editingProtocol.administration_route || '',
         dosageRecommendation: editingProtocol.dosage_per_kg || '',
-        frequencyDays: '', // This field doesn't exist, so we'll leave it empty
+        frequencyDays: '',
         ageRecommendation: editingProtocol.age_restriction || '',
-        weightRange: '', // This field doesn't exist in the protocol interface
-        seasonRecommendation: '', // This field doesn't exist in the protocol interface
+        weightRange: '',
+        seasonRecommendation: '',
         notes: editingProtocol.notes || '',
         active: editingProtocol.active,
       });
@@ -102,8 +103,8 @@ export default function AntiparasiticProtocolModalDynamic({
     
     if (!formData.species || !formData.parasiteType || !formData.productName) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        title: tc("error"),
+        description: t("alerts.fillRequiredFields"),
         variant: "destructive",
       });
       return;
@@ -117,12 +118,16 @@ export default function AntiparasiticProtocolModalDynamic({
         active_ingredient: formData.activeIngredient || undefined,
         administration_route: formData.administrationRoute || undefined,
         dosage_per_kg: formData.dosageRecommendation || undefined,
-        frequency: formData.frequencyDays ? `${formData.frequencyDays} jours` : undefined,
+        frequency: formData.frequencyDays
+          ? t("forms.frequencyDaysSuffix", { count: formData.frequencyDays })
+          : undefined,
         age_restriction: formData.ageRecommendation || undefined,
         notes: [
           formData.notes,
-          formData.weightRange ? `Poids: ${formData.weightRange}` : '',
-          formData.seasonRecommendation ? `Saison: ${formData.seasonRecommendation}` : ''
+          formData.weightRange ? t("forms.weightNote", { range: formData.weightRange }) : '',
+          formData.seasonRecommendation
+            ? t("forms.seasonNote", { season: formData.seasonRecommendation })
+            : '',
         ].filter(Boolean).join(' | ') || undefined,
         active: formData.active,
         booster_schedule: boosterSchedule
@@ -136,14 +141,14 @@ export default function AntiparasiticProtocolModalDynamic({
           updates: protocolData
         });
         toast({
-          title: "Succès",
-          description: "Le protocole antiparasitaire a été modifié avec succès.",
+          title: tc("success"),
+          description: t("alerts.antiparasiticProtocolUpdated"),
         });
       } else {
         await createProtocol.mutateAsync(protocolData);
         toast({
-          title: "Succès",
-          description: "Le protocole antiparasitaire a été créé avec succès.",
+          title: tc("success"),
+          description: t("alerts.antiparasiticProtocolCreated"),
         });
       }
       
@@ -152,8 +157,8 @@ export default function AntiparasiticProtocolModalDynamic({
     } catch (error: any) {
       console.error('Erreur lors de la sauvegarde du protocole:', error);
       toast({
-        title: "Erreur",
-        description: error?.message || "Une erreur s'est produite lors de la sauvegarde.",
+        title: tc("error"),
+        description: error?.message || t("alerts.saveProtocolError"),
         variant: "destructive",
       });
     }
@@ -167,18 +172,17 @@ export default function AntiparasiticProtocolModalDynamic({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            {editingProtocol ? 'Modifier le protocole' : 'Nouveau protocole antiparasitaire'}
+            {editingProtocol ? t("forms.editProtocol") : t("forms.newAntiparasiticProtocol")}
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Species */}
             <div className="space-y-2">
-              <Label htmlFor="species">Espèce *</Label>
+              <Label htmlFor="species">{t("forms.speciesRequired")}</Label>
               <Select value={formData.species} onValueChange={(value) => handleInputChange('species', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une espèce" />
+                  <SelectValue placeholder={t("forms.selectSpecies")} />
                 </SelectTrigger>
                 <SelectContent>
                   {animalSpecies.map((species) => (
@@ -190,157 +194,143 @@ export default function AntiparasiticProtocolModalDynamic({
               </Select>
             </div>
 
-            {/* Parasite Type */}
             <div className="space-y-2">
-              <Label htmlFor="parasiteType">Type de parasite *</Label>
+              <Label htmlFor="parasiteType">{t("forms.parasiteTypeRequired")}</Label>
               <ComboboxFreeText
                 value={formData.parasiteType}
                 onChange={(v) => handleInputChange('parasiteType', v)}
                 options={parasiteTypes}
                 category="parasite_type"
-                placeholder="Sélectionner ou créer..."
+                placeholder={t("forms.selectOrCreate")}
               />
             </div>
 
-            {/* Product Name */}
             <div className="space-y-2">
-              <Label htmlFor="productName">Nom du produit *</Label>
+              <Label htmlFor="productName">{t("forms.productNameRequired")}</Label>
               <Input
                 id="productName"
                 value={formData.productName}
                 onChange={(e) => handleInputChange('productName', e.target.value)}
-                placeholder="Ex: Frontline, Bravecto..."
+                placeholder={t("forms.productNameEx")}
                 required
               />
             </div>
 
-            {/* Active Ingredient */}
             <div className="space-y-2">
-              <Label htmlFor="activeIngredient">Principe actif</Label>
+              <Label htmlFor="activeIngredient">{t("forms.activeIngredient")}</Label>
               <Input
                 id="activeIngredient"
                 value={formData.activeIngredient}
                 onChange={(e) => handleInputChange('activeIngredient', e.target.value)}
-                placeholder="Ex: Fipronil, Fluralaner..."
+                placeholder={t("forms.activeIngredientEx")}
               />
             </div>
 
-            {/* Administration Route */}
             <div className="space-y-2">
-              <Label htmlFor="administrationRoute">Voie d'administration</Label>
+              <Label htmlFor="administrationRoute">{t("forms.administrationRoute")}</Label>
               <ComboboxFreeText
                 value={formData.administrationRoute}
                 onChange={(v) => handleInputChange('administrationRoute', v)}
                 options={DEFAULT_ROUTES_ANTIPARASITIC}
                 category="administration_route"
-                placeholder="Sélectionner ou créer..."
+                placeholder={t("forms.selectOrCreate")}
               />
             </div>
 
-            {/* Dosage Recommendation */}
             <div className="space-y-2">
-              <Label htmlFor="dosageRecommendation">Recommandation de dosage</Label>
+              <Label htmlFor="dosageRecommendation">{t("forms.dosageRecommendation")}</Label>
               <Input
                 id="dosageRecommendation"
                 value={formData.dosageRecommendation}
                 onChange={(e) => handleInputChange('dosageRecommendation', e.target.value)}
-                placeholder="Ex: 1 pipette par 10-20kg..."
+                placeholder={t("forms.dosageRecommendationEx")}
               />
             </div>
 
-            {/* Frequency Days */}
             <div className="space-y-2">
-              <Label htmlFor="frequencyDays">Fréquence (jours)</Label>
+              <Label htmlFor="frequencyDays">{t("forms.frequencyDays")}</Label>
               <Input
                 id="frequencyDays"
                 type="number"
                 value={formData.frequencyDays}
                 onChange={(e) => handleInputChange('frequencyDays', e.target.value)}
-                placeholder="Ex: 30, 90..."
+                placeholder={t("forms.frequencyDaysEx")}
               />
             </div>
 
-            {/* Age Recommendation */}
             <div className="space-y-2">
-              <Label htmlFor="ageRecommendation">Recommandation d'âge</Label>
+              <Label htmlFor="ageRecommendation">{t("forms.ageRecommendation")}</Label>
               <Input
                 id="ageRecommendation"
                 value={formData.ageRecommendation}
                 onChange={(e) => handleInputChange('ageRecommendation', e.target.value)}
-                placeholder="Ex: > 8 semaines, adulte..."
+                placeholder={t("forms.ageRecommendationEx")}
               />
             </div>
 
-            {/* Weight Range */}
             <div className="space-y-2">
-              <Label htmlFor="weightRange">Gamme de poids</Label>
+              <Label htmlFor="weightRange">{t("forms.weightRange")}</Label>
               <Input
                 id="weightRange"
                 value={formData.weightRange}
                 onChange={(e) => handleInputChange('weightRange', e.target.value)}
-                placeholder="Ex: 10-20kg, < 5kg..."
+                placeholder={t("forms.weightRangeEx")}
               />
             </div>
 
-            {/* Season Recommendation */}
             <div className="space-y-2">
-              <Label htmlFor="seasonRecommendation">Recommandation saisonnière</Label>
+              <Label htmlFor="seasonRecommendation">{t("forms.seasonRecommendation")}</Label>
               <Select value={formData.seasonRecommendation} onValueChange={(value) => handleInputChange('seasonRecommendation', value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la saison" />
+                  <SelectValue placeholder={t("forms.selectSeason")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="toute_annee">Toute l'année</SelectItem>
-                  <SelectItem value="printemps_ete">Printemps-Été</SelectItem>
-                  <SelectItem value="automne_hiver">Automne-Hiver</SelectItem>
-                  <SelectItem value="printemps">Printemps</SelectItem>
-                  <SelectItem value="ete">Été</SelectItem>
-                  <SelectItem value="automne">Automne</SelectItem>
-                  <SelectItem value="hiver">Hiver</SelectItem>
+                  <SelectItem value="toute_annee">{t("forms.seasonAllYear")}</SelectItem>
+                  <SelectItem value="printemps_ete">{t("forms.seasonSpringSummer")}</SelectItem>
+                  <SelectItem value="automne_hiver">{t("forms.seasonAutumnWinter")}</SelectItem>
+                  <SelectItem value="printemps">{t("forms.seasonSpring")}</SelectItem>
+                  <SelectItem value="ete">{t("forms.seasonSummer")}</SelectItem>
+                  <SelectItem value="automne">{t("forms.seasonAutumn")}</SelectItem>
+                  <SelectItem value="hiver">{t("forms.seasonWinter")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Notes */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder="Informations supplémentaires, contre-indications..."
+              placeholder={t("forms.protocolNotesPlaceholder")}
               rows={3}
             />
           </div>
 
-          {/* Booster Schedule */}
           <BoosterScheduleEditor
             value={boosterSchedule}
             onChange={setBoosterSchedule}
-            title="Calendrier des traitements"
-            description="Listez chaque traitement (1er, rappels...) avec son décalage en jours depuis le 1er traitement."
+            title={t("forms.treatmentSchedule")}
+            description={t("forms.treatmentScheduleDesc")}
           />
 
-
-          {/* Active Switch */}
           <div className="flex items-center space-x-2">
             <Switch
               id="active"
               checked={formData.active}
               onCheckedChange={(checked) => handleInputChange('active', checked)}
             />
-            <Label htmlFor="active">Protocole actif</Label>
+            <Label htmlFor="active">{t("forms.protocolActive")}</Label>
           </div>
 
-          {/* Submit Buttons */}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingProtocol ? 'Modifier' : 'Créer'}
+              {editingProtocol ? tc("edit") : tc("create")}
             </Button>
           </div>
         </form>

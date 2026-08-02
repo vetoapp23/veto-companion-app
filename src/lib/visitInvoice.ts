@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import type { Visit, VisitService } from "@/lib/visits";
 import { printHtml } from "@/lib/htmlToPdf";
@@ -6,6 +7,13 @@ import {
   postInvoicePayment,
   syncVisitServiceToAccounting,
 } from "@/lib/accountingLedger";
+
+const t = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(key, { ns: "app", ...opts });
+
+function htmlLang() {
+  return (i18n.language || "fr").split("-")[0] || "fr";
+}
 
 export type InvoiceStatus = "draft" | "issued" | "paid" | "cancelled";
 
@@ -58,7 +66,7 @@ async function getOrgAndUser() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Non authentifié");
+  if (!user) throw new Error(t("accounting.print.invoice.errors.unauthenticated"));
 
   const { data: profile, error } = await supabase
     .from("user_profiles")
@@ -67,7 +75,7 @@ async function getOrgAndUser() {
     .single();
 
   if (error || !profile?.organization_id) {
-    throw new Error("Organisation introuvable");
+    throw new Error(t("accounting.print.invoice.errors.orgNotFound"));
   }
 
   return { user, organizationId: profile.organization_id as string };
@@ -147,7 +155,7 @@ export async function createVisitInvoice(opts: {
     visit.head_count
   );
   if (lines.length === 0) {
-    throw new Error("Aucune prestation facturable (montant > 0 et statut fait).");
+    throw new Error(t("accounting.print.invoice.errors.noBillable"));
   }
 
   const total = sumLines(lines);
@@ -275,7 +283,7 @@ export async function markInvoicePaid(
       amount: Number(invoice.total_amount) || 0,
       paymentMethod: paymentMethod || "cash",
       paymentDate: todayLocalKey(),
-      notes: `Paiement facture ${invoice.invoice_number}`,
+      notes: t("accounting.print.invoice.paymentNote", { number: invoice.invoice_number }),
     });
   } catch (payErr) {
     console.warn("Payment row insert failed", payErr);
@@ -291,7 +299,7 @@ export function buildVisitInvoiceHtml(opts: {
 }): string {
   const { invoice, visit, settings } = opts;
   const currency = settings.currency || "MAD";
-  const clinic = settings.clinicName || "Clinique vétérinaire";
+  const clinic = settings.clinicName || t("accounting.print.invoice.clinicFallback");
   const lines = invoice.lines || [];
   const tax = Number(invoice.tax_amount || 0);
   const total = Number(invoice.total_amount || 0);
@@ -300,7 +308,7 @@ export function buildVisitInvoiceHtml(opts: {
   const clientName = `${visit.client?.first_name || ""} ${visit.client?.last_name || ""}`.trim();
   const subject =
     visit.context === "farm"
-      ? visit.farm?.farm_name || "Exploitation"
+      ? visit.farm?.farm_name || t("accounting.print.invoice.farmFallback")
       : visit.animal
         ? `${visit.animal.name}${visit.animal.species ? ` (${visit.animal.species})` : ""}`
         : "—";
@@ -322,10 +330,10 @@ export function buildVisitInvoiceHtml(opts: {
     : "";
 
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${htmlLang()}">
 <head>
   <meta charset="utf-8" />
-  <title>Facture ${escapeHtml(invoice.invoice_number)}</title>
+  <title>${escapeHtml(t("accounting.print.invoice.docTitle", { number: invoice.invoice_number }))}</title>
   <style>
     body { font-family: Georgia, 'Times New Roman', serif; margin: 0; color: #1a1a1a; background: #fff; }
     .report-root { width: 794px; max-width: 794px; padding: 32px 40px; box-sizing: border-box; background: #fff; }
@@ -354,30 +362,30 @@ export function buildVisitInvoiceHtml(opts: {
         ${logoHtml}
         <h1>${escapeHtml(clinic)}</h1>
         ${settings.address ? `<p>${escapeHtml(settings.address)}</p>` : ""}
-        ${settings.phone ? `<p>Tél. ${escapeHtml(settings.phone)}</p>` : ""}
+        ${settings.phone ? `<p>${escapeHtml(t("accounting.print.invoice.tel", { phone: settings.phone }))}</p>` : ""}
         ${settings.email ? `<p>${escapeHtml(settings.email)}</p>` : ""}
       </div>
       <div class="meta">
-        <strong>FACTURE</strong><br/>
-        N° ${escapeHtml(invoice.invoice_number)}<br/>
-        Date : ${escapeHtml(invoice.invoice_date)}<br/>
-        <span class="status">${invoice.status === "paid" ? "Payée" : "Émise"}</span>
+        <strong>${t("accounting.print.invoice.heading")}</strong><br/>
+        ${t("accounting.print.invoice.numberPrefix")} ${escapeHtml(invoice.invoice_number)}<br/>
+        ${t("accounting.print.invoice.date")} ${escapeHtml(invoice.invoice_date)}<br/>
+        <span class="status">${invoice.status === "paid" ? t("accounting.print.invoice.status.paid") : t("accounting.print.invoice.status.issued")}</span>
       </div>
     </div>
     <div class="grid">
       <div class="box">
-        <h3>Client</h3>
+        <h3>${t("accounting.print.invoice.client")}</h3>
         <div>${escapeHtml(clientName || "—")}</div>
         ${visit.client?.phone ? `<div>${escapeHtml(visit.client.phone)}</div>` : ""}
         ${visit.client?.email ? `<div>${escapeHtml(visit.client.email)}</div>` : ""}
       </div>
       <div class="box">
-        <h3>${visit.context === "farm" ? "Exploitation" : "Animal"}</h3>
+        <h3>${visit.context === "farm" ? t("accounting.print.invoice.subject.farm") : t("accounting.print.invoice.subject.animal")}</h3>
         <div>${escapeHtml(subject)}</div>
         ${
           visit.context === "farm" && visit.head_count
-            ? `<div>Effectif facturé : ${visit.head_count}${
-                visit.billing_mode === "per_head" ? " (à la tête)" : " (forfait)"
+            ? `<div>${t("accounting.print.invoice.headCount", { count: visit.head_count })}${
+                visit.billing_mode === "per_head" ? t("accounting.print.invoice.perHead") : t("accounting.print.invoice.flatRate")
               }</div>`
             : ""
         }
@@ -386,20 +394,20 @@ export function buildVisitInvoiceHtml(opts: {
     <table>
       <thead>
         <tr>
-          <th>Prestation</th>
-          <th style="text-align:center">Qté</th>
-          <th style="text-align:right">P.U. (${escapeHtml(currency)})</th>
-          <th style="text-align:right">Montant</th>
+          <th>${t("accounting.print.invoice.cols.service")}</th>
+          <th style="text-align:center">${t("accounting.print.invoice.cols.qty")}</th>
+          <th style="text-align:right">${t("accounting.print.invoice.cols.unitPrice", { currency })}</th>
+          <th style="text-align:right">${t("accounting.print.invoice.cols.amount")}</th>
         </tr>
       </thead>
       <tbody>${linesHtml}</tbody>
     </table>
     <div class="totals">
-      <div class="row"><span>Sous-total</span><span>${ht.toFixed(2)} ${escapeHtml(currency)}</span></div>
-      ${tax > 0 ? `<div class="row"><span>TVA</span><span>${tax.toFixed(2)} ${escapeHtml(currency)}</span></div>` : ""}
-      <div class="row grand"><span>Total TTC</span><span>${total.toFixed(2)} ${escapeHtml(currency)}</span></div>
+      <div class="row"><span>${t("accounting.print.invoice.subtotal")}</span><span>${ht.toFixed(2)} ${escapeHtml(currency)}</span></div>
+      ${tax > 0 ? `<div class="row"><span>${t("accounting.print.invoice.tax")}</span><span>${tax.toFixed(2)} ${escapeHtml(currency)}</span></div>` : ""}
+      <div class="row grand"><span>${t("accounting.print.invoice.totalTtc")}</span><span>${total.toFixed(2)} ${escapeHtml(currency)}</span></div>
     </div>
-    <div class="footer">Document généré par VetoCrm — ${escapeHtml(clinic)}</div>
+    <div class="footer">${escapeHtml(t("accounting.print.invoice.footer", { clinic }))}</div>
   </div>
 </body>
 </html>`;

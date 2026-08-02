@@ -24,43 +24,44 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { cn } from "@/lib/utils";
 import { type PermissionKey, userHasPermission } from "@/lib/permissions";
+import { useTranslation } from "react-i18next";
 
 const mainTabs: {
   icon: typeof Home;
-  label: string;
+  labelKey: string;
   path: string;
   permission?: PermissionKey | null;
 }[] = [
-  { icon: Home, label: "Accueil", path: "/dashboard", permission: null },
-  { icon: Users, label: "Clients", path: "/clients", permission: "can_manage_clients" },
-  { icon: Calendar, label: "RDV", path: "/appointments", permission: "can_manage_appointments" },
-  { icon: Heart, label: "Animaux", path: "/pets", permission: "can_manage_animals" },
+  { icon: Home, labelKey: "home", path: "/dashboard", permission: null },
+  { icon: Users, labelKey: "clients", path: "/clients", permission: "can_manage_clients" },
+  { icon: Calendar, labelKey: "appointmentsShort", path: "/appointments", permission: "can_manage_appointments" },
+  { icon: Heart, labelKey: "pets", path: "/pets", permission: "can_manage_animals" },
 ];
 
 const moreItems: {
   icon: typeof Home;
-  label: string;
+  labelKey: string;
   path: string;
   permission?: PermissionKey | null;
   planFeature?: "farm" | "accounting" | "stock";
   adminOnly?: boolean;
 }[] = [
-  { icon: ClipboardList, label: "Visites", path: "/visites", permission: "can_manage_visits" },
-  { icon: FileText, label: "Consultations", path: "/consultations", permission: "can_create_consultations" },
-  { icon: Syringe, label: "Vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
-  { icon: Bug, label: "Antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
-  { icon: BarChart3, label: "Historiques", path: "/history", permission: "can_view_history" },
-  { icon: Building2, label: "Fermes", path: "/farms", planFeature: "farm", permission: "can_manage_farms" },
-  { icon: Package, label: "Stock", path: "/stock", planFeature: "stock", permission: "can_manage_stock" },
+  { icon: ClipboardList, labelKey: "visits", path: "/visites", permission: "can_manage_visits" },
+  { icon: FileText, labelKey: "consultations", path: "/consultations", permission: "can_create_consultations" },
+  { icon: Syringe, labelKey: "vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
+  { icon: Bug, labelKey: "antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
+  { icon: BarChart3, labelKey: "history", path: "/history", permission: "can_view_history" },
+  { icon: Building2, labelKey: "farms", path: "/farms", planFeature: "farm", permission: "can_manage_farms" },
+  { icon: Package, labelKey: "stock", path: "/stock", planFeature: "stock", permission: "can_manage_stock" },
   {
     icon: Euro,
-    label: "Comptabilité",
+    labelKey: "accounting",
     path: "/accounting",
     planFeature: "accounting",
     permission: "can_manage_accounting",
   },
-  { icon: UsersIcon, label: "Équipe", path: "/admin/team", adminOnly: true },
-  { icon: Cog, label: "Paramètres", path: "/settings", permission: "can_manage_settings" },
+  { icon: UsersIcon, labelKey: "team", path: "/admin/team", adminOnly: true },
+  { icon: Cog, labelKey: "settings", path: "/settings", permission: "can_manage_settings" },
 ];
 
 export function MobileBottomNav() {
@@ -68,6 +69,7 @@ export function MobileBottomNav() {
   const { user } = useAuth();
   const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation("nav");
   const isAdmin =
     user?.profile?.role === "admin" || user?.profile?.role === "super_admin";
 
@@ -92,6 +94,7 @@ export function MobileBottomNav() {
       <nav
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 app-bottom-nav"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-label={t("mainNavigation")}
       >
         <div
           className="grid h-16"
@@ -113,7 +116,7 @@ export function MobileBottomNav() {
                 )}
               >
                 <tab.icon className={cn("h-5 w-5", active && "scale-110")} />
-                <span className="text-[10px] font-semibold tracking-tight">{tab.label}</span>
+                <span className="text-[10px] font-semibold tracking-tight">{t(tab.labelKey)}</span>
               </Link>
             );
           })}
@@ -126,12 +129,12 @@ export function MobileBottomNav() {
                 )}
               >
                 <MoreHorizontal className="h-5 w-5" />
-                <span className="text-[10px] font-semibold tracking-tight">Plus</span>
+                <span className="text-[10px] font-semibold tracking-tight">{t("more")}</span>
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh] overflow-y-auto border-t border-border">
               <SheetHeader>
-                <SheetTitle className="font-display">Toutes les sections</SheetTitle>
+                <SheetTitle className="font-display">{t("allSections")}</SheetTitle>
               </SheetHeader>
               <div className="grid grid-cols-3 gap-3 mt-4 pb-6">
                 {visibleMore.map((item) => {
@@ -150,7 +153,7 @@ export function MobileBottomNav() {
                     >
                       <item.icon className="h-6 w-6" />
                       <span className="text-xs font-semibold text-center leading-tight font-display">
-                        {item.label}
+                        {t(item.labelKey)}
                       </span>
                     </Link>
                   );
@@ -160,7 +163,6 @@ export function MobileBottomNav() {
           </Sheet>
         </div>
       </nav>
-      {/* Spacer to avoid content overlap */}
       <div className="lg:hidden h-16" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} />
     </>
   );

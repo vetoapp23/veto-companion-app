@@ -15,6 +15,7 @@ import { ConsultationTrendsChart } from "@/components/charts/ConsultationTrendsC
 import { PetSpeciesChart } from "@/components/charts/PetSpeciesChart";
 import { AdminOnly } from "@/components/RoleGuard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -29,6 +30,8 @@ import {
 } from "lucide-react";
 
 const Dashboard = () => {
+  const { t } = useTranslation("app");
+
   return (
     <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-6 max-w-7xl">
       <HeroSection />
@@ -38,27 +41,27 @@ const Dashboard = () => {
           <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-6 h-auto p-1">
             <TabsTrigger value="overview" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">Vue d'ensemble</span>
+              <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabOverview")}</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">Analyses</span>
+              <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabAnalytics")}</span>
             </TabsTrigger>
             <TabsTrigger value="clients" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">Clients</span>
+              <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabClients")}</span>
             </TabsTrigger>
             <TabsTrigger value="animals" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">Animaux</span>
+              <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabPets")}</span>
             </TabsTrigger>
             <TabsTrigger value="consultations" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <Stethoscope className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">Consultations</span>
+              <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabConsultations")}</span>
             </TabsTrigger>
             <TabsTrigger value="charts" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">Graphiques</span>
+              <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabCharts")}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -67,32 +70,32 @@ const Dashboard = () => {
               <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 h-auto p-1">
                 <TabsTrigger value="kpis" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
                   <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>KPIs</span>
+                  <span>{t("dashboard.tabKpis")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="activities" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
                   <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Activités</span>
+                  <span>{t("dashboard.tabActivities")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="statistics" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
                   <PieChart className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Statistiques</span>
+                  <span>{t("dashboard.tabStatistics")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 py-2 px-2 sm:px-3 text-xs sm:text-sm">
                   <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span>Alertes</span>
+                  <span>{t("dashboard.tabAlerts")}</span>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="kpis" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
-                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Indicateurs Clés de Performance</h2>
+                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.kpisTitle")}</h2>
                   <RealTimeKPIs />
                 </section>
               </TabsContent>
 
               <TabsContent value="activities" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
-                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Activités Récentes</h2>
+                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.recentActivity")}</h2>
                   <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
                     <div className="w-full"><ClientsOverview /></div>
                     <div className="w-full"><PetsOverview /></div>
@@ -103,14 +106,14 @@ const Dashboard = () => {
 
               <TabsContent value="statistics" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
-                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Statistiques Détaillées</h2>
+                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.detailedStats")}</h2>
                   <DashboardStats />
                 </section>
               </TabsContent>
 
               <TabsContent value="alerts" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
                 <section>
-                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Alertes</h2>
+                  <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.alerts")}</h2>
                   <DashboardAlerts />
                 </section>
               </TabsContent>
@@ -119,7 +122,7 @@ const Dashboard = () => {
 
           <TabsContent value="analytics" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
-              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Analyses et Tendances</h2>
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.analyticsTrends")}</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <AdminOnly>
                   <RevenueChart />
@@ -131,7 +134,7 @@ const Dashboard = () => {
 
           <TabsContent value="clients" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
-              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Gestion des Clients</h2>
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.clientsManagement")}</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <ClientsOverview />
                 <ClientGrowthChart />
@@ -141,7 +144,7 @@ const Dashboard = () => {
 
           <TabsContent value="animals" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
-              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Gestion des Animaux</h2>
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.petsManagement")}</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <PetsOverview />
                 <PetSpeciesChart />
@@ -151,18 +154,18 @@ const Dashboard = () => {
 
           <TabsContent value="consultations" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
-              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Activité Récente</h2>
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.recentConsultActivity")}</h2>
               <ConsultationsOverview />
             </section>
             <section>
-              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Rendez-vous</h2>
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.appointments")}</h2>
               <AppointmentStatusChart />
             </section>
           </TabsContent>
 
           <TabsContent value="charts" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6">
             <section>
-              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">Graphiques Détaillés</h2>
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold mb-3 sm:mb-4 px-1">{t("dashboard.detailedCharts")}</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <ConsultationTrendsChart />
                 <AppointmentStatusChart />

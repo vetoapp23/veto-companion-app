@@ -6,7 +6,8 @@ import { useAnimals, useClients, useAntiparasitics, useAppointmentsByAnimal } fr
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useAppLocale } from '@/i18n/useAppLocale';
+import { useTranslation } from 'react-i18next';
 import {
   buildAntiparasiticCertificateRows,
   formatCertDate,
@@ -18,6 +19,8 @@ interface CertificateProps {
 
 export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificateProps) {
   const { settings } = useSettings();
+  const { t } = useTranslation('medical');
+  const { dateFns } = useAppLocale();
   const { isFree } = usePlanLimits();
   const { data: animals } = useAnimals();
   const { data: clients } = useClients();
@@ -59,22 +62,22 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
 
     const weeks = Math.floor(days / 7);
     const parts: string[] = [];
-    if (years > 0) parts.push(`${years} an${years > 1 ? 's' : ''}`);
-    if (months > 0) parts.push(`${months} mois`);
-    if (weeks > 0) parts.push(`${weeks} semain${weeks > 1 ? 'es' : ''}`);
-    return parts.join(', ') || '0 jour';
+    if (years > 0) parts.push(t('vaccinationCertificate.ageYears', { count: years }));
+    if (months > 0) parts.push(t('vaccinationCertificate.ageMonths', { count: months }));
+    if (weeks > 0) parts.push(t('vaccinationCertificate.ageWeeks', { count: weeks }));
+    return parts.join(', ') || t('vaccinationCertificate.ageDays', { count: 0 });
   };
 
   const handlePrint = () => {
     if (!animal || !client) {
-      alert('Données animal ou client manquantes');
+      alert(t('alerts.missingAnimalClient'));
       return;
     }
 
     try {
       const printWindow = window.open('', `antiparasitic_certificate_${animal.id}`, 'height=800,width=800');
       if (!printWindow) {
-        alert("L'impression a été bloquée par le navigateur. Veuillez autoriser les popups pour ce site.");
+        alert(t('alerts.printBlocked'));
         return;
       }
 
@@ -87,12 +90,12 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
             <table class="doses-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Produit</th>
-                  <th>Traitement</th>
-                  <th>Statut</th>
+                  <th>${t('antiparasiticCertificate.cols.date')}</th>
+                  <th>${t('antiparasiticCertificate.cols.product')}</th>
+                  <th>${t('antiparasiticCertificate.cols.treatment')}</th>
+                  <th>${t('antiparasiticCertificate.cols.status')}</th>
                   <th>—</th>
-                  <th>Principe actif</th>
+                  <th>${t('antiparasiticCertificate.cols.activeIngredient')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,7 +111,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
                     <td>${row.doseLabel}</td>
                     <td>
                       <span class="badge ${row.status === 'planned' ? 'badge-planned' : 'badge-done'}">
-                        ${row.status === 'planned' ? 'Rappel prévu' : 'Réalisé'}
+                        ${row.status === 'planned' ? t('antiparasiticCertificate.statusPlanned') : t('antiparasiticCertificate.statusDone')}
                       </span>
                     </td>
                     <td>${row.batchNumber || (row.status === 'planned' ? '—' : 'N/A')}</td>
@@ -116,7 +119,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
                   </tr>
                   ${
                     row.notes
-                      ? `<tr class="notes-row"><td colspan="6"><em>Notes:</em> ${row.notes}</td></tr>`
+                      ? `<tr class="notes-row"><td colspan="6"><em>${t('antiparasiticCertificate.notes')}</em> ${row.notes}</td></tr>`
                       : ''
                   }
                 `
@@ -125,19 +128,18 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
               </tbody>
             </table>
             <p class="doses-summary">
-              ${administeredCount} traitement(s) réalisé(s)
-              ${plannedCount > 0 ? ` · ${plannedCount} rappel(s) prévu(s)` : ''}
+              ${t('antiparasiticCertificate.summary', { done: administeredCount })}${plannedCount > 0 ? t('antiparasiticCertificate.summaryPlanned', { planned: plannedCount }) : ''}
             </p>
           `
           : `<div class="no-vaccinations">
-              <p>Aucun traitement antiparasitaire enregistré pour cet animal</p>
+              <p>${t('antiparasiticCertificate.empty')}</p>
             </div>`;
 
       const printContent = `
         <!DOCTYPE html>
         <html>
           <head>
-            <title>Certificat Antiparasitaire - ${animal.name}</title>
+            <title>${t('antiparasiticCertificate.docTitle', { name: animal.name })}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -323,7 +325,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
             ${buildWatermarkHtml(isFree)}
             <div class="header">
               ${settings.logo ? `<img src="${settings.logo}" alt="Logo clinique" />` : ''}
-              <h1>CERTIFICAT ANTIPARASITAIRE</h1>
+              <h1>${t('antiparasiticCertificate.heading')}</h1>
               <div class="qr-section">
                 <canvas id="qrcode" width="100" height="100"></canvas>
               </div>
@@ -331,16 +333,16 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
 
             ${settings.showClinicInfo ? `
             <div class="clinic-info">
-              <h2>${settings.clinicName || 'Clinique Vétérinaire'}</h2>
-              <p><strong>Adresse:</strong> ${settings.address || 'N/A'}</p>
-              <p><strong>Téléphone:</strong> ${settings.phone || 'N/A'} | <strong>Email:</strong> ${settings.email || 'N/A'}</p>
-              ${settings.website ? `<p><strong>Site web:</strong> ${settings.website}</p>` : ''}
+              <h2>${settings.clinicName || t('vaccinationCertificate.clinicFallback')}</h2>
+              <p><strong>${t('vaccinationCertificate.labels.address')}</strong> ${settings.address || 'N/A'}</p>
+              <p><strong>${t('vaccinationCertificate.labels.phone')}</strong> ${settings.phone || 'N/A'} | <strong>${t('vaccinationCertificate.labels.email')}</strong> ${settings.email || 'N/A'}</p>
+              ${settings.website ? `<p><strong>${t('vaccinationCertificate.labels.website')}</strong> ${settings.website}</p>` : ''}
             </div>
             ` : ''}
 
             ${settings.showVetsInfo && vets.length > 0 ? `
             <div class="vets-info">
-              <h2>Équipe Vétérinaire</h2>
+              <h2>${t('vaccinationCertificate.vetTeam')}</h2>
               ${vets.map(vet => `
                 <div class="vet-item">
                   <strong>${vet.title || 'Dr.'} ${vet.name}</strong>
@@ -351,7 +353,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
             ` : ''}
 
             <div class="animal-info">
-              <h2>Informations de l'Animal</h2>
+              <h2>${t('vaccinationCertificate.animalInfo')}</h2>
               
               ${animal.photo_url ? `
               <div class="animal-photo">
@@ -361,48 +363,48 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
 
               <div class="info-grid">
                 <div class="info-item">
-                  <span class="info-label">Nom:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.name')}</span>
                   <span class="info-value">${animal.name}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Espèce:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.species')}</span>
                   <span class="info-value">${animal.species}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Race:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.breed')}</span>
                   <span class="info-value">${animal.breed || 'N/A'}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Âge:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.age')}</span>
                   <span class="info-value">${animal.birth_date ? getDetailedAge(animal.birth_date) : 'N/A'}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Sexe:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.sex')}</span>
                   <span class="info-value">${animal.sex || 'N/A'}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Poids:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.weight')}</span>
                   <span class="info-value">${animal.weight ? animal.weight + ' kg' : 'N/A'}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Propriétaire:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.owner')}</span>
                   <span class="info-value">${client.first_name} ${client.last_name}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">Contact:</span>
+                  <span class="info-label">${t('vaccinationCertificate.labels.contact')}</span>
                   <span class="info-value">${client.phone || client.email || 'N/A'}</span>
                 </div>
               </div>
             </div>
 
             <div class="vaccinations-section">
-              <h2>Calendrier antiparasitaire (traitements &amp; rappels)</h2>
+              <h2>${t('antiparasiticCertificate.scheduleTitle')}</h2>
               ${dosesTableHtml}
             </div>
 
             <div class="footer">
-              <p>Certificat généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })}</p>
-              <p>VetoCrm - Système de Gestion Vétérinaire</p>
+              <p>${t('vaccinationCertificate.generatedAt', { datetime: format(new Date(), 'PPp', { locale: dateFns }) })}</p>
+              <p>${t('vaccinationCertificate.footerSystem')}</p>
             </div>
 
             <script>
@@ -444,7 +446,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
 
     } catch (error) {
       console.error('Erreur lors de l\'impression:', error);
-      alert('Une erreur est survenue lors de l\'impression du certificat.');
+      alert(t('alerts.printError'));
     }
   };
 
@@ -452,7 +454,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
     return (
       <Button variant="outline" disabled>
         <Printer className="h-4 w-4 mr-2" />
-        Certificat antiparasitaire
+        {t('antiparasiticCertificate.button')}
       </Button>
     );
   }
@@ -460,7 +462,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
   return (
     <Button variant="outline" onClick={handlePrint}>
       <Printer className="h-4 w-4 mr-2" />
-      Certificat antiparasitaire
+      {t('antiparasiticCertificate.button')}
       {doseRows.length > 0 ? ` (${doseRows.length})` : ''}
     </Button>
   );

@@ -16,6 +16,7 @@ import {
 import { useClients, useAnimals, useConsultations, useAppointments, useVaccinations, useAntiparasitics, useStockItems } from "@/hooks/useDatabase";
 import { useAccounting } from "@/hooks/useAccounting";
 import { useSettings } from '@/contexts/SettingsContext';
+import { useTranslation } from "react-i18next";
 
 export function RealTimeKPIs() {
   const { data: clients = [] } = useClients();
@@ -27,6 +28,7 @@ export function RealTimeKPIs() {
   const { data: stockItems = [] } = useStockItems();
   const { revenues, expenses } = useAccounting();
   const { settings } = useSettings();
+  const { t } = useTranslation("app");
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -79,76 +81,76 @@ export function RealTimeKPIs() {
 
   const kpis = [
     {
-      title: "Consultations Aujourd'hui",
+      title: t("charts.realtimeKpis.consultationsToday"),
       value: consultationsToday,
       icon: Stethoscope,
       color: "text-green-600",
       bgColor: "bg-green-50",
       trend: consultationsToday > 0 ? "up" : "neutral",
-      description: "Consultations réalisées"
+      description: t("charts.realtimeKpis.consultationsToday")
     },
     {
-      title: "RDV Aujourd'hui",
+      title: t("charts.realtimeKpis.appointmentsToday"),
       value: appointmentsToday,
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       trend: appointmentsToday > 0 ? "up" : "neutral",
-      description: "Rendez-vous programmés"
+      description: t("charts.realtimeKpis.scheduledAppointments")
     },
     {
-      title: "RDV Cette Semaine",
+      title: t("charts.realtimeKpis.appointmentsWeek"),
       value: upcomingThisWeek,
       icon: Clock,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       trend: upcomingThisWeek > 0 ? "up" : "neutral",
-      description: "Rendez-vous à venir"
+      description: t("charts.realtimeKpis.upcomingAppointments")
     },
     {
-      title: "RDV En Retard",
+      title: t("charts.realtimeKpis.overdueAppointments"),
       value: overdueAppointments.length,
       icon: AlertTriangle,
       color: overdueAppointments.length > 0 ? "text-red-600" : "text-gray-600",
       bgColor: overdueAppointments.length > 0 ? "bg-red-50" : "bg-gray-50",
       trend: overdueAppointments.length > 0 ? "down" : "neutral",
-      description: "Rendez-vous en retard"
+      description: t("charts.realtimeKpis.overdueAppointments")
     },
     {
-      title: "Nouveaux Clients",
+      title: t("charts.realtimeKpis.newClients"),
       value: newClientsThisMonth,
       icon: Users,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       trend: newClientsThisMonth > 0 ? "up" : "neutral",
-      description: "Ce mois"
+      description: t("charts.realtimeKpis.thisMonth")
     },
     {
-      title: "Nouveaux Animaux",
+      title: t("charts.realtimeKpis.newPets"),
       value: newPetsThisMonth,
       icon: Heart,
       color: "text-pink-600",
       bgColor: "bg-pink-50",
       trend: newPetsThisMonth > 0 ? "up" : "neutral",
-      description: "Ce mois"
+      description: t("charts.realtimeKpis.thisMonth")
     },
     {
-      title: "Revenus du Mois",
+      title: t("charts.realtimeKpis.monthlyRevenue"),
       value: `${totalRevenue.toFixed(0)} ${settings.currency || 'MAD'}`,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50",
       trend: totalRevenue > 0 ? "up" : "neutral",
-      description: `Bénéfice: ${netIncome.toFixed(0)} ${settings.currency || 'MAD'}`
+      description: `${t("charts.revenue.profit")}: ${netIncome.toFixed(0)} ${settings.currency || 'MAD'}`
     },
     {
-      title: "Stock Critique",
+      title: t("charts.realtimeKpis.criticalStock"),
       value: lowStockItems,
       icon: Activity,
       color: lowStockItems > 0 ? "text-orange-600" : "text-green-600",
       bgColor: lowStockItems > 0 ? "bg-orange-50" : "bg-green-50",
       trend: lowStockItems > 0 ? "down" : "neutral",
-      description: `${outOfStockItems} en rupture`
+      description: `${outOfStockItems} ${t("charts.stock.out")}`
     }
   ];
 

@@ -9,36 +9,35 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, User, Settings, Shield } from "lucide-react";
+import { LogOut, User, Shield } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export function LogoutButton() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { t } = useTranslation('common');
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     
     try {
-      // Logout and immediately redirect
       await logout();
-      
-      // Navigate immediately to login
       navigate('/login', { replace: true });
       
       toast({
-        title: "Déconnexion réussie",
-        description: "Vous avez été déconnecté avec succès.",
+        title: t('logoutSuccess'),
+        description: t('logoutSuccessBody'),
       });
     } catch (error) {
       console.error('Logout error:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion.",
+        title: t('error'),
+        description: t('logoutError'),
         variant: "destructive",
       });
     } finally {
@@ -62,11 +61,11 @@ export function LogoutButton() {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'Administrateur';
+        return t('admin');
       case 'assistant':
-        return 'Assistant';
+        return t('assistant');
       default:
-        return 'Utilisateur';
+        return t('user');
     }
   };
 
@@ -115,15 +114,8 @@ export function LogoutButton() {
           onClick={() => navigate('/profile')}
         >
           <User className="mr-2 h-4 w-4" />
-          <span>Profil</span>
+          <span>{t('profile')}</span>
         </DropdownMenuItem>
-        {/* <DropdownMenuItem 
-          className="cursor-pointer"
-          onClick={() => navigate('/auth-settings')}
-        >
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Paramètres de connexion</span>
-        </DropdownMenuItem> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem 
           className="cursor-pointer text-red-600 focus:text-red-600"
@@ -131,7 +123,7 @@ export function LogoutButton() {
           disabled={isLoggingOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>{isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}</span>
+          <span>{isLoggingOut ? t('loggingOut') : t('signOut')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -10,6 +10,7 @@ import { useAllPlans } from "@/hooks/useSuperAdminData";
 import { supabase } from "@/integrations/supabase/client";
 import { logAdminAction } from "@/lib/superAdmin";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
@@ -26,6 +27,8 @@ function emptyPrices() {
 }
 
 export default function SuperAdminPlans() {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { data: plans = [], isLoading, refetch } = useAllPlans();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -52,7 +55,7 @@ export default function SuperAdminPlans() {
             })
           }
         >
-          <Plus className="h-4 w-4 mr-1" /> Nouveau plan
+          <Plus className="h-4 w-4 mr-1" /> {t("superAdmin.plans.newPlan")}
         </Button>
       </div>
 
@@ -74,7 +77,7 @@ export default function SuperAdminPlans() {
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Chargement…</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">{t("superAdmin.plans.loading")}</td></tr>
               )}
               {plans.map((p: any) => (
                 <tr key={p.id} className="border-b hover:bg-muted/20">
@@ -107,7 +110,7 @@ export default function SuperAdminPlans() {
             qc.invalidateQueries({ queryKey: ["super-admin"] });
             qc.invalidateQueries({ queryKey: ["plan-quota"] });
             refetch();
-            toast({ title: "Plan enregistré" });
+            toast({ title: t("superAdmin.plans.saved") });
           }}
         />
       )}
@@ -116,6 +119,8 @@ export default function SuperAdminPlans() {
 }
 
 function PlanDialog({ plan, onClose, onSaved }: any) {
+  const { t } = useTranslation("settings");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const isNew = !plan.id;
   const limits = plan.limits && typeof plan.limits === "object" ? plan.limits : {};
@@ -188,16 +193,16 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
       }
       onSaved();
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: tc("error"), description: e.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Supprimer le plan ${plan.code} ?`)) return;
+    if (!confirm(t("superAdmin.plans.confirmDeleteNamed", { code: plan.code }))) return;
     const { error } = await supabase.from("subscription_plans").delete().eq("id", plan.id);
-    if (error) toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    if (error) toast({ title: tc("error"), description: error.message, variant: "destructive" });
     else {
       await logAdminAction({ action: "plan.delete", resourceType: "subscription_plan", resourceId: plan.id, before: plan });
       onSaved();
@@ -208,7 +213,7 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isNew ? "Nouveau plan" : `Éditer ${plan.name}`}</DialogTitle>
+          <DialogTitle>{isNew ? t("superAdmin.plans.newPlan") : t("superAdmin.plans.editPlan", { name: plan.name })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -279,8 +284,8 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
             </Button>
           )}
           <div className="flex-1" />
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "…" : "Enregistrer"}</Button>
+          <Button variant="ghost" onClick={onClose}>{tc("cancel")}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? "…" : tc("save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

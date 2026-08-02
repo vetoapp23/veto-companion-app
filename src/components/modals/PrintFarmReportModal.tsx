@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Printer, FileText, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useFarmBatches, useFarmHealthEvents } from "@/hooks/useFarmBatches";
@@ -15,7 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   buildFarmReportHtml,
   printHtml,
-  FARM_SECTION_LABELS,
+  getFarmSectionLabels,
+  FARM_SECTION_KEYS,
   FARM_TEMPLATES,
   type FarmSectionKey,
   type FarmTemplate,
@@ -28,6 +30,8 @@ interface PrintFarmReportModalProps {
 }
 
 export function PrintFarmReportModal({ open, onOpenChange, farm }: PrintFarmReportModalProps) {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { toast } = useToast();
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
@@ -44,9 +48,11 @@ export function PrintFarmReportModal({ open, onOpenChange, farm }: PrintFarmRepo
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const applyTemplate = (t: FarmTemplate) => {
-    setTemplate(t);
-    setSections(FARM_TEMPLATES[t]);
+  const sectionLabels = getFarmSectionLabels();
+
+  const applyTemplate = (tmpl: FarmTemplate) => {
+    setTemplate(tmpl);
+    setSections(FARM_TEMPLATES[tmpl]);
   };
 
   const toggle = (k: FarmSectionKey) =>
@@ -85,8 +91,8 @@ export function PrintFarmReportModal({ open, onOpenChange, farm }: PrintFarmRepo
       await printHtml(html);
     } catch (e: any) {
       toast({
-        title: "Impression impossible",
-        description: e?.message || "Autorisez les popups pour imprimer ou enregistrer en PDF.",
+        title: t("farms.print.modal.printFailed"),
+        description: e?.message || t("farms.print.modal.printFailedBody"),
         variant: "destructive",
       });
     }
@@ -96,11 +102,11 @@ export function PrintFarmReportModal({ open, onOpenChange, farm }: PrintFarmRepo
     void openPrintDialog();
   };
 
-  /** Même module que Imprimer (dialogue navigateur → Enregistrer au format PDF). */
+  /** Same path as Print (browser dialog → Save as PDF). */
   const handleDownloadPdf = async () => {
     toast({
-      title: "Enregistrer en PDF",
-      description: "Dans la boîte d'impression, choisissez « Enregistrer au format PDF ».",
+      title: t("farms.print.modal.savePdfTitle"),
+      description: t("farms.print.modal.savePdfBody"),
     });
     await openPrintDialog();
   };
@@ -113,62 +119,62 @@ export function PrintFarmReportModal({ open, onOpenChange, farm }: PrintFarmRepo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Imprimer le rapport d'exploitation
+            {t("farms.print.modal.title")}
           </DialogTitle>
           <DialogDescription>
-            Sélectionnez le modèle puis les sections à inclure pour {farm.farm_name}.
+            {t("farms.print.modal.desc", { name: farm.farm_name })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Modèle</Label>
+              <Label>{t("farms.print.modal.template")}</Label>
               <Select value={template} onValueChange={(v) => applyTemplate(v as FarmTemplate)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="complete">Rapport complet</SelectItem>
-                  <SelectItem value="summary">Résumé</SelectItem>
-                  <SelectItem value="sanitary">Suivi sanitaire</SelectItem>
-                  <SelectItem value="inventory">Inventaire / cheptel</SelectItem>
+                  <SelectItem value="complete">{t("farms.print.templates.complete")}</SelectItem>
+                  <SelectItem value="summary">{t("farms.print.templates.summary")}</SelectItem>
+                  <SelectItem value="sanitary">{t("farms.print.templates.sanitary")}</SelectItem>
+                  <SelectItem value="inventory">{t("farms.print.templates.inventory")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
-                <Label>Du</Label>
+                <Label>{tc("from")}</Label>
                 <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Au</Label>
+                <Label>{tc("to")}</Label>
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
               </div>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            La période filtre les interventions et évènements sanitaires.
+            {t("farms.print.modal.periodHint")}
           </p>
 
           <div>
-            <Label className="mb-2 block">Sections à inclure</Label>
+            <Label className="mb-2 block">{t("farms.print.modal.sectionsToInclude")}</Label>
             <div className="grid grid-cols-2 gap-2 p-3 border rounded-md">
-              {(Object.keys(FARM_SECTION_LABELS) as FarmSectionKey[]).map((k) => (
+              {FARM_SECTION_KEYS.map((k) => (
                 <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox checked={sections[k]} onCheckedChange={() => toggle(k)} />
-                  {FARM_SECTION_LABELS[k]}
+                  {sectionLabels[k]}
                 </label>
               ))}
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{tc("cancel")}</Button>
             <Button variant="outline" onClick={handleDownloadPdf} className="gap-2">
-              <Download className="h-4 w-4" /> Télécharger PDF
+              <Download className="h-4 w-4" /> {t("farms.print.modal.downloadPdf")}
             </Button>
             <Button onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" /> Imprimer
+              <Printer className="h-4 w-4" /> {tc("print")}
             </Button>
           </div>
         </div>

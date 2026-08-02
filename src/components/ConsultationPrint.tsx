@@ -4,7 +4,9 @@ import { Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
-import { formatTemperature, formatTemperatureValue } from "@/lib/utils";
+import { formatTemperatureValue } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
+import { getBcp47Locale } from "@/i18n/useAppLocale";
 
 interface ConsultationPrintProps {
   consultation: Consultation;
@@ -13,7 +15,9 @@ interface ConsultationPrintProps {
 export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
-  
+  const { t, i18n } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+
   // Transform dynamic database consultation to expected format
   const transformConsultation = (dbConsultation: any) => {
     // Handle both old format (ClientContext) and new format (dynamic database)
@@ -25,10 +29,10 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
     // Transform from dynamic database format
     return {
       ...dbConsultation,
-      petName: dbConsultation.animal?.name || 'Non spécifié',
+      petName: dbConsultation.animal?.name || tc("notSpecified"),
       clientName: dbConsultation.client 
         ? `${dbConsultation.client.first_name || ''} ${dbConsultation.client.last_name || ''}`.trim()
-        : 'Non spécifié',
+        : tc("notSpecified"),
       date: dbConsultation.consultation_date || dbConsultation.date,
       symptoms: dbConsultation.symptoms || '',
       diagnosis: dbConsultation.diagnosis || '',
@@ -56,11 +60,13 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const notProvided = t("print.consultation.notProvided");
+
     const printContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Consultation - ${transformedConsultation.petName}</title>
+          <title>${t("print.consultation.docTitle", { name: transformedConsultation.petName })}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -131,80 +137,83 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
           ${buildWatermarkHtml(isFree)}
           <div class="header">
             <div class="clinic-name">${settings.clinicName || 'VetoCrm'}</div>
-            <div class="consultation-title">Rapport de Consultation</div>
-            <div>Date: ${new Date(transformedConsultation.date).toLocaleDateString('fr-FR')}</div>
+            <div class="consultation-title">${t("print.consultation.reportTitle")}</div>
+            <div>${t("print.consultation.date")} ${new Date(transformedConsultation.date).toLocaleDateString(getBcp47Locale(i18n.language))}</div>
           </div>
 
           <div class="info-grid">
             <div class="info-section">
-              <h3>Informations Client</h3>
+              <h3>${t("print.consultation.clientInfo")}</h3>
               <div class="info-item">
-                <span class="info-label">Nom:</span> ${transformedConsultation.clientName}
+                <span class="info-label">${t("print.consultation.name")}</span> ${transformedConsultation.clientName}
               </div>
             </div>
             <div class="info-section">
-              <h3>Informations Animal</h3>
+              <h3>${t("print.consultation.animalInfo")}</h3>
               <div class="info-item">
-                <span class="info-label">Nom:</span> ${transformedConsultation.petName}
+                <span class="info-label">${t("print.consultation.name")}</span> ${transformedConsultation.petName}
               </div>
               <div class="info-item">
-                <span class="info-label">Poids:</span> ${transformedConsultation.weight || 'Non renseigné'}
+                <span class="info-label">${t("print.consultation.weight")}:</span> ${transformedConsultation.weight || notProvided}
               </div>
               <div class="info-item">
-                <span class="info-label">Température:</span> ${transformedConsultation.temperature ? transformedConsultation.temperature + '°C' : 'Non renseigné'}
+                <span class="info-label">${t("print.consultation.temperature")}:</span> ${transformedConsultation.temperature ? transformedConsultation.temperature + '°C' : notProvided}
               </div>
             </div>
           </div>
 
           ${transformedConsultation.symptoms ? `
             <div class="medical-section">
-              <h3>Symptômes Observés</h3>
+              <h3>${t("print.consultation.symptomsObserved")}</h3>
               <p>${transformedConsultation.symptoms}</p>
             </div>
           ` : ''}
 
           ${transformedConsultation.diagnosis ? `
             <div class="medical-section">
-              <h3>Diagnostic</h3>
+              <h3>${t("print.consultation.diagnosis")}</h3>
               <p>${transformedConsultation.diagnosis}</p>
             </div>
           ` : ''}
 
           ${transformedConsultation.treatment ? `
             <div class="medical-section">
-              <h3>Traitement Administré</h3>
+              <h3>${t("print.consultation.treatmentAdministered")}</h3>
               <p>${transformedConsultation.treatment}</p>
             </div>
           ` : ''}
 
           ${transformedConsultation.medications ? `
             <div class="medical-section">
-              <h3>Médicaments Prescrits</h3>
+              <h3>${t("print.consultation.medicationsPrescribed")}</h3>
               <p>${transformedConsultation.medications}</p>
             </div>
           ` : ''}
 
           ${transformedConsultation.notes ? `
             <div class="medical-section">
-              <h3>Notes Additionnelles</h3>
+              <h3>${t("print.consultation.additionalNotes")}</h3>
               <p>${transformedConsultation.notes}</p>
             </div>
           ` : ''}
 
           <div class="info-grid">
             <div class="info-section">
-              <h3>Suivi Recommandé</h3>
-              <p>${transformedConsultation.followUp || 'Aucun suivi prévu'}</p>
+              <h3>${t("print.consultation.followUpRecommended")}</h3>
+              <p>${transformedConsultation.followUp || t("print.consultation.noFollowUp")}</p>
             </div>
             <div class="info-section">
-              <h3>Coût</h3>
-              <p>${transformedConsultation.cost ? transformedConsultation.cost + ' ' + (settings.currency || 'MAD') : 'Non renseigné'}</p>
+              <h3>${t("print.consultation.costShort")}</h3>
+              <p>${transformedConsultation.cost ? transformedConsultation.cost + ' ' + (settings.currency || 'MAD') : notProvided}</p>
             </div>
           </div>
 
           <div class="footer">
-            <p>Consultation générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-            <p>VetoCrm - Gestion Vétérinaire Complète</p>
+            <p>${t("print.consultation.consultationGenerated", {
+              date: new Date().toLocaleDateString(getBcp47Locale(i18n.language)),
+              time: new Date().toLocaleTimeString(getBcp47Locale(i18n.language)),
+            })}</p>
+            <p>${t("print.consultation.footerBrand")}</p>
           </div>
         </body>
       </html>
@@ -229,7 +238,7 @@ export function ConsultationPrint({ consultation }: ConsultationPrintProps) {
       className="gap-2"
     >
       <Printer className="h-4 w-4" />
-      Imprimer
+      {tc("print")}
     </Button>
   );
 }

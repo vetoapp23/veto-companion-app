@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useClients } from "@/contexts/ClientContext";
 import { FarmIntervention } from "@/contexts/ClientContext";
-import { useSettings } from "@/contexts/SettingsContext"; // Added for dynamic currency
+import { useSettings } from "@/contexts/SettingsContext";
+import { useTranslation } from "react-i18next";
 
 interface NewFarmInterventionModalProps {
   open: boolean;
@@ -18,6 +19,8 @@ interface NewFarmInterventionModalProps {
 }
 
 const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewFarmInterventionModalProps) => {
+  const { t } = useTranslation("app");
+  const { t: tc } = useTranslation("common");
   const { addFarmIntervention, farms } = useClients();
   const { toast } = useToast();
   
@@ -58,14 +61,14 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const { settings } = useSettings(); // Destructure currency
+  const { settings } = useSettings();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.farmId || !formData.date || !formData.type || !formData.description) {
       toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
+        title: tc("error"),
+        description: t("stock.fillRequired"),
         variant: "destructive"
       });
       return;
@@ -74,8 +77,8 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
     const selectedFarm = farms.find(f => f.id === parseInt(formData.farmId));
     if (!selectedFarm) {
       toast({
-        title: "Erreur",
-        description: "Exploitation non trouvée",
+        title: tc("error"),
+        description: t("farms.farmNotFound"),
         variant: "destructive"
       });
       return;
@@ -98,8 +101,8 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
     addFarmIntervention(newIntervention);
     
     toast({
-      title: "Succès",
-      description: "Intervention programmée avec succès"
+      title: tc("success"),
+      description: t("farms.interventionScheduled")
     });
     
     onOpenChange(false);
@@ -109,23 +112,23 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouvelle Intervention</DialogTitle>
+          <DialogTitle>{t("farms.newIntervention")}</DialogTitle>
           <DialogDescription>
-            Programmez une nouvelle intervention vétérinaire
+            {t("farms.scheduleIntervention")}
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="farmId">Exploitation *</Label>
+              <Label htmlFor="farmId">{t("farms.selectFarm")} *</Label>
               <Select value={formData.farmId} onValueChange={(value) => {
                 const farm = farms.find(f => f.id === parseInt(value));
                 handleChange("farmId", value);
                 handleChange("farmName", farm?.name || "");
               }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une exploitation" />
+                  <SelectValue placeholder={t("farms.selectFarm")} />
                 </SelectTrigger>
                 <SelectContent>
                   {farms.map((farm) => (
@@ -138,7 +141,7 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">{tc("date")} *</Label>
               <Input
                 id="date"
                 type="date"
@@ -151,33 +154,33 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Type d'intervention *</Label>
+              <Label htmlFor="type">{t("farms.interventionType")}</Label>
               <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un type" />
+                  <SelectValue placeholder={t("farms.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vaccination">Vaccination</SelectItem>
-                  <SelectItem value="controle">Contrôle sanitaire</SelectItem>
-                  <SelectItem value="urgence">Urgence</SelectItem>
-                  <SelectItem value="chirurgie">Chirurgie</SelectItem>
-                  <SelectItem value="prevention">Prévention</SelectItem>
-                  <SelectItem value="consultation">Consultation</SelectItem>
+                  <SelectItem value="vaccination">{t("farms.types.vaccination")}</SelectItem>
+                  <SelectItem value="controle">{t("farms.types.controle")}</SelectItem>
+                  <SelectItem value="urgence">{t("farms.types.urgence")}</SelectItem>
+                  <SelectItem value="chirurgie">{t("farms.types.chirurgie")}</SelectItem>
+                  <SelectItem value="prevention">{t("farms.types.prevention")}</SelectItem>
+                  <SelectItem value="consultation">{t("farms.types.consultation")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="status">Statut</Label>
+              <Label htmlFor="status">{tc("status")}</Label>
               <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">Programmée</SelectItem>
-                  <SelectItem value="ongoing">En cours</SelectItem>
-                  <SelectItem value="completed">Terminée</SelectItem>
-                  <SelectItem value="cancelled">Annulée</SelectItem>
+                  <SelectItem value="scheduled">{t("farms.status.scheduled")}</SelectItem>
+                  <SelectItem value="ongoing">{t("farms.status.ongoing")}</SelectItem>
+                  <SelectItem value="completed">{t("farms.status.completed")}</SelectItem>
+                  <SelectItem value="cancelled">{t("farms.status.cancelled")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -185,17 +188,17 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="animals">Animaux concernés</Label>
+              <Label htmlFor="animals">{t("farms.animalsConcerned")}</Label>
               <Input
                 id="animals"
                 value={formData.animals}
                 onChange={(e) => handleChange("animals", e.target.value)}
-                placeholder="15 bovins, 50 poules..."
+                placeholder={t("farms.animalsPlaceholder")}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="veterinarian">Vétérinaire</Label>
+              <Label htmlFor="veterinarian">{tc("veterinarian")}</Label>
               <Input
                 id="veterinarian"
                 value={formData.veterinarian}
@@ -206,12 +209,12 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="description">{tc("description")} *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
-              placeholder="Détails de l'intervention..."
+              placeholder={t("farms.interventionDescPlaceholder")}
               rows={3}
               required
             />
@@ -219,7 +222,7 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cost">Coût ({settings.currency})</Label>
+              <Label htmlFor="cost">{t("farms.cost", { currency: settings.currency })}</Label>
               <Input
                 id="cost"
                 type="number"
@@ -232,33 +235,33 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="followUp">Suivi</Label>
+              <Label htmlFor="followUp">{t("farms.followUp")}</Label>
               <Input
                 id="followUp"
                 value={formData.followUp}
                 onChange={(e) => handleChange("followUp", e.target.value)}
-                placeholder="Contrôle dans 6 mois"
+                placeholder={t("farms.followUpPlaceholder")}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{tc("notes")}</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => handleChange("notes", e.target.value)}
-              placeholder="Informations complémentaires..."
+              placeholder={t("farms.notesComplementary")}
               rows={2}
             />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {tc("cancel")}
             </Button>
             <Button type="submit">
-              Programmer Intervention
+              {t("farms.scheduleInterventionBtn")}
             </Button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Eye, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 export interface ImpersonationState {
   active: boolean;
@@ -21,6 +22,7 @@ export function useImpersonation() {
   const isSuper = (user?.profile?.role as string) === "super_admin";
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { t } = useTranslation("common");
 
   const query = useQuery({
     queryKey: ["impersonation", user?.id],
@@ -53,9 +55,9 @@ export function useImpersonation() {
           return k !== "auth" && k !== "impersonation";
         },
       });
-      toast({ title: "Mode support activé", description: "Vous voyez les données de la clinique cible." });
+      toast({ title: t("impersonationStarted"), description: t("impersonationStartedBody") });
     },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("error"), description: e.message, variant: "destructive" }),
   });
 
   const stop = useMutation({
@@ -72,9 +74,9 @@ export function useImpersonation() {
           return k !== "auth" && k !== "impersonation";
         },
       });
-      toast({ title: "Mode support terminé" });
+      toast({ title: t("impersonationEnded") });
     },
-    onError: (e: any) => toast({ title: "Erreur", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: t("error"), description: e.message, variant: "destructive" }),
   });
 
   return {
@@ -88,13 +90,14 @@ export function useImpersonation() {
 
 export function ImpersonationBanner() {
   const { state, stop, isSuper } = useImpersonation();
+  const { t } = useTranslation("common");
   if (!isSuper || !state?.active) return null;
 
   return (
     <div className="bg-[#0b3d3a] text-[#5eead4] px-4 py-2.5 flex flex-wrap items-center justify-center gap-3 text-sm z-50">
       <Eye className="h-4 w-4 shrink-0" />
       <span>
-        Mode support —{" "}
+        {t("impersonationActive")}{" "}
         <strong className="text-white">{state.organization_name}</strong>
         {state.organization_code ? (
           <span className="opacity-80"> ({state.organization_code})</span>
@@ -108,7 +111,7 @@ export function ImpersonationBanner() {
         disabled={stop.isPending}
       >
         <X className="h-3.5 w-3.5 mr-1" />
-        Quitter
+        {t("impersonationExit")}
       </Button>
     </div>
   );

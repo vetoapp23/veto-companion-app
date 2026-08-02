@@ -20,6 +20,8 @@ import {
 import { usePedigree } from "@/hooks/usePedigree";
 import { calculateAge, formatTemperature } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { useAppLocale } from "@/i18n/useAppLocale";
 import { printHtml } from "@/lib/htmlToPdf";
 import { buildReportDocument, buildDefaultFooter } from "@/lib/reportStyles";
 import {
@@ -84,6 +86,9 @@ type SharePreview = {
 };
 
 export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMedicalRecordModalProps) {
+  const { t } = useTranslation("medical");
+  const { t: tc } = useTranslation("common");
+  const { bcp47 } = useAppLocale();
   const { toast } = useToast();
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
@@ -108,9 +113,9 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const applyTemplate = (t: Template) => {
-    setTemplate(t);
-    setSections(TEMPLATES[t]);
+  const applyTemplate = (tmpl: Template) => {
+    setTemplate(tmpl);
+    setSections(TEMPLATES[tmpl]);
   };
 
   const toggle = (k: SectionKey) =>
@@ -118,7 +123,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
   const fmtDate = (d?: string | Date | null) => {
     if (!d) return "—";
-    try { return new Date(d).toLocaleDateString("fr-FR"); } catch { return String(d); }
+    try { return new Date(d).toLocaleDateString(bcp47); } catch { return String(d); }
   };
 
   const inRange = (d?: string | null) => {
@@ -155,18 +160,18 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     if (sections.identity) {
       sectionsHtml.push(`
         <section class="block">
-          <h2>Identité de l'animal</h2>
+          <h2>${t("print.dossier.identityHeading")}</h2>
           <table class="info">
-            <tr><th>Nom</th><td>${animal.name ?? "—"}</td><th>Propriétaire</th><td>${ownerName}</td></tr>
-            <tr><th>Espèce</th><td>${animal.species ?? animal.type ?? "—"}</td><th>Race</th><td>${animal.breed ?? "—"}</td></tr>
-            <tr><th>Sexe</th><td>${animal.sex ?? animal.gender ?? "—"}</td><th>Couleur</th><td>${animal.color ?? "—"}</td></tr>
-            <tr><th>Date de naissance</th><td>${fmtDate(animal.birth_date ?? animal.birthDate)}</td><th>Âge</th><td>${animal.birth_date || animal.birthDate ? calculateAge(animal.birth_date ?? animal.birthDate) : "—"}</td></tr>
-            <tr><th>Poids</th><td>${animal.weight ? `${animal.weight} kg` : "—"}</td><th>N° puce</th><td>${animal.microchip_number ?? animal.microchip ?? "—"}</td></tr>
-            <tr><th>Stérilisé</th><td>${animal.sterilized ? "Oui" : "Non"}</td><th>Statut</th><td>${animal.status ?? "—"}</td></tr>
+            <tr><th>${t("print.dossier.name")}</th><td>${animal.name ?? "—"}</td><th>${t("print.dossier.owner")}</th><td>${ownerName}</td></tr>
+            <tr><th>${t("print.dossier.species")}</th><td>${animal.species ?? animal.type ?? "—"}</td><th>${t("print.dossier.breed")}</th><td>${animal.breed ?? "—"}</td></tr>
+            <tr><th>${t("print.dossier.sex")}</th><td>${animal.sex ?? animal.gender ?? "—"}</td><th>${t("print.dossier.color")}</th><td>${animal.color ?? "—"}</td></tr>
+            <tr><th>${t("print.dossier.birthDate")}</th><td>${fmtDate(animal.birth_date ?? animal.birthDate)}</td><th>${t("print.dossier.age")}</th><td>${animal.birth_date || animal.birthDate ? calculateAge(animal.birth_date ?? animal.birthDate) : "—"}</td></tr>
+            <tr><th>${t("print.dossier.weight")}</th><td>${animal.weight ? `${animal.weight} kg` : "—"}</td><th>${t("print.dossier.microchip")}</th><td>${animal.microchip_number ?? animal.microchip ?? "—"}</td></tr>
+            <tr><th>${t("print.dossier.sterilized")}</th><td>${animal.sterilized ? tc("yes") : tc("no")}</td><th>${t("print.dossier.status")}</th><td>${animal.status ?? "—"}</td></tr>
           </table>
-          ${animal.medical_history ? `<p><strong>Antécédents :</strong> ${animal.medical_history}</p>` : ""}
-          ${animal.allergies?.length ? `<p><strong>Allergies :</strong> ${animal.allergies.join(", ")}</p>` : ""}
-          ${animal.chronic_conditions?.length ? `<p><strong>Maladies chroniques :</strong> ${animal.chronic_conditions.join(", ")}</p>` : ""}
+          ${animal.medical_history ? `<p><strong>${t("print.dossier.history")}</strong> ${animal.medical_history}</p>` : ""}
+          ${animal.allergies?.length ? `<p><strong>${t("print.dossier.allergies")}</strong> ${animal.allergies.join(", ")}</p>` : ""}
+          ${animal.chronic_conditions?.length ? `<p><strong>${t("print.dossier.chronic")}</strong> ${animal.chronic_conditions.join(", ")}</p>` : ""}
         </section>
       `);
     }
@@ -174,12 +179,12 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     if (sections.pedigree && pedigree) {
       sectionsHtml.push(`
         <section class="block">
-          <h2>Pédigrée</h2>
+          <h2>${t("print.dossier.pedigree")}</h2>
           <table class="info">
-            <tr><th>N° enregistrement</th><td>${pedigree.registration_number ?? "—"}</td><th>Origine</th><td>${pedigree.pedigree_origin ?? "—"}</td></tr>
-            <tr><th>Titres</th><td colspan="3">${pedigree.titles ?? "—"}</td></tr>
-            <tr><th>Père</th><td>${pedigree.father_name ?? "—"} (${pedigree.father_breed ?? "—"}) – ${pedigree.father_registration ?? ""}</td>
-                <th>Mère</th><td>${pedigree.mother_name ?? "—"} (${pedigree.mother_breed ?? "—"}) – ${pedigree.mother_registration ?? ""}</td></tr>
+            <tr><th>${t("print.dossier.registration")}</th><td>${pedigree.registration_number ?? "—"}</td><th>${t("print.dossier.origin")}</th><td>${pedigree.pedigree_origin ?? "—"}</td></tr>
+            <tr><th>${t("print.dossier.titles")}</th><td colspan="3">${pedigree.titles ?? "—"}</td></tr>
+            <tr><th>${t("print.dossier.father")}</th><td>${pedigree.father_name ?? "—"} (${pedigree.father_breed ?? "—"}) – ${pedigree.father_registration ?? ""}</td>
+                <th>${t("print.dossier.mother")}</th><td>${pedigree.mother_name ?? "—"} (${pedigree.mother_breed ?? "—"}) – ${pedigree.mother_registration ?? ""}</td></tr>
           </table>
         </section>
       `);
@@ -189,10 +194,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = consultations.filter((c: any) => inRange(c.consultation_date));
       sectionsHtml.push(`
         <section class="block">
-          <h2>Consultations & examens (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucune consultation</p>" : `
+          <h2>${t("print.dossier.consultationsHeading", { count: list.length })}</h2>
+          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noConsultations")}</p>` : `
           <table class="data">
-            <thead><tr><th>Date</th><th>Type</th><th>Contexte</th><th>Diagnostic / résultats</th><th>Traitement</th><th>Notes</th></tr></thead>
+            <thead><tr><th>${t("dossier.table.date")}</th><th>${t("dossier.table.type")}</th><th>${t("dossier.table.context")}</th><th>${t("dossier.table.diagnosisResults")}</th><th>${t("dossier.table.treatment")}</th><th>${t("dossier.table.notes")}</th></tr></thead>
             <tbody>
               ${list.map((c: any) => {
                 const linkedRx = prescriptions.filter((p: any) => p.consultation_id === c.id);
@@ -201,7 +206,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                   .filter(Boolean);
                 const treatmentCell = [
                   c.treatment ?? null,
-                  medNames.length ? `Ordo. : ${medNames.join(", ")}` : null,
+                  medNames.length ? t("print.dossier.rxAbbrev", { meds: medNames.join(", ") }) : null,
                 ].filter(Boolean).join(" · ") || "—";
                 return `
                 <tr>
@@ -223,10 +228,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = completedVaccinations;
       sectionsHtml.push(`
         <section class="block">
-          <h2>Vaccinations réalisées (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucune vaccination réalisée</p>" : `
+          <h2>${t("print.dossier.vaccinationsDone", { count: list.length })}</h2>
+          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noVaccinations")}</p>` : `
           <table class="data">
-            <thead><tr><th>Date</th><th>Vaccin</th><th>Dose</th><th>Type</th><th>Fabricant</th><th>Lot</th></tr></thead>
+            <thead><tr><th>${t("dossier.table.date")}</th><th>${t("print.dossier.vaccine")}</th><th>${t("print.dossier.dose")}</th><th>${t("print.dossier.type")}</th><th>${t("print.dossier.manufacturer")}</th><th>${t("print.dossier.batch")}</th></tr></thead>
             <tbody>
               ${list.map((v) => `
                 <tr>
@@ -247,10 +252,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = completedAntiparasitics;
       sectionsHtml.push(`
         <section class="block">
-          <h2>Antiparasitaires réalisés (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucun traitement réalisé</p>" : `
+          <h2>${t("print.dossier.antiparasiticsDone", { count: list.length })}</h2>
+          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noAntiparasitics")}</p>` : `
           <table class="data">
-            <thead><tr><th>Date</th><th>Produit</th><th>Traitement</th><th>Type</th><th>Principe actif</th><th>Notes</th></tr></thead>
+            <thead><tr><th>${t("dossier.table.date")}</th><th>${t("print.dossier.product")}</th><th>${t("print.dossier.treatment")}</th><th>${t("print.dossier.type")}</th><th>${t("print.dossier.activeIngredient")}</th><th>${t("dossier.table.notes")}</th></tr></thead>
             <tbody>
               ${list.map((a) => `
                 <tr>
@@ -271,20 +276,20 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = prescriptions.filter((p: any) => inRange(p.prescription_date));
       sectionsHtml.push(`
         <section class="block">
-          <h2>Ordonnances (${list.length})</h2>
-          ${list.length === 0 ? "<p class='muted'>Aucune ordonnance</p>" : list.map((p: any) => {
+          <h2>${t("dossier.prescriptionsHeading", { count: list.length })}</h2>
+          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noPrescriptions")}</p>` : list.map((p: any) => {
             const meds = Array.isArray(p.medications) ? p.medications : [];
             return `
             <div class="rx-block" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
               <p style="margin:0 0 6px;"><strong>${fmtDate(p.prescription_date)}</strong>
                 · ${p.status ?? "—"}
-                ${p.valid_until ? ` · Valide jusqu'au ${fmtDate(p.valid_until)}` : ""}
+                ${p.valid_until ? ` · ${t("dossier.validUntilLabel", { date: fmtDate(p.valid_until) })}` : ""}
               </p>
-              ${p.diagnosis ? `<p style="margin:0 0 6px;"><strong>Diagnostic :</strong> ${p.diagnosis}</p>` : ""}
+              ${p.diagnosis ? `<p style="margin:0 0 6px;"><strong>${t("dossier.diagnosis")}</strong> ${p.diagnosis}</p>` : ""}
               ${meds.length === 0
-                ? `<p class="muted" style="margin:0;">Aucun médicament enregistré</p>`
+                ? `<p class="muted" style="margin:0;">${t("dossier.noMedication")}</p>`
                 : `<table class="data">
-                    <thead><tr><th>Médicament</th><th>Dosage</th><th>Fréquence</th><th>Durée</th><th>Qté</th><th>Instructions</th></tr></thead>
+                    <thead><tr><th>${t("print.dossier.medication")}</th><th>${t("print.dossier.dosage")}</th><th>${t("print.dossier.frequency")}</th><th>${t("print.dossier.duration")}</th><th>${t("print.dossier.qty")}</th><th>${t("print.dossier.instructions")}</th></tr></thead>
                     <tbody>
                       ${meds.map((m: any) => `
                         <tr>
@@ -297,7 +302,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                         </tr>`).join("")}
                     </tbody>
                   </table>`}
-              ${p.notes ? `<p style="margin:6px 0 0;"><strong>Notes :</strong> ${p.notes}</p>` : ""}
+              ${p.notes ? `<p style="margin:6px 0 0;"><strong>${t("dossier.notes")}</strong> ${p.notes}</p>` : ""}
             </div>`;
           }).join("")}
         </section>
@@ -308,7 +313,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const photoItems: { src: string; label: string }[] = [];
       const mainPhoto = animal.photo || animal.photo_url;
       if (mainPhoto) {
-        photoItems.push({ src: mainPhoto, label: `Photo principale — ${animal.name}` });
+        photoItems.push({ src: mainPhoto, label: t("print.dossier.mainPhoto", { name: animal.name }) });
       }
       consultations
         .filter((c: any) => inRange(c.consultation_date))
@@ -316,15 +321,15 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
           (c.photos || []).forEach((src: string, idx: number) => {
             photoItems.push({
               src,
-              label: `Consultation ${fmtDate(c.consultation_date)} — photo ${idx + 1}`,
+              label: t("print.dossier.consultPhoto", { date: fmtDate(c.consultation_date), n: idx + 1 }),
             });
           });
         });
 
       sectionsHtml.push(`
         <section class="block">
-          <h2>Photos (${photoItems.length})</h2>
-          ${photoItems.length === 0 ? "<p class='muted'>Aucune photo.</p>" : `
+          <h2>${t("print.dossier.photos", { count: photoItems.length })}</h2>
+          ${photoItems.length === 0 ? `<p class='muted'>${t("print.dossier.noPhotos")}</p>` : `
           <div class="photos">
             ${photoItems.map((p) => `
               <div class="photo-item">
@@ -341,9 +346,9 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     }
 
     return buildReportDocument({
-      title: `Dossier médical - ${animal.name}`,
+      title: t("print.dossier.docTitle", { name: animal.name }),
       watermarkHtml: buildWatermarkHtml(isFree),
-      headerTitle: "Dossier médical vétérinaire",
+      headerTitle: t("dossier.headerTitle"),
       clinic: {
         clinicName: settings.clinicName,
         address: settings.address,
@@ -357,9 +362,9 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   };
 
   const createShare = async (): Promise<SharePreview> => {
-    if (!animalId) throw new Error("Animal introuvable");
+    if (!animalId) throw new Error(t("dossier.animalNotFound"));
     if (!ownerConsent) {
-      throw new Error("Confirmez le consentement du propriétaire pour générer le QR.");
+      throw new Error(t("dossier.ownerConsentRequired"));
     }
     const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
     const consultationsInRange = consultations.filter((c: any) => inRange(c.consultation_date));
@@ -395,13 +400,13 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const preview = await createShare();
       setSharePreview(preview);
       toast({
-        title: "Code généré",
-        description: `Code ${preview.shortCode} — partagez-le ou le QR.`,
+        title: t("dossier.codeGenerated"),
+        description: t("print.dossier.codeGeneratedDesc", { code: preview.shortCode }),
       });
     } catch (e: any) {
       toast({
-        title: "Génération impossible",
-        description: e?.message || "Erreur lors de la génération",
+        title: t("dossier.generateFailed"),
+        description: e?.message || t("print.dossier.generateError"),
         variant: "destructive",
       });
     } finally {
@@ -426,7 +431,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     setBusy(true);
     try {
       if (includeTransferQr && !ownerConsent) {
-        throw new Error("Confirmez le consentement du propriétaire pour inclure le QR.");
+        throw new Error(t("dossier.ownerConsentPrint"));
       }
       const transferQrHtml = await resolveTransferQrHtml();
       const html = await buildHtml(transferQrHtml);
@@ -434,8 +439,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       await printHtml(html);
     } catch (e: any) {
       toast({
-        title: "Impression impossible",
-        description: e?.message || "Réessayez ou utilisez « Générer le QR » puis partagez le lien.",
+        title: t("dossier.printFailed"),
+        description: e?.message || t("dossier.printFailedBody"),
         variant: "destructive",
       });
     } finally {
@@ -448,12 +453,12 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     try {
       await navigator.clipboard.writeText(sharePreview.url);
       setCopied(true);
-      toast({ title: "Lien copié" });
+      toast({ title: t("dossier.linkCopied") });
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       toast({
-        title: "Copie impossible",
-        description: "Sélectionnez le lien manuellement.",
+        title: t("dossier.copyFailed"),
+        description: t("dossier.copyFailedLink"),
         variant: "destructive",
       });
     }
@@ -464,12 +469,12 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     try {
       await navigator.clipboard.writeText(sharePreview.shortCode);
       setCopiedCode(true);
-      toast({ title: "Code copié", description: sharePreview.shortCode });
+      toast({ title: t("dossier.codeCopied"), description: sharePreview.shortCode });
       window.setTimeout(() => setCopiedCode(false), 2000);
     } catch {
       toast({
-        title: "Copie impossible",
-        description: "Notez le code manuellement.",
+        title: t("dossier.copyFailed"),
+        description: t("dossier.copyFailedCode"),
         variant: "destructive",
       });
     }
@@ -477,14 +482,17 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
   const handleNativeShare = async () => {
     if (!sharePreview) return;
-    const text = `Code transfert VetoCrm : ${sharePreview.shortCode}\n${sharePreview.url}`;
+    const text = t("print.dossier.shareText", {
+      code: sharePreview.shortCode,
+      url: sharePreview.url,
+    });
     if (!navigator.share) {
       await handleCopyCode();
       return;
     }
     try {
       await navigator.share({
-        title: `Dossier ${animal?.name || "animal"} — VetoCrm`,
+        title: t("dossier.shareTitle", { name: animal?.name || "animal" }),
         text,
         url: sharePreview.url,
       });
@@ -498,14 +506,14 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   if (!animal) return null;
 
   const SECTION_LABELS: Record<SectionKey, string> = {
-    identity: "Identité",
-    pedigree: "Pédigrée",
-    history: "Historique général",
-    consultations: "Consultations & examens",
-    vaccinations: "Vaccinations",
-    antiparasitics: "Antiparasitaires",
-    prescriptions: "Ordonnances",
-    photos: "Photos",
+    identity: t("dossier.sections.identity"),
+    pedigree: t("dossier.sections.pedigree"),
+    history: t("dossier.sections.history"),
+    consultations: t("dossier.sections.consultations"),
+    vaccinations: t("dossier.sections.vaccinations"),
+    antiparasitics: t("dossier.sections.antiparasitics"),
+    prescriptions: t("dossier.sections.prescriptions"),
+    photos: t("dossier.sections.photos"),
   };
 
   const qrReady = includeTransferQr && ownerConsent;
@@ -526,41 +534,41 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FileText className="h-5 w-5 shrink-0" />
-            Imprimer / partager — {animal.name}
+            {t("dossier.printShareTitle", { name: animal.name })}
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            Choisissez les sections. Sur mobile, générez d’abord le QR puis partagez le lien.
+            {t("dossier.printShareDesc")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Modèle</Label>
+              <Label>{t("dossier.template")}</Label>
               <Select value={template} onValueChange={(v) => applyTemplate(v as Template)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="complete">Dossier complet</SelectItem>
-                  <SelectItem value="summary">Résumé</SelectItem>
-                  <SelectItem value="vaccinations">Vaccinations uniquement</SelectItem>
-                  <SelectItem value="certificate">Certificat / pédigrée</SelectItem>
+                  <SelectItem value="complete">{t("dossier.templates.complete")}</SelectItem>
+                  <SelectItem value="summary">{t("dossier.templates.summary")}</SelectItem>
+                  <SelectItem value="vaccinations">{t("dossier.templates.vaccinationsOnly")}</SelectItem>
+                  <SelectItem value="certificate">{t("dossier.templates.certificatePedigree")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
-                <Label>Du</Label>
+                <Label>{tc("from")}</Label>
                 <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Au</Label>
+                <Label>{tc("to")}</Label>
                 <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
               </div>
             </div>
           </div>
 
           <div>
-            <Label className="mb-2 block">Sections à inclure</Label>
+            <Label className="mb-2 block">{t("dossier.sectionsToInclude")}</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border rounded-md">
               {(Object.keys(SECTION_LABELS) as SectionKey[]).map((k) => (
                 <label key={k} className="flex items-center gap-2 text-sm cursor-pointer min-h-9">
@@ -588,10 +596,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
               <span>
                 <span className="font-medium inline-flex items-center gap-1.5">
                   <QrCode className="h-3.5 w-3.5" />
-                  Inclure un QR de transfert
+                  {t("dossier.includeTransferQr")}
                 </span>
                 <span className="block text-muted-foreground text-xs mt-0.5">
-                  Générez un code court (comme l’invitation clinique) + QR, puis partagez ou imprimez.
+                  {t("dossier.includeTransferQrHint")}
                 </span>
               </span>
             </label>
@@ -605,11 +613,11 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                     className="mt-0.5"
                   />
                   <span>
-                    Le propriétaire autorise le partage de ces données médicales via ce lien.
+                    {t("dossier.ownerConsent")}
                   </span>
                 </label>
                 <div className="space-y-1.5 max-w-[220px]">
-                  <Label htmlFor="qr-expiry">Validité du lien</Label>
+                  <Label htmlFor="qr-expiry">{t("dossier.linkValidity")}</Label>
                   <Select
                     value={expiresDays}
                     onValueChange={(v) => setExpiresDays(v as "7" | "30" | "90")}
@@ -618,9 +626,9 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="7">7 jours</SelectItem>
-                      <SelectItem value="30">30 jours</SelectItem>
-                      <SelectItem value="90">90 jours</SelectItem>
+                      <SelectItem value="7">{t("dossier.days", { count: 7 })}</SelectItem>
+                      <SelectItem value="30">{t("dossier.days", { count: 30 })}</SelectItem>
+                      <SelectItem value="90">{t("dossier.days", { count: 90 })}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -633,14 +641,14 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                   onClick={() => void handleGenerateQr()}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                  Générer le code / QR
+                  {t("dossier.generateQr")}
                 </Button>
 
                 {sharePreview && (
                   <div className="rounded-lg border bg-background p-3 space-y-3">
                     <div className="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs text-muted-foreground mb-1">Code de transfert</div>
+                        <div className="text-xs text-muted-foreground mb-1">{t("dossier.transferCode")}</div>
                         <div className="text-2xl sm:text-3xl font-bold tracking-[0.18em] font-mono text-primary select-all">
                           {sharePreview.shortCode}
                         </div>
@@ -659,26 +667,27 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       <img
                         src={sharePreview.qrDataUrl}
-                        alt="QR transfert"
+                        alt={t("dossier.qrAlt")}
                         className="w-40 h-40 sm:w-36 sm:h-36 rounded-md border bg-white"
                       />
                       <div className="flex-1 w-full space-y-2 text-sm">
                         <p className="text-muted-foreground text-xs">
-                          Valable jusqu’au{" "}
-                          {new Date(sharePreview.expiresAt).toLocaleDateString("fr-FR")}
+                          {t("dossier.validUntil", {
+                            date: new Date(sharePreview.expiresAt).toLocaleDateString(bcp47),
+                          })}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          L’autre clinique saisit ce code dans Animaux → Importer dossier (QR).
+                          {t("dossier.otherClinicHint")}
                         </p>
                         <Input readOnly value={sharePreview.url} className="text-xs font-mono" />
                         <div className="grid grid-cols-2 gap-2">
                           <Button type="button" variant="outline" className="gap-2" onClick={() => void handleCopyLink()}>
                             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                            {copied ? "Lien copié" : "Copier lien"}
+                            {copied ? t("dossier.linkCopied") : t("dossier.copyLink")}
                           </Button>
                           <Button type="button" className="gap-2" onClick={() => void handleNativeShare()}>
                             <Share2 className="h-4 w-4" />
-                            Partager
+                            {t("dossier.share")}
                           </Button>
                         </div>
                       </div>
@@ -692,7 +701,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
         <DialogFooter className="!flex-col gap-2 sm:!flex-row sm:justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy} className="w-full sm:w-auto">
-            Fermer
+            {t("dossier.close")}
           </Button>
           <Button
             variant="outline"
@@ -701,7 +710,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
             disabled={busy || (includeTransferQr && !ownerConsent)}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            PDF / Imprimer
+            {t("dossier.pdfPrint")}
           </Button>
           <Button
             onClick={() => void openPrintDialog()}
@@ -709,7 +718,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
             disabled={busy || (includeTransferQr && !ownerConsent)}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-            Imprimer
+            {tc("print")}
           </Button>
         </DialogFooter>
       </DialogContent>
