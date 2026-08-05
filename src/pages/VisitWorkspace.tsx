@@ -982,63 +982,92 @@ export default function VisitWorkspace() {
 
         <div className="flex flex-wrap gap-2">
           {canWrite && (
-            <Button variant="outline" className="gap-2" onClick={openEditVisit}>
-              <Pencil className="h-4 w-4" />
-              {tc("edit")}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
+              onClick={openEditVisit}
+              aria-label={tc("edit")}
+            >
+              <Pencil className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{tc("edit")}</span>
             </Button>
           )}
           {canWrite && visit.status === "completed" && (
-            <Button variant="outline" className="gap-2" onClick={reopenVisit}>
-              <RotateCcw className="h-4 w-4" />
-              {t("visits.workspace.reopen")}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
+              onClick={reopenVisit}
+              aria-label={t("visits.workspace.reopen")}
+            >
+              <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{t("visits.workspace.reopen")}</span>
             </Button>
           )}
           {canWrite && (
-            <Button variant="outline" className="gap-2" onClick={() => setShowCatalog(true)}>
-              <Plus className="h-4 w-4" />
-              {t("visits.workspace.service")}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
+              onClick={() => setShowCatalog(true)}
+              aria-label={t("visits.workspace.service")}
+            >
+              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{t("visits.workspace.service")}</span>
             </Button>
           )}
           {(visit.invoiced || canWrite) && (
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
               onClick={handleInvoice}
               disabled={invoiceBusy || visit.status === "cancelled"}
+              aria-label={visit.invoiced ? t("visits.workspace.printPdf") : t("visits.workspace.generateInvoice")}
             >
               {invoiceBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
               ) : visit.invoiced ? (
-                <Printer className="h-4 w-4" />
+                <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               ) : (
-                <Receipt className="h-4 w-4" />
+                <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-              {visit.invoiced ? t("visits.workspace.printPdf") : t("visits.workspace.generateInvoice")}
+              <span className="hidden sm:inline">
+                {visit.invoiced ? t("visits.workspace.printPdf") : t("visits.workspace.generateInvoice")}
+              </span>
             </Button>
           )}
           {canWrite && visit.invoiced && visit.invoice_id && lastInvoice?.status !== "paid" && (
             <Button
               variant="outline"
-              className="gap-2"
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
               onClick={handleMarkPaid}
               disabled={payBusy}
+              aria-label={t("visits.workspace.markPaid")}
             >
               {payBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
               ) : (
-                <Banknote className="h-4 w-4" />
+                <Banknote className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-              {t("visits.workspace.markPaid")}
+              <span className="hidden sm:inline">{t("visits.workspace.markPaid")}</span>
             </Button>
           )}
           {canWrite && visit.status === "in_progress" && (
-            <Button className="gap-2" onClick={handleComplete} disabled={completeVisit.isPending}>
+            <Button
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm"
+              onClick={handleComplete}
+              disabled={completeVisit.isPending}
+            >
               {pendingServices.length > 0 || vaccinationWithoutDose.length > 0 ? (
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               ) : (
-                <Check className="h-4 w-4" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               )}
-              {t("visits.workspace.completeVisit")}
+              <span className="text-xs sm:text-sm">{t("visits.workspace.completeVisit")}</span>
               {(pendingServices.length > 0 || vaccinationWithoutDose.length > 0) && (
                 <Badge variant="destructive" className="ml-1 h-5 px-1.5">
                   !

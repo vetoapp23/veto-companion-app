@@ -128,7 +128,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">{t("pets.animalNameLabel")}</Label>
               <Input
@@ -162,7 +162,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="breed">{t("pets.columns.breed")}</Label>
               <Input
@@ -185,7 +185,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="birthDate">{t("pets.birthDate")}</Label>
               <Input
@@ -206,7 +206,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="color">{t("pets.color")}</Label>
               <Input
@@ -220,7 +220,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t("pets.ownerRequiredLabel")}</Label>
               <Select value={formData.ownerId.toString()} onValueChange={(value) => handleSelectChange("ownerId", value)}>
@@ -284,7 +284,7 @@ export function PetEditModal({ open, onOpenChange, pet }: PetEditModalProps) {
 
             {formData.hasPedigree && (
               <div className="space-y-4 pl-6 border-l-2 border-primary/20">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="officialName">{t("pets.officialName")}</Label>
                     <Input

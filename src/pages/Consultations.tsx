@@ -205,14 +205,15 @@ const Consultations = () => {
             </div>
             {canWrite && (
             <Button
-              className="gap-2 rounded-full text-sm sm:text-base"
+              size="sm"
+              className="gap-1 sm:gap-2 rounded-full"
               onClick={() => {
                 if (!guardWrite()) return;
                 setShowNewConsultation(true);
               }}
             >
               <Plus className="h-4 w-4" />
-              {t("consultations.new")}
+              <span className="text-xs sm:text-sm">{t("consultations.new")}</span>
             </Button>
             )}
           </>
@@ -227,12 +228,12 @@ const Consultations = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-col gap-4">
+        <div className="flex w-full flex-col gap-3 sm:gap-4">
         <Input 
           placeholder={t("consultations.searchPlaceholder")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-full sm:max-w-md"
+          className="w-full sm:max-w-md"
         />
         <ListDateFilter
           value={dateFilter}

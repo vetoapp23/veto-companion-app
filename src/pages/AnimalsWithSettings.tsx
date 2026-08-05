@@ -206,7 +206,7 @@ const AnimalsPage = () => {
 
   const AnimalFormDialog = ({ isEdit = false }: { isEdit?: boolean }) => (
     <form onSubmit={isEdit ? handleUpdateAnimal : handleCreateAnimal} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="client_id">{t("animalsWithSettings.owner")}</Label>
           <Select
@@ -656,7 +656,7 @@ const AnimalsPage = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>{t("animalsWithSettings.breed")}</Label>
                   <p className="text-sm">{selectedAnimal.breed || t("animalsWithSettings.notSpecified")}</p>

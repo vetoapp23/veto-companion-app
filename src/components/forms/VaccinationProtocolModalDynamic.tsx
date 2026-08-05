@@ -147,7 +147,7 @@ export default function VaccinationProtocolModal({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="species">{t("forms.speciesRequired")}</Label>
               <Select value={formData.species} onValueChange={(value) => setFormData({...formData, species: value})}>
@@ -175,7 +175,7 @@ export default function VaccinationProtocolModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vaccineType">{t("forms.vaccineTypeRequired")}</Label>
               <ComboboxFreeText
@@ -198,7 +198,7 @@ export default function VaccinationProtocolModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="frequency">{t("forms.frequency")}</Label>
               <Input

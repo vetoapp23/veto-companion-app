@@ -196,7 +196,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">{t("clients.firstName")}</Label>
               <Input
@@ -217,7 +217,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">{tc("email")}</Label>
               <Input
@@ -247,7 +247,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">{tc("city")}</Label>
               <Input

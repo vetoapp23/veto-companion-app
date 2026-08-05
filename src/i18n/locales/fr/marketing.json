@@ -3,12 +3,14 @@
     "pricing": "Tarifs",
     "signIn": "Se connecter",
     "getStarted": "Commencer",
+    "getStartedShort": "Commencer",
     "register": "Inscription",
     "login": "Connexion",
     "home": "Accueil",
     "homeAria": "VetoCrm — Accueil",
     "mainNavAria": "Navigation principale",
-    "footerAria": "Pied de page"
+    "footerAria": "Pied de page",
+    "contact": "Nous contacter"
   },
   "landing": {
     "seoTitle": "VetoCrm — CRM vétérinaire pour cliniques et cabinets",
@@ -100,5 +102,21 @@
     "free": "Gratuit",
     "unitMb": "Mo",
     "unitGb": "Go"
+  },
+  "contact": {
+    "seoTitle": "Nous contacter — VetoCrm",
+    "seoDescription": "Contactez l’équipe VetoCrm par e-mail, LinkedIn ou Instagram. Support pour cliniques vétérinaires.",
+    "eyebrow": "Support & partenariats",
+    "title": "Nous contacter",
+    "lead": "Une question sur VetoCrm, votre abonnement ou un partenariat ? Écrivez-nous ou rejoignez-nous sur les réseaux.",
+    "emailTitle": "E-mail",
+    "emailBody": "Pour le support, les ventes et toute demande générale.",
+    "linkedinBody": "Actualités produit et réseau professionnel.",
+    "instagramBody": "Coulisses et nouveautés VetoCrm.",
+    "openProfile": "Voir le profil",
+    "supportTitle": "Délai de réponse",
+    "supportBody": "Nous répondons en général sous 1 à 2 jours ouvrés.",
+    "responseTime": "Lun. – Ven.",
+    "writeUs": "Écrire un e-mail"
   }
 }

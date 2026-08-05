@@ -405,10 +405,12 @@ export default function Antiparasites() {
                 setShowProtocolModal(true);
               }}
               variant="outline"
-              className="gap-2 rounded-full"
+              size="sm"
+              className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3"
+              aria-label={t("antiparasites.tabs.protocols")}
             >
               <Shield className="h-4 w-4" />
-              {t("antiparasites.tabs.protocols")}
+              <span className="hidden sm:inline">{t("antiparasites.tabs.protocols")}</span>
             </Button>
             )}
             {canWrite && (
@@ -417,10 +419,11 @@ export default function Antiparasites() {
                 if (!guardWrite()) return;
                 setShowNewAntiparasitic(true);
               }}
-              className="gap-2 rounded-full"
+              size="sm"
+              className="gap-1 sm:gap-2 rounded-full"
             >
               <Plus className="h-4 w-4" />
-              {t("antiparasites.new")}
+              <span className="text-xs sm:text-sm">{t("antiparasites.new")}</span>
             </Button>
             )}
           </>

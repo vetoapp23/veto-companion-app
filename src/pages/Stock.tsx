@@ -643,11 +643,12 @@ export default function Stock() {
             <Button
               variant="outline"
               onClick={exportToExcel}
-              className="gap-2 text-xs sm:text-sm rounded-full"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm rounded-full px-2.5 sm:px-3"
               size="sm"
+              aria-label={t("stock.exportCsv")}
             >
               <Download className="h-3 sm:h-4 w-3 sm:w-4" />
-              {t("stock.exportCsv")}
+              <span className="hidden sm:inline">{t("stock.exportCsv")}</span>
             </Button>
             {canWrite && (
               <div className="relative">
@@ -658,10 +659,10 @@ export default function Stock() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   id="import-file"
                 />
-                <Button variant="outline" className="gap-2 text-xs sm:text-sm rounded-full" size="sm" asChild>
-                  <label htmlFor="import-file" className="cursor-pointer">
+                <Button variant="outline" className="gap-1 sm:gap-2 text-xs sm:text-sm rounded-full px-2.5 sm:px-3" size="sm" asChild>
+                  <label htmlFor="import-file" className="cursor-pointer" aria-label={t("stock.importCsv")}>
                     <Upload className="h-3 sm:h-4 w-3 sm:w-4" />
-                    {t("stock.importCsv")}
+                    <span className="hidden sm:inline">{t("stock.importCsv")}</span>
                   </label>
                 </Button>
               </div>
@@ -669,20 +670,21 @@ export default function Stock() {
             <Button
               variant="outline"
               onClick={downloadTemplate}
-              className="gap-2 text-xs sm:text-sm rounded-full"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm rounded-full px-2.5 sm:px-3"
               size="sm"
+              aria-label={t("stock.template")}
             >
               <FileSpreadsheet className="h-3 sm:h-4 w-3 sm:w-4" />
-              {t("stock.template")}
+              <span className="hidden sm:inline">{t("stock.template")}</span>
             </Button>
             {canWrite && (
               <Button
-                className="gap-2 text-xs sm:text-sm rounded-full"
+                className="gap-1 sm:gap-2 text-xs sm:text-sm rounded-full"
                 size="sm"
                 onClick={() => setShowNewItemModal(true)}
               >
                 <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
-                {t("stock.new")}
+                <span className="text-xs sm:text-sm">{t("stock.new")}</span>
               </Button>
             )}
           </>
@@ -762,8 +764,8 @@ export default function Stock() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
-            <div className="flex-1 min-w-[250px] sm:min-w-[300px]">
-              <Input 
+            <div className="flex-1 min-w-0 w-full sm:min-w-[300px]">
+              <Input
                 placeholder={t("stock.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

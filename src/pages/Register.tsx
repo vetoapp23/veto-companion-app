@@ -67,6 +67,7 @@ const Register = () => {
   const [isJoiningOrganization, setIsJoiningOrganization] = useState(urlMode === "assistant");
 
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -126,6 +127,8 @@ const Register = () => {
         throw new Error(t("register.errors.orgCodeRequired"));
       if (!isJoiningOrganization && !formData.clinicName)
         throw new Error(t("register.errors.clinicNameRequired"));
+      if (!acceptedTerms)
+        throw new Error(t("register.errors.acceptTerms"));
 
       const { data: flagRow } = await supabase
         .from("platform_settings" as any)
@@ -195,14 +198,14 @@ const Register = () => {
           path="/register"
         />
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <Link to="/" className="mk-brand text-2xl">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <Link to="/" className="mk-brand text-xl sm:text-2xl">
               Veto<span>Crm</span>
             </Link>
             <LanguageSwitcher variant="marketing" />
           </div>
           <div className="text-center mb-8">
-            <h1 className="mk-display text-3xl md:text-4xl font-bold mb-2">{t("register.choosePlanTitle")}</h1>
+            <h1 className="mk-display text-2xl sm:text-3xl md:text-4xl font-bold mb-2">{t("register.choosePlanTitle")}</h1>
             <p style={{ color: "var(--mk-muted)" }}>
               {t("register.choosePlanSub")}
             </p>
@@ -472,7 +475,32 @@ const Register = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
+              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+                <input
+                  id="acceptTerms"
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-[hsl(var(--primary))]"
+                  required
+                />
+                <label htmlFor="acceptTerms" className="text-sm text-muted-foreground leading-relaxed">
+                  {t("register.acceptTermsPrefix")}{" "}
+                  <Link to="/terms" className="text-primary underline font-medium" target="_blank" rel="noreferrer">
+                    {t("register.termsLink")}
+                  </Link>{" "}
+                  {t("register.acceptAnd")}{" "}
+                  <Link to="/privacy" className="text-primary underline font-medium" target="_blank" rel="noreferrer">
+                    {t("register.privacyLink")}
+                  </Link>
+                  .{" "}
+                  <Link to="/refund" className="text-primary underline font-medium" target="_blank" rel="noreferrer">
+                    {t("register.refundLink")}
+                  </Link>
+                </label>
+              </div>
+
+              <Button type="submit" className="w-full h-12 text-base" disabled={isLoading || !acceptedTerms}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />

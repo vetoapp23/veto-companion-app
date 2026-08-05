@@ -393,9 +393,15 @@ export default function Vaccinations() {
         description={t("vaccinations.description")}
         actions={
           <>
-            <Button onClick={exportVaccinationData} variant="outline" className="gap-2 rounded-full">
+            <Button
+              onClick={exportVaccinationData}
+              variant="outline"
+              size="sm"
+              className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3"
+              aria-label={t("vaccinations.export")}
+            >
               <Download className="h-4 w-4" />
-              {t("vaccinations.export")}
+              <span className="hidden sm:inline">{t("vaccinations.export")}</span>
             </Button>
             {canWrite && <NewVaccinationModal />}
           </>
@@ -493,15 +499,15 @@ export default function Vaccinations() {
         {/* Filters */}
         <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
-            <div className="relative flex-1">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between w-full">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4 flex-1">
+            <div className="relative w-full min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder={t("vaccinations.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full"
             />
             </div>
             

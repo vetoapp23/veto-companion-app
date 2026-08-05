@@ -169,7 +169,7 @@ export function NewPrescriptionModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="diagnosis">{t("forms.diagnosisLabel")}</Label>
               <Textarea

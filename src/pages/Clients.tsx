@@ -282,24 +282,26 @@ const ClientsContent = () => {
               size="sm"
               variant={viewMode === "cards" ? "default" : "outline"}
               onClick={() => setViewMode("cards")}
-              className="gap-2 rounded-full"
+              className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3"
+              aria-label={ts("display.modes.cards")}
             >
               <Grid className="h-4 w-4" />
-              {ts("display.modes.cards")}
+              <span className="hidden sm:inline">{ts("display.modes.cards")}</span>
             </Button>
             <Button
               size="sm"
               variant={viewMode === "table" ? "default" : "outline"}
               onClick={() => setViewMode("table")}
-              className="gap-2 rounded-full"
+              className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3"
+              aria-label={ts("display.modes.table")}
             >
               <List className="h-4 w-4" />
-              {ts("display.modes.table")}
+              <span className="hidden sm:inline">{ts("display.modes.table")}</span>
             </Button>
             {canWriteClients && (
-              <Button className="gap-2 rounded-full" onClick={() => setShowClientModal(true)}>
+              <Button size="sm" className="gap-1 sm:gap-2 rounded-full" onClick={() => setShowClientModal(true)}>
                 <Plus className="h-4 w-4" />
-                {t("clients.new")}
+                <span className="text-xs sm:text-sm">{t("clients.new")}</span>
               </Button>
             )}
           </>
@@ -314,12 +316,12 @@ const ClientsContent = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
           <Input 
             placeholder={t("clients.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1"
+            className="w-full min-w-0 flex-1"
           />
           <Select value={speciesFilter} onValueChange={setSpeciesFilter}>
             <SelectTrigger className="w-full sm:w-[200px]">

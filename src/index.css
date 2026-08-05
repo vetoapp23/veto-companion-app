@@ -417,12 +417,36 @@
    Fermes, Stock, Comptabilité, Équipe, Paramètres…)
    without rewriting each page.
    ============================================ */
+.app-bottom-nav a,
+.app-bottom-nav button {
+  min-height: 3.25rem;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.app-bottom-nav .text-\[10px\] {
+  font-size: 0.625rem;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 0.15rem;
+}
+
 @media (max-width: 1023px) {
   /* Leave space for the fixed mobile bottom nav (h-16 + safe area) */
   main,
   .container,
   [class*="container"] {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Marketing pages: no bottom-nav spacer when nav is hidden */
+  .marketing-shell main,
+  .marketing-shell .container,
+  .marketing-shell [class*="container"] {
+    padding-bottom: 1.5rem !important;
   }
 
   /* Tighter container padding on phones */
@@ -823,6 +847,96 @@
   animation: mk-fade-up 0.8s ease 0.22s both;
 }
 
+.mk-btn-nav {
+  padding: 0.55rem 0.95rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.mk-link-compact {
+  padding: 0.4rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 639px) {
+  .mk-nav {
+    gap: 0.5rem;
+    padding: 0.85rem 0.85rem;
+  }
+
+  .mk-nav-links {
+    gap: 0.25rem;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .mk-brand {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .mk-btn-nav {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .mk-hero-body {
+    padding: 1.25rem 1rem 4.5rem;
+    justify-content: flex-end;
+  }
+
+  .mk-hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.65rem;
+  }
+
+  .mk-hero-ctas .mk-btn {
+    width: 100%;
+    min-height: 2.75rem;
+  }
+
+  .mk-hero-sub {
+    font-size: 0.98rem;
+  }
+
+  .mk-cta-band {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .mk-cta-band > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .mk-cta-band .mk-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mk-capabilities {
+    grid-template-columns: 1fr;
+  }
+
+  .mk-section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .mk-link-compact {
+    padding: 0.35rem 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .mk-btn-nav {
+    padding: 0.45rem 0.6rem;
+  }
+}
+
 .mk-scroll-hint {
   position: absolute;
   bottom: 1.25rem;
@@ -982,6 +1096,262 @@
   font-size: 0.9rem;
 }
 
+.mk-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.1rem;
+  justify-content: center;
+  margin-bottom: 0.85rem;
+}
+
+.mk-footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+  margin: 0 0 1rem;
+}
+
+.mk-social-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--mk-line);
+  background: var(--mk-surface);
+  color: var(--mk-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mk-social-btn:hover {
+  background: var(--mk-fog);
+  border-color: color-mix(in srgb, var(--mk-teal, #0f766e) 35%, var(--mk-line));
+}
+
+.mk-legal {
+  padding: 1.5rem 1rem 3rem;
+}
+
+.mk-legal-article {
+  max-width: 46rem;
+  margin: 0 auto;
+  color: var(--mk-ink);
+}
+
+.mk-legal-article h1 {
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 1rem;
+  line-height: 1.2;
+}
+
+.mk-legal-updated {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--mk-muted);
+  font-weight: 600;
+}
+
+.mk-legal-intro {
+  margin: 0 0 1.75rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--mk-muted);
+}
+
+.mk-legal-toc {
+  margin: 0 0 2rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--mk-line);
+  border-radius: 14px;
+  background: var(--mk-surface);
+}
+
+.mk-legal-toc-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mk-muted);
+}
+
+.mk-legal-toc ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.mk-legal-toc a {
+  color: var(--mk-teal, #0f766e);
+  text-decoration: none;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.mk-legal-toc a:hover {
+  text-decoration: underline;
+}
+
+.mk-legal-section {
+  margin-bottom: 1.75rem;
+  scroll-margin-top: 5rem;
+}
+
+.mk-legal-section h2 {
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+
+.mk-legal-section p {
+  margin: 0 0 0.75rem;
+  line-height: 1.65;
+  color: var(--mk-muted);
+  font-size: 0.98rem;
+}
+
+.mk-legal-section ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.mk-legal-section li {
+  line-height: 1.55;
+  color: var(--mk-muted);
+  font-size: 0.98rem;
+}
+
+.mk-legal-disclaimer {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--mk-line);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--mk-muted);
+  font-style: italic;
+}
+
+.mk-contact {
+  padding: 2rem 1rem 3.5rem;
+}
+
+.mk-contact-inner {
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+.mk-contact-eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mk-teal, #0f766e);
+}
+
+.mk-contact-inner h1 {
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: clamp(1.85rem, 4vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.85rem;
+  color: var(--mk-ink);
+}
+
+.mk-contact-lead {
+  margin: 0 0 2rem;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--mk-muted);
+  max-width: 38rem;
+}
+
+.mk-contact-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .mk-contact-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mk-contact-card {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  padding: 1.15rem 1.2rem;
+  border: 1px solid var(--mk-line);
+  border-radius: 16px;
+  background: var(--mk-surface);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+a.mk-contact-card:hover {
+  border-color: color-mix(in srgb, var(--mk-teal, #0f766e) 40%, var(--mk-line));
+  background: color-mix(in srgb, var(--mk-fog) 70%, white);
+}
+
+.mk-contact-card-static {
+  cursor: default;
+}
+
+.mk-contact-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mk-teal, #0f766e) 12%, transparent);
+  color: var(--mk-teal, #0f766e);
+  flex-shrink: 0;
+}
+
+.mk-contact-card h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--mk-ink);
+}
+
+.mk-contact-card p {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--mk-muted);
+}
+
+.mk-contact-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--mk-teal, #0f766e);
+  word-break: break-all;
+}
+
+.mk-contact-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
 /* Login layout */
 .mk-login {
   min-height: 100dvh;
@@ -1006,7 +1376,7 @@
   .mk-login-visual {
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: space-between;
     padding: 2.5rem;
   }
 }
@@ -1018,10 +1388,21 @@
   inset: 0;
 }
 
+.mk-login-visual-top {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+
 .mk-login-visual-content {
   position: relative;
   z-index: 2;
   max-width: 28rem;
+  margin-top: auto;
   animation: mk-fade-up 0.7s ease both;
 }
 
@@ -1070,8 +1451,10 @@
 
 .mk-login-mobile-brand {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   margin-bottom: 1.25rem;
 }
 

@@ -140,7 +140,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                 </Badge>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="font-medium">{t("pets.typeLabel")}</span>
                   <p className="text-muted-foreground">{pet.type}</p>

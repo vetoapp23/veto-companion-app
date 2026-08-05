@@ -362,7 +362,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             </Alert>
           )}
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name" className={formErrors.name ? "text-destructive" : ""}>
                 {t("pets.nameLabel")}
@@ -400,7 +400,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="breed">{tc("breed")}</Label>
               <ComboboxFreeText
@@ -426,7 +426,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="birthDate" className={formErrors.birthDate ? "text-destructive" : ""}>
                 {t("pets.birthDate")}
@@ -464,7 +464,7 @@ export function NewPetModal({ open, onOpenChange, defaultClientId, onCreated }: 
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="color">{t("pets.color")}</Label>
               <ComboboxFreeText

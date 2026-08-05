@@ -4,6 +4,7 @@ import { ArrowRight, Users, Calendar, FileText, BarChart3, Shield, PawPrint } fr
 import heroImage from "@/assets/vet-hero.jpg";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 
 type FaqItem = { q: string; a: string };
 
@@ -56,15 +57,19 @@ export default function Landing() {
             Veto<span>Crm</span>
           </Link>
           <nav className="mk-nav-links" aria-label={t("nav.mainNavAria")}>
-            <Link to="/pricing" className="mk-link hidden sm:inline-flex">
+            <Link to="/pricing" className="mk-link hidden md:inline-flex">
               {t("nav.pricing")}
             </Link>
-            <Link to="/login" className="mk-link">
+            <Link to="/contact" className="mk-link hidden md:inline-flex">
+              {t("nav.contact")}
+            </Link>
+            <Link to="/login" className="mk-link mk-link-compact">
               {t("nav.signIn")}
             </Link>
-            <LanguageSwitcher variant="marketing" />
-            <Link to="/register" className="mk-btn mk-btn-primary">
-              {t("nav.getStarted")}
+            <LanguageSwitcher variant="marketingHero" />
+            <Link to="/register" className="mk-btn mk-btn-primary mk-btn-nav">
+              <span className="sm:hidden">{t("nav.getStartedShort")}</span>
+              <span className="hidden sm:inline">{t("nav.getStarted")}</span>
             </Link>
           </nav>
         </header>
@@ -217,23 +222,7 @@ export default function Landing() {
         </div>
       </div>
 
-      <footer className="mk-footer">
-        <nav
-          aria-label={t("nav.footerAria")}
-          style={{ display: "flex", flexWrap: "wrap", gap: "1rem", justifyContent: "center", marginBottom: "0.75rem" }}
-        >
-          <Link to="/pricing" className="mk-link">
-            {t("nav.pricing")}
-          </Link>
-          <Link to="/register" className="mk-link">
-            {t("nav.register")}
-          </Link>
-          <Link to="/login" className="mk-link">
-            {t("nav.login")}
-          </Link>
-        </nav>
-        <p>{t("landing.footerCopy", { year: new Date().getFullYear() })}</p>
-      </footer>
+      <MarketingLegalFooter />
     </div>
   );
 }

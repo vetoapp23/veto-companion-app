@@ -394,10 +394,10 @@ export default function Appointments() {
         description={t("appointments.description")}
         actions={
           canWrite ? (
-            <Button onClick={() => openNewAppointment()} className="gap-2 rounded-full">
+            <Button onClick={() => openNewAppointment()} size="sm" className="gap-1 sm:gap-2 rounded-full">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">{t("appointments.new")}</span>
-              <span className="sm:hidden">{t("appointments.newShort")}</span>
+              <span className="sm:hidden text-xs">{t("appointments.newShort")}</span>
             </Button>
           ) : null
         }

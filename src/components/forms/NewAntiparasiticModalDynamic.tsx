@@ -604,7 +604,7 @@ export default function NewAntiparasiticModalDynamic({
                 <CardTitle className="text-sm">{t('forms.selectedAnimal')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div><span className="font-medium">{tc('name')}:</span> {selectedAnimal.name}</div>
                   <div><span className="font-medium">{tc('species')}:</span> {selectedAnimal.species}</div>
                   <div><span className="font-medium">{tc('breed')}:</span> {selectedAnimal.breed || tc('notAvailable')}</div>

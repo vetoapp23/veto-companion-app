@@ -263,7 +263,7 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="consultation_date">{t("forms.consultationDate")}</Label>
               <Input
@@ -294,7 +294,7 @@ export function ConsultationEditModalNew({ open, onOpenChange, consultation }: C
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="weight">{t("forms.weightKg")}</Label>
               <Input

@@ -44,13 +44,13 @@ export function ClientViewModal({ open, onOpenChange, client, onEdit }: ClientVi
             
             <div className="space-y-2">
               <h2 className="text-2xl font-semibold">{client.name}</h2>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Mail className="h-3 w-3" />
+              <div className="flex items-center gap-4 text-sm text-muted-foreground flex-col sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-1 min-w-0 break-all">
+                  <Mail className="h-3 w-3 shrink-0" />
                   {client.email}
                 </div>
                 <div className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" />
+                  <Phone className="h-3 w-3 shrink-0" />
                   {client.phone}
                 </div>
               </div>

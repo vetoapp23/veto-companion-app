@@ -121,26 +121,39 @@ export function LoginForm() {
           <div className="mk-hero-veil" aria-hidden />
           <div className="mk-hero-mesh" aria-hidden />
         </div>
-        <div className="mk-login-visual-content">
-          <div className="flex items-center justify-between" style={{ marginBottom: "1.5rem" }}>
-            <Link to="/" className="mk-brand" style={{ display: "inline-block" }}>
-              Veto<span>Crm</span>
+        <div className="mk-login-visual-top">
+          <div className="flex items-center gap-2 shrink-0">
+            <LanguageSwitcher variant="marketingHero" />
+            <Link
+              to="/"
+              className="inline-flex h-8 sm:h-9 items-center gap-1.5 rounded-md border border-white/25 bg-white/10 px-2.5 text-xs sm:text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/15 transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t("login.home")}
             </Link>
-            <LanguageSwitcher variant="compact" />
           </div>
+        </div>
+        <div className="mk-login-visual-content">
+          <Link to="/" className="mk-brand" style={{ display: "inline-block", marginBottom: "1.5rem" }}>
+            Veto<span>Crm</span>
+          </Link>
           <h1>{t("login.heroHeadline")}</h1>
           <p>{t("login.heroSub")}</p>
         </div>
       </aside>
 
       <main className="mk-login-panel">
-        <div className="mk-login-mobile-brand lg:hidden">
+        <div className="mk-login-mobile-brand lg:hidden flex-wrap gap-2">
           <Link to="/" className="mk-brand" style={{ color: "var(--mk-ink)" }}>
             Veto<span>Crm</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <LanguageSwitcher variant="marketing" />
-            <Link to="/" className="mk-link" style={{ color: "var(--mk-muted)" }}>
+            <Link
+              to="/"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[color:var(--mk-line)] bg-[color:var(--mk-surface)] px-2.5 text-sm font-semibold text-[color:var(--mk-ink)] hover:bg-[color:var(--mk-fog)] transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {t("login.home")}
             </Link>
           </div>

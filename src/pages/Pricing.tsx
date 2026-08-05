@@ -11,6 +11,7 @@ import { Check, Sparkles, ArrowRight, HardDrive, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -116,12 +117,16 @@ export default function Pricing() {
           Veto<span>Crm</span>
         </Link>
         <nav className="mk-nav-links" aria-label={t("nav.mainNavAria")}>
-          <Link to="/login" className="mk-link">
+          <Link to="/contact" className="mk-link hidden md:inline-flex">
+            {t("nav.contact")}
+          </Link>
+          <Link to="/login" className="mk-link mk-link-compact">
             {t("nav.signIn")}
           </Link>
           <LanguageSwitcher variant="marketing" />
-          <Link to="/register" className="mk-btn mk-btn-primary">
-            {t("nav.getStarted")}
+          <Link to="/register" className="mk-btn mk-btn-primary mk-btn-nav">
+            <span className="sm:hidden">{t("nav.getStartedShort")}</span>
+            <span className="hidden sm:inline">{t("nav.getStarted")}</span>
           </Link>
         </nav>
       </header>
@@ -288,14 +293,10 @@ export default function Pricing() {
         </div>
       </section>
 
-      <footer className="border-t py-6" style={{ borderColor: "var(--mk-line)" }}>
-        <div
-          className="container mx-auto px-4 md:px-6 text-center text-sm"
-          style={{ color: "var(--mk-muted)" }}
-        >
-          {t("pricing.footerNote")}
-        </div>
-      </footer>
+      <p className="text-center text-sm px-4 pb-2" style={{ color: "var(--mk-muted)" }}>
+        {t("pricing.footerNote")}
+      </p>
+      <MarketingLegalFooter />
     </div>
   );
 }

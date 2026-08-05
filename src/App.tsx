@@ -27,6 +27,8 @@ import { AuthRedirect } from "@/components/AuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Pricing from "./pages/Pricing";
+import { LegalPage } from "./pages/LegalPage";
+import ContactPage from "./pages/ContactPage";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Pets from "./pages/Pets";
@@ -76,6 +78,12 @@ const App = () => (
                       />
                       <Route path="/register" element={<Register />} />
                       <Route path="/pricing" element={<Pricing />} />
+                      <Route path="/privacy" element={<LegalPage docId="privacy" />} />
+                      <Route path="/terms" element={<LegalPage docId="terms" />} />
+                      <Route path="/legal" element={<LegalPage docId="legal" />} />
+                      <Route path="/cookies" element={<LegalPage docId="cookies" />} />
+                      <Route path="/refund" element={<LegalPage docId="refund" />} />
+                      <Route path="/contact" element={<ContactPage />} />
                       <Route path="/import/dossier" element={<ImportMedicalDossier />} />
                       <Route path="/import/dossier/:token" element={<ImportMedicalDossier />} />
                       <Route

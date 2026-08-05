@@ -814,6 +814,7 @@ const Accounting: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -877,6 +878,7 @@ const Accounting: React.FC = () => {
               ))}
             </TableBody>
           </Table>
+          </div>
           
           {filteredEntries.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">

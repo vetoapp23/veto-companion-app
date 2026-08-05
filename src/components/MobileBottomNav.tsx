@@ -89,6 +89,26 @@ export function MobileBottomNav() {
 
   if (!user) return null;
 
+  // Hide on marketing / auth surfaces so bottom nav doesn't overlay landing/login
+  const marketingPaths = [
+    "/",
+    "/login",
+    "/register",
+    "/pricing",
+    "/reset-password",
+    "/privacy",
+    "/terms",
+    "/legal",
+    "/cookies",
+    "/refund",
+    "/contact",
+  ];
+  const isMarketing =
+    marketingPaths.includes(pathname) ||
+    pathname.startsWith("/import/") ||
+    pathname.startsWith("/register");
+  if (isMarketing) return null;
+
   return (
     <>
       <nav

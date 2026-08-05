@@ -260,7 +260,7 @@ const FarmInterventionEditModalSupabase = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="farm_id">{t("farms.selectFarm")}</Label>
               <Select 
@@ -293,7 +293,7 @@ const FarmInterventionEditModalSupabase = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="intervention_type">{t("farms.interventionType")}</Label>
               <Select 
@@ -393,7 +393,7 @@ const FarmInterventionEditModalSupabase = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cost">{t("farms.cost", { currency: "MAD" })}</Label>
               <Input

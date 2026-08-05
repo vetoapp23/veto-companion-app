@@ -490,7 +490,7 @@ export default function Settings() {
                     <CardTitle>{t("clinic.title")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="logo">{t("clinic.logo")}</Label>
                         <Input id="logo" type="file" accept="image/*" onChange={handleLogoChange} disabled={!canWrite} />
@@ -547,9 +547,9 @@ export default function Settings() {
                         return (
                           <div
                             key={def.code}
-                            className="flex items-center gap-3 rounded-lg border p-3"
+                            className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center"
                           >
-                            <div className="rounded-md bg-muted p-2 text-muted-foreground">
+                            <div className="rounded-md bg-muted p-2 text-muted-foreground w-fit">
                               <Icon className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
@@ -563,13 +563,13 @@ export default function Settings() {
                                 {getVisitServiceDescription(def, tm)}
                               </p>
                             </div>
-                            <div className="w-28 shrink-0">
+                            <div className="w-full sm:w-28 shrink-0">
                               <Input
                                 id={`price-${def.code}`}
                                 type="number"
                                 step="1"
                                 min="0"
-                                className="text-right tabular-nums"
+                                className="text-right tabular-nums w-full"
                                 value={value}
                                 disabled={!canWrite}
                                 onChange={(e) => {
@@ -732,10 +732,10 @@ export default function Settings() {
 
                 {/* Veterinarians */}
                 <Card>
-                  <CardHeader className="flex justify-between items-center">
+                  <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>{t("veterinarians.title")}</CardTitle>
                     {canWrite && (
-                      <Button onClick={openNewVet} className="gap-2">
+                      <Button onClick={openNewVet} className="gap-2 w-full sm:w-auto shrink-0">
                         <Plus className="h-4 w-4" /> {t("veterinarians.add")}
                       </Button>
                     )}
@@ -769,13 +769,13 @@ export default function Settings() {
 
                 {/* Schedule Configuration */}
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+                  <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
                     <CardTitle>{t("schedule.title")}</CardTitle>
                     {canWrite && (
                       <Button
                         onClick={saveScheduleSettings}
                         disabled={!scheduleDirty || updateScheduleMutation.isPending || scheduleLoading}
-                        className="gap-2 shrink-0"
+                        className="gap-2 w-full sm:w-auto shrink-0"
                       >
                         {updateScheduleMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -798,7 +798,7 @@ export default function Settings() {
                             {t("schedule.unsavedWarning")}
                           </p>
                         )}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="workingHours">{t("schedule.openingTime")}</Label>
                             <Input
@@ -823,7 +823,7 @@ export default function Settings() {
 
                         <div>
                           <Label>{t("schedule.lunchPeriod")}</Label>
-                          <div className="grid grid-cols-2 gap-4 mt-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                             <div>
                               <Label htmlFor="lunchStart" className="text-xs text-muted-foreground">{t("schedule.lunchStart")}</Label>
                               <Input

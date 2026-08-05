@@ -106,7 +106,7 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t("farms.ui.farmRequired")}</Label>
               <Select value={formData.farmId} onValueChange={(value) => handleChange("farmId", value)}>
@@ -140,7 +140,7 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">{tc("date")} *</Label>
               <Input
@@ -167,7 +167,7 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="animals">{t("farms.animalsConcerned")} *</Label>
               <Input
@@ -201,7 +201,7 @@ const FarmInterventionEditModal = ({ open, onOpenChange, intervention }: FarmInt
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="followUp">{t("farms.ui.recommendedFollowUp")}</Label>
               <Textarea

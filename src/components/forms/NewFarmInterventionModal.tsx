@@ -119,7 +119,7 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="farmId">{t("farms.selectFarm")} *</Label>
               <Select value={formData.farmId} onValueChange={(value) => {
@@ -152,7 +152,7 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">{t("farms.interventionType")}</Label>
               <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
@@ -186,7 +186,7 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="animals">{t("farms.animalsConcerned")}</Label>
               <Input
@@ -220,7 +220,7 @@ const NewFarmInterventionModal = ({ open, onOpenChange, farmId, farmName }: NewF
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cost">{t("farms.cost", { currency: settings.currency })}</Label>
               <Input

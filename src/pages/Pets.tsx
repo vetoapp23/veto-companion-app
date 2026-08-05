@@ -440,34 +440,36 @@ const PetsContent = () => {
               size="sm"
               variant={viewMode === "cards" ? "default" : "outline"}
               onClick={() => setViewMode("cards")}
-              className="gap-2 rounded-full"
+              className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3"
+              aria-label={ts("display.modes.cards")}
             >
               <Grid className="h-4 w-4" />
-              {ts("display.modes.cards")}
+              <span className="hidden sm:inline">{ts("display.modes.cards")}</span>
             </Button>
             <Button
               size="sm"
               variant={viewMode === "table" ? "default" : "outline"}
               onClick={() => setViewMode("table")}
-              className="gap-2 rounded-full"
+              className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3"
+              aria-label={ts("display.modes.table")}
             >
               <List className="h-4 w-4" />
-              {ts("display.modes.table")}
+              <span className="hidden sm:inline">{ts("display.modes.table")}</span>
             </Button>
             {canWriteAnimals && (
               <>
-                <Button variant="outline" className="gap-2 rounded-full" asChild>
-                  <Link to="/import/dossier">
+                <Button variant="outline" size="sm" className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3" asChild>
+                  <Link to="/import/dossier" aria-label={t("pets.importDossierQr")}>
                     <QrCode className="h-4 w-4" />
-                    {t("pets.importDossierQr")}
+                    <span className="hidden sm:inline">{t("pets.importDossierQr")}</span>
                   </Link>
                 </Button>
-                <Button className="gap-2 rounded-full" onClick={() => {
+                <Button size="sm" className="gap-1 sm:gap-2 rounded-full" onClick={() => {
                   if (!guardWriteAnimals()) return;
                   setShowPetModal(true);
                 }}>
                   <Plus className="h-4 w-4" />
-                  {t("pets.new")}
+                  <span className="text-xs sm:text-sm">{t("pets.new")}</span>
                 </Button>
               </>
             )}
@@ -560,10 +562,10 @@ const PetsContent = () => {
         placeholder={t("pets.searchPlaceholder")}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full max-w-md"
+        className="w-full sm:max-w-md"
         />
         
-        <div className="flex flex-col gap-4 sm:flex-row sm:gap-4">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-full sm:w-40">
           <SelectValue placeholder={t("pets.allTypes")} />

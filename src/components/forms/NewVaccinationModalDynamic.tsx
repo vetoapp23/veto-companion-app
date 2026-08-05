@@ -630,7 +630,7 @@ export default function NewVaccinationModal({
           )}
 
           {/* Vaccine Information */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="vaccineName">{t('forms.vaccineName')}</Label>
               <Input
@@ -654,7 +654,7 @@ export default function NewVaccinationModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="manufacturer">{t('forms.manufacturer')}</Label>
               <Input
@@ -711,7 +711,7 @@ export default function NewVaccinationModal({
                   />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="vaccinationDate">{t('forms.vaccinationDate')}</Label>
                   <Input

@@ -455,7 +455,7 @@ export function NewConsultationModal({ open, onOpenChange, prefillData, onCreate
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="weight">{t("forms.weightKg")}</Label>
                 <Input

@@ -1210,6 +1210,7 @@ const Accounting: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -1303,6 +1304,7 @@ const Accounting: React.FC = () => {
               })}
             </TableBody>
           </Table>
+          </div>
           
           {filteredEntries.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
@@ -1312,7 +1314,7 @@ const Accounting: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
-
+        
         <TabsContent value="invoices">
           <Card>
             <CardHeader>
@@ -1332,6 +1334,7 @@ const Accounting: React.FC = () => {
                   <p className="text-sm">Facturez une visite depuis l&apos;espace Visites pour alimenter ce tableau.</p>
                 </div>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1393,6 +1396,7 @@ const Accounting: React.FC = () => {
                     })}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
