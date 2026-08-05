@@ -120,6 +120,9 @@ export default function Pricing() {
           <Link to="/contact" className="mk-link hidden md:inline-flex">
             {t("nav.contact")}
           </Link>
+          <Link to="/monde-veto" className="mk-link hidden md:inline-flex">
+            {t("nav.mondeVeto")}
+          </Link>
           <Link to="/login" className="mk-link mk-link-compact">
             {t("nav.signIn")}
           </Link>

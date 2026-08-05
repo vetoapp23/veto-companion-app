@@ -29,6 +29,8 @@ import Register from "./pages/Register";
 import Pricing from "./pages/Pricing";
 import { LegalPage } from "./pages/LegalPage";
 import ContactPage from "./pages/ContactPage";
+import MondeVetoPage from "./pages/MondeVetoPage";
+import MondeVetoArticlePage from "./pages/MondeVetoArticlePage";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Pets from "./pages/Pets";
@@ -84,6 +86,8 @@ const App = () => (
                       <Route path="/cookies" element={<LegalPage docId="cookies" />} />
                       <Route path="/refund" element={<LegalPage docId="refund" />} />
                       <Route path="/contact" element={<ContactPage />} />
+                      <Route path="/monde-veto" element={<MondeVetoPage />} />
+                      <Route path="/monde-veto/:slug" element={<MondeVetoArticlePage />} />
                       <Route path="/import/dossier" element={<ImportMedicalDossier />} />
                       <Route path="/import/dossier/:token" element={<ImportMedicalDossier />} />
                       <Route

@@ -10,7 +10,8 @@
     "homeAria": "VetoCrm — Home",
     "mainNavAria": "Main navigation",
     "footerAria": "Footer",
-    "contact": "Contact us"
+    "contact": "Contact us",
+    "mondeVeto": "The Veto World"
   },
   "landing": {
     "seoTitle": "VetoCrm — Veterinary CRM for clinics and practices",
@@ -118,5 +119,15 @@
     "supportBody": "We usually reply within 1–2 business days.",
     "responseTime": "Mon – Fri",
     "writeUs": "Send an email"
+  },
+  "mondeVeto": {
+    "seoTitle": "The Veto World — News & guides for veterinary clinics | VetoCrm",
+    "seoDescription": "Veterinary guides and news: digitization, AI, accounting, pet insurance, CRM and modern practice. VetoCrm resources to modernize your clinic.",
+    "eyebrow": "Guides & news",
+    "title": "The Veto World",
+    "lead": "Practical articles for clinics and practices: digitization, AI, management, insurance and CRM — care better and run your clinic with more clarity.",
+    "readArticle": "Read article",
+    "readTime": "{{minutes}} min",
+    "related": "Related articles"
   }
 }

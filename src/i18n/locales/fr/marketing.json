@@ -10,7 +10,8 @@
     "homeAria": "VetoCrm — Accueil",
     "mainNavAria": "Navigation principale",
     "footerAria": "Pied de page",
-    "contact": "Nous contacter"
+    "contact": "Nous contacter",
+    "mondeVeto": "Le Monde Veto"
   },
   "landing": {
     "seoTitle": "VetoCrm — CRM vétérinaire pour cliniques et cabinets",
@@ -118,5 +119,15 @@
     "supportBody": "Nous répondons en général sous 1 à 2 jours ouvrés.",
     "responseTime": "Lun. – Ven.",
     "writeUs": "Écrire un e-mail"
+  },
+  "mondeVeto": {
+    "seoTitle": "Le Monde Veto — Actualités & guides pour cliniques vétérinaires | VetoCrm",
+    "seoDescription": "Guides et actualités vétérinaires : digitalisation, IA, comptabilité, assurance animale, CRM et nouvelles pratiques. Ressources VetoCrm pour moderniser votre clinique.",
+    "eyebrow": "Guides & actualités",
+    "title": "Le Monde Veto",
+    "lead": "Articles pratiques pour cliniques et cabinets : digitalisation, IA, gestion, assurance et CRM — pour soigner mieux et piloter plus sereinement.",
+    "readArticle": "Lire l’article",
+    "readTime": "{{minutes}} min",
+    "related": "À lire aussi"
   }
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowRight, Users, Calendar, FileText, BarChart3, Shield, PawPrint } from "lucide-react";
 import heroImage from "@/assets/vet-hero.jpg";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 
 type FaqItem = { q: string; a: string };
@@ -52,27 +52,7 @@ export default function Landing() {
           <div className="mk-hero-mesh" aria-hidden />
         </div>
 
-        <header className="mk-nav">
-          <Link to="/" className="mk-brand" aria-label={t("nav.homeAria")}>
-            Veto<span>Crm</span>
-          </Link>
-          <nav className="mk-nav-links" aria-label={t("nav.mainNavAria")}>
-            <Link to="/pricing" className="mk-link hidden md:inline-flex">
-              {t("nav.pricing")}
-            </Link>
-            <Link to="/contact" className="mk-link hidden md:inline-flex">
-              {t("nav.contact")}
-            </Link>
-            <Link to="/login" className="mk-link mk-link-compact">
-              {t("nav.signIn")}
-            </Link>
-            <LanguageSwitcher variant="marketingHero" />
-            <Link to="/register" className="mk-btn mk-btn-primary mk-btn-nav">
-              <span className="sm:hidden">{t("nav.getStartedShort")}</span>
-              <span className="hidden sm:inline">{t("nav.getStarted")}</span>
-            </Link>
-          </nav>
-        </header>
+        <MarketingNav variant="hero" />
 
         <div className="mk-hero-body">
           <h1 className="mk-hero-title">

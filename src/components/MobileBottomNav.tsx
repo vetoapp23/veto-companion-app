@@ -102,11 +102,13 @@ export function MobileBottomNav() {
     "/cookies",
     "/refund",
     "/contact",
+    "/monde-veto",
   ];
   const isMarketing =
     marketingPaths.includes(pathname) ||
     pathname.startsWith("/import/") ||
-    pathname.startsWith("/register");
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/monde-veto");
   if (isMarketing) return null;
 
   return (

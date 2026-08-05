@@ -1043,61 +1043,67 @@ const Accounting: React.FC = () => {
 
       {/* Sélecteur de période */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Calendar className="h-5 w-5 shrink-0" />
             {t("accounting.periods.custom")}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 items-end">
-            <div className="flex gap-2">
-              <Button
-                variant={selectedPeriod === 'day' ? 'default' : 'outline'}
-                onClick={() => handlePeriodChange('day')}
-                size="sm"
-              >
-                {t("accounting.periods.today")}
-              </Button>
-              <Button
-                variant={selectedPeriod === 'week' ? 'default' : 'outline'}
-                onClick={() => handlePeriodChange('week')}
-                size="sm"
-              >
-                {t("accounting.periods.week")}
-              </Button>
-              <Button
-                variant={selectedPeriod === 'month' ? 'default' : 'outline'}
-                onClick={() => handlePeriodChange('month')}
-                size="sm"
-              >
-                {t("accounting.periods.month")}
-              </Button>
-              <Button
-                variant={selectedPeriod === 'year' ? 'default' : 'outline'}
-                onClick={() => handlePeriodChange('year')}
-                size="sm"
-              >
-                {t("accounting.periods.year")}
-              </Button>
-            </div>
-            
-            <div className="flex gap-2 items-center">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+            <Button
+              variant={selectedPeriod === 'day' ? 'default' : 'outline'}
+              onClick={() => handlePeriodChange('day')}
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
+              {t("accounting.periods.today")}
+            </Button>
+            <Button
+              variant={selectedPeriod === 'week' ? 'default' : 'outline'}
+              onClick={() => handlePeriodChange('week')}
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
+              {t("accounting.periods.week")}
+            </Button>
+            <Button
+              variant={selectedPeriod === 'month' ? 'default' : 'outline'}
+              onClick={() => handlePeriodChange('month')}
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
+              {t("accounting.periods.month")}
+            </Button>
+            <Button
+              variant={selectedPeriod === 'year' ? 'default' : 'outline'}
+              onClick={() => handlePeriodChange('year')}
+              size="sm"
+              className="w-full sm:w-auto justify-center"
+            >
+              {t("accounting.periods.year")}
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="startDate">{tc("from")}</Label>
               <Input
                 id="startDate"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-40"
+                className="w-full"
               />
+            </div>
+            <div className="space-y-1.5 min-w-0">
               <Label htmlFor="endDate">{tc("to")}</Label>
               <Input
                 id="endDate"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-40"
+                className="w-full"
               />
             </div>
           </div>
