@@ -149,7 +149,7 @@ const Register = () => {
         !isJoiningOrganization && selectedPlan !== "free"
           ? { planCode: selectedPlan, cycle, currency }
           : null;
-      const appOrigin = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
+      const appOrigin = (await import("@/lib/appUrl")).getAppOrigin();
       const emailRedirectTo = pending
         ? `${appOrigin}/dashboard?billing=checkout&plan=${encodeURIComponent(pending.planCode)}&cycle=${pending.cycle}&currency=${pending.currency}`
         : `${appOrigin}/dashboard`;

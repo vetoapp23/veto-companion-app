@@ -5,6 +5,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 // Having two clients caused RLS failures because inserts went through a client
 // instance whose in-memory session was not the one updated at sign-in.
 import { supabase } from '@/integrations/supabase/client'
+import { appPath } from './appUrl'
 export { supabase }
 
 // Database Types
@@ -231,8 +232,8 @@ export const signInWithGoogle = async () => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/dashboard`
-    }
+      redirectTo: appPath('/dashboard'),
+    },
   })
 
   if (error) throw error
@@ -241,7 +242,7 @@ export const signInWithGoogle = async () => {
 
 export const resetPassword = async (email: string) => {
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${import.meta.env.VITE_APP_URL || window.location.origin}/reset-password`
+    redirectTo: appPath('/reset-password'),
   })
 
   if (error) throw error
