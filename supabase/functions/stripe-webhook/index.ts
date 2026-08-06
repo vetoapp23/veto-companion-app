@@ -38,6 +38,10 @@ async function resolvePlanCode(stripe: Stripe, subscription: Stripe.Subscription
     const code = (price.product as Stripe.Product).metadata?.plan_code;
     if (code) return code;
   }
+  // Lookup key: vetocrm_{plan}_{cycle}_{currency}
+  const lookup = price?.lookup_key || "";
+  const m = lookup.match(/^vetocrm_([a-z0-9_]+)_/);
+  if (m?.[1]) return m[1];
   return "pro";
 }
 
@@ -81,7 +85,6 @@ async function upsertOrgSubscription(
     patch.current_period_end = new Date(params.periodEnd * 1000).toISOString();
   }
 
-  // Sync storage quota from catalog when plan changes via Stripe
   const { data: plan } = await service
     .from("subscription_plans")
     .select("storage_mb")
@@ -96,6 +99,75 @@ async function upsertOrgSubscription(
       organization_id: params.organizationId,
       ...patch,
     });
+  }
+}
+
+async function resolveOrgIdFromCustomer(
+  service: ReturnType<typeof createClient>,
+  customerId: string,
+  metadataOrg?: string | null,
+): Promise<string | null> {
+  if (metadataOrg) return metadataOrg;
+  const { data: row } = await service
+    .from("organization_subscriptions")
+    .select("organization_id")
+    .eq("stripe_customer_id", customerId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return row?.organization_id ?? null;
+}
+
+/** Idempotent insert into payment ledger (unique on reference). */
+async function recordStripePayment(
+  service: ReturnType<typeof createClient>,
+  params: {
+    organizationId: string;
+    amountCents: number;
+    currency: string;
+    reference: string;
+    paidAt: number | null | undefined;
+    periodStart?: number | null;
+    periodEnd?: number | null;
+    planCode?: string | null;
+    notes?: string | null;
+    status?: "received" | "pending" | "refunded";
+  },
+) {
+  if (!params.reference) return;
+  const amount = Number((params.amountCents / 100).toFixed(2));
+  if (!(amount >= 0)) return;
+
+  const { data: existing } = await service
+    .from("platform_subscription_payments")
+    .select("id")
+    .eq("reference", params.reference)
+    .maybeSingle();
+  if (existing?.id) return;
+
+  const { error } = await service.from("platform_subscription_payments").insert({
+    organization_id: params.organizationId,
+    amount,
+    currency: (params.currency || "mad").toUpperCase(),
+    method: "stripe",
+    reference: params.reference,
+    paid_at: params.paidAt
+      ? new Date(params.paidAt * 1000).toISOString()
+      : new Date().toISOString(),
+    period_start: params.periodStart
+      ? new Date(params.periodStart * 1000).toISOString()
+      : null,
+    period_end: params.periodEnd ? new Date(params.periodEnd * 1000).toISOString() : null,
+    status: params.status ?? "received",
+    notes: params.notes ?? "Stripe",
+    plan_code: params.planCode ?? null,
+    recorded_by: null,
+  });
+  if (error) {
+    // Race on unique reference — ignore duplicate
+    if ((error as any).code === "23505") return;
+    console.error("[stripe-webhook] record payment", error);
+    throw error;
   }
 }
 
@@ -149,7 +221,8 @@ Deno.serve(async (req) => {
         if (!organizationId || !subscriptionId || !customerId) break;
 
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const planCode = await resolvePlanCode(stripe, subscription);
+        const planCode =
+          session.metadata?.plan_code || (await resolvePlanCode(stripe, subscription));
         const cycle =
           subscription.items.data[0]?.price?.recurring?.interval === "year" ? "yearly" : "monthly";
         await upsertOrgSubscription(service, {
@@ -164,6 +237,92 @@ Deno.serve(async (req) => {
           periodEnd: subscription.current_period_end,
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
         });
+
+        // Record payment if amount known (invoice.paid is the durable source of truth)
+        if (session.amount_total != null && session.amount_total > 0) {
+          await recordStripePayment(service, {
+            organizationId,
+            amountCents: session.amount_total,
+            currency: session.currency || "mad",
+            reference: `cs_${session.id}`,
+            paidAt: session.created,
+            periodStart: subscription.current_period_start,
+            periodEnd: subscription.current_period_end,
+            planCode,
+            notes: "Stripe Checkout",
+          });
+        }
+        break;
+      }
+      case "invoice.paid":
+      case "invoice.payment_succeeded": {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (invoice.status !== "paid" && event.type === "invoice.paid") {
+          // invoice.paid implies paid; payment_succeeded similar
+        }
+        const customerId =
+          typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+        if (!customerId) break;
+
+        const subscriptionId =
+          typeof invoice.subscription === "string"
+            ? invoice.subscription
+            : invoice.subscription?.id;
+
+        let planCode: string | null =
+          invoice.subscription_details?.metadata?.plan_code ||
+          invoice.metadata?.plan_code ||
+          null;
+        let orgFromMeta =
+          invoice.subscription_details?.metadata?.organization_id ||
+          invoice.metadata?.organization_id ||
+          null;
+
+        if (subscriptionId) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            orgFromMeta = orgFromMeta || subscription.metadata?.organization_id || null;
+            planCode = planCode || (await resolvePlanCode(stripe, subscription));
+          } catch (e) {
+            console.warn("[stripe-webhook] sub retrieve", e);
+          }
+        }
+
+        const organizationId = await resolveOrgIdFromCustomer(service, customerId, orgFromMeta);
+        if (!organizationId) {
+          console.warn("[stripe-webhook] no org for invoice", invoice.id, customerId);
+          break;
+        }
+
+        const line = invoice.lines?.data?.[0];
+        const periodStart = line?.period?.start ?? invoice.period_start ?? null;
+        const periodEnd = line?.period?.end ?? invoice.period_end ?? null;
+
+        await recordStripePayment(service, {
+          organizationId,
+          amountCents: invoice.amount_paid ?? invoice.amount_due ?? 0,
+          currency: invoice.currency || "mad",
+          reference: invoice.id,
+          paidAt: invoice.status_transitions?.paid_at ?? invoice.created,
+          periodStart,
+          periodEnd,
+          planCode,
+          notes: invoice.billing_reason
+            ? `Stripe invoice (${invoice.billing_reason})`
+            : "Stripe invoice",
+          status: "received",
+        });
+        break;
+      }
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        const invoiceId =
+          typeof charge.invoice === "string" ? charge.invoice : charge.invoice?.id;
+        if (!invoiceId) break;
+        await service
+          .from("platform_subscription_payments")
+          .update({ status: "refunded", notes: "Stripe refund" })
+          .eq("reference", invoiceId);
         break;
       }
       case "customer.subscription.updated":
@@ -176,16 +335,7 @@ Deno.serve(async (req) => {
             : subscription.customer?.id;
         if (!customerId) break;
 
-        let orgId = organizationId;
-        if (!orgId) {
-          const { data: row } = await service
-            .from("organization_subscriptions")
-            .select("organization_id")
-            .eq("stripe_customer_id", customerId)
-            .limit(1)
-            .maybeSingle();
-          orgId = row?.organization_id;
-        }
+        const orgId = await resolveOrgIdFromCustomer(service, customerId, organizationId);
         if (!orgId) break;
 
         const planCode =

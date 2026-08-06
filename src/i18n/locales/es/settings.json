@@ -669,6 +669,7 @@
       "unpaid": "Impago",
       "incomplete": "Incompleto",
       "paid": "Pagado",
+      "received": "Recibido",
       "pending": "Pendiente",
       "refunded": "Reembolsado",
       "failed": "Fallido"
