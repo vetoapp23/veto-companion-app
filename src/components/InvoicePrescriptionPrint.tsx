@@ -4,6 +4,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { Prescription } from '@/contexts/ClientContext';
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
+import { escapeHtml, safePrintUrl } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
 interface InvoicePrescriptionPrintProps {
@@ -47,10 +48,12 @@ export function InvoicePrescriptionPrint({ prescription }: InvoicePrescriptionPr
   };
 
   const generateInvoiceHTML = () => {
+    const e = escapeHtml;
+    const u = safePrintUrl;
     return `
       <html>
         <head>
-          <title>${t("print.invoice.docTitle", { name: prescription.petName })}</title>
+          <title>${e(t("print.invoice.docTitle", { name: prescription.petName }))}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -123,39 +126,39 @@ export function InvoicePrescriptionPrint({ prescription }: InvoicePrescriptionPr
         <body>
           ${buildWatermarkHtml(isFree)}
           <div class="header">
-            ${logo ? `<img src="${logo}" alt="${t("print.invoice.clinicLogoAlt")}" style="height:60px;width:60px;object-fit:contain;"/>` : '<div style="width:60px;"></div>'}
+            ${logo ? `<img src="${u(logo)}" alt="${e(t("print.invoice.clinicLogoAlt"))}" style="height:60px;width:60px;object-fit:contain;"/>` : '<div style="width:60px;"></div>'}
             <div class="clinic-info">
-              <h1>${clinicName}</h1>
-              <p>${address}</p>
-              <p>${phone} | ${email}</p>
-              ${website ? `<p>${website}</p>` : ''}
+              <h1>${e(clinicName)}</h1>
+              <p>${e(address)}</p>
+              <p>${e(phone)} | ${e(email)}</p>
+              ${website ? `<p>${e(website)}</p>` : ''}
             </div>
             <div style="width:60px;"></div>
           </div>
 
           <div class="invoice-section">
-            <h2>${t("print.invoice.prescription")}</h2>
+            <h2>${e(t("print.invoice.prescription"))}</h2>
             <div class="grid">
               <div>
-                <p><strong>${t("print.invoice.date")}</strong> ${prescription.date}</p>
-                <p><strong>${t("print.invoice.patient")}</strong> ${prescription.petName} (${prescription.clientName})</p>
+                <p><strong>${e(t("print.invoice.date"))}</strong> ${e(prescription.date)}</p>
+                <p><strong>${e(t("print.invoice.patient"))}</strong> ${e(prescription.petName)} (${e(prescription.clientName)})</p>
               </div>
               <div>
-                <p><strong>${t("print.invoice.prescribedBy")}</strong> ${prescription.prescribedBy}</p>
-                <p><strong>${t("print.invoice.diagnosis")}</strong> ${prescription.diagnosis}</p>
+                <p><strong>${e(t("print.invoice.prescribedBy"))}</strong> ${e(prescription.prescribedBy)}</p>
+                <p><strong>${e(t("print.invoice.diagnosis"))}</strong> ${e(prescription.diagnosis)}</p>
               </div>
             </div>
           </div>
 
           <div class="invoice-section">
-            <h2>${t("print.invoice.medsDetail")}</h2>
+            <h2>${e(t("print.invoice.medsDetail"))}</h2>
             <table>
               <thead>
                 <tr>
-                  <th>${t("print.invoice.medication")}</th>
-                  <th>${t("print.invoice.quantity")}</th>
-                  <th>${t("print.invoice.unitPrice")}</th>
-                  <th>${t("print.invoice.total")}</th>
+                  <th>${e(t("print.invoice.medication"))}</th>
+                  <th>${e(t("print.invoice.quantity"))}</th>
+                  <th>${e(t("print.invoice.unitPrice"))}</th>
+                  <th>${e(t("print.invoice.total"))}</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,18 +167,18 @@ export function InvoicePrescriptionPrint({ prescription }: InvoicePrescriptionPr
                   return `
                     <tr>
                       <td>
-                        <strong>${med.name}</strong><br>
-                        <small>${med.dosage} - ${med.frequency}</small>
+                        <strong>${e(med.name)}</strong><br>
+                        <small>${e(med.dosage)} - ${e(med.frequency)}</small>
                       </td>
-                      <td>${med.quantity || 1}</td>
-                      <td>${med.cost.toFixed(2)} ${currency}</td>
-                      <td>${lineTotal.toFixed(2)} ${currency}</td>
+                      <td>${e(med.quantity || 1)}</td>
+                      <td>${e(med.cost.toFixed(2))} ${e(currency)}</td>
+                      <td>${e(lineTotal.toFixed(2))} ${e(currency)}</td>
                     </tr>
                   `;
                 }).join('')}
                 <tr class="total-row">
-                  <td colspan="3"><strong>${t("print.invoice.total")}</strong></td>
-                  <td><strong>${totalAmount.toFixed(2)} ${currency}</strong></td>
+                  <td colspan="3"><strong>${e(t("print.invoice.total"))}</strong></td>
+                  <td><strong>${e(totalAmount.toFixed(2))} ${e(currency)}</strong></td>
                 </tr>
               </tbody>
             </table>
@@ -183,14 +186,14 @@ export function InvoicePrescriptionPrint({ prescription }: InvoicePrescriptionPr
 
           ${prescription.instructions ? `
             <div class="invoice-section">
-              <h2>${t("print.invoice.instructions")}</h2>
-              <p>${prescription.instructions}</p>
+              <h2>${e(t("print.invoice.instructions"))}</h2>
+              <p>${e(prescription.instructions)}</p>
             </div>
           ` : ''}
 
           <div style="margin-top: 50px; text-align: center;">
             <div style="border-top: 1px solid #333; width: 200px; margin: 20px auto;"></div>
-            <p>${t("print.invoice.vetSignature")}</p>
+            <p>${e(t("print.invoice.vetSignature"))}</p>
           </div>
         </body>
       </html>

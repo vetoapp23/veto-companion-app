@@ -19,6 +19,20 @@ export interface PlanQuota {
   limits?: Record<string, boolean>;
 }
 
+/** Modules included by default when catalog has no explicit key */
+const CORE_DEFAULT_ON = new Set([
+  "consultations",
+  "visits",
+  "appointments",
+  "vaccinations",
+  "antiparasites",
+  "clients",
+  "animals",
+]);
+
+/** Premium modules: off unless catalog / override says true */
+const PREMIUM_DEFAULT_OFF = new Set(["farm", "stock", "accounting"]);
+
 export function usePlanLimits() {
   const { user, isAuthenticated } = useAuth();
 
@@ -40,37 +54,57 @@ export function usePlanLimits() {
   const quota = query.data;
   const planCode = quota?.plan_code ?? "free";
   const limits = (quota?.limits ?? {}) as Record<string, boolean>;
-  const features = Array.isArray(quota?.features) ? quota.features : [];
-
-  const hasLimitFlag = (key: string) => limits[key] === true;
-  const hasFeatureText = (needle: string) =>
-    features.some((f) => String(f).toLowerCase().includes(needle.toLowerCase()));
-
-  const FARM_PLANS = ["pro_plus", "duo", "clinic"];
-  const ACCOUNTING_PLANS = ["pro_plus", "duo", "clinic"];
-  const STOCK_PLANS = ["pro", "pro_plus", "duo", "clinic"];
 
   const role = (user?.profile?.role as string) || "";
-  const isPrivileged = role === "admin" || role === "super_admin";
+  const isSuper = role === "super_admin";
+  const isPrivileged = role === "admin" || isSuper;
+
+  /**
+   * Catalog `limits` (+ org feature_overrides merged server-side) is source of truth.
+   * Only super_admin bypasses module gates (e.g. impersonation).
+   */
+  const moduleEnabled = (key: string): boolean => {
+    if (isSuper) return true;
+    if (Object.prototype.hasOwnProperty.call(limits, key)) {
+      return limits[key] === true;
+    }
+    if (PREMIUM_DEFAULT_OFF.has(key)) return false;
+    if (CORE_DEFAULT_ON.has(key)) return true;
+    return true;
+  };
+
+  const storageTotalMb = quota?.storage_total_mb ?? 0;
+  const storageUsedMb = quota?.storage_used_mb ?? 0;
+  const percentUsed = quota?.percent_used ?? 0;
 
   return {
     quota,
     planCode,
+    limits,
     isLoading: query.isLoading,
     refetch: query.refetch,
     canUpload: (additionalBytes: number) => {
-      if (isPrivileged) return true;
+      if (isSuper) return true;
       if (!quota) return true;
-      const projectedMb = quota.storage_used_mb + additionalBytes / (1024 * 1024);
-      return projectedMb <= quota.storage_total_mb;
+      const projectedMb = storageUsedMb + additionalBytes / (1024 * 1024);
+      return projectedMb <= storageTotalMb;
     },
     isFree: planCode === "free",
     isPaid: planCode !== "free",
-    hasFarmManagement: isPrivileged || hasLimitFlag("farm") || FARM_PLANS.includes(planCode) || hasFeatureText("ferme"),
-    hasAccounting: isPrivileged || hasLimitFlag("accounting") || ACCOUNTING_PLANS.includes(planCode) || hasFeatureText("compta"),
-    hasStock: isPrivileged || hasLimitFlag("stock") || STOCK_PLANS.includes(planCode) || hasFeatureText("stock"),
-    storageWarning: quota ? quota.percent_used >= 80 : false,
-    storageBlocked: isPrivileged ? false : (quota ? quota.percent_used >= 100 : false),
+    hasFarmManagement: moduleEnabled("farm"),
+    hasAccounting: moduleEnabled("accounting"),
+    hasStock: moduleEnabled("stock"),
+    hasConsultations: moduleEnabled("consultations"),
+    hasVisits: moduleEnabled("visits"),
+    hasAppointments: moduleEnabled("appointments"),
+    hasVaccinations: moduleEnabled("vaccinations"),
+    hasAntiparasites: moduleEnabled("antiparasites"),
+    hasClients: moduleEnabled("clients"),
+    hasAnimals: moduleEnabled("animals"),
+    storageWarning: quota ? percentUsed >= 80 : false,
+    // Clinic admins are subject to storage caps; only super_admin bypasses
+    storageBlocked: isSuper ? false : quota ? percentUsed >= 100 || !!quota.over_quota : false,
     isPrivileged,
+    isSuper,
   };
 }

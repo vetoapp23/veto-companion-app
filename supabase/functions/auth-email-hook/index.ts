@@ -127,6 +127,19 @@ function copyFor(action: EmailAction): {
   }
 }
 
+function escapeHtml(value: string): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttr(value: string): string {
+  return escapeHtml(value).replace(/`/g, "&#96;");
+}
+
 function renderEmail(opts: {
   user_email: string;
   confirmation_url: string;
@@ -136,19 +149,22 @@ function renderEmail(opts: {
   const { confirmation_url, token, email_action_type, user_email } = opts;
   const copy = copyFor(email_action_type);
   const year = new Date().getFullYear();
+  const safeEmail = escapeHtml(user_email || "");
+  const safeUrl = escapeAttr(confirmation_url || "");
+  const safeToken = escapeHtml(token || "");
 
   const actionBlock =
     email_action_type === "reauthentication"
       ? `
         <div style="margin:28px 0;padding:20px 16px;background:${BRAND.fog};border:1px solid ${BRAND.line};border-radius:14px;text-align:center;">
           <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:${BRAND.teal};font-weight:700;">Code</p>
-          <p style="margin:0;font-size:32px;letter-spacing:0.35em;font-weight:800;color:${BRAND.ink};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">${token || ""}</p>
+          <p style="margin:0;font-size:32px;letter-spacing:0.35em;font-weight:800;color:${BRAND.ink};font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">${safeToken}</p>
         </div>`
       : `
         <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto;">
           <tr>
             <td align="center" style="border-radius:999px;background:${BRAND.teal};">
-              <a href="${confirmation_url}"
+              <a href="${safeUrl}"
                  style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:${BRAND.white};text-decoration:none;border-radius:999px;letter-spacing:-0.01em;">
                 ${copy.cta}
               </a>
@@ -159,7 +175,7 @@ function renderEmail(opts: {
           Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :
         </p>
         <p style="margin:0;font-size:12px;line-height:1.5;word-break:break-all;">
-          <a href="${confirmation_url}" style="color:${BRAND.teal};text-decoration:underline;">${confirmation_url}</a>
+          <a href="${safeUrl}" style="color:${BRAND.teal};text-decoration:underline;">${escapeHtml(confirmation_url)}</a>
         </p>`;
 
   const html = `<!DOCTYPE html>
@@ -167,7 +183,7 @@ function renderEmail(opts: {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${copy.subject}</title>
+  <title>${escapeHtml(copy.subject)}</title>
 </head>
 <body style="margin:0;padding:0;background:${BRAND.fog};font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${BRAND.ink};-webkit-font-smoothing:antialiased;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.fog};padding:32px 12px;">
@@ -181,7 +197,7 @@ function renderEmail(opts: {
                 Veto<span style="color:${BRAND.mint};">Crm</span>
               </p>
               <p style="margin:8px 0 0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(244,251,249,0.75);font-weight:600;">
-                ${copy.eyebrow}
+                ${escapeHtml(copy.eyebrow)}
               </p>
             </td>
           </tr>
@@ -190,17 +206,17 @@ function renderEmail(opts: {
           <tr>
             <td style="padding:32px 28px 8px;">
               <h1 style="margin:0 0 16px;font-size:22px;line-height:1.25;letter-spacing:-0.03em;font-weight:800;color:${BRAND.ink};">
-                ${copy.title}
+                ${escapeHtml(copy.title)}
               </h1>
               <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:${BRAND.muted};">
-                Bonjour${user_email ? ` <strong style="color:${BRAND.ink};">${user_email}</strong>` : ""},
+                Bonjour${safeEmail ? ` <strong style="color:${BRAND.ink};">${safeEmail}</strong>` : ""},
               </p>
               <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:${BRAND.muted};">
-                ${copy.intro}
+                ${escapeHtml(copy.intro)}
               </p>
               ${
                 copy.detail
-                  ? `<p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.muted};">${copy.detail}</p>`
+                  ? `<p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.muted};">${escapeHtml(copy.detail)}</p>`
                   : ""
               }
               ${actionBlock}

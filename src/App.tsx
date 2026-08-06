@@ -104,7 +104,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_clients">
                             <VetNavigation />
-                            <Clients />
+                            <PlanFeatureRoute feature="clients"><Clients /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -113,7 +113,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_animals">
                             <VetNavigation />
-                            <Pets />
+                            <PlanFeatureRoute feature="animals"><Pets /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -122,7 +122,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_appointments">
                             <VetNavigation />
-                            <Appointments />
+                            <PlanFeatureRoute feature="appointments"><Appointments /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -131,7 +131,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_visits">
                             <VetNavigation />
-                            <Visits />
+                            <PlanFeatureRoute feature="visits"><Visits /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -140,7 +140,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_visits">
                             <VetNavigation />
-                            <VisitWorkspace />
+                            <PlanFeatureRoute feature="visits"><VisitWorkspace /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -149,7 +149,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_create_consultations">
                             <VetNavigation />
-                            <Consultations />
+                            <PlanFeatureRoute feature="consultations"><Consultations /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -176,7 +176,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_vaccinations">
                             <VetNavigation />
-                            <Vaccinations />
+                            <PlanFeatureRoute feature="vaccinations"><Vaccinations /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />
@@ -185,7 +185,7 @@ const App = () => (
                         element={
                           <PermissionRoute permission="can_manage_antiparasites">
                             <VetNavigation />
-                            <Antiparasites />
+                            <PlanFeatureRoute feature="antiparasites"><Antiparasites /></PlanFeatureRoute>
                           </PermissionRoute>
                         }
                       />

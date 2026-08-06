@@ -3,6 +3,7 @@ import i18n from "@/i18n";
 import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { buildWatermarkHtml } from "@/lib/printWatermark";
 import { buildReportDocument, buildDefaultFooter } from "@/lib/reportStyles";
+import { escapeHtml, safePrintUrl } from "@/lib/utils";
 
 export { downloadHtmlAsPdf, printHtml } from "@/lib/htmlToPdf";
 
@@ -108,6 +109,8 @@ export function buildFarmReportHtml({
   farm, ownerName, batches, infrastructures, interventions, events, clinic, isFree,
   sections = ALL_SECTIONS, dateFrom = "", dateTo = "",
 }: BuildArgs) {
+  const esc = escapeHtml;
+  const u = safePrintUrl;
   const activeBatches = batches.filter((b) => (b.status || "active") === "active");
   const totalActive = activeBatches.reduce((s, b) => s + (b.animal_count || 0), 0);
 
@@ -135,36 +138,36 @@ export function buildFarmReportHtml({
   if (sections.identity) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.sections.identity")}</h2>
+    <h2>${esc(t("farms.print.sections.identity"))}</h2>
     <table class="info">
-      <tr><th>${t(`${L}.name`)}</th><td>${farm.farm_name ?? "—"}</td><th>${t(`${L}.owner`)}</th><td>${ownerName ?? "—"}</td></tr>
-      <tr><th>${t(`${L}.farmTypes`)}</th><td colspan="3"><div class="badges">${farmTypes.map(tp=>`<span>${tp}</span>`).join("") || "—"}</div></td></tr>
-      <tr><th>${t(`${L}.production`)}</th><td>${farm.production_type ?? "—"}</td><th>${t(`${L}.housing`)}</th><td>${farm.housing_type ?? "—"}</td></tr>
-      <tr><th>${t(`${L}.address`)}</th><td>${farm.address ?? "—"}</td><th>${t(`${L}.surface`)}</th><td>${farm.surface_hectares != null ? farm.surface_hectares+" "+t(`${L}.hectaresUnit`) : "—"}</td></tr>
-      <tr><th>${t(`${L}.phone`)}</th><td>${farm.phone ?? "—"}</td><th>${t(`${L}.email`)}</th><td>${farm.email ?? "—"}</td></tr>
-      <tr><th>${t(`${L}.registration`)}</th><td>${farm.registration_number ?? "—"}</td><th>${t(`${L}.status`)}</th><td>${farm.active ? t("farms.print.active") : t("farms.print.inactive")}</td></tr>
+      <tr><th>${esc(t(`${L}.name`))}</th><td>${esc(farm.farm_name ?? "—")}</td><th>${esc(t(`${L}.owner`))}</th><td>${esc(ownerName ?? "—")}</td></tr>
+      <tr><th>${esc(t(`${L}.farmTypes`))}</th><td colspan="3"><div class="badges">${farmTypes.map(tp=>`<span>${esc(tp)}</span>`).join("") || "—"}</div></td></tr>
+      <tr><th>${esc(t(`${L}.production`))}</th><td>${esc(farm.production_type ?? "—")}</td><th>${esc(t(`${L}.housing`))}</th><td>${esc(farm.housing_type ?? "—")}</td></tr>
+      <tr><th>${esc(t(`${L}.address`))}</th><td>${esc(farm.address ?? "—")}</td><th>${esc(t(`${L}.surface`))}</th><td>${esc(farm.surface_hectares != null ? farm.surface_hectares+" "+t(`${L}.hectaresUnit`) : "—")}</td></tr>
+      <tr><th>${esc(t(`${L}.phone`))}</th><td>${esc(farm.phone ?? "—")}</td><th>${esc(t(`${L}.email`))}</th><td>${esc(farm.email ?? "—")}</td></tr>
+      <tr><th>${esc(t(`${L}.registration`))}</th><td>${esc(farm.registration_number ?? "—")}</td><th>${esc(t(`${L}.status`))}</th><td>${esc(farm.active ? t("farms.print.active") : t("farms.print.inactive"))}</td></tr>
     </table>
-    ${farm.certifications?.length ? `<p><strong>${t(`${L}.certifications`)}</strong> ${farm.certifications.join(", ")}</p>` : ""}
-    ${farm.notes ? `<p>${farm.notes}</p>` : ""}
+    ${farm.certifications?.length ? `<p><strong>${esc(t(`${L}.certifications`))}</strong> ${esc(farm.certifications.join(", "))}</p>` : ""}
+    ${farm.notes ? `<p>${esc(farm.notes)}</p>` : ""}
   </section>`);
   }
 
   if (sections.herd) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.herdTitle")}</h2>
+    <h2>${esc(t("farms.print.herdTitle"))}</h2>
     <div class="kpis">
-      <div class="kpi"><div class="l">${t("farms.print.totalHerd")}</div><div class="v">${totalActive}</div></div>
-      <div class="kpi"><div class="l">${t("farms.print.activeBatches")}</div><div class="v">${activeBatches.length}</div></div>
-      <div class="kpi"><div class="l">${t("farms.print.infrastructures")}</div><div class="v">${infrastructures.length}</div></div>
-      <div class="kpi"><div class="l">${t("farms.print.interventions")}</div><div class="v">${filteredInterventions.length}</div></div>
+      <div class="kpi"><div class="l">${esc(t("farms.print.totalHerd"))}</div><div class="v">${esc(totalActive)}</div></div>
+      <div class="kpi"><div class="l">${esc(t("farms.print.activeBatches"))}</div><div class="v">${esc(activeBatches.length)}</div></div>
+      <div class="kpi"><div class="l">${esc(t("farms.print.infrastructures"))}</div><div class="v">${esc(infrastructures.length)}</div></div>
+      <div class="kpi"><div class="l">${esc(t("farms.print.interventions"))}</div><div class="v">${esc(filteredInterventions.length)}</div></div>
     </div>
     ${Object.keys(byCat).length ? `
     <table class="data" style="margin-top:10px">
-      <thead><tr><th>${t(`${C}.category`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.percent`)}</th></tr></thead>
+      <thead><tr><th>${esc(t(`${C}.category`))}</th><th>${esc(t(`${C}.headcount`))}</th><th>${esc(t(`${C}.percent`))}</th></tr></thead>
       <tbody>
         ${Object.entries(byCat).map(([k,v]) => `
-          <tr><td>${k}</td><td>${v}</td><td>${totalActive ? Math.round((v/totalActive)*100) : 0}%</td></tr>`).join("")}
+          <tr><td>${esc(k)}</td><td>${esc(v)}</td><td>${esc(totalActive ? Math.round((v/totalActive)*100) : 0)}%</td></tr>`).join("")}
       </tbody>
     </table>` : ""}
   </section>`);
@@ -173,19 +176,19 @@ export function buildFarmReportHtml({
   if (sections.batches) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.batchesHeading", { count: batches.length })}</h2>
-    ${batches.length === 0 ? `<p class="muted">${t("farms.print.empty.batches")}</p>` : `
+    <h2>${esc(t("farms.print.batchesHeading", { count: batches.length }))}</h2>
+    ${batches.length === 0 ? `<p class="muted">${esc(t("farms.print.empty.batches"))}</p>` : `
     <table class="data">
-      <thead><tr><th>${t(`${C}.name`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.category`)}</th><th>${t(`${C}.species`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.location`)}</th><th>${t(`${C}.status`)}</th></tr></thead>
+      <thead><tr><th>${esc(t(`${C}.name`))}</th><th>${esc(t(`${C}.type`))}</th><th>${esc(t(`${C}.category`))}</th><th>${esc(t(`${C}.species`))}</th><th>${esc(t(`${C}.headcount`))}</th><th>${esc(t(`${C}.location`))}</th><th>${esc(t(`${C}.status`))}</th></tr></thead>
       <tbody>
         ${batches.map(b => `<tr>
-          <td>${b.name ?? "—"}</td>
-          <td>${b.farm_type ?? "—"}</td>
-          <td>${b.category ?? "—"}</td>
-          <td>${b.species ?? "—"}</td>
-          <td>${b.animal_count ?? 0}</td>
-          <td>${b.location ?? "—"}</td>
-          <td>${b.status ?? "active"}</td>
+          <td>${esc(b.name ?? "—")}</td>
+          <td>${esc(b.farm_type ?? "—")}</td>
+          <td>${esc(b.category ?? "—")}</td>
+          <td>${esc(b.species ?? "—")}</td>
+          <td>${esc(b.animal_count ?? 0)}</td>
+          <td>${esc(b.location ?? "—")}</td>
+          <td>${esc(b.status ?? "active")}</td>
         </tr>`).join("")}
       </tbody>
     </table>`}
@@ -195,17 +198,17 @@ export function buildFarmReportHtml({
   if (sections.infrastructures) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.infraHeading", { count: infrastructures.length })}</h2>
-    ${infrastructures.length === 0 ? `<p class="muted">${t("farms.print.empty.infra")}</p>` : `
+    <h2>${esc(t("farms.print.infraHeading", { count: infrastructures.length }))}</h2>
+    ${infrastructures.length === 0 ? `<p class="muted">${esc(t("farms.print.empty.infra"))}</p>` : `
     <table class="data">
-      <thead><tr><th>${t(`${C}.name`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.capacity`)}</th><th>${t(`${C}.surface`)}</th><th>${t(`${C}.notes`)}</th></tr></thead>
+      <thead><tr><th>${esc(t(`${C}.name`))}</th><th>${esc(t(`${C}.type`))}</th><th>${esc(t(`${C}.capacity`))}</th><th>${esc(t(`${C}.surface`))}</th><th>${esc(t(`${C}.notes`))}</th></tr></thead>
       <tbody>
         ${infrastructures.map(i => `<tr>
-          <td>${i.name ?? "—"}</td>
-          <td>${i.infra_type ?? "—"}</td>
-          <td>${i.capacity ?? "—"}</td>
-          <td>${i.surface_sqm ? i.surface_sqm+" "+t("farms.print.sqmUnit") : "—"}</td>
-          <td>${i.notes ?? ""}</td>
+          <td>${esc(i.name ?? "—")}</td>
+          <td>${esc(i.infra_type ?? "—")}</td>
+          <td>${esc(i.capacity ?? "—")}</td>
+          <td>${esc(i.surface_sqm ? i.surface_sqm+" "+t("farms.print.sqmUnit") : "—")}</td>
+          <td>${esc(i.notes ?? "")}</td>
         </tr>`).join("")}
       </tbody>
     </table>`}
@@ -215,19 +218,19 @@ export function buildFarmReportHtml({
   if (sections.interventions) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.interventionsHeading", { count: filteredInterventions.length })}</h2>
-    ${filteredInterventions.length === 0 ? `<p class="muted">${t("farms.print.empty.interventions")}</p>` : `
+    <h2>${esc(t("farms.print.interventionsHeading", { count: filteredInterventions.length }))}</h2>
+    ${filteredInterventions.length === 0 ? `<p class="muted">${esc(t("farms.print.empty.interventions"))}</p>` : `
     <table class="data">
-      <thead><tr><th>${t(`${C}.date`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.nature`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.diagnosis`)}</th><th>${t(`${C}.treatment`)}</th><th>${t(`${C}.cost`)}</th></tr></thead>
+      <thead><tr><th>${esc(t(`${C}.date`))}</th><th>${esc(t(`${C}.type`))}</th><th>${esc(t(`${C}.nature`))}</th><th>${esc(t(`${C}.headcount`))}</th><th>${esc(t(`${C}.diagnosis`))}</th><th>${esc(t(`${C}.treatment`))}</th><th>${esc(t(`${C}.cost`))}</th></tr></thead>
       <tbody>
         ${filteredInterventions.map(i => `<tr>
-          <td>${fmtDate(i.intervention_date)}</td>
-          <td>${i.intervention_type ?? "—"}</td>
-          <td>${i.protocol_type ?? "—"}</td>
-          <td>${i.affected_count ?? i.animal_count ?? "—"}</td>
-          <td>${i.diagnosis ?? "—"}</td>
-          <td>${i.treatment ?? "—"}</td>
-          <td>${i.cost != null ? i.cost+" MAD" : "—"}</td>
+          <td>${esc(fmtDate(i.intervention_date))}</td>
+          <td>${esc(i.intervention_type ?? "—")}</td>
+          <td>${esc(i.protocol_type ?? "—")}</td>
+          <td>${esc(i.affected_count ?? i.animal_count ?? "—")}</td>
+          <td>${esc(i.diagnosis ?? "—")}</td>
+          <td>${esc(i.treatment ?? "—")}</td>
+          <td>${esc(i.cost != null ? i.cost+" MAD" : "—")}</td>
         </tr>`).join("")}
       </tbody>
     </table>`}
@@ -237,18 +240,18 @@ export function buildFarmReportHtml({
   if (sections.events) {
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.eventsHeading", { count: filteredEvents.length })}</h2>
-    ${filteredEvents.length === 0 ? `<p class="muted">${t("farms.print.empty.events")}</p>` : `
+    <h2>${esc(t("farms.print.eventsHeading", { count: filteredEvents.length }))}</h2>
+    ${filteredEvents.length === 0 ? `<p class="muted">${esc(t("farms.print.empty.events"))}</p>` : `
     <table class="data">
-      <thead><tr><th>${t(`${C}.date`)}</th><th>${t(`${C}.type`)}</th><th>${t(`${C}.product`)}</th><th>${t(`${C}.dose`)}</th><th>${t(`${C}.headcount`)}</th><th>${t(`${C}.notes`)}</th></tr></thead>
+      <thead><tr><th>${esc(t(`${C}.date`))}</th><th>${esc(t(`${C}.type`))}</th><th>${esc(t(`${C}.product`))}</th><th>${esc(t(`${C}.dose`))}</th><th>${esc(t(`${C}.headcount`))}</th><th>${esc(t(`${C}.notes`))}</th></tr></thead>
       <tbody>
-        ${filteredEvents.map(e => `<tr>
-          <td>${fmtDate(e.event_date)}</td>
-          <td>${e.event_type ?? "—"}</td>
-          <td>${e.product ?? "—"}</td>
-          <td>${e.dose ?? "—"}</td>
-          <td>${e.affected_count ?? "—"}</td>
-          <td>${e.notes ?? ""}</td>
+        ${filteredEvents.map(ev => `<tr>
+          <td>${esc(fmtDate(ev.event_date))}</td>
+          <td>${esc(ev.event_type ?? "—")}</td>
+          <td>${esc(ev.product ?? "—")}</td>
+          <td>${esc(ev.dose ?? "—")}</td>
+          <td>${esc(ev.affected_count ?? "—")}</td>
+          <td>${esc(ev.notes ?? "")}</td>
         </tr>`).join("")}
       </tbody>
     </table>`}
@@ -259,13 +262,13 @@ export function buildFarmReportHtml({
     const photos: string[] = farm.photos || [];
     sectionsHtml.push(`
   <section class="block">
-    <h2>${t("farms.print.photosHeading", { count: photos.length })}</h2>
-    ${photos.length === 0 ? `<p class="muted">${t("farms.print.empty.photos")}</p>` : `
+    <h2>${esc(t("farms.print.photosHeading", { count: photos.length }))}</h2>
+    ${photos.length === 0 ? `<p class="muted">${esc(t("farms.print.empty.photos"))}</p>` : `
     <div class="photos">
       ${photos.map((src, i) => `
         <div class="photo-item">
-          <div class="photo-label">${t("farms.print.photoLabel", { n: i + 1 })}</div>
-          <img src="${src}" alt="${t("farms.print.photoAlt", { n: i + 1 })}" />
+          <div class="photo-label">${esc(t("farms.print.photoLabel", { n: i + 1 }))}</div>
+          <img src="${u(src)}" alt="${esc(t("farms.print.photoAlt", { n: i + 1 }))}" />
         </div>`).join("")}
     </div>`}
   </section>`);

@@ -6,6 +6,7 @@ import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 import { printHtml, downloadHtmlAsPdf } from "@/lib/htmlToPdf";
+import { escapeHtml, safePrintUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { getBcp47Locale } from "@/i18n/useAppLocale";
@@ -25,20 +26,22 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
   const prescriber = prescription.prescribedBy;
 
   const buildHtml = (): string => {
+    const e = escapeHtml;
+    const u = safePrintUrl;
     const medLines = prescription.medications
       .map((med, index) => {
         const parts = [
-          med.name,
-          med.dosage || "",
-          med.frequency || "",
-          med.duration ? t("print.prescription.forDuration", { duration: med.duration }) : "",
+          e(med.name),
+          e(med.dosage || ""),
+          e(med.frequency || ""),
+          med.duration ? e(t("print.prescription.forDuration", { duration: med.duration })) : "",
           med.quantity
-            ? t("print.prescription.qty", {
+            ? e(t("print.prescription.qty", {
                 qty: `${med.quantity}${med.unit ? ` ${med.unit}` : ""}`,
-              })
+              }))
             : "",
           med.refills && med.refills > 0
-            ? t("print.prescription.refills", { count: med.refills })
+            ? e(t("print.prescription.refills", { count: med.refills }))
             : "",
         ].filter(Boolean);
 
@@ -51,7 +54,7 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
           </p>
           ${
             med.instructions
-              ? `<p class="rx-instr">${med.instructions}</p>`
+              ? `<p class="rx-instr">${e(med.instructions)}</p>`
               : ""
           }`;
       })
@@ -60,7 +63,7 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
     return `
       <html>
         <head>
-          <title>${t("print.prescription.docTitle", { name: prescription.petName })}</title>
+          <title>${e(t("print.prescription.docTitle", { name: prescription.petName }))}</title>
           <style>
             @page { margin: 16mm; }
             body {
@@ -170,53 +173,53 @@ export function PrescriptionPrint({ prescription, compact = false }: Prescriptio
         <body>
           ${buildWatermarkHtml(isFree)}
           <div class="header">
-            ${settings.logo ? `<img src="${settings.logo}" alt="${t("print.prescription.clinicLogoAlt")}" style="height:64px;margin-bottom:8px;"/>` : ""}
-            <h1>${t("print.prescription.heading")}</h1>
-            <h2>${settings.clinicName || ""}</h2>
-            <p>${settings.address || ""}</p>
-            <p>${t("print.prescription.tel")} ${settings.phone || ""} | ${t("print.prescription.email")} ${settings.email || ""}</p>
+            ${settings.logo ? `<img src="${u(settings.logo)}" alt="${e(t("print.prescription.clinicLogoAlt"))}" style="height:64px;margin-bottom:8px;"/>` : ""}
+            <h1>${e(t("print.prescription.heading"))}</h1>
+            <h2>${e(settings.clinicName || "")}</h2>
+            <p>${e(settings.address || "")}</p>
+            <p>${e(t("print.prescription.tel"))} ${e(settings.phone || "")} | ${e(t("print.prescription.email"))} ${e(settings.email || "")}</p>
           </div>
 
           <div class="meta">
-            <p><strong>${t("print.prescription.date")}</strong> ${new Date(prescription.date).toLocaleDateString(getBcp47Locale(i18n.language))}</p>
-            <p><strong>${t("print.prescription.prescribedBy")}</strong> ${prescriber || "—"}</p>
+            <p><strong>${e(t("print.prescription.date"))}</strong> ${e(new Date(prescription.date).toLocaleDateString(getBcp47Locale(i18n.language)))}</p>
+            <p><strong>${e(t("print.prescription.prescribedBy"))}</strong> ${e(prescriber || "—")}</p>
           </div>
 
           <div class="patient">
-            <p class="section-title">${t("print.prescription.patient")}</p>
-            <p><strong>${t("print.prescription.owner")}</strong> ${prescription.clientName}</p>
-            <p><strong>${t("print.prescription.animal")}</strong> ${prescription.petName}</p>
-            ${prescription.diagnosis ? `<p><strong>${t("print.prescription.diagnosis")}</strong> ${prescription.diagnosis}</p>` : ""}
-            ${prescription.duration ? `<p><strong>${t("print.prescription.validity")}</strong> ${prescription.duration}</p>` : ""}
+            <p class="section-title">${e(t("print.prescription.patient"))}</p>
+            <p><strong>${e(t("print.prescription.owner"))}</strong> ${e(prescription.clientName)}</p>
+            <p><strong>${e(t("print.prescription.animal"))}</strong> ${e(prescription.petName)}</p>
+            ${prescription.diagnosis ? `<p><strong>${e(t("print.prescription.diagnosis"))}</strong> ${e(prescription.diagnosis)}</p>` : ""}
+            ${prescription.duration ? `<p><strong>${e(t("print.prescription.validity"))}</strong> ${e(prescription.duration)}</p>` : ""}
           </div>
 
           <p class="rp-mark">Rp/</p>
           <div class="medications">
-            ${medLines || `<p>${t("print.prescription.noMeds")}</p>`}
+            ${medLines || `<p>${e(t("print.prescription.noMeds"))}</p>`}
           </div>
 
           ${
             prescription.instructions
-              ? `<div class="notes"><p class="section-title">${t("print.prescription.generalInstructions")}</p><p>${prescription.instructions}</p></div>`
+              ? `<div class="notes"><p class="section-title">${e(t("print.prescription.generalInstructions"))}</p><p>${e(prescription.instructions)}</p></div>`
               : ""
           }
           ${
             prescription.followUpDate
-              ? `<div class="notes"><p><strong>${t("print.prescription.followUpScheduled")}</strong> ${new Date(prescription.followUpDate).toLocaleDateString(getBcp47Locale(i18n.language))}</p></div>`
+              ? `<div class="notes"><p><strong>${e(t("print.prescription.followUpScheduled"))}</strong> ${e(new Date(prescription.followUpDate).toLocaleDateString(getBcp47Locale(i18n.language)))}</p></div>`
               : ""
           }
           ${
             prescription.notes && prescription.notes !== prescription.instructions
-              ? `<div class="notes"><p class="section-title">${t("print.prescription.notes")}</p><p>${prescription.notes}</p></div>`
+              ? `<div class="notes"><p class="section-title">${e(t("print.prescription.notes"))}</p><p>${e(prescription.notes)}</p></div>`
               : ""
           }
 
           <div class="footer">
             <div class="signature-block">
               <div class="signature-line"></div>
-              <p>${t("print.prescription.vetSignature")}</p>
+              <p>${e(t("print.prescription.vetSignature"))}</p>
             </div>
-            <small>${t("print.prescription.validityNote")}</small>
+            <small>${e(t("print.prescription.validityNote"))}</small>
           </div>
         </body>
       </html>

@@ -7,11 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Sparkles, ArrowRight, HardDrive, Users } from "lucide-react";
+import { Check, Sparkles, ArrowRight, HardDrive, Users, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
+import { useAuth } from "@/contexts/AuthContext";
+import { startCheckoutSession } from "@/lib/stripeBilling";
+import { useToast } from "@/hooks/use-toast";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -45,10 +48,55 @@ function detectCurrency(): Currency {
 
 export default function Pricing() {
   const { t } = useTranslation("marketing");
+  const { t: tc } = useTranslation("common");
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [currency, setCurrency] = useState<Currency>(detectCurrency());
   const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
+
+  const isAdmin =
+    isAuthenticated &&
+    (user?.profile?.role === "admin" || user?.profile?.role === "super_admin");
+
+  const handleChoosePlan = async (plan: Plan) => {
+    if (plan.code === "free") {
+      window.location.href = isAuthenticated ? "/dashboard" : "/register?plan=free";
+      return;
+    }
+    if (!isAuthenticated) {
+      window.location.href = `/register?plan=${plan.code}&cycle=${cycle}&currency=${currency}`;
+      return;
+    }
+    if (!isAdmin) {
+      toast({
+        title: tc("error"),
+        description: t("pricing.adminOnlyCheckout", {
+          defaultValue: "Seul l’admin de la clinique peut souscrire.",
+        }),
+        variant: "destructive",
+      });
+      return;
+    }
+    setCheckoutPlan(plan.code);
+    try {
+      const url = await startCheckoutSession({
+        planCode: plan.code,
+        cycle,
+        currency,
+      });
+      window.location.href = url;
+    } catch (e: any) {
+      toast({
+        title: tc("error"),
+        description: e?.message || t("pricing.checkoutError", { defaultValue: "Impossible d’ouvrir Stripe Checkout." }),
+        variant: "destructive",
+      });
+      setCheckoutPlan(null);
+    }
+  };
 
   const formatStorage = (mb: number): string => {
     if (mb >= 1024) {
@@ -242,12 +290,17 @@ export default function Pricing() {
                       <Button
                         className="mt-6 w-full gap-2"
                         variant={plan.is_highlighted ? "default" : "outline"}
-                        asChild
+                        disabled={checkoutPlan === plan.code}
+                        onClick={() => handleChoosePlan(plan)}
                       >
-                        <Link to={`/register?plan=${plan.code}`}>
-                          {isFree ? t("pricing.startFree") : t("pricing.choosePlan")}
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
+                        {checkoutPlan === plan.code ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            {isFree ? t("pricing.startFree") : t("pricing.choosePlan")}
+                            <ArrowRight className="h-4 w-4" />
+                          </>
+                        )}
                       </Button>
                     </CardContent>
                   </Card>

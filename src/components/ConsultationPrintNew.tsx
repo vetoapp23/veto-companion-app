@@ -5,7 +5,7 @@ import { Printer } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
-import { formatTemperature } from "@/lib/utils";
+import { escapeHtml, formatTemperature } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getBcp47Locale } from "@/i18n/useAppLocale";
 
@@ -28,6 +28,7 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
         return;
       }
 
+      const e = escapeHtml;
       const animalName = consultation.animal?.name || t("print.consultation.animalFallback");
       const na = "N/A";
       const ageYears = consultation.animal?.birth_date
@@ -43,7 +44,7 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${t("print.consultation.docTitle", { name: animalName })}</title>
+          <title>${e(t("print.consultation.docTitle", { name: animalName }))}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
@@ -141,41 +142,41 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
         <body>
           ${buildWatermarkHtml(isFree)}
           <div class="header">
-            <h1>${settings.clinicName || t("print.consultation.clinicFallback")}</h1>
+            <h1>${e(settings.clinicName || t("print.consultation.clinicFallback"))}</h1>
             <div class="clinic-info">
-              <p>${settings.address || ''}</p>
-              <p>${t("print.consultation.tel")} ${settings.phone || ''} | ${t("print.consultation.email")} ${settings.email || ''}</p>
+              <p>${e(settings.address || '')}</p>
+              <p>${e(t("print.consultation.tel"))} ${e(settings.phone || '')} | ${e(t("print.consultation.email"))} ${e(settings.email || '')}</p>
             </div>
-            <h2>${t("print.consultation.reportTitle")}</h2>
+            <h2>${e(t("print.consultation.reportTitle"))}</h2>
           </div>
 
           <div class="consultation-info">
             <div class="info-section">
-              <div class="info-title">${t("print.consultation.clientInfo")}</div>
+              <div class="info-title">${e(t("print.consultation.clientInfo"))}</div>
               <div class="info-content">
-                <strong>${t("print.consultation.name")}</strong> ${consultation.client?.first_name || ''} ${consultation.client?.last_name || ''}<br>
-                <strong>${t("print.consultation.phone")}</strong> ${consultation.client?.phone || na}<br>
-                <strong>${t("print.consultation.email")}</strong> ${consultation.client?.email || na}
+                <strong>${e(t("print.consultation.name"))}</strong> ${e(consultation.client?.first_name || '')} ${e(consultation.client?.last_name || '')}<br>
+                <strong>${e(t("print.consultation.phone"))}</strong> ${e(consultation.client?.phone || na)}<br>
+                <strong>${e(t("print.consultation.email"))}</strong> ${e(consultation.client?.email || na)}
               </div>
             </div>
             
             <div class="info-section">
-              <div class="info-title">${t("print.consultation.animalInfo")}</div>
+              <div class="info-title">${e(t("print.consultation.animalInfo"))}</div>
               <div class="info-content">
-                <strong>${t("print.consultation.animalName")}</strong> ${consultation.animal?.name || na}<br>
-                <strong>${t("print.consultation.species")}</strong> ${consultation.animal?.species || na}<br>
-                <strong>${t("print.consultation.breed")}</strong> ${consultation.animal?.breed || na}<br>
-                <strong>${t("print.consultation.age")}</strong> ${ageYears}
+                <strong>${e(t("print.consultation.animalName"))}</strong> ${e(consultation.animal?.name || na)}<br>
+                <strong>${e(t("print.consultation.species"))}</strong> ${e(consultation.animal?.species || na)}<br>
+                <strong>${e(t("print.consultation.breed"))}</strong> ${e(consultation.animal?.breed || na)}<br>
+                <strong>${e(t("print.consultation.age"))}</strong> ${e(ageYears)}
               </div>
             </div>
           </div>
 
           <div class="info-section" style="margin-bottom: 20px;">
-            <div class="info-title">${t("print.consultation.detailsTitle")}</div>
+            <div class="info-title">${e(t("print.consultation.detailsTitle"))}</div>
             <div class="info-content">
-              <strong>${t("print.consultation.date")}</strong> ${new Date(consultation.consultation_date).toLocaleDateString(getBcp47Locale(i18n.language))}<br>
-              <strong>${t("print.consultation.type")}</strong> ${consultation.consultation_type || t("print.consultation.routine")}<br>
-              <strong>${t("print.consultation.status")}</strong> ${consultation.status || t("print.consultation.completed")}
+              <strong>${e(t("print.consultation.date"))}</strong> ${e(new Date(consultation.consultation_date).toLocaleDateString(getBcp47Locale(i18n.language)))}<br>
+              <strong>${e(t("print.consultation.type"))}</strong> ${e(consultation.consultation_type || t("print.consultation.routine"))}<br>
+              <strong>${e(t("print.consultation.status"))}</strong> ${e(consultation.status || t("print.consultation.completed"))}
             </div>
           </div>
 
@@ -183,26 +184,26 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
           <div class="vitals">
             ${consultation.weight ? `
             <div class="vital-item">
-              <div class="vital-label">${t("print.consultation.weight")}</div>
-              <div class="vital-value">${consultation.weight} kg</div>
+              <div class="vital-label">${e(t("print.consultation.weight"))}</div>
+              <div class="vital-value">${e(consultation.weight)} kg</div>
             </div>
             ` : ''}
             ${consultation.temperature ? `
             <div class="vital-item">
-              <div class="vital-label">${t("print.consultation.temperature")}</div>
-              <div class="vital-value">${formatTemperature(consultation.temperature)}</div>
+              <div class="vital-label">${e(t("print.consultation.temperature"))}</div>
+              <div class="vital-value">${e(formatTemperature(consultation.temperature))}</div>
             </div>
             ` : ''}
             ${consultation.heart_rate ? `
             <div class="vital-item">
-              <div class="vital-label">${t("print.consultation.heartRate")}</div>
-              <div class="vital-value">${consultation.heart_rate} bpm</div>
+              <div class="vital-label">${e(t("print.consultation.heartRate"))}</div>
+              <div class="vital-value">${e(consultation.heart_rate)} bpm</div>
             </div>
             ` : ''}
             ${consultation.respiratory_rate ? `
             <div class="vital-item">
-              <div class="vital-label">${t("print.consultation.respiratoryRate")}</div>
-              <div class="vital-value">${consultation.respiratory_rate}/min</div>
+              <div class="vital-label">${e(t("print.consultation.respiratoryRate"))}</div>
+              <div class="vital-value">${e(consultation.respiratory_rate)}/min</div>
             </div>
             ` : ''}
           </div>
@@ -210,57 +211,57 @@ export function ConsultationPrintNew({ consultation }: ConsultationPrintProps) {
 
           ${consultation.symptoms ? `
           <div class="medical-section">
-            <div class="medical-title">${t("print.consultation.symptoms")}</div>
-            <div class="medical-content">${consultation.symptoms}</div>
+            <div class="medical-title">${e(t("print.consultation.symptoms"))}</div>
+            <div class="medical-content">${e(consultation.symptoms)}</div>
           </div>
           ` : ''}
 
           ${consultation.diagnosis ? `
           <div class="medical-section">
-            <div class="medical-title">${t("print.consultation.diagnosis")}</div>
-            <div class="medical-content">${consultation.diagnosis}</div>
+            <div class="medical-title">${e(t("print.consultation.diagnosis"))}</div>
+            <div class="medical-content">${e(consultation.diagnosis)}</div>
           </div>
           ` : ''}
 
           ${consultation.treatment ? `
           <div class="medical-section">
-            <div class="medical-title">${t("print.consultation.treatment")}</div>
-            <div class="medical-content">${consultation.treatment}</div>
+            <div class="medical-title">${e(t("print.consultation.treatment"))}</div>
+            <div class="medical-content">${e(consultation.treatment)}</div>
           </div>
           ` : ''}
 
           ${consultation.notes ? `
           <div class="medical-section">
-            <div class="medical-title">${t("print.consultation.notes")}</div>
-            <div class="medical-content">${consultation.notes}</div>
+            <div class="medical-title">${e(t("print.consultation.notes"))}</div>
+            <div class="medical-content">${e(consultation.notes)}</div>
           </div>
           ` : ''}
 
           ${consultation.follow_up_date ? `
           <div class="medical-section">
-            <div class="medical-title">${t("print.consultation.followUp")}</div>
+            <div class="medical-title">${e(t("print.consultation.followUp"))}</div>
             <div class="medical-content">
-              <strong>${t("print.consultation.date")}</strong> ${new Date(consultation.follow_up_date).toLocaleDateString(getBcp47Locale(i18n.language))}<br>
-              ${consultation.follow_up_notes ? `<strong>${t("print.consultation.notes")}</strong> ${consultation.follow_up_notes}` : ''}
+              <strong>${e(t("print.consultation.date"))}</strong> ${e(new Date(consultation.follow_up_date).toLocaleDateString(getBcp47Locale(i18n.language)))}<br>
+              ${consultation.follow_up_notes ? `<strong>${e(t("print.consultation.notes"))}</strong> ${e(consultation.follow_up_notes)}` : ''}
             </div>
           </div>
           ` : ''}
 
           ${consultation.cost ? `
           <div class="medical-section">
-            <div class="medical-title">${t("print.consultation.cost")}</div>
+            <div class="medical-title">${e(t("print.consultation.cost"))}</div>
             <div class="medical-content">
-              <strong>${consultation.cost} ${settings.currency || 'EUR'}</strong>
+              <strong>${e(consultation.cost)} ${e(settings.currency || 'EUR')}</strong>
             </div>
           </div>
           ` : ''}
 
           <div class="footer">
-            <p>${t("print.consultation.reportGenerated", {
+            <p>${e(t("print.consultation.reportGenerated", {
               date: new Date().toLocaleDateString(getBcp47Locale(i18n.language)),
               time: new Date().toLocaleTimeString(getBcp47Locale(i18n.language)),
-            })}</p>
-            <p>${t("print.consultation.veterinarian")} ${consultation.veterinarian_id || na}</p>
+            }))}</p>
+            <p>${e(t("print.consultation.veterinarian"))} ${e(consultation.veterinarian_id || na)}</p>
           </div>
         </body>
       </html>

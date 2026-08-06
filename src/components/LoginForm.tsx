@@ -417,7 +417,9 @@ export function LoginForm() {
           )}
         </div>
 
-        <DemoLoginPanel />
+        {import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO === "true" ? (
+          <DemoLoginPanel />
+        ) : null}
       </main>
     </div>
   );

@@ -53,17 +53,48 @@ function fileToDataUrl(file: File | Blob): Promise<string> {
   });
 }
 
+export class StorageQuotaExceededError extends Error {
+  constructor(message = "Quota de stockage dépassé") {
+    super(message);
+    this.name = "StorageQuotaExceededError";
+  }
+}
+
+/** Client-side headroom check before uploading (server also enforces). */
+export async function ensureStorageHeadroom(bytesDelta: number): Promise<void> {
+  if (bytesDelta <= 0) return;
+  const { data, error } = await supabase.rpc("get_organization_quota" as any);
+  if (error || !data || (data as any).error) return;
+  const total = Number((data as any).storage_total_mb) || 0;
+  const used = Number((data as any).storage_used_mb) || 0;
+  if (total > 0 && used + bytesDelta / (1024 * 1024) > total) {
+    throw new StorageQuotaExceededError(
+      `Quota de stockage dépassé (${used.toFixed(1)} / ${total} Mo). Passez à un pack supérieur ou libérez de l'espace.`,
+    );
+  }
+}
+
 export async function recordStorageChange(
   category: StorageCategory,
   bytesDelta: number,
   filesDelta = 0
 ): Promise<void> {
+  if (bytesDelta > 0) {
+    await ensureStorageHeadroom(bytesDelta);
+  }
   const { error } = await supabase.rpc("record_storage_change" as any, {
     p_category: category,
     p_bytes_delta: bytesDelta,
     p_files_delta: filesDelta,
   });
-  if (error) console.warn("[storage] record_storage_change failed", error);
+  if (error) {
+    const msg = error.message || "";
+    if (/quota|stockage|storage/i.test(msg)) {
+      throw new StorageQuotaExceededError(msg);
+    }
+    console.warn("[storage] record_storage_change failed", error);
+    throw error;
+  }
 }
 
 export async function recomputeStorageUsage(): Promise<void> {

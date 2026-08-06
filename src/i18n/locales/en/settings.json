@@ -264,9 +264,17 @@
     "seePlans": "View plans",
     "features": {
       "farms": "Livestock / Farms",
+      "farm": "Livestock / Farms",
       "accounting": "Accounting",
       "stock": "Inventory",
-      "team": "Team"
+      "team": "Team",
+      "consultations": "Consultations",
+      "visits": "Visits",
+      "appointments": "Appointments",
+      "vaccinations": "Vaccinations",
+      "antiparasites": "Antiparasitics",
+      "clients": "Clients",
+      "animals": "Animals"
     }
   },
   "roleGuard": {
@@ -435,7 +443,90 @@
       "noEvents": "No events",
       "clientSupport": "Client support",
       "exportJson": "Export JSON",
-      "impersonate": "Impersonate"
+      "impersonate": "Impersonate",
+      "subscriptionTitle": "Subscription",
+      "statusLabel": "Status (access)",
+      "billingCycle": "Billing cycle",
+      "currency": "Currency",
+      "customPrice": "Custom price / cycle",
+      "customPricePlaceholder": "Leave empty = catalog price",
+      "catalogPriceHint": "Catalog: {{price}}",
+      "customPriceHelp": "Amount billed specifically for this clinic. Empty = plan price.",
+      "teamTitle": "Clinic team",
+      "userUpdated": "User updated",
+      "planPreviewTitle": "Selected plan limits",
+      "planPreviewStorage": "Storage {{mb}} MB",
+      "planPreviewUsers": "{{n}} user(s)",
+      "planPreviewClients": "Clients: {{n}}",
+      "planPreviewAnimals": "Animals: {{n}}",
+      "unlimited": "unlimited",
+      "modulesOn": "Included modules",
+      "modulesOff": "Excluded modules",
+      "planChangeHint": "On save: catalog storage applied, module overrides reset (unless kept).",
+      "keepFeatureOverrides": "Keep current module overrides when changing plan",
+      "planAppliedBody": "Plan {{plan}} applied — {{storage}} MB, {{users}} seat(s)."
+    },
+    "features": {
+      "title": "Modules (clinic overrides)",
+      "help": "Click to cycle: Inherit plan → Forced ON → Forced OFF.",
+      "on": "ON",
+      "off": "OFF",
+      "inherit": "Inherit",
+      "save": "Save modules + subscription",
+      "keys": {
+        "consultations": "Consultations",
+        "visits": "Visits",
+        "appointments": "Appointments",
+        "vaccinations": "Vaccinations",
+        "antiparasites": "Antiparasitics",
+        "farm": "Farms",
+        "stock": "Stock",
+        "accounting": "Accounting",
+        "clients": "Clients",
+        "animals": "Animals"
+      }
+    },
+    "payments": {
+      "recordTitle": "Record a payment",
+      "recordCta": "New payment",
+      "historyTitle": "Payment history",
+      "ledgerTitle": "SaaS payments ledger",
+      "amount": "Amount",
+      "method": "Method",
+      "reference": "Reference",
+      "paidAt": "Date",
+      "periodStart": "Period start",
+      "periodEnd": "Period end",
+      "status": "Status",
+      "notes": "Notes",
+      "activateAccess": "Activate / extend access after payment",
+      "save": "Save payment",
+      "saving": "Saving…",
+      "recorded": "Payment recorded",
+      "invalidAmount": "Invalid amount or clinic",
+      "empty": "No payments",
+      "organization": "Clinic",
+      "allMethods": "All methods",
+      "allStatuses": "All statuses",
+      "methods": {
+        "virement": "Bank transfer",
+        "especes": "Cash",
+        "cheque": "Cheque",
+        "stripe": "Stripe",
+        "autre": "Other"
+      },
+      "statuses": {
+        "received": "Received",
+        "pending": "Pending",
+        "refunded": "Refunded"
+      }
+    },
+    "billing": {
+      "mrr": "Estimated MRR (MAD)",
+      "mrrHelp": "Includes per-clinic custom prices",
+      "receivedMonth": "Collected this month",
+      "pending": "Pending",
+      "payments": "payments"
     },
     "plans": {
       "newPlan": "New plan",

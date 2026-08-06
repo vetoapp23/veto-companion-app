@@ -11,7 +11,7 @@ import { NewConsultationModal } from "@/components/forms/NewConsultationModal";
 import { NewAppointmentModal } from "@/components/forms/NewAppointmentModal";
 import { ConfirmVaccinationReminderModal } from "@/components/modals/ConfirmVaccinationReminderModal";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { calculateAge, formatDate, roundTemperature, formatTemperature, formatTemperatureValue } from "@/lib/utils";
+import { calculateAge, escapeHtml, formatDate, roundTemperature, formatTemperature, formatTemperatureValue, safePrintUrl } from "@/lib/utils";
 import { PrescriptionsList } from "@/components/PrescriptionsList";
 
 import { useToast } from '@/hooks/use-toast';
@@ -486,6 +486,8 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    const e = escapeHtml;
+    const u = safePrintUrl;
     const sexLabel = pet.gender === 'male' ? tc("male") : pet.gender === 'female' ? tc("female") : tc("notSpecified");
     const notSpec = tc("notSpecified");
     const notProvided = t("print.legacyDossier.notProvided");
@@ -494,7 +496,7 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${t("print.legacyDossier.docTitle", { name: pet.name })}</title>
+          <title>${e(t("print.legacyDossier.docTitle", { name: pet.name }))}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
             .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
@@ -513,197 +515,197 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
         </head>
         <body>
           <div class="header">
-            <div class="clinic-name">VetoCrm</div>
-            <h2>${t("print.legacyDossier.fullTitle")}</h2>
-            <p><strong>${t("print.legacyDossier.animal")}</strong> ${pet.name} | <strong>${t("print.legacyDossier.generatedOn")}</strong> ${new Date().toLocaleDateString(getBcp47Locale(i18n.language))} ${new Date().toLocaleTimeString(getBcp47Locale(i18n.language))}</p>
+            <div class="clinic-name">${e("VetoCrm")}</div>
+            <h2>${e(t("print.legacyDossier.fullTitle"))}</h2>
+            <p><strong>${e(t("print.legacyDossier.animal"))}</strong> ${e(pet.name)} | <strong>${e(t("print.legacyDossier.generatedOn"))}</strong> ${e(new Date().toLocaleDateString(getBcp47Locale(i18n.language)))} ${e(new Date().toLocaleTimeString(getBcp47Locale(i18n.language)))}</p>
           </div>
 
           <div class="pet-info">
             <div class="info-section">
-              <h3>${t("print.legacyDossier.animalInfo")}</h3>
-              <p><strong>${t("print.legacyDossier.name")}</strong> ${pet.name}</p>
-              <p><strong>${t("print.legacyDossier.species")}</strong> ${pet.type}</p>
-              <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.breed || notSpec}</p>
-              <p><strong>${t("print.legacyDossier.sex")}</strong> ${sexLabel}</p>
-              <p><strong>${t("print.legacyDossier.age")}</strong> ${pet.birthDate ? calculateAge(pet.birthDate) : notSpec}</p>
-              <p><strong>${t("print.legacyDossier.currentWeight")}</strong> ${currentWeight}kg</p>
-              <p><strong>${t("print.legacyDossier.currentTemp")}</strong> ${formatTemperature(currentTemperature)}</p>
-              <p><strong>${t("print.legacyDossier.color")}</strong> ${pet.color || notSpec}</p>
-              <p><strong>${t("print.legacyDossier.microchip")}</strong> ${pet.microchip || notSpec}</p>
-              ${pet.medicalNotes ? `<p><strong>${t("print.legacyDossier.medicalNotes")}</strong> ${pet.medicalNotes}</p>` : ''}
+              <h3>${e(t("print.legacyDossier.animalInfo"))}</h3>
+              <p><strong>${e(t("print.legacyDossier.name"))}</strong> ${e(pet.name)}</p>
+              <p><strong>${e(t("print.legacyDossier.species"))}</strong> ${e(pet.type)}</p>
+              <p><strong>${e(t("print.legacyDossier.breed"))}</strong> ${e(pet.breed || notSpec)}</p>
+              <p><strong>${e(t("print.legacyDossier.sex"))}</strong> ${e(sexLabel)}</p>
+              <p><strong>${e(t("print.legacyDossier.age"))}</strong> ${e(pet.birthDate ? calculateAge(pet.birthDate) : notSpec)}</p>
+              <p><strong>${e(t("print.legacyDossier.currentWeight"))}</strong> ${e(currentWeight)}kg</p>
+              <p><strong>${e(t("print.legacyDossier.currentTemp"))}</strong> ${e(formatTemperature(currentTemperature))}</p>
+              <p><strong>${e(t("print.legacyDossier.color"))}</strong> ${e(pet.color || notSpec)}</p>
+              <p><strong>${e(t("print.legacyDossier.microchip"))}</strong> ${e(pet.microchip || notSpec)}</p>
+              ${pet.medicalNotes ? `<p><strong>${e(t("print.legacyDossier.medicalNotes"))}</strong> ${e(pet.medicalNotes)}</p>` : ''}
             </div>
             <div class="info-section">
-              <h3>${t("print.legacyDossier.owner")}</h3>
-              <p><strong>${t("print.legacyDossier.name")}</strong> ${owner?.name || notSpec}</p>
-              <p><strong>${t("print.legacyDossier.email")}</strong> ${owner?.email || notSpec}</p>
-              <p><strong>${t("print.legacyDossier.phone")}</strong> ${owner?.phone || notSpec}</p>
+              <h3>${e(t("print.legacyDossier.owner"))}</h3>
+              <p><strong>${e(t("print.legacyDossier.name"))}</strong> ${e(owner?.name || notSpec)}</p>
+              <p><strong>${e(t("print.legacyDossier.email"))}</strong> ${e(owner?.email || notSpec)}</p>
+              <p><strong>${e(t("print.legacyDossier.phone"))}</strong> ${e(owner?.phone || notSpec)}</p>
             </div>
           </div>
 
           <div class="stats">
             <div class="stat-card">
-              <div class="stat-value">${sortedConsultations.length}</div>
-              <div class="stat-label">${t("print.legacyDossier.kpiConsult")}</div>
+              <div class="stat-value">${e(sortedConsultations.length)}</div>
+              <div class="stat-label">${e(t("print.legacyDossier.kpiConsult"))}</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">${petVaccinations.length}</div>
-              <div class="stat-label">${t("print.legacyDossier.kpiVacc")}</div>
+              <div class="stat-value">${e(petVaccinations.length)}</div>
+              <div class="stat-label">${e(t("print.legacyDossier.kpiVacc"))}</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">${petAntiparasitics.length}</div>
-              <div class="stat-label">${t("print.legacyDossier.kpiAnti")}</div>
+              <div class="stat-value">${e(petAntiparasitics.length)}</div>
+              <div class="stat-label">${e(t("print.legacyDossier.kpiAnti"))}</div>
             </div>
             <div class="stat-card">
-              <div class="stat-value">${currentWeight}kg</div>
-              <div class="stat-label">${t("print.legacyDossier.kpiWeight")}</div>
+              <div class="stat-value">${e(currentWeight)}kg</div>
+              <div class="stat-label">${e(t("print.legacyDossier.kpiWeight"))}</div>
             </div>
           </div>
 
           <!-- Photo principale de l'animal -->
           ${pet.photo ? `
             <div style="text-align: center; margin: 20px 0;">
-              <img src="${pet.photo}" alt="${pet.name}" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;" />
-              <p style="margin-top: 10px; font-weight: bold;">${t("print.legacyDossier.photoOf", { name: pet.name })}</p>
+              <img src="${u(pet.photo)}" alt="${e(pet.name)}" style="max-width: 200px; max-height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;" />
+              <p style="margin-top: 10px; font-weight: bold;">${e(t("print.legacyDossier.photoOf", { name: pet.name }))}</p>
             </div>
           ` : ''}
 
           <!-- Historique des Consultations -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.consultHistory", { count: sortedConsultations.length })}</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${e(t("print.legacyDossier.consultHistory", { count: sortedConsultations.length }))}</h3>
             ${sortedConsultations.length > 0 ? sortedConsultations.map(c => `
               <div style="margin: 15px 0; border: 1px solid #ddd; padding: 15px; border-radius: 5px; background: #f9f9f9;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">${t("print.legacyDossier.consultOf", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) })}</h4>
+                <h4 style="margin: 0 0 10px 0; color: #333;">${e(t("print.legacyDossier.consultOf", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) }))}</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                   <div>
-                    <p><strong>${t("print.legacyDossier.weight")}</strong> ${c.weight || notProvided}</p>
-                    <p><strong>${t("print.legacyDossier.temperature")}</strong> ${c.temperature ? formatTemperature(c.temperature) : notProvided}</p>
-                    ${c.symptoms ? `<p><strong>${t("print.legacyDossier.symptoms")}</strong> ${c.symptoms}</p>` : ''}
+                    <p><strong>${e(t("print.legacyDossier.weight"))}</strong> ${e(c.weight || notProvided)}</p>
+                    <p><strong>${e(t("print.legacyDossier.temperature"))}</strong> ${e(c.temperature ? formatTemperature(c.temperature) : notProvided)}</p>
+                    ${c.symptoms ? `<p><strong>${e(t("print.legacyDossier.symptoms"))}</strong> ${e(c.symptoms)}</p>` : ''}
                   </div>
                   <div>
-                    ${c.diagnosis ? `<p><strong>${t("print.legacyDossier.diagnosis")}</strong> ${c.diagnosis}</p>` : ''}
-                    ${c.treatment ? `<p><strong>${t("print.legacyDossier.treatment")}</strong> ${c.treatment}</p>` : ''}
-                    ${c.medications ? `<p><strong>${t("print.legacyDossier.medications")}</strong> ${c.medications}</p>` : ''}
+                    ${c.diagnosis ? `<p><strong>${e(t("print.legacyDossier.diagnosis"))}</strong> ${e(c.diagnosis)}</p>` : ''}
+                    ${c.treatment ? `<p><strong>${e(t("print.legacyDossier.treatment"))}</strong> ${e(c.treatment)}</p>` : ''}
+                    ${c.medications ? `<p><strong>${e(t("print.legacyDossier.medications"))}</strong> ${e(c.medications)}</p>` : ''}
                   </div>
                 </div>
-                ${c.notes ? `<p><strong>${t("print.legacyDossier.notes")}</strong> ${c.notes}</p>` : ''}
+                ${c.notes ? `<p><strong>${e(t("print.legacyDossier.notes"))}</strong> ${e(c.notes)}</p>` : ''}
                 ${c.photos && c.photos.length > 0 ? `
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 15px 0;">
                     ${c.photos.map((photo, idx) => `
                       <div style="text-align: center;">
-                        <img src="${photo}" alt="${t("print.legacyDossier.consultPhotoAlt", { n: idx + 1 })}" style="max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
-                        <div style="font-size: 11px; color: #666; margin-top: 5px;">${t("print.legacyDossier.photoN", { n: idx + 1 })}</div>
+                        <img src="${u(photo)}" alt="${e(t("print.legacyDossier.consultPhotoAlt", { n: idx + 1 }))}" style="max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
+                        <div style="font-size: 11px; color: #666; margin-top: 5px;">${e(t("print.legacyDossier.photoN", { n: idx + 1 }))}</div>
                       </div>
                     `).join('')}
                   </div>
                 ` : ''}
               </div>
-            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noConsultations")}</p>`}
+            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${e(t("print.legacyDossier.noConsultations"))}</p>`}
           </div>
 
           <!-- Historique des Vaccinations -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.vaccHistory", { count: petVaccinations.length })}</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${e(t("print.legacyDossier.vaccHistory", { count: petVaccinations.length }))}</h3>
             ${petVaccinations.length > 0 ? petVaccinations.map(v => `
               <div style="margin: 10px 0; padding: 10px; border-left: 3px solid #4CAF50; background: #f0f8f0;">
-                <h4 style="margin: 0 0 10px 0;">${v.vaccineName} - ${new Date(v.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language))}</h4>
-                <p><strong>${t("print.legacyDossier.type")}</strong> ${v.vaccineType || notSpec}</p>
-                <p><strong>${t("print.legacyDossier.nextBooster")}</strong> ${v.nextDueDate ? new Date(v.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec}</p>
-                <p><strong>${t("print.legacyDossier.veterinarian")}</strong> ${v.veterinarian || notSpec}</p>
-                ${v.notes ? `<p><strong>${t("print.legacyDossier.notes")}</strong> ${v.notes}</p>` : ''}
+                <h4 style="margin: 0 0 10px 0;">${e(v.vaccineName)} - ${e(new Date(v.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language)))}</h4>
+                <p><strong>${e(t("print.legacyDossier.type"))}</strong> ${e(v.vaccineType || notSpec)}</p>
+                <p><strong>${e(t("print.legacyDossier.nextBooster"))}</strong> ${e(v.nextDueDate ? new Date(v.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec)}</p>
+                <p><strong>${e(t("print.legacyDossier.veterinarian"))}</strong> ${e(v.veterinarian || notSpec)}</p>
+                ${v.notes ? `<p><strong>${e(t("print.legacyDossier.notes"))}</strong> ${e(v.notes)}</p>` : ''}
               </div>
-            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noVaccinations")}</p>`}
+            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${e(t("print.legacyDossier.noVaccinations"))}</p>`}
           </div>
 
           <!-- Historique des Antiparasitaires -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.antiHistory", { count: petAntiparasitics.length })}</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${e(t("print.legacyDossier.antiHistory", { count: petAntiparasitics.length }))}</h3>
             ${petAntiparasitics.length > 0 ? petAntiparasitics.map(a => `
               <div style="margin: 15px 0; padding: 15px; border-left: 4px solid #9C27B0; background: #f3e5f5; border-radius: 5px;">
-                <h4 style="margin: 0 0 10px 0; color: #7B1FA2;">${a.productName} - ${new Date(a.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language))}</h4>
+                <h4 style="margin: 0 0 10px 0; color: #7B1FA2;">${e(a.productName)} - ${e(new Date(a.dateGiven).toLocaleDateString(getBcp47Locale(i18n.language)))}</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 10px 0;">
                   <div>
-                    <p><strong>${t("print.legacyDossier.productType")}</strong> ${a.productType || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.parasites")}</strong> ${a.targetParasites || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.route")}</strong> ${a.administrationRoute || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.dosage")}</strong> ${a.dosage || notSpec}</p>
+                    <p><strong>${e(t("print.legacyDossier.productType"))}</strong> ${e(a.productType || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.parasites"))}</strong> ${e(a.targetParasites || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.route"))}</strong> ${e(a.administrationRoute || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.dosage"))}</strong> ${e(a.dosage || notSpec)}</p>
                   </div>
                   <div>
-                <p><strong>${t("print.legacyDossier.nextTreatment")}</strong> ${a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec}</p>
-                <p><strong>${t("print.legacyDossier.veterinarian")}</strong> ${a.veterinarian || notSpec}</p>
-                    <p><strong>${tc("status")}:</strong> ${a.status === 'completed' ? t("print.legacyDossier.statusCompleted") : a.status === 'scheduled' ? t("print.legacyDossier.statusPlanned") : a.status === 'overdue' ? t("print.legacyDossier.statusOverdue") : t("print.legacyDossier.statusMissed")}</p>
-                    ${a.cost ? `<p><strong>${t("print.legacyDossier.cost")}</strong> ${a.cost} €</p>` : ''}
+                <p><strong>${e(t("print.legacyDossier.nextTreatment"))}</strong> ${e(a.nextDueDate ? new Date(a.nextDueDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec)}</p>
+                <p><strong>${e(t("print.legacyDossier.veterinarian"))}</strong> ${e(a.veterinarian || notSpec)}</p>
+                    <p><strong>${e(tc("status"))}:</strong> ${e(a.status === 'completed' ? t("print.legacyDossier.statusCompleted") : a.status === 'scheduled' ? t("print.legacyDossier.statusPlanned") : a.status === 'overdue' ? t("print.legacyDossier.statusOverdue") : t("print.legacyDossier.statusMissed"))}</p>
+                    ${a.cost ? `<p><strong>${e(t("print.legacyDossier.cost"))}</strong> ${e(a.cost)} €</p>` : ''}
                   </div>
                 </div>
-                ${a.batchNumber ? `<p><strong>${t("print.legacyDossier.batchNumber")}</strong> ${a.batchNumber}</p>` : ''}
-                ${a.manufacturer ? `<p><strong>${t("print.legacyDossier.manufacturer")}</strong> ${a.manufacturer}</p>` : ''}
-                ${a.weight ? `<p><strong>${t("print.legacyDossier.animalWeight")}</strong> ${a.weight}</p>` : ''}
+                ${a.batchNumber ? `<p><strong>${e(t("print.legacyDossier.batchNumber"))}</strong> ${e(a.batchNumber)}</p>` : ''}
+                ${a.manufacturer ? `<p><strong>${e(t("print.legacyDossier.manufacturer"))}</strong> ${e(a.manufacturer)}</p>` : ''}
+                ${a.weight ? `<p><strong>${e(t("print.legacyDossier.animalWeight"))}</strong> ${e(a.weight)}</p>` : ''}
                 ${a.notes ? `
                   <div style="margin: 10px 0; padding: 10px; background: rgba(156, 39, 176, 0.1); border-radius: 3px;">
-                    <p><strong>${t("print.legacyDossier.notes")}</strong> ${a.notes}</p>
+                    <p><strong>${e(t("print.legacyDossier.notes"))}</strong> ${e(a.notes)}</p>
                   </div>
                 ` : ''}
                 ${a.sideEffects ? `
                   <div style="margin: 10px 0; padding: 10px; background: #ffebee; border: 1px solid #f44336; border-radius: 3px;">
-                    <p style="color: #d32f2f;"><strong>⚠️ ${t("print.legacyDossier.sideEffects")}</strong> ${a.sideEffects}</p>
+                    <p style="color: #d32f2f;"><strong>⚠️ ${e(t("print.legacyDossier.sideEffects"))}</strong> ${e(a.sideEffects)}</p>
                   </div>
                 ` : ''}
               </div>
-            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noTreatments")}</p>`}
+            `).join('') : `<p style="text-align: center; color: #666; font-style: italic;">${e(t("print.legacyDossier.noTreatments"))}</p>`}
           </div>
 
           <!-- Section Pedigree -->
           ${pet.hasPedigree ? `
             <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-              <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.officialPedigree")}</h3>
+              <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${e(t("print.legacyDossier.officialPedigree"))}</h3>
               
               <!-- Informations de l'animal -->
               <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">${t("print.legacyDossier.animalDetails")}</h4>
+                <h4 style="margin: 0 0 10px 0; color: #333;">${e(t("print.legacyDossier.animalDetails"))}</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                   <div>
-                    <p><strong>${t("print.legacyDossier.officialName")}</strong> ${pet.officialName || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.pedigreeLof")}</strong> ${pet.pedigreeNumber || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.chipTattoo")}</strong> ${pet.microchip || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.breed || notSpec}</p>
+                    <p><strong>${e(t("print.legacyDossier.officialName"))}</strong> ${e(pet.officialName || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.pedigreeLof"))}</strong> ${e(pet.pedigreeNumber || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.chipTattoo"))}</strong> ${e(pet.microchip || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.breed"))}</strong> ${e(pet.breed || notSpec)}</p>
                   </div>
                   <div>
-                    <p><strong>${t("print.legacyDossier.sex")}</strong> ${sexLabel}</p>
-                    <p><strong>${t("print.legacyDossier.coatColor")}</strong> ${pet.color || notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.birthDate")}</strong> ${pet.birthDate ? new Date(pet.birthDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec}</p>
-                    <p><strong>${t("print.legacyDossier.breeder")}</strong> ${pet.breeder || notSpec}</p>
+                    <p><strong>${e(t("print.legacyDossier.sex"))}</strong> ${e(sexLabel)}</p>
+                    <p><strong>${e(t("print.legacyDossier.coatColor"))}</strong> ${e(pet.color || notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.birthDate"))}</strong> ${e(pet.birthDate ? new Date(pet.birthDate).toLocaleDateString(getBcp47Locale(i18n.language)) : notSpec)}</p>
+                    <p><strong>${e(t("print.legacyDossier.breeder"))}</strong> ${e(pet.breeder || notSpec)}</p>
                   </div>
                 </div>
               </div>
 
               <!-- Parents -->
               <div style="margin: 20px 0;">
-                <h4 style="margin: 0 0 10px 0; color: #333;">${t("print.legacyDossier.ancestry")}</h4>
+                <h4 style="margin: 0 0 10px 0; color: #333;">${e(t("print.legacyDossier.ancestry"))}</h4>
                 
                 <!-- Père -->
                 <div style="margin: 15px 0; padding: 15px; border-left: 3px solid #007bff; background: #f0f8ff;">
-                  <h5 style="margin: 0 0 8px 0; color: #007bff;">${t("print.legacyDossier.father")}</h5>
-                  <p><strong>${t("print.legacyDossier.name")}</strong> ${pet.fatherName || notSpec}</p>
-                  <p><strong>${t("print.legacyDossier.pedigreeLof")}</strong> ${pet.fatherPedigree || notSpec}</p>
-                  <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.fatherBreed || notSpec}</p>
-                  ${pet.fatherTitles ? `<p><strong>${t("print.legacyDossier.titles")}</strong> ${pet.fatherTitles}</p>` : ''}
+                  <h5 style="margin: 0 0 8px 0; color: #007bff;">${e(t("print.legacyDossier.father"))}</h5>
+                  <p><strong>${e(t("print.legacyDossier.name"))}</strong> ${e(pet.fatherName || notSpec)}</p>
+                  <p><strong>${e(t("print.legacyDossier.pedigreeLof"))}</strong> ${e(pet.fatherPedigree || notSpec)}</p>
+                  <p><strong>${e(t("print.legacyDossier.breed"))}</strong> ${e(pet.fatherBreed || notSpec)}</p>
+                  ${pet.fatherTitles ? `<p><strong>${e(t("print.legacyDossier.titles"))}</strong> ${e(pet.fatherTitles)}</p>` : ''}
                 </div>
 
                 <!-- Mère -->
                 <div style="margin: 15px 0; padding: 15px; border-left: 3px solid #e91e63; background: #fce4ec;">
-                  <h5 style="margin: 0 0 8px 0; color: #e91e63;">${t("print.legacyDossier.mother")}</h5>
-                  <p><strong>${t("print.legacyDossier.name")}</strong> ${pet.motherName || notSpec}</p>
-                  <p><strong>${t("print.legacyDossier.pedigreeLof")}</strong> ${pet.motherPedigree || notSpec}</p>
-                  <p><strong>${t("print.legacyDossier.breed")}</strong> ${pet.motherBreed || notSpec}</p>
-                  ${pet.motherTitles ? `<p><strong>${t("print.legacyDossier.titles")}</strong> ${pet.motherTitles}</p>` : ''}
+                  <h5 style="margin: 0 0 8px 0; color: #e91e63;">${e(t("print.legacyDossier.mother"))}</h5>
+                  <p><strong>${e(t("print.legacyDossier.name"))}</strong> ${e(pet.motherName || notSpec)}</p>
+                  <p><strong>${e(t("print.legacyDossier.pedigreeLof"))}</strong> ${e(pet.motherPedigree || notSpec)}</p>
+                  <p><strong>${e(t("print.legacyDossier.breed"))}</strong> ${e(pet.motherBreed || notSpec)}</p>
+                  ${pet.motherTitles ? `<p><strong>${e(t("print.legacyDossier.titles"))}</strong> ${e(pet.motherTitles)}</p>` : ''}
                 </div>
               </div>
 
               <!-- Certificat Pedigree -->
               ${pet.pedigreePhoto ? `
                 <div style="margin: 20px 0; text-align: center;">
-                  <h4 style="margin: 0 0 15px 0; color: #333;">${t("print.legacyDossier.pedigreeCert")}</h4>
-                  <img src="${pet.pedigreePhoto}" alt="${t("print.legacyDossier.pedigreeCert")}" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; border: 2px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-                  <p style="margin-top: 10px; font-size: 12px; color: #666;">${t("print.legacyDossier.pedigreeOfficialDoc")}</p>
+                  <h4 style="margin: 0 0 15px 0; color: #333;">${e(t("print.legacyDossier.pedigreeCert"))}</h4>
+                  <img src="${u(pet.pedigreePhoto)}" alt="${e(t("print.legacyDossier.pedigreeCert"))}" style="max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; border: 2px solid #ddd; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+                  <p style="margin-top: 10px; font-size: 12px; color: #666;">${e(t("print.legacyDossier.pedigreeOfficialDoc"))}</p>
                 </div>
               ` : ''}
             </div>
@@ -711,32 +713,32 @@ export function PetDossierModal({ open, onOpenChange, pet }: PetDossierModalProp
 
           <!-- Album Photo -->
           <div style="margin: 30px 0; border: 1px solid #eee; padding: 20px; border-radius: 5px;">
-            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${t("print.legacyDossier.photoAlbum")}</h3>
+            <h3 style="margin: 0 0 15px 0; color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${e(t("print.legacyDossier.photoAlbum"))}</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 15px 0;">
               ${pet.photo ? `
                 <div style="text-align: center;">
-                  <img src="${pet.photo}" alt="${t("print.legacyDossier.mainPhoto")}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
-                  <div style="font-size: 11px; color: #666; margin-top: 5px;">${t("print.legacyDossier.mainPhoto")}</div>
+                  <img src="${u(pet.photo)}" alt="${e(t("print.legacyDossier.mainPhoto"))}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
+                  <div style="font-size: 11px; color: #666; margin-top: 5px;">${e(t("print.legacyDossier.mainPhoto"))}</div>
                 </div>
               ` : ''}
               ${sortedConsultations.some(c => c.photos && c.photos.length > 0) ? 
                 sortedConsultations.map(c => 
                   c.photos ? c.photos.map((photo, idx) => `
                     <div style="text-align: center;">
-                      <img src="${photo}" alt="${t("print.legacyDossier.consultPhoto", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) })} - ${t("print.legacyDossier.photoN", { n: idx + 1 })}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
-                      <div style="font-size: 11px; color: #666; margin-top: 5px;">${t("print.legacyDossier.consultPhoto", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) })}</div>
+                      <img src="${u(photo)}" alt="${e(t("print.legacyDossier.consultPhoto", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) }))} - ${e(t("print.legacyDossier.photoN", { n: idx + 1 }))}" style="max-width: 150px; max-height: 150px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;" />
+                      <div style="font-size: 11px; color: #666; margin-top: 5px;">${e(t("print.legacyDossier.consultPhoto", { date: new Date(c.date).toLocaleDateString(getBcp47Locale(i18n.language)) }))}</div>
                     </div>
                   `).join('') : ''
                 ).join('') : ''
               }
             </div>
             ${!pet.photo && !sortedConsultations.some(c => c.photos && c.photos.length > 0) ? 
-              `<p style="text-align: center; color: #666; font-style: italic;">${t("print.legacyDossier.noPhotos")}</p>` : ''
+              `<p style="text-align: center; color: #666; font-style: italic;">${e(t("print.legacyDossier.noPhotos"))}</p>` : ''
             }
           </div>
 
           <div style="margin-top: 40px; text-align: center; font-size: 12px; color: #666;">
-            <p>${t("print.legacyDossier.footerBrand")}</p>
+            <p>${e(t("print.legacyDossier.footerBrand"))}</p>
           </div>
         </body>
       </html>

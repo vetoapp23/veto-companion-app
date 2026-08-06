@@ -2,6 +2,7 @@ node_modules
 .env
 .github/prompts
 database
+database-exports/
 *.md
 *.sh
 *.sql

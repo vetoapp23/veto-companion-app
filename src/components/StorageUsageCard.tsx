@@ -2,22 +2,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { HardDrive, Sparkles, AlertTriangle, ArrowUpRight, RefreshCw } from "lucide-react";
+import { HardDrive, Sparkles, AlertTriangle, ArrowUpRight, RefreshCw, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { useQuotaCheck } from "@/hooks/useQuotaCheck";
 import { recomputeStorageUsage } from "@/lib/photoCompression";
+import { openBillingPortal } from "@/lib/stripeBilling";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function StorageUsageCard() {
   const { t } = useTranslation("settings");
   const { t: tc } = useTranslation("common");
-  const { quota, isLoading, storageWarning, storageBlocked, isFree, refetch, isPrivileged } = usePlanLimits();
+  const { user } = useAuth();
+  const { quota, isLoading, storageWarning, storageBlocked, isFree, refetch } = usePlanLimits();
   const { counts, limitFor, usagePercent, reached } = useQuotaCheck();
   const { toast } = useToast();
   const [recomputing, setRecomputing] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const isAdmin =
+    user?.profile?.role === "admin" || user?.profile?.role === "super_admin";
 
   const handleRecompute = async () => {
     setRecomputing(true);
@@ -29,6 +36,26 @@ export function StorageUsageCard() {
       toast({ title: tc("error"), description: e?.message, variant: "destructive" });
     } finally {
       setRecomputing(false);
+    }
+  };
+
+  const handlePortal = async () => {
+    setPortalLoading(true);
+    try {
+      const url = await openBillingPortal();
+      window.location.href = url;
+    } catch (e: any) {
+      toast({
+        title: tc("error"),
+        description:
+          e?.message === "no_stripe_customer"
+            ? t("storageUsage.noStripeCustomer", {
+                defaultValue: "Aucun abonnement Stripe. Choisissez un pack sur la page Tarifs.",
+              })
+            : e?.message,
+        variant: "destructive",
+      });
+      setPortalLoading(false);
     }
   };
 
@@ -64,11 +91,19 @@ export function StorageUsageCard() {
               </Badge>
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={handleRecompute} disabled={recomputing}>
               <RefreshCw className={`mr-1 h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
               {t("storageUsage.recompute")}
             </Button>
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={handlePortal} disabled={portalLoading}>
+                <CreditCard className="mr-1 h-4 w-4" />
+                {portalLoading
+                  ? "…"
+                  : t("storageUsage.manageBilling", { defaultValue: "Gérer l’abonnement" })}
+              </Button>
+            )}
             <Button asChild variant="outline" size="sm">
               <Link to="/pricing">
                 {t("storageUsage.changePack")}

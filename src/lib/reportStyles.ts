@@ -1,6 +1,7 @@
 import i18n from "@/i18n";
 import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { watermarkStyle } from "@/lib/printWatermark";
+import { escapeHtml, safePrintUrl } from "@/lib/utils";
 
 const t = (key: string, opts?: Record<string, unknown>) =>
   i18n.t(key, { ns: "app", ...opts });
@@ -231,27 +232,30 @@ export interface ReportDocumentOptions {
 }
 
 export function buildReportHeader(title: string, clinic: ReportDocumentOptions["clinic"]): string {
+  const e = escapeHtml;
+  const u = safePrintUrl;
   return `
     <header class="report-header">
       <div>
-        ${clinic.logo ? `<div class="logo"><img src="${clinic.logo}" alt="${t("report.logoAlt")}" /></div>` : ""}
-        <h1>${title}</h1>
+        ${clinic.logo ? `<div class="logo"><img src="${u(clinic.logo)}" alt="${e(t("report.logoAlt"))}" /></div>` : ""}
+        <h1>${e(title)}</h1>
       </div>
       <div class="clinic">
-        <strong>${clinic.clinicName ?? ""}</strong>
-        ${clinic.address ? `${clinic.address}<br/>` : ""}
-        ${[clinic.phone, clinic.email].filter(Boolean).join(" · ")}
+        <strong>${e(clinic.clinicName ?? "")}</strong>
+        ${clinic.address ? `${e(clinic.address)}<br/>` : ""}
+        ${e([clinic.phone, clinic.email].filter(Boolean).join(" · "))}
       </div>
     </header>`;
 }
 
 export function buildReportDocument(opts: ReportDocumentOptions): string {
+  const e = escapeHtml;
   const headerHtml = buildReportHeader(opts.headerTitle, opts.clinic);
   return `<!doctype html>
 <html lang="${htmlLang()}">
 <head>
   <meta charset="utf-8"/>
-  <title>${opts.title}</title>
+  <title>${e(opts.title)}</title>
   <style>${REPORT_STYLES}${opts.extraStyles ?? ""}</style>
 </head>
 <body>
@@ -270,9 +274,10 @@ export function buildReportDocument(opts: ReportDocumentOptions): string {
 }
 
 export function buildDefaultFooter(clinicName?: string, withSignature = false): string {
-  const dateLine = `<div>${t("report.generatedOn", { date: new Date().toLocaleDateString(getBcp47Locale(i18n.language)) })}</div>`;
+  const e = escapeHtml;
+  const dateLine = `<div>${e(t("report.generatedOn", { date: new Date().toLocaleDateString(getBcp47Locale(i18n.language)) }))}</div>`;
   if (withSignature) {
-    return `${dateLine}<div class="sig"><div class="line">${t("report.signatureStamp")}</div></div>`;
+    return `${dateLine}<div class="sig"><div class="line">${e(t("report.signatureStamp"))}</div></div>`;
   }
-  return `${dateLine}<div>${clinicName ?? ""}</div>`;
+  return `${dateLine}<div>${e(clinicName ?? "")}</div>`;
 }

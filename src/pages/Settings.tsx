@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,6 +49,22 @@ export default function Settings() {
   const { t: tc } = useTranslation("common");
   const { t: tm } = useTranslation("medical");
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const billing = searchParams.get("billing");
+    if (billing === "success") {
+      toast({
+        title: t("billing.successTitle", { defaultValue: "Paiement reçu" }),
+        description: t("billing.successBody", {
+          defaultValue: "Votre abonnement Stripe est en cours d’activation. Rechargez si les quotas ne se mettent pas à jour.",
+        }),
+      });
+      searchParams.delete("billing");
+      searchParams.delete("session_id");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
   const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
   const { canWrite, guardWrite } = useWriteAccess("can_manage_settings");

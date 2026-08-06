@@ -44,10 +44,14 @@ import {
 } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useTranslation } from "react-i18next";
+import { useQuotaCheck } from "@/hooks/useQuotaCheck";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 
 export default function TeamManagement() {
   const { t, i18n } = useTranslation("app");
   const { t: tc } = useTranslation("common");
+  const { enforce, counts, limitFor } = useQuotaCheck();
+  const { quota } = usePlanLimits();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -100,6 +104,7 @@ export default function TeamManagement() {
 
   const handleApprove = async (member: TeamMember) => {
     if (!user?.id) return;
+    if (!(await enforce("users"))) return;
     setBusyId(member.id);
     try {
       const { error: approveErr } = await supabase.rpc("approve_user", {
@@ -250,7 +255,11 @@ export default function TeamManagement() {
       <AppPageHeader
         icon={Users}
         title={t("team.title")}
-        description={t("team.description")}
+        description={
+          limitFor("users") != null
+            ? `${t("team.description")} — ${counts.users}/${limitFor("users")} ${t("team.seats", { defaultValue: "sièges" })} (${quota?.plan_name ?? ""})`
+            : t("team.description")
+        }
       />
 
       <OrganizationInviteCode />

@@ -77,6 +77,10 @@ function loadHtmlInWindow(html: string): Window | null {
  * Ouvre le HTML dans la boîte d'impression du navigateur
  * (Imprimer papier ou « Enregistrer au format PDF » — même rendu CSS).
  * Sur mobile / popup bloquée → iframe (sans nouvel onglet).
+ *
+ * **Sécurité :** `html` must already be safe for `document.write` — callers that
+ * interpolate user/clinic data must escape with `escapeHtml` / `safePrintUrl`
+ * before passing HTML here. This helper only writes caller-provided markup.
  */
 export async function printHtml(html: string): Promise<void> {
   if (isMobileUa()) {
@@ -100,6 +104,8 @@ export async function printHtml(html: string): Promise<void> {
 /**
  * Alias du module d'impression (évite html2canvas / html2pdf qui cassent la mise en page).
  * Dans la boîte de dialogue, choisir « Enregistrer au format PDF ».
+ *
+ * **Sécurité :** same contract as {@link printHtml} — escape untrusted strings upstream.
  */
 export async function downloadHtmlAsPdf(html: string, _filename?: string): Promise<void> {
   await printHtml(html);

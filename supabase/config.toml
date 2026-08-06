@@ -4,9 +4,10 @@ project_id = "yoskgnuoyjczxsdrgjwv"
 verify_jwt = false
 
 [functions.send-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.seed-demo-users]
+# Custom secret auth (x-demo-seed-secret); keep JWT off so ops can seed without a user session.
 verify_jwt = false
 
 [functions.seed-super-admin]

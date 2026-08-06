@@ -31,11 +31,12 @@ const mainTabs: {
   labelKey: string;
   path: string;
   permission?: PermissionKey | null;
+  planFeature?: "clients" | "animals" | "appointments";
 }[] = [
   { icon: Home, labelKey: "home", path: "/dashboard", permission: null },
-  { icon: Users, labelKey: "clients", path: "/clients", permission: "can_manage_clients" },
-  { icon: Calendar, labelKey: "appointmentsShort", path: "/appointments", permission: "can_manage_appointments" },
-  { icon: Heart, labelKey: "pets", path: "/pets", permission: "can_manage_animals" },
+  { icon: Users, labelKey: "clients", path: "/clients", permission: "can_manage_clients", planFeature: "clients" },
+  { icon: Calendar, labelKey: "appointmentsShort", path: "/appointments", permission: "can_manage_appointments", planFeature: "appointments" },
+  { icon: Heart, labelKey: "pets", path: "/pets", permission: "can_manage_animals", planFeature: "animals" },
 ];
 
 const moreItems: {
@@ -43,13 +44,23 @@ const moreItems: {
   labelKey: string;
   path: string;
   permission?: PermissionKey | null;
-  planFeature?: "farm" | "accounting" | "stock";
+  planFeature?:
+    | "farm"
+    | "accounting"
+    | "stock"
+    | "visits"
+    | "consultations"
+    | "vaccinations"
+    | "antiparasites"
+    | "clients"
+    | "animals"
+    | "appointments";
   adminOnly?: boolean;
 }[] = [
-  { icon: ClipboardList, labelKey: "visits", path: "/visites", permission: "can_manage_visits" },
-  { icon: FileText, labelKey: "consultations", path: "/consultations", permission: "can_create_consultations" },
-  { icon: Syringe, labelKey: "vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
-  { icon: Bug, labelKey: "antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
+  { icon: ClipboardList, labelKey: "visits", path: "/visites", permission: "can_manage_visits", planFeature: "visits" },
+  { icon: FileText, labelKey: "consultations", path: "/consultations", permission: "can_create_consultations", planFeature: "consultations" },
+  { icon: Syringe, labelKey: "vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations", planFeature: "vaccinations" },
+  { icon: Bug, labelKey: "antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites", planFeature: "antiparasites" },
   { icon: BarChart3, labelKey: "history", path: "/history", permission: "can_view_history" },
   { icon: Building2, labelKey: "farms", path: "/farms", planFeature: "farm", permission: "can_manage_farms" },
   { icon: Package, labelKey: "stock", path: "/stock", planFeature: "stock", permission: "can_manage_stock" },
@@ -67,24 +78,37 @@ const moreItems: {
 export function MobileBottomNav() {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
+  const plan = usePlanLimits();
   const [open, setOpen] = useState(false);
   const { t } = useTranslation("nav");
   const isAdmin =
     user?.profile?.role === "admin" || user?.profile?.role === "super_admin";
 
-  const planAllows = (f?: "farm" | "accounting" | "stock") =>
-    !f ||
-    (f === "farm" && hasFarmManagement) ||
-    (f === "accounting" && hasAccounting) ||
-    (f === "stock" && hasStock);
+  const planAllows = (f?: string) => {
+    if (!f) return true;
+    const map: Record<string, boolean> = {
+      farm: plan.hasFarmManagement,
+      accounting: plan.hasAccounting,
+      stock: plan.hasStock,
+      consultations: plan.hasConsultations,
+      visits: plan.hasVisits,
+      appointments: plan.hasAppointments,
+      vaccinations: plan.hasVaccinations,
+      antiparasites: plan.hasAntiparasites,
+      clients: plan.hasClients,
+      animals: plan.hasAnimals,
+    };
+    return map[f] !== false;
+  };
 
   const itemAllowed = (i: (typeof moreItems)[number] | (typeof mainTabs)[number]) => {
     if ("adminOnly" in i && i.adminOnly) return isAdmin;
     return userHasPermission(user, i.permission ?? null);
   };
 
-  const visibleMain = mainTabs.filter((i) => itemAllowed(i));
+  const visibleMain = mainTabs.filter(
+    (i) => itemAllowed(i) && planAllows((i as any).planFeature),
+  );
   const visibleMore = moreItems.filter((i) => itemAllowed(i) && planAllows(i.planFeature));
 
   if (!user) return null;

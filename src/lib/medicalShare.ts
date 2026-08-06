@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import i18n from "@/i18n";
 import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { supabase } from "@/lib/supabase";
+import { escapeHtml, safePrintUrl } from "@/lib/utils";
 import { siteUrl } from "@/components/SeoHead";
 
 const t = (key: string, opts?: Record<string, unknown>) =>
@@ -335,9 +336,9 @@ export function parseMedicalShareToken(input: string): string | null {
     /* ignore */
   }
 
-  // Short invite-style code (8 chars typical) or long opaque token
+  // Short invite-style code (10 chars) or long opaque token
   const cleaned = raw.replace(/[\s-]/g, "");
-  if (/^[A-Za-z0-9]{6,14}$/.test(cleaned)) return cleaned.toUpperCase();
+  if (/^[A-Za-z0-9]{8,14}$/.test(cleaned)) return cleaned.toUpperCase();
   if (/^[A-Za-z0-9_-]{16,128}$/.test(raw)) return raw;
 
   return null;
@@ -401,30 +402,32 @@ export function buildTransferQrSectionHtml(opts: {
   shortCode?: string;
   expiresAt?: string;
 }): string {
+  const e = escapeHtml;
+  const u = safePrintUrl;
   const expiresLabel = opts.expiresAt
     ? new Date(opts.expiresAt).toLocaleDateString(getBcp47Locale(i18n.language))
     : "—";
   const codeBlock = opts.shortCode
-    ? `<p style="margin:8px 0 6px;"><strong>${t("print.dossier.transferCodeLabel")}</strong>
-         <span style="font-family:ui-monospace,monospace;font-size:18px;letter-spacing:0.12em;font-weight:700;">${opts.shortCode}</span>
+    ? `<p style="margin:8px 0 6px;"><strong>${e(t("print.dossier.transferCodeLabel"))}</strong>
+         <span style="font-family:ui-monospace,monospace;font-size:18px;letter-spacing:0.12em;font-weight:700;">${e(opts.shortCode)}</span>
        </p>
        <p style="margin:0 0 8px;font-size:11px;color:#64748b;">
-         ${t("print.dossier.transferCodeHint")}
+         ${e(t("print.dossier.transferCodeHint"))}
        </p>`
     : "";
   return `
     <section class="block" style="page-break-inside:avoid;margin-top:18px;">
-      <h2>${t("print.dossier.transferQrHeading")}</h2>
+      <h2>${e(t("print.dossier.transferQrHeading"))}</h2>
       <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-        <img src="${opts.qrDataUrl}" alt="${t("dossier.qrAlt")}" width="140" height="140"
+        <img src="${u(opts.qrDataUrl)}" alt="${e(t("dossier.qrAlt"))}" width="140" height="140"
           style="width:140px;height:140px;border:1px solid #e5e7eb;border-radius:8px;" />
         <div style="flex:1;min-width:200px;font-size:12px;line-height:1.45;">
           <p style="margin:0 0 8px;">
-            ${t("print.dossier.transferQrScanHint")}
+            ${e(t("print.dossier.transferQrScanHint"))}
           </p>
           ${codeBlock}
-          <p style="margin:0 0 6px;"><strong>${t("print.dossier.validUntilColon")}</strong> ${expiresLabel}</p>
-          <p style="margin:0;word-break:break-all;color:#64748b;font-size:10px;">${opts.importUrl}</p>
+          <p style="margin:0 0 6px;"><strong>${e(t("print.dossier.validUntilColon"))}</strong> ${e(expiresLabel)}</p>
+          <p style="margin:0;word-break:break-all;color:#64748b;font-size:10px;">${e(opts.importUrl)}</p>
         </div>
       </div>
     </section>

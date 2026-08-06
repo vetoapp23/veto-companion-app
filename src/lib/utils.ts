@@ -7,6 +7,33 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Escape untrusted text before interpolating into HTML (print/PDF templates). */
+export function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Allow only safe URL schemes for print/PDF <img src> / href attributes. */
+export function safePrintUrl(url: unknown): string {
+  const s = String(url ?? "").trim();
+  if (!s) return "";
+  const lower = s.toLowerCase();
+  if (
+    lower.startsWith("https:") ||
+    lower.startsWith("http:") ||
+    lower.startsWith("data:image/") ||
+    lower.startsWith("blob:") ||
+    (lower.startsWith("/") && !lower.startsWith("//"))
+  ) {
+    return escapeHtml(s);
+  }
+  return "";
+}
+
 /**
  * Calcule l'âge à partir d'une date de naissance
  * @param birthDate - Date de naissance au format YYYY-MM-DD

@@ -33,15 +33,16 @@ const primaryNavItems: {
   labelKey: string;
   path: string;
   permission: PermissionKey | null;
+  planFeature?: "clients" | "animals" | "appointments" | "visits" | "consultations" | "vaccinations" | "antiparasites";
 }[] = [
   { icon: Home, labelKey: "dashboard", path: "/dashboard", permission: null },
-  { icon: Users, labelKey: "clients", path: "/clients", permission: "can_manage_clients" },
-  { icon: Heart, labelKey: "pets", path: "/pets", permission: "can_manage_animals" },
-  { icon: Calendar, labelKey: "appointmentsShort", path: "/appointments", permission: "can_manage_appointments" },
-  { icon: ClipboardList, labelKey: "visits", path: "/visites", permission: "can_manage_visits" },
-  { icon: FileText, labelKey: "consultations", path: "/consultations", permission: "can_create_consultations" },
-  { icon: Syringe, labelKey: "vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations" },
-  { icon: Bug, labelKey: "antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites" },
+  { icon: Users, labelKey: "clients", path: "/clients", permission: "can_manage_clients", planFeature: "clients" },
+  { icon: Heart, labelKey: "pets", path: "/pets", permission: "can_manage_animals", planFeature: "animals" },
+  { icon: Calendar, labelKey: "appointmentsShort", path: "/appointments", permission: "can_manage_appointments", planFeature: "appointments" },
+  { icon: ClipboardList, labelKey: "visits", path: "/visites", permission: "can_manage_visits", planFeature: "visits" },
+  { icon: FileText, labelKey: "consultations", path: "/consultations", permission: "can_create_consultations", planFeature: "consultations" },
+  { icon: Syringe, labelKey: "vaccinations", path: "/vaccinations", permission: "can_manage_vaccinations", planFeature: "vaccinations" },
+  { icon: Bug, labelKey: "antiparasites", path: "/antiparasites", permission: "can_manage_antiparasites", planFeature: "antiparasites" },
   { icon: BarChart3, labelKey: "history", path: "/history", permission: "can_view_history" },
 ];
 
@@ -82,18 +83,29 @@ export function VetNavigation() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
-  const { hasFarmManagement, hasAccounting, hasStock } = usePlanLimits();
+  const plan = usePlanLimits();
   const { t } = useTranslation("nav");
 
-  const planAllows = (feature?: "farm" | "accounting" | "stock") => {
+  const planAllows = (feature?: string) => {
     if (!feature) return true;
-    if (feature === "farm") return hasFarmManagement;
-    if (feature === "accounting") return hasAccounting;
-    if (feature === "stock") return hasStock;
-    return true;
+    const map: Record<string, boolean> = {
+      farm: plan.hasFarmManagement,
+      accounting: plan.hasAccounting,
+      stock: plan.hasStock,
+      consultations: plan.hasConsultations,
+      visits: plan.hasVisits,
+      appointments: plan.hasAppointments,
+      vaccinations: plan.hasVaccinations,
+      antiparasites: plan.hasAntiparasites,
+      clients: plan.hasClients,
+      animals: plan.hasAnimals,
+    };
+    return map[feature] !== false;
   };
 
-  const filteredPrimaryNavItems = primaryNavItems.filter((item) => navItemAllowed(user, item));
+  const filteredPrimaryNavItems = primaryNavItems.filter(
+    (item) => navItemAllowed(user, item) && planAllows(item.planFeature)
+  );
   const filteredSecondaryNavItems = secondaryNavItems.filter(
     (item) => navItemAllowed(user, item) && planAllows(item.planFeature)
   );

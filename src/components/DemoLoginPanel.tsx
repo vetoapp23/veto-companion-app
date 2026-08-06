@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -14,15 +14,20 @@ const DEMO_ACCOUNTS = [
   { plan: "clinic", email: "demo-clinic@vetpro.test", labelKey: "demo.plans.clinic" },
 ] as const;
 
-const DEMO_PASSWORD = "DemoVetpro2026!";
+/** Demo UI only in local/dev or when explicitly enabled (never enable in production). */
+export const isDemoLoginEnabled =
+  import.meta.env.DEV === true || import.meta.env.VITE_ENABLE_DEMO === "true";
+
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "DemoVetpro2026!";
 
 export function DemoLoginPanel() {
   const { t } = useTranslation("auth");
   const { t: tc } = useTranslation("common");
   const [busy, setBusy] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  if (!isDemoLoginEnabled) return null;
 
   const loginAs = async (email: string, plan: string) => {
     setBusy(plan);
@@ -52,27 +57,6 @@ export function DemoLoginPanel() {
     }
   };
 
-  const seed = async () => {
-    setSeeding(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("seed-demo-users", { body: {} });
-      if (error) throw error;
-      const okCount = (data?.results ?? []).filter((r: any) => r.ok).length;
-      toast({
-        title: t("demo.accountsReady"),
-        description: t("demo.accountsReadyBody", {
-          count: okCount,
-          total: DEMO_ACCOUNTS.length,
-          password: DEMO_PASSWORD,
-        }),
-      });
-    } catch (e: any) {
-      toast({ title: t("demo.initFailed"), description: e.message, variant: "destructive" });
-    } finally {
-      setSeeding(false);
-    }
-  };
-
   return (
     <div className="mk-demo">
       <h3 className="flex items-center gap-2">
@@ -93,23 +77,6 @@ export function DemoLoginPanel() {
           </Button>
         ))}
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full mt-2 text-[var(--mk-teal)] hover:bg-[rgba(15,118,110,0.08)] hover:text-[var(--mk-teal)]"
-        onClick={seed}
-        disabled={seeding}
-      >
-        {seeding ? (
-          <>
-            <Loader2 className="mr-2 h-3 w-3 animate-spin" /> {t("demo.initializing")}
-          </>
-        ) : (
-          <>
-            <RefreshCw className="mr-2 h-3 w-3" /> {t("demo.initAccounts")}
-          </>
-        )}
-      </Button>
       <p className="text-[10px] text-center mt-2" style={{ color: "var(--mk-muted)" }}>
         {t("demo.passwordLabel")} <code>{DEMO_PASSWORD}</code>
       </p>

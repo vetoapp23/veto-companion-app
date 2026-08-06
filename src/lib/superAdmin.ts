@@ -1,5 +1,23 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export const PLATFORM_FEATURE_KEYS = [
+  "consultations",
+  "visits",
+  "appointments",
+  "vaccinations",
+  "antiparasites",
+  "farm",
+  "stock",
+  "accounting",
+  "clients",
+  "animals",
+] as const;
+
+export type PlatformFeatureKey = (typeof PLATFORM_FEATURE_KEYS)[number];
+
+export const PAYMENT_METHODS = ["virement", "especes", "cheque", "stripe", "autre"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
 export async function logAdminAction(params: {
   action: string;
   resourceType: string;
@@ -34,6 +52,60 @@ export async function adminUpsertSubscription(orgId: string, payload: Record<str
   const { data, error } = await supabase.rpc("admin_upsert_subscription" as any, {
     p_organization_id: orgId,
     p_payload: payload,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function adminRecordSubscriptionPayment(params: {
+  organizationId: string;
+  amount: number;
+  currency?: string;
+  method?: PaymentMethod;
+  reference?: string | null;
+  paidAt?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  status?: "received" | "pending" | "refunded";
+  notes?: string | null;
+  planCode?: string | null;
+  activate?: boolean;
+}) {
+  const { data, error } = await supabase.rpc("admin_record_subscription_payment" as any, {
+    p_organization_id: params.organizationId,
+    p_amount: params.amount,
+    p_currency: params.currency ?? "MAD",
+    p_method: params.method ?? "virement",
+    p_reference: params.reference ?? null,
+    p_paid_at: params.paidAt ?? new Date().toISOString(),
+    p_period_start: params.periodStart ?? null,
+    p_period_end: params.periodEnd ?? null,
+    p_status: params.status ?? "received",
+    p_notes: params.notes ?? null,
+    p_plan_code: params.planCode ?? null,
+    p_activate: params.activate ?? true,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function adminListSubscriptionPayments(orgId?: string | null, limit = 100) {
+  const { data, error } = await supabase.rpc("admin_list_subscription_payments" as any, {
+    p_organization_id: orgId ?? null,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as any[];
+}
+
+export async function adminSetOrgUser(
+  userId: string,
+  patch: { role?: "admin" | "assistant" | null; status?: string | null },
+) {
+  const { data, error } = await supabase.rpc("admin_set_org_user" as any, {
+    p_user_id: userId,
+    p_role: patch.role ?? null,
+    p_status: patch.status ?? null,
   });
   if (error) throw error;
   return data;
@@ -116,4 +188,8 @@ export async function addSupportNote(orgId: string, body: string) {
 /** Approximate MRR helper for UI when RPC unavailable */
 export function formatMad(n: number) {
   return `${Math.round(n).toLocaleString("fr-FR")} MAD`;
+}
+
+export function formatMoney(n: number, currency = "MAD") {
+  return `${Math.round(n).toLocaleString("fr-FR")} ${currency}`;
 }

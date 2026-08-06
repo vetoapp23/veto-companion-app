@@ -18,7 +18,7 @@ import {
   useClients,
 } from "@/hooks/useDatabase";
 import { usePedigree } from "@/hooks/usePedigree";
-import { calculateAge, formatTemperature } from "@/lib/utils";
+import { calculateAge, escapeHtml, formatTemperature, safePrintUrl } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/useAppLocale";
@@ -152,6 +152,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
   const buildHtml = async (transferQrHtml = "") => {
     if (!animal) return "";
 
+    const e = escapeHtml;
+    const u = safePrintUrl;
     const owner = clients.find((c: any) => c.id === (animal.client_id || animal.dbClientId));
     const ownerName = owner ? `${owner.first_name} ${owner.last_name}` : (animal.owner || "—");
 
@@ -160,18 +162,18 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     if (sections.identity) {
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("print.dossier.identityHeading")}</h2>
+          <h2>${e(t("print.dossier.identityHeading"))}</h2>
           <table class="info">
-            <tr><th>${t("print.dossier.name")}</th><td>${animal.name ?? "—"}</td><th>${t("print.dossier.owner")}</th><td>${ownerName}</td></tr>
-            <tr><th>${t("print.dossier.species")}</th><td>${animal.species ?? animal.type ?? "—"}</td><th>${t("print.dossier.breed")}</th><td>${animal.breed ?? "—"}</td></tr>
-            <tr><th>${t("print.dossier.sex")}</th><td>${animal.sex ?? animal.gender ?? "—"}</td><th>${t("print.dossier.color")}</th><td>${animal.color ?? "—"}</td></tr>
-            <tr><th>${t("print.dossier.birthDate")}</th><td>${fmtDate(animal.birth_date ?? animal.birthDate)}</td><th>${t("print.dossier.age")}</th><td>${animal.birth_date || animal.birthDate ? calculateAge(animal.birth_date ?? animal.birthDate) : "—"}</td></tr>
-            <tr><th>${t("print.dossier.weight")}</th><td>${animal.weight ? `${animal.weight} kg` : "—"}</td><th>${t("print.dossier.microchip")}</th><td>${animal.microchip_number ?? animal.microchip ?? "—"}</td></tr>
-            <tr><th>${t("print.dossier.sterilized")}</th><td>${animal.sterilized ? tc("yes") : tc("no")}</td><th>${t("print.dossier.status")}</th><td>${animal.status ?? "—"}</td></tr>
+            <tr><th>${e(t("print.dossier.name"))}</th><td>${e(animal.name ?? "—")}</td><th>${e(t("print.dossier.owner"))}</th><td>${e(ownerName)}</td></tr>
+            <tr><th>${e(t("print.dossier.species"))}</th><td>${e(animal.species ?? animal.type ?? "—")}</td><th>${e(t("print.dossier.breed"))}</th><td>${e(animal.breed ?? "—")}</td></tr>
+            <tr><th>${e(t("print.dossier.sex"))}</th><td>${e(animal.sex ?? animal.gender ?? "—")}</td><th>${e(t("print.dossier.color"))}</th><td>${e(animal.color ?? "—")}</td></tr>
+            <tr><th>${e(t("print.dossier.birthDate"))}</th><td>${e(fmtDate(animal.birth_date ?? animal.birthDate))}</td><th>${e(t("print.dossier.age"))}</th><td>${e(animal.birth_date || animal.birthDate ? calculateAge(animal.birth_date ?? animal.birthDate) : "—")}</td></tr>
+            <tr><th>${e(t("print.dossier.weight"))}</th><td>${e(animal.weight ? `${animal.weight} kg` : "—")}</td><th>${e(t("print.dossier.microchip"))}</th><td>${e(animal.microchip_number ?? animal.microchip ?? "—")}</td></tr>
+            <tr><th>${e(t("print.dossier.sterilized"))}</th><td>${e(animal.sterilized ? tc("yes") : tc("no"))}</td><th>${e(t("print.dossier.status"))}</th><td>${e(animal.status ?? "—")}</td></tr>
           </table>
-          ${animal.medical_history ? `<p><strong>${t("print.dossier.history")}</strong> ${animal.medical_history}</p>` : ""}
-          ${animal.allergies?.length ? `<p><strong>${t("print.dossier.allergies")}</strong> ${animal.allergies.join(", ")}</p>` : ""}
-          ${animal.chronic_conditions?.length ? `<p><strong>${t("print.dossier.chronic")}</strong> ${animal.chronic_conditions.join(", ")}</p>` : ""}
+          ${animal.medical_history ? `<p><strong>${e(t("print.dossier.history"))}</strong> ${e(animal.medical_history)}</p>` : ""}
+          ${animal.allergies?.length ? `<p><strong>${e(t("print.dossier.allergies"))}</strong> ${e(animal.allergies.join(", "))}</p>` : ""}
+          ${animal.chronic_conditions?.length ? `<p><strong>${e(t("print.dossier.chronic"))}</strong> ${e(animal.chronic_conditions.join(", "))}</p>` : ""}
         </section>
       `);
     }
@@ -179,12 +181,12 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     if (sections.pedigree && pedigree) {
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("print.dossier.pedigree")}</h2>
+          <h2>${e(t("print.dossier.pedigree"))}</h2>
           <table class="info">
-            <tr><th>${t("print.dossier.registration")}</th><td>${pedigree.registration_number ?? "—"}</td><th>${t("print.dossier.origin")}</th><td>${pedigree.pedigree_origin ?? "—"}</td></tr>
-            <tr><th>${t("print.dossier.titles")}</th><td colspan="3">${pedigree.titles ?? "—"}</td></tr>
-            <tr><th>${t("print.dossier.father")}</th><td>${pedigree.father_name ?? "—"} (${pedigree.father_breed ?? "—"}) – ${pedigree.father_registration ?? ""}</td>
-                <th>${t("print.dossier.mother")}</th><td>${pedigree.mother_name ?? "—"} (${pedigree.mother_breed ?? "—"}) – ${pedigree.mother_registration ?? ""}</td></tr>
+            <tr><th>${e(t("print.dossier.registration"))}</th><td>${e(pedigree.registration_number ?? "—")}</td><th>${e(t("print.dossier.origin"))}</th><td>${e(pedigree.pedigree_origin ?? "—")}</td></tr>
+            <tr><th>${e(t("print.dossier.titles"))}</th><td colspan="3">${e(pedigree.titles ?? "—")}</td></tr>
+            <tr><th>${e(t("print.dossier.father"))}</th><td>${e(pedigree.father_name ?? "—")} (${e(pedigree.father_breed ?? "—")}) – ${e(pedigree.father_registration ?? "")}</td>
+                <th>${e(t("print.dossier.mother"))}</th><td>${e(pedigree.mother_name ?? "—")} (${e(pedigree.mother_breed ?? "—")}) – ${e(pedigree.mother_registration ?? "")}</td></tr>
           </table>
         </section>
       `);
@@ -194,10 +196,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = consultations.filter((c: any) => inRange(c.consultation_date));
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("print.dossier.consultationsHeading", { count: list.length })}</h2>
-          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noConsultations")}</p>` : `
+          <h2>${e(t("print.dossier.consultationsHeading", { count: list.length }))}</h2>
+          ${list.length === 0 ? `<p class='muted'>${e(t("print.dossier.noConsultations"))}</p>` : `
           <table class="data">
-            <thead><tr><th>${t("dossier.table.date")}</th><th>${t("dossier.table.type")}</th><th>${t("dossier.table.context")}</th><th>${t("dossier.table.diagnosisResults")}</th><th>${t("dossier.table.treatment")}</th><th>${t("dossier.table.notes")}</th></tr></thead>
+            <thead><tr><th>${e(t("dossier.table.date"))}</th><th>${e(t("dossier.table.type"))}</th><th>${e(t("dossier.table.context"))}</th><th>${e(t("dossier.table.diagnosisResults"))}</th><th>${e(t("dossier.table.treatment"))}</th><th>${e(t("dossier.table.notes"))}</th></tr></thead>
             <tbody>
               ${list.map((c: any) => {
                 const linkedRx = prescriptions.filter((p: any) => p.consultation_id === c.id);
@@ -210,12 +212,12 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                 ].filter(Boolean).join(" · ") || "—";
                 return `
                 <tr>
-                  <td>${fmtDate(c.consultation_date)}</td>
-                  <td>${c.consultation_type ?? "—"}</td>
-                  <td>${c.symptoms ?? (c.weight ? c.weight + " kg" : "—")}${c.temperature ? " · " + formatTemperature(c.temperature) : ""}</td>
-                  <td>${c.diagnosis ?? "—"}</td>
-                  <td>${treatmentCell}</td>
-                  <td>${c.notes ?? "—"}</td>
+                  <td>${e(fmtDate(c.consultation_date))}</td>
+                  <td>${e(c.consultation_type ?? "—")}</td>
+                  <td>${e(c.symptoms ?? (c.weight ? c.weight + " kg" : "—"))}${c.temperature ? " · " + e(formatTemperature(c.temperature)) : ""}</td>
+                  <td>${e(c.diagnosis ?? "—")}</td>
+                  <td>${e(treatmentCell)}</td>
+                  <td>${e(c.notes ?? "—")}</td>
                 </tr>`;
               }).join("")}
             </tbody>
@@ -228,19 +230,19 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = completedVaccinations;
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("print.dossier.vaccinationsDone", { count: list.length })}</h2>
-          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noVaccinations")}</p>` : `
+          <h2>${e(t("print.dossier.vaccinationsDone", { count: list.length }))}</h2>
+          ${list.length === 0 ? `<p class='muted'>${e(t("print.dossier.noVaccinations"))}</p>` : `
           <table class="data">
-            <thead><tr><th>${t("dossier.table.date")}</th><th>${t("print.dossier.vaccine")}</th><th>${t("print.dossier.dose")}</th><th>${t("print.dossier.type")}</th><th>${t("print.dossier.manufacturer")}</th><th>${t("print.dossier.batch")}</th></tr></thead>
+            <thead><tr><th>${e(t("dossier.table.date"))}</th><th>${e(t("print.dossier.vaccine"))}</th><th>${e(t("print.dossier.dose"))}</th><th>${e(t("print.dossier.type"))}</th><th>${e(t("print.dossier.manufacturer"))}</th><th>${e(t("print.dossier.batch"))}</th></tr></thead>
             <tbody>
               ${list.map((v) => `
                 <tr>
-                  <td>${formatCertDate(v.date)}</td>
-                  <td>${v.vaccineName ?? "—"}</td>
-                  <td>${v.doseLabel ?? "—"}</td>
-                  <td>${v.vaccineType ?? "—"}</td>
-                  <td>${v.manufacturer ?? "—"}</td>
-                  <td>${v.batchNumber ?? "—"}</td>
+                  <td>${e(formatCertDate(v.date))}</td>
+                  <td>${e(v.vaccineName ?? "—")}</td>
+                  <td>${e(v.doseLabel ?? "—")}</td>
+                  <td>${e(v.vaccineType ?? "—")}</td>
+                  <td>${e(v.manufacturer ?? "—")}</td>
+                  <td>${e(v.batchNumber ?? "—")}</td>
                 </tr>`).join("")}
             </tbody>
           </table>`}
@@ -252,19 +254,19 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = completedAntiparasitics;
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("print.dossier.antiparasiticsDone", { count: list.length })}</h2>
-          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noAntiparasitics")}</p>` : `
+          <h2>${e(t("print.dossier.antiparasiticsDone", { count: list.length }))}</h2>
+          ${list.length === 0 ? `<p class='muted'>${e(t("print.dossier.noAntiparasitics"))}</p>` : `
           <table class="data">
-            <thead><tr><th>${t("dossier.table.date")}</th><th>${t("print.dossier.product")}</th><th>${t("print.dossier.treatment")}</th><th>${t("print.dossier.type")}</th><th>${t("print.dossier.activeIngredient")}</th><th>${t("dossier.table.notes")}</th></tr></thead>
+            <thead><tr><th>${e(t("dossier.table.date"))}</th><th>${e(t("print.dossier.product"))}</th><th>${e(t("print.dossier.treatment"))}</th><th>${e(t("print.dossier.type"))}</th><th>${e(t("print.dossier.activeIngredient"))}</th><th>${e(t("dossier.table.notes"))}</th></tr></thead>
             <tbody>
               ${list.map((a) => `
                 <tr>
-                  <td>${formatCertDate(a.date)}</td>
-                  <td>${a.vaccineName ?? "—"}</td>
-                  <td>${a.doseLabel ?? "—"}</td>
-                  <td>${a.vaccineType ?? "—"}</td>
-                  <td>${a.manufacturer ?? "—"}</td>
-                  <td>${a.notes ?? "—"}</td>
+                  <td>${e(formatCertDate(a.date))}</td>
+                  <td>${e(a.vaccineName ?? "—")}</td>
+                  <td>${e(a.doseLabel ?? "—")}</td>
+                  <td>${e(a.vaccineType ?? "—")}</td>
+                  <td>${e(a.manufacturer ?? "—")}</td>
+                  <td>${e(a.notes ?? "—")}</td>
                 </tr>`).join("")}
             </tbody>
           </table>`}
@@ -276,33 +278,33 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
       const list = prescriptions.filter((p: any) => inRange(p.prescription_date));
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("dossier.prescriptionsHeading", { count: list.length })}</h2>
-          ${list.length === 0 ? `<p class='muted'>${t("print.dossier.noPrescriptions")}</p>` : list.map((p: any) => {
+          <h2>${e(t("dossier.prescriptionsHeading", { count: list.length }))}</h2>
+          ${list.length === 0 ? `<p class='muted'>${e(t("print.dossier.noPrescriptions"))}</p>` : list.map((p: any) => {
             const meds = Array.isArray(p.medications) ? p.medications : [];
             return `
             <div class="rx-block" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;">
-              <p style="margin:0 0 6px;"><strong>${fmtDate(p.prescription_date)}</strong>
-                · ${p.status ?? "—"}
-                ${p.valid_until ? ` · ${t("dossier.validUntilLabel", { date: fmtDate(p.valid_until) })}` : ""}
+              <p style="margin:0 0 6px;"><strong>${e(fmtDate(p.prescription_date))}</strong>
+                · ${e(p.status ?? "—")}
+                ${p.valid_until ? ` · ${e(t("dossier.validUntilLabel", { date: fmtDate(p.valid_until) }))}` : ""}
               </p>
-              ${p.diagnosis ? `<p style="margin:0 0 6px;"><strong>${t("dossier.diagnosis")}</strong> ${p.diagnosis}</p>` : ""}
+              ${p.diagnosis ? `<p style="margin:0 0 6px;"><strong>${e(t("dossier.diagnosis"))}</strong> ${e(p.diagnosis)}</p>` : ""}
               ${meds.length === 0
-                ? `<p class="muted" style="margin:0;">${t("dossier.noMedication")}</p>`
+                ? `<p class="muted" style="margin:0;">${e(t("dossier.noMedication"))}</p>`
                 : `<table class="data">
-                    <thead><tr><th>${t("print.dossier.medication")}</th><th>${t("print.dossier.dosage")}</th><th>${t("print.dossier.frequency")}</th><th>${t("print.dossier.duration")}</th><th>${t("print.dossier.qty")}</th><th>${t("print.dossier.instructions")}</th></tr></thead>
+                    <thead><tr><th>${e(t("print.dossier.medication"))}</th><th>${e(t("print.dossier.dosage"))}</th><th>${e(t("print.dossier.frequency"))}</th><th>${e(t("print.dossier.duration"))}</th><th>${e(t("print.dossier.qty"))}</th><th>${e(t("print.dossier.instructions"))}</th></tr></thead>
                     <tbody>
                       ${meds.map((m: any) => `
                         <tr>
-                          <td>${m.medication_name ?? "—"}</td>
-                          <td>${m.dosage ?? "—"}</td>
-                          <td>${m.frequency ?? "—"}</td>
-                          <td>${m.duration ?? "—"}</td>
-                          <td>${m.quantity ?? "—"}</td>
-                          <td>${m.instructions ?? "—"}</td>
+                          <td>${e(m.medication_name ?? "—")}</td>
+                          <td>${e(m.dosage ?? "—")}</td>
+                          <td>${e(m.frequency ?? "—")}</td>
+                          <td>${e(m.duration ?? "—")}</td>
+                          <td>${e(m.quantity ?? "—")}</td>
+                          <td>${e(m.instructions ?? "—")}</td>
                         </tr>`).join("")}
                     </tbody>
                   </table>`}
-              ${p.notes ? `<p style="margin:6px 0 0;"><strong>${t("dossier.notes")}</strong> ${p.notes}</p>` : ""}
+              ${p.notes ? `<p style="margin:6px 0 0;"><strong>${e(t("dossier.notes"))}</strong> ${e(p.notes)}</p>` : ""}
             </div>`;
           }).join("")}
         </section>
@@ -328,13 +330,13 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
       sectionsHtml.push(`
         <section class="block">
-          <h2>${t("print.dossier.photos", { count: photoItems.length })}</h2>
-          ${photoItems.length === 0 ? `<p class='muted'>${t("print.dossier.noPhotos")}</p>` : `
+          <h2>${e(t("print.dossier.photos", { count: photoItems.length }))}</h2>
+          ${photoItems.length === 0 ? `<p class='muted'>${e(t("print.dossier.noPhotos"))}</p>` : `
           <div class="photos">
             ${photoItems.map((p) => `
               <div class="photo-item">
-                <div class="photo-label">${p.label}</div>
-                <img src="${p.src}" alt="${p.label}" />
+                <div class="photo-label">${e(p.label)}</div>
+                <img src="${u(p.src)}" alt="${e(p.label)}" />
               </div>`).join("")}
           </div>`}
         </section>

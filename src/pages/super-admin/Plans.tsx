@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAllPlans } from "@/hooks/useSuperAdminData";
 import { supabase } from "@/integrations/supabase/client";
-import { logAdminAction } from "@/lib/superAdmin";
+import { logAdminAction, PLATFORM_FEATURE_KEYS, type PlatformFeatureKey } from "@/lib/superAdmin";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,16 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 const CURRENCIES = ["MAD", "EUR", "USD"] as const;
 const CYCLES = ["monthly", "yearly"] as const;
 
+const CORE_ON_BY_DEFAULT: PlatformFeatureKey[] = [
+  "consultations",
+  "visits",
+  "appointments",
+  "vaccinations",
+  "antiparasites",
+  "clients",
+  "animals",
+];
+
 function emptyPrices() {
   const p: any = { monthly: {}, yearly: {} };
   CURRENCIES.forEach((c) => {
@@ -24,6 +34,15 @@ function emptyPrices() {
     p.yearly[c] = 0;
   });
   return p;
+}
+
+function defaultLimitFlags(limits: Record<string, boolean> = {}) {
+  const flags: Record<string, boolean> = {};
+  PLATFORM_FEATURE_KEYS.forEach((k) => {
+    if (Object.prototype.hasOwnProperty.call(limits, k)) flags[k] = !!limits[k];
+    else flags[k] = CORE_ON_BY_DEFAULT.includes(k);
+  });
+  return flags;
 }
 
 export default function SuperAdminPlans() {
@@ -138,9 +157,7 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
     max_users: plan.max_users ?? 1,
     max_clients: plan.max_clients ?? "",
     max_animals: plan.max_animals ?? "",
-    limit_farm: !!limits.farm,
-    limit_stock: !!limits.stock,
-    limit_accounting: !!limits.accounting,
+    moduleFlags: defaultLimitFlags(limits),
     features: Array.isArray(plan.features) ? plan.features.join("\n") : "",
     prices: {
       monthly: { ...emptyPrices().monthly, ...(pricesIn.monthly || {}) },
@@ -162,6 +179,10 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const limitsPayload: Record<string, boolean> = {};
+      PLATFORM_FEATURE_KEYS.forEach((k) => {
+        limitsPayload[k] = !!form.moduleFlags?.[k];
+      });
       const payload: any = {
         code: form.code.trim(),
         name: form.name.trim(),
@@ -174,11 +195,7 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
         max_users: Number(form.max_users) || 1,
         max_clients: form.max_clients === "" ? null : Number(form.max_clients),
         max_animals: form.max_animals === "" ? null : Number(form.max_animals),
-        limits: {
-          farm: !!form.limit_farm,
-          stock: !!form.limit_stock,
-          accounting: !!form.limit_accounting,
-        },
+        limits: limitsPayload,
         features: form.features.split("\n").map((l: string) => l.trim()).filter(Boolean),
         prices: form.prices,
       };
@@ -235,10 +252,24 @@ function PlanDialog({ plan, onClose, onSaved }: any) {
               <label className="flex items-center gap-2 text-sm"><Switch checked={form.is_highlighted} onCheckedChange={(c) => setForm({ ...form, is_highlighted: c })} /> Mis en avant</label>
             </div>
           </div>
-          <div className="flex flex-wrap gap-4 rounded border p-3">
-            <label className="flex items-center gap-2 text-sm"><Switch checked={form.limit_farm} onCheckedChange={(c) => setForm({ ...form, limit_farm: c })} /> Fermes</label>
-            <label className="flex items-center gap-2 text-sm"><Switch checked={form.limit_stock} onCheckedChange={(c) => setForm({ ...form, limit_stock: c })} /> Stock</label>
-            <label className="flex items-center gap-2 text-sm"><Switch checked={form.limit_accounting} onCheckedChange={(c) => setForm({ ...form, limit_accounting: c })} /> Comptabilité</label>
+          <div className="rounded border p-3 space-y-2">
+            <Label className="text-sm">{t("superAdmin.plans.modulesTitle", { defaultValue: "Modules inclus dans ce plan" })}</Label>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {PLATFORM_FEATURE_KEYS.map((key) => (
+                <label key={key} className="flex items-center gap-2 text-sm">
+                  <Switch
+                    checked={!!form.moduleFlags?.[key]}
+                    onCheckedChange={(c) =>
+                      setForm({
+                        ...form,
+                        moduleFlags: { ...form.moduleFlags, [key]: c },
+                      })
+                    }
+                  />
+                  {t(`superAdmin.features.keys.${key}`)}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div>

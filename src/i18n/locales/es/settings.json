@@ -264,9 +264,17 @@
     "seePlans": "Ver planes",
     "features": {
       "farms": "Ganadería / Granjas",
+      "farm": "Ganadería / Granjas",
       "accounting": "Contabilidad",
       "stock": "Inventario",
-      "team": "Equipo"
+      "team": "Equipo",
+      "consultations": "Consultas",
+      "visits": "Visitas",
+      "appointments": "Citas",
+      "vaccinations": "Vacunas",
+      "antiparasites": "Antiparasitarios",
+      "clients": "Clientes",
+      "animals": "Animales"
     }
   },
   "roleGuard": {
@@ -435,7 +443,90 @@
       "clientSupport": "Soporte al cliente",
       "exportJson": "Exportar JSON",
       "impersonate": "Suplantar",
-      "savingSubscription": "Guardando…"
+      "savingSubscription": "Guardando…",
+      "subscriptionTitle": "Suscripción",
+      "statusLabel": "Estado (acceso)",
+      "billingCycle": "Ciclo",
+      "currency": "Moneda",
+      "customPrice": "Precio personalizado / ciclo",
+      "customPricePlaceholder": "Vacío = precio del catálogo",
+      "catalogPriceHint": "Catálogo: {{price}}",
+      "customPriceHelp": "Importe facturado a esta clínica. Vacío = precio del plan.",
+      "teamTitle": "Equipo de la clínica",
+      "userUpdated": "Usuario actualizado",
+      "planPreviewTitle": "Límites del plan seleccionado",
+      "planPreviewStorage": "Almacenamiento {{mb}} MB",
+      "planPreviewUsers": "{{n}} usuario(s)",
+      "planPreviewClients": "Clientes: {{n}}",
+      "planPreviewAnimals": "Animales: {{n}}",
+      "unlimited": "ilimitado",
+      "modulesOn": "Módulos incluidos",
+      "modulesOff": "Módulos excluidos",
+      "planChangeHint": "Al guardar: almacenamiento del catálogo aplicado, overrides de módulos reiniciados (salvo si se conservan).",
+      "keepFeatureOverrides": "Conservar los overrides de módulos al cambiar de plan",
+      "planAppliedBody": "Plan {{plan}} aplicado — {{storage}} MB, {{users}} plaza(s)."
+    },
+    "features": {
+      "title": "Módulos (overrides clínica)",
+      "help": "Clic para ciclar: Heredar plan → Forzado ON → Forzado OFF.",
+      "on": "ON",
+      "off": "OFF",
+      "inherit": "Hereda",
+      "save": "Guardar módulos + suscripción",
+      "keys": {
+        "consultations": "Consultas",
+        "visits": "Visitas",
+        "appointments": "Citas",
+        "vaccinations": "Vacunas",
+        "antiparasites": "Antiparasitarios",
+        "farm": "Granjas",
+        "stock": "Stock",
+        "accounting": "Contabilidad",
+        "clients": "Clientes",
+        "animals": "Animales"
+      }
+    },
+    "payments": {
+      "recordTitle": "Registrar un pago",
+      "recordCta": "Nuevo pago",
+      "historyTitle": "Historial de pagos",
+      "ledgerTitle": "Libro de cobros SaaS",
+      "amount": "Importe",
+      "method": "Método",
+      "reference": "Referencia",
+      "paidAt": "Fecha",
+      "periodStart": "Inicio periodo",
+      "periodEnd": "Fin periodo",
+      "status": "Estado",
+      "notes": "Notas",
+      "activateAccess": "Activar / prolongar acceso tras el cobro",
+      "save": "Guardar pago",
+      "saving": "Guardando…",
+      "recorded": "Pago registrado",
+      "invalidAmount": "Importe o clínica inválidos",
+      "empty": "Sin pagos",
+      "organization": "Clínica",
+      "allMethods": "Todos los métodos",
+      "allStatuses": "Todos los estados",
+      "methods": {
+        "virement": "Transferencia",
+        "especes": "Efectivo",
+        "cheque": "Cheque",
+        "stripe": "Stripe",
+        "autre": "Otro"
+      },
+      "statuses": {
+        "received": "Recibido",
+        "pending": "Pendiente",
+        "refunded": "Reembolsado"
+      }
+    },
+    "billing": {
+      "mrr": "MRR estimado (MAD)",
+      "mrrHelp": "Incluye precios personalizados por clínica",
+      "receivedMonth": "Cobrado este mes",
+      "pending": "Pendiente",
+      "payments": "pagos"
     },
     "plans": {
       "newPlan": "Nuevo plan",

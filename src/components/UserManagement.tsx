@@ -26,6 +26,7 @@ import {
 } from '../components/ui/dialog';
 import { useTranslation } from 'react-i18next';
 import { getBcp47Locale } from '@/i18n/useAppLocale';
+import { useQuotaCheck } from '@/hooks/useQuotaCheck';
 
 interface PendingUser {
   id: string;
@@ -44,6 +45,7 @@ const UserManagement = () => {
   const { t: tc, i18n } = useTranslation('common');
   const { user } = useAuth();
   const { toast } = useToast();
+  const { enforce } = useQuotaCheck();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -88,6 +90,7 @@ const UserManagement = () => {
 
   // Approve user
   const approveUser = async (userId: string) => {
+    if (!(await enforce('users'))) return;
     setActionLoading(userId);
     try {
       const { error } = await supabase.rpc('approve_user', {

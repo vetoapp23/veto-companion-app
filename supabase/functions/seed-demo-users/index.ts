@@ -1,14 +1,15 @@
 // Seed demo users for each subscription plan (idempotent).
-// Public endpoint used only during the testing phase.
+// Requires DEMO_SEED_ENABLED=true and header x-demo-seed-secret === DEMO_SEED_SECRET.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-demo-seed-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEMO_PASSWORD = "DemoVetpro2026!";
+const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD") ?? "DemoVetpro2026!";
 
 const DEMOS: Array<{
   plan: "free" | "pro" | "pro_plus" | "duo" | "clinic";
@@ -17,11 +18,11 @@ const DEMOS: Array<{
   clinic: string;
   storageMb: number;
 }> = [
-  { plan: "free",     email: "demo-free@vetpro.test",     fullName: "Démo Découverte", clinic: "Clinique Démo Découverte", storageMb: 200 },
-  { plan: "pro",      email: "demo-pro@vetpro.test",      fullName: "Démo Pro",        clinic: "Clinique Démo Pro",        storageMb: 2048 },
-  { plan: "pro_plus", email: "demo-pro-plus@vetpro.test", fullName: "Démo Pro Plus",   clinic: "Clinique Démo Pro Plus",   storageMb: 3072 },
-  { plan: "duo",      email: "demo-duo@vetpro.test",      fullName: "Démo Duo",        clinic: "Clinique Démo Duo",        storageMb: 5120 },
-  { plan: "clinic",   email: "demo-clinic@vetpro.test",   fullName: "Démo Clinique",   clinic: "Clinique Démo Clinique",   storageMb: 15360 },
+  { plan: "free", email: "demo-free@vetpro.test", fullName: "Démo Découverte", clinic: "Clinique Démo Découverte", storageMb: 200 },
+  { plan: "pro", email: "demo-pro@vetpro.test", fullName: "Démo Pro", clinic: "Clinique Démo Pro", storageMb: 2048 },
+  { plan: "pro_plus", email: "demo-pro-plus@vetpro.test", fullName: "Démo Pro Plus", clinic: "Clinique Démo Pro Plus", storageMb: 3072 },
+  { plan: "duo", email: "demo-duo@vetpro.test", fullName: "Démo Duo", clinic: "Clinique Démo Duo", storageMb: 5120 },
+  { plan: "clinic", email: "demo-clinic@vetpro.test", fullName: "Démo Clinique", clinic: "Clinique Démo Clinique", storageMb: 15360 },
 ];
 
 const FIRST_NAMES = ["Sophie", "Karim", "Amine", "Leila", "Yassine", "Fatima", "Hicham", "Nadia", "Omar", "Salma", "Mehdi", "Hajar"];
@@ -65,14 +66,30 @@ const STOCK = [
 
 const rand = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-const daysAgo = (n: number) => { const d = new Date(); d.setDate(d.getDate() - n); return d; };
+const daysAgo = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+};
 
-async function seedOrgData(admin: any, orgId: string, userId: string) {
-  // Skip if already seeded
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body, null, 2), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
+async function seedOrgData(admin: ReturnType<typeof createClient>, orgId: string, userId: string) {
   const { count } = await admin.from("clients").select("id", { count: "exact", head: true }).eq("organization_id", orgId);
   if ((count ?? 0) > 0) return { skipped: true };
 
-  // Stock
   await admin.from("stock_items").insert(
     STOCK.map((s) => ({
       organization_id: orgId,
@@ -87,15 +104,17 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
       selling_price: s.price,
       requires_prescription: s.category === "medicament",
       active: true,
-    }))
+    })),
   );
 
-  // 8 clients with 1-2 animals each
   const clientsPayload = Array.from({ length: 8 }).map(() => {
-    const fn = rand(FIRST_NAMES), ln = rand(LAST_NAMES);
+    const fn = rand(FIRST_NAMES);
+    const ln = rand(LAST_NAMES);
     return {
-      organization_id: orgId, user_id: userId,
-      first_name: fn, last_name: ln,
+      organization_id: orgId,
+      user_id: userId,
+      first_name: fn,
+      last_name: ln,
       email: `${fn}.${ln}@demo.test`.toLowerCase().replace(/\s/g, ""),
       phone: `+2126${randInt(10000000, 99999999)}`,
       mobile_phone: `+2126${randInt(10000000, 99999999)}`,
@@ -107,14 +126,18 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
   const { data: clients } = await admin.from("clients").insert(clientsPayload).select("id");
   if (!clients) return { skipped: false, error: "clients insert failed" };
 
-  const animalsPayload: any[] = [];
+  const animalsPayload: Record<string, unknown>[] = [];
   for (const c of clients) {
     const n = randInt(1, 2);
     for (let i = 0; i < n; i++) {
       const sp = rand(SPECIES);
       animalsPayload.push({
-        organization_id: orgId, user_id: userId, client_id: c.id,
-        name: rand(PET_NAMES), species: sp, breed: rand(BREEDS[sp]),
+        organization_id: orgId,
+        user_id: userId,
+        client_id: c.id,
+        name: rand(PET_NAMES),
+        species: sp,
+        breed: rand(BREEDS[sp]),
         sex: rand(["Mâle", "Femelle"]),
         weight: randInt(2, 35),
         birth_date: daysAgo(randInt(180, 3000)).toISOString().slice(0, 10),
@@ -125,13 +148,14 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
   const { data: animals, error: animErr } = await admin.from("animals").insert(animalsPayload).select("id, client_id");
   if (animErr || !animals) return { skipped: false, error: "animals: " + (animErr?.message ?? "no data") };
 
-  // Consultations (1-3 per animal)
-  const consPayload: any[] = [];
+  const consPayload: Record<string, unknown>[] = [];
   for (const a of animals) {
     const n = randInt(1, 3);
     for (let i = 0; i < n; i++) {
       consPayload.push({
-        organization_id: orgId, animal_id: a.id, client_id: a.client_id,
+        organization_id: orgId,
+        animal_id: a.id,
+        client_id: a.client_id,
         consultation_date: daysAgo(randInt(1, 200)).toISOString(),
         consultation_type: rand(["générale", "vaccination", "urgence", "suivi"]),
         symptoms: rand(["Fatigue, perte d'appétit", "Boiterie patte avant", "Vomissements", "Démangeaisons"]),
@@ -145,9 +169,9 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
   }
   await admin.from("consultations").insert(consPayload);
 
-  // Vaccinations
   const vaxPayload = animals.map((a) => ({
-    organization_id: orgId, animal_id: a.id,
+    organization_id: orgId,
+    animal_id: a.id,
     vaccine_name: rand(VAX),
     vaccine_type: "annuel",
     vaccination_date: daysAgo(randInt(30, 300)).toISOString().slice(0, 10),
@@ -158,12 +182,13 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
   }));
   await admin.from("vaccinations").insert(vaxPayload);
 
-  // Antiparasites
   const antiPayload = animals.map((a) => {
     const p = rand(ANTIPARA);
     return {
-      organization_id: orgId, animal_id: a.id,
-      product_name: p.name, active_ingredient: p.ai,
+      organization_id: orgId,
+      animal_id: a.id,
+      product_name: p.name,
+      active_ingredient: p.ai,
       parasite_type: rand(["puces", "tiques", "vers"]),
       administration_route: "topique",
       dosage: "1 pipette",
@@ -174,12 +199,15 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
   });
   await admin.from("antiparasitics").insert(antiPayload);
 
-  // Appointments (upcoming)
   const apptPayload = clients.slice(0, 5).map((c, i) => {
     const animal = animals.find((a) => a.client_id === c.id);
-    const d = new Date(); d.setDate(d.getDate() + i + 1); d.setHours(9 + i, 0, 0, 0);
+    const d = new Date();
+    d.setDate(d.getDate() + i + 1);
+    d.setHours(9 + i, 0, 0, 0);
     return {
-      organization_id: orgId, client_id: c.id, animal_id: animal?.id ?? null,
+      organization_id: orgId,
+      client_id: c.id,
+      animal_id: animal?.id ?? null,
       appointment_date: d.toISOString(),
       appointment_type: rand(["consultation", "vaccination", "controle"]),
       status: "scheduled",
@@ -194,11 +222,23 @@ async function seedOrgData(admin: any, orgId: string, userId: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const enabled = Deno.env.get("DEMO_SEED_ENABLED") === "true";
+  const expected = Deno.env.get("DEMO_SEED_SECRET") ?? "";
+  const provided = req.headers.get("x-demo-seed-secret") ?? "";
+
+  if (!enabled || !expected || !timingSafeEqual(provided, expected)) {
+    return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
+  }
+
   const url = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  const results: any[] = [];
+  const results: Record<string, unknown>[] = [];
 
   for (const d of DEMOS) {
     try {
@@ -276,12 +316,12 @@ Deno.serve(async (req) => {
       const seedRes = await seedOrgData(admin, orgId!, userId!);
 
       results.push({ plan: d.plan, email: d.email, userId, orgId, ok: true, seed: seedRes });
-    } catch (e: any) {
-      results.push({ plan: d.plan, email: d.email, ok: false, error: e?.message ?? String(e) });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      results.push({ plan: d.plan, email: d.email, ok: false, error: message });
     }
   }
 
-  return new Response(JSON.stringify({ password: DEMO_PASSWORD, results }, null, 2), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  // Never return demo password in the API response.
+  return jsonResponse({ ok: true, results });
 });

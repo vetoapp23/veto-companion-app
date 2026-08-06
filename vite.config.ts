@@ -6,15 +6,20 @@ import path from "path";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
-  // Fallback values so production builds never end up with an undefined
-  // Supabase URL/key (which throws "supabaseUrl is required." at startup).
-  const SUPABASE_URL =
-    env.VITE_SUPABASE_URL || "https://pkcsgysdwnpisumshlwy.supabase.co";
-  const SUPABASE_PUBLISHABLE_KEY =
+  const SUPABASE_URL = env.VITE_SUPABASE_URL?.trim();
+  const SUPABASE_PUBLISHABLE_KEY = (
     env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrY3NneXNkd25waXN1bXNobHd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNDA3MTAsImV4cCI6MjA5NTkxNjcxMH0.43sdKoNAqM7mEd_qF-8INmC0Azh-4_TbK7cSe91EppU";
-  const SUPABASE_PROJECT_ID =
-    env.VITE_SUPABASE_PROJECT_ID || "pkcsgysdwnpisumshlwy";
+    env.VITE_SUPABASE_ANON_KEY ||
+    ""
+  ).trim();
+  const SUPABASE_PROJECT_ID = env.VITE_SUPABASE_PROJECT_ID?.trim() || "";
+
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error(
+      "Missing VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (or VITE_SUPABASE_ANON_KEY). " +
+        "Copy .env.example to .env.local — never bake secrets/fallbacks into vite.config.",
+    );
+  }
 
   return {
     server: {
@@ -30,11 +35,15 @@ export default defineConfig(({ mode }) => {
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(SUPABASE_URL),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
-        SUPABASE_PUBLISHABLE_KEY
+        SUPABASE_PUBLISHABLE_KEY,
       ),
-      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
-        SUPABASE_PROJECT_ID
-      ),
+      ...(SUPABASE_PROJECT_ID
+        ? {
+            "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
+              SUPABASE_PROJECT_ID,
+            ),
+          }
+        : {}),
     },
   };
 });

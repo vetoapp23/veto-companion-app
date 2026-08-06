@@ -5,6 +5,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { useAnimals, useClients, useVaccinations, useAppointmentsByAnimal } from '@/hooks/useDatabase';
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
+import { escapeHtml, safePrintUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useAppLocale } from '@/i18n/useAppLocale';
 import { useTranslation } from 'react-i18next';
@@ -81,6 +82,8 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
         return;
       }
 
+      const e = escapeHtml;
+      const u = safePrintUrl;
       const administeredCount = doseRows.filter((r) => r.status === 'administered').length;
       const plannedCount = doseRows.filter((r) => r.status === 'planned').length;
 
@@ -103,23 +106,23 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                   .map(
                     (row) => `
                   <tr class="${row.status === 'planned' ? 'row-planned' : 'row-done'}">
-                    <td>${formatCertDate(row.date)}</td>
+                    <td>${e(formatCertDate(row.date))}</td>
                     <td>
-                      <strong>${row.vaccineName}</strong>
-                      ${row.vaccineType ? `<div class="muted">${row.vaccineType}</div>` : ''}
+                      <strong>${e(row.vaccineName)}</strong>
+                      ${row.vaccineType ? `<div class="muted">${e(row.vaccineType)}</div>` : ''}
                     </td>
-                    <td>${row.doseLabel}</td>
+                    <td>${e(row.doseLabel)}</td>
                     <td>
                       <span class="badge ${row.status === 'planned' ? 'badge-planned' : 'badge-done'}">
-                        ${row.status === 'planned' ? t('vaccinationCertificate.statusPlanned') : t('vaccinationCertificate.statusDone')}
+                        ${row.status === 'planned' ? e(t('vaccinationCertificate.statusPlanned')) : e(t('vaccinationCertificate.statusDone'))}
                       </span>
                     </td>
-                    <td>${row.batchNumber || (row.status === 'planned' ? '—' : 'N/A')}</td>
-                    <td>${row.manufacturer || (row.status === 'planned' ? '—' : 'N/A')}</td>
+                    <td>${e(row.batchNumber || (row.status === 'planned' ? '—' : 'N/A'))}</td>
+                    <td>${e(row.manufacturer || (row.status === 'planned' ? '—' : 'N/A'))}</td>
                   </tr>
                   ${
                     row.notes
-                      ? `<tr class="notes-row"><td colspan="6"><em>${t('vaccinationCertificate.notes')}</em> ${row.notes}</td></tr>`
+                      ? `<tr class="notes-row"><td colspan="6"><em>${e(t('vaccinationCertificate.notes'))}</em> ${e(row.notes)}</td></tr>`
                       : ''
                   }
                 `
@@ -139,7 +142,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
         <!DOCTYPE html>
         <html>
           <head>
-            <title>${t('vaccinationCertificate.docTitle', { name: animal.name })}</title>
+            <title>${e(t('vaccinationCertificate.docTitle', { name: animal.name }))}</title>
             <style>
               body {
                 font-family: Arial, sans-serif;
@@ -324,8 +327,8 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
           <body>
             ${buildWatermarkHtml(isFree)}
             <div class="header">
-              ${settings.logo ? `<img src="${settings.logo}" alt="${t('vaccinationCertificate.clinicLogoAlt')}" />` : ''}
-              <h1>${t('vaccinationCertificate.heading')}</h1>
+              ${settings.logo ? `<img src="${u(settings.logo)}" alt="${e(t('vaccinationCertificate.clinicLogoAlt'))}" />` : ''}
+              <h1>${e(t('vaccinationCertificate.heading'))}</h1>
               <div class="qr-section">
                 <canvas id="qrcode" width="100" height="100"></canvas>
               </div>
@@ -333,10 +336,10 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
 
             ${settings.showClinicInfo ? `
             <div class="clinic-info">
-              <h2>${settings.clinicName || t('vaccinationCertificate.clinicFallback')}</h2>
-              <p><strong>${t('vaccinationCertificate.labels.address')}</strong> ${settings.address || 'N/A'}</p>
-              <p><strong>${t('vaccinationCertificate.labels.phone')}</strong> ${settings.phone || 'N/A'} | <strong>${t('vaccinationCertificate.labels.email')}</strong> ${settings.email || 'N/A'}</p>
-              ${settings.website ? `<p><strong>${t('vaccinationCertificate.labels.website')}</strong> ${settings.website}</p>` : ''}
+              <h2>${e(settings.clinicName || t('vaccinationCertificate.clinicFallback'))}</h2>
+              <p><strong>${e(t('vaccinationCertificate.labels.address'))}</strong> ${e(settings.address || 'N/A')}</p>
+              <p><strong>${e(t('vaccinationCertificate.labels.phone'))}</strong> ${e(settings.phone || 'N/A')} | <strong>${e(t('vaccinationCertificate.labels.email'))}</strong> ${e(settings.email || 'N/A')}</p>
+              ${settings.website ? `<p><strong>${e(t('vaccinationCertificate.labels.website'))}</strong> ${e(settings.website)}</p>` : ''}
             </div>
             ` : ''}
 
@@ -345,8 +348,8 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
               <h2>${t('vaccinationCertificate.vetTeam')}</h2>
               ${vets.map(vet => `
                 <div class="vet-item">
-                  <strong>${vet.title || 'Dr.'} ${vet.name}</strong>
-                  ${vet.specialty ? ` - ${vet.specialty}` : ''}
+                  <strong>${e(vet.title || 'Dr.')} ${e(vet.name)}</strong>
+                  ${vet.specialty ? ` - ${e(vet.specialty)}` : ''}
                 </div>
               `).join('')}
             </div>
@@ -357,42 +360,42 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
               
               ${animal.photo_url ? `
               <div class="animal-photo">
-                <img src="${animal.photo_url}" alt="${t('vaccinationCertificate.animalPhotoAlt', { name: animal.name })}" />
+                <img src="${u(animal.photo_url)}" alt="${e(t('vaccinationCertificate.animalPhotoAlt', { name: animal.name }))}" />
               </div>
               ` : ''}
 
               <div class="info-grid">
                 <div class="info-item">
                   <span class="info-label">${t('vaccinationCertificate.labels.name')}</span>
-                  <span class="info-value">${animal.name}</span>
+                  <span class="info-value">${e(animal.name)}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.species')}</span>
-                  <span class="info-value">${animal.species}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.species'))}</span>
+                  <span class="info-value">${e(animal.species)}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.breed')}</span>
-                  <span class="info-value">${animal.breed || 'N/A'}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.breed'))}</span>
+                  <span class="info-value">${e(animal.breed || 'N/A')}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.age')}</span>
-                  <span class="info-value">${animal.birth_date ? getDetailedAge(animal.birth_date) : 'N/A'}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.age'))}</span>
+                  <span class="info-value">${e(animal.birth_date ? getDetailedAge(animal.birth_date) : 'N/A')}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.sex')}</span>
-                  <span class="info-value">${animal.sex || 'N/A'}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.sex'))}</span>
+                  <span class="info-value">${e(animal.sex || 'N/A')}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.weight')}</span>
-                  <span class="info-value">${animal.weight ? animal.weight + ' kg' : 'N/A'}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.weight'))}</span>
+                  <span class="info-value">${e(animal.weight ? animal.weight + ' kg' : 'N/A')}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.owner')}</span>
-                  <span class="info-value">${client.first_name} ${client.last_name}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.owner'))}</span>
+                  <span class="info-value">${e(client.first_name)} ${e(client.last_name)}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">${t('vaccinationCertificate.labels.contact')}</span>
-                  <span class="info-value">${client.phone || client.email || 'N/A'}</span>
+                  <span class="info-label">${e(t('vaccinationCertificate.labels.contact'))}</span>
+                  <span class="info-value">${e(client.phone || client.email || 'N/A')}</span>
                 </div>
               </div>
             </div>
@@ -403,8 +406,8 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
             </div>
 
             <div class="footer">
-              <p>${t('vaccinationCertificate.generatedAt', { datetime: format(new Date(), 'PPp', { locale: dateFns }) })}</p>
-              <p>${t('vaccinationCertificate.footerSystem')}</p>
+              <p>${e(t('vaccinationCertificate.generatedAt', { datetime: format(new Date(), 'PPp', { locale: dateFns }) }))}</p>
+              <p>${e(t('vaccinationCertificate.footerSystem'))}</p>
             </div>
 
             <script>
