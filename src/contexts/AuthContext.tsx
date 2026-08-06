@@ -58,9 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           queryClient.clear();
           queryClient.setQueryData(authKeys.session(), null);
         } else if (event === 'SIGNED_IN' && session) {
-          console.log('🔐 User signed in event detected - data already set by login mutation');
-          // DO NOTHING - the login mutation already set the query data
-          // Refetching here causes unnecessary delay
+          console.log('🔐 User signed in — refreshing session query');
+          // Email confirmation / OAuth land here without going through loginMutation
+          queryClient.invalidateQueries({ queryKey: authKeys.session() });
         } else if (event === 'TOKEN_REFRESHED' && session) {
           console.log('🔄 Token refreshed, invalidating query');
           // Invalidate on token refresh to get updated data

@@ -59,11 +59,15 @@ const Register = () => {
 
   const urlPlan = searchParams.get("plan") ?? "free";
   const urlMode = searchParams.get("mode");
+  const urlCycle = (searchParams.get("cycle") === "yearly" ? "yearly" : "monthly") as Cycle;
+  const urlCurrency = (["MAD", "EUR", "USD"].includes(searchParams.get("currency") ?? "")
+    ? searchParams.get("currency")
+    : null) as Currency | null;
 
   const [step, setStep] = useState<Step>(urlMode === "assistant" ? "account" : "plan");
   const [selectedPlan, setSelectedPlan] = useState<string>(urlPlan);
-  const [currency, setCurrency] = useState<Currency>(detectCurrency());
-  const [cycle] = useState<Cycle>("monthly");
+  const [currency, setCurrency] = useState<Currency>(urlCurrency ?? detectCurrency());
+  const [cycle] = useState<Cycle>(urlCycle);
   const [isJoiningOrganization, setIsJoiningOrganization] = useState(urlMode === "assistant");
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -139,9 +143,24 @@ const Register = () => {
         throw new Error(t("register.errors.registrationsClosed"));
       }
 
+      // Plan payant : stocké dans user_metadata dès le signUp (même sans session —
+      // updateUser échoue si email non confirmé) + dans l’URL du lien de confirmation.
+      const pending =
+        !isJoiningOrganization && selectedPlan !== "free"
+          ? { planCode: selectedPlan, cycle, currency }
+          : null;
+      const appOrigin = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
+      const emailRedirectTo = pending
+        ? `${appOrigin}/dashboard?billing=checkout&plan=${encodeURIComponent(pending.planCode)}&cycle=${pending.cycle}&currency=${pending.currency}`
+        : `${appOrigin}/dashboard`;
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          emailRedirectTo,
+          data: pending ? { pending_plan: pending } : undefined,
+        },
       });
       if (authError) throw authError;
       if (!authData.user) throw new Error(t("register.errors.accountCreate"));
@@ -161,11 +180,13 @@ const Register = () => {
       if (profileData && !(profileData as any).success)
         throw new Error((profileData as any).error || t("register.errors.profileCreate"));
 
-      // Pour les admins (créateurs d'organisation), pré-enregistrer le pack choisi.
-      if (!isJoiningOrganization && (profileData as any)?.organization_id && selectedPlan !== "free") {
-        // L'attribution réelle se fera après paiement (Phase 3). Pour l'instant on garde free par défaut.
-        // On stocke l'intention via localStorage pour rediriger vers checkout après login.
-        localStorage.setItem("pending_plan_upgrade", selectedPlan);
+      if (pending && (profileData as any)?.organization_id) {
+        const { writePendingPlan } = await import("@/components/PendingCheckoutRedirect");
+        writePendingPlan(pending);
+        // Seulement si session déjà active (confirm email désactivé)
+        if (authData.session) {
+          await supabase.auth.updateUser({ data: { pending_plan: pending } }).catch(() => undefined);
+        }
       }
 
       toast({
@@ -175,7 +196,15 @@ const Register = () => {
           : t("register.successCreate", { name: currentPlan?.name ?? selectedPlan }),
       });
 
-      navigate("/login");
+      // Si session déjà active (confirm email désactivé), aller au dashboard → Checkout
+      if (authData.session) {
+        navigate(pending ? "/dashboard?billing=checkout" : "/dashboard");
+      } else {
+        const loginRedirect = pending
+          ? `/dashboard?billing=checkout&plan=${encodeURIComponent(pending.planCode)}&cycle=${pending.cycle}&currency=${pending.currency}`
+          : "/dashboard";
+        navigate(`/login?redirect=${encodeURIComponent(loginRedirect)}&pending_plan=1`);
+      }
     } catch (error) {
       console.error("Registration error:", error);
       toast({

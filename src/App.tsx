@@ -24,6 +24,7 @@ import SuperAdminBilling from "@/pages/super-admin/Billing";
 import SuperAdminAudit from "@/pages/super-admin/Audit";
 import SuperAdminSystem from "@/pages/super-admin/System";
 import { AuthRedirect } from "@/components/AuthRedirect";
+import { PendingCheckoutRedirect } from "@/components/PendingCheckoutRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Pricing from "./pages/Pricing";
@@ -67,6 +68,7 @@ const App = () => (
             <SettingsProvider>
               <ThemeProvider>
                 <BrowserRouter>
+                  <PendingCheckoutRedirect />
                   <div className="min-h-screen bg-background w-full text-foreground overflow-x-hidden app-shell">
                     <Routes>
                       <Route path="/" element={<Landing />} />
