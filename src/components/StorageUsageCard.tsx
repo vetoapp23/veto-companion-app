@@ -105,7 +105,7 @@ export function StorageUsageCard() {
               </Button>
             )}
             <Button asChild variant="outline" size="sm">
-              <Link to="/pricing">
+              <Link to="/settings/billing">
                 {t("storageUsage.changePack")}
                 <ArrowUpRight className="ml-1 h-4 w-4" />
               </Link>
@@ -177,7 +177,7 @@ export function StorageUsageCard() {
 
         {isFree && (
           <Button asChild className="w-full" variant="default">
-            <Link to="/pricing">
+            <Link to="/settings/billing">
               <Sparkles className="mr-2 h-4 w-4" />
               {t("storageUsage.upgrade")}
             </Link>

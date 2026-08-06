@@ -52,6 +52,7 @@ import StockManagement from "./pages/StockManagement";
 import TeamManagement from "./pages/TeamManagement";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings";
+import BillingSettings from "./pages/BillingSettings";
 import Profile from "./pages/Profile";
 import AuthSettings from "./pages/AuthSettings";
 import { ResetPassword } from "./pages/ResetPassword";
@@ -239,6 +240,15 @@ const App = () => (
                           <PermissionRoute permission="can_manage_settings">
                             <VetNavigation />
                             <Settings />
+                          </PermissionRoute>
+                        }
+                      />
+                      <Route
+                        path="/settings/billing"
+                        element={
+                          <PermissionRoute permission="can_manage_settings">
+                            <VetNavigation />
+                            <BillingSettings />
                           </PermissionRoute>
                         }
                       />

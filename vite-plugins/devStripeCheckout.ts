@@ -128,9 +128,9 @@ export function devStripeCheckoutPlugin(env: Record<string, string>): Plugin {
           form.set("line_items[0][quantity]", "1");
           form.set(
             "success_url",
-            `${appUrl}/settings?billing=success&session_id={CHECKOUT_SESSION_ID}`,
+            `${appUrl}/settings/billing?billing=success&session_id={CHECKOUT_SESSION_ID}`,
           );
-          form.set("cancel_url", `${appUrl}/pricing?billing=cancel`);
+          form.set("cancel_url", `${appUrl}/settings/billing?billing=cancel`);
           form.set("allow_promotion_codes", "true");
           form.set("billing_address_collection", "auto");
           form.set("customer_email", profile.email || user.email || "");

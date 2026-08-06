@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserProfile } from "@/components/UserProfile";
 import { User } from "lucide-react";
 import { SettingsManagement } from "@/components/SettingsManagement";
-import { StorageUsageCard } from "@/components/StorageUsageCard";
+import { BillingSettingsLinkCard } from "@/pages/BillingSettings";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   VISIT_SERVICE_CATALOG,
@@ -49,22 +49,19 @@ export default function Settings() {
   const { t: tc } = useTranslation("common");
   const { t: tm } = useTranslation("medical");
   const { toast } = useToast();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     const billing = searchParams.get("billing");
     if (billing === "success") {
-      toast({
-        title: t("billing.successTitle", { defaultValue: "Paiement reçu" }),
-        description: t("billing.successBody", {
-          defaultValue: "Votre abonnement Stripe est en cours d’activation. Rechargez si les quotas ne se mettent pas à jour.",
-        }),
-      });
-      searchParams.delete("billing");
-      searchParams.delete("session_id");
-      setSearchParams(searchParams, { replace: true });
+      const sid = searchParams.get("session_id");
+      navigate(
+        `/settings/billing?billing=success${sid ? `&session_id=${encodeURIComponent(sid)}` : ""}`,
+        { replace: true },
+      );
     }
-  }, []);
+  }, [searchParams, navigate]);
   const { settings, updateSettings } = useSettings();
   const { theme, setTheme } = useTheme();
   const { canWrite, guardWrite } = useWriteAccess("can_manage_settings");
@@ -499,8 +496,8 @@ export default function Settings() {
                   </CardContent>
                 </Card>
 
-                {/* Subscription & storage usage */}
-                <StorageUsageCard />
+                {/* Abonnement — sous-page dédiée */}
+                <BillingSettingsLinkCard />
                 {/* Clinic Settings */}
                 <Card>
                   <CardHeader>

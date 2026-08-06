@@ -27,12 +27,19 @@ export function useQuotaCheck() {
     staleTime: 30_000,
     queryFn: async (): Promise<Counts> => {
       const [c, a, u] = await Promise.all([
-        supabase.from("clients").select("id", { count: "exact", head: true }),
-        supabase.from("animals").select("id", { count: "exact", head: true }),
+        supabase
+          .from("clients")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", user!.organization_id!),
+        supabase
+          .from("animals")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", user!.organization_id!),
         supabase
           .from("user_profiles")
           .select("id", { count: "exact", head: true })
-          .eq("status", "approved"),
+          .eq("status", "approved")
+          .eq("organization_id", user!.organization_id!),
       ]);
       return {
         clients: c.count ?? 0,
