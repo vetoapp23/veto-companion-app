@@ -22,8 +22,10 @@ export function AuthRedirect({ children, redirectTo = "/dashboard" }: AuthRedire
   }, [isAuthenticated, user]);
 
   if (isAuthenticated && user) {
-    console.log("✅ User authenticated, redirecting to:", target);
-    return <Navigate to={target} replace />;
+    const hasOrg = !!(user.organization_id || user.profile?.organization_id);
+    const dest = hasOrg ? target : "/onboarding";
+    console.log("✅ User authenticated, redirecting to:", dest);
+    return <Navigate to={dest} replace />;
   }
 
   return <>{children}</>;

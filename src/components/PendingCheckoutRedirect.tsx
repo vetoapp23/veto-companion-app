@@ -95,6 +95,9 @@ export function PendingCheckoutRedirect() {
     const role = (user.profile?.role as string) || "";
     if (role !== "admin" && role !== "super_admin") return;
 
+    // Pas de clinique → onboarding d'abord (Google 1ʳᵉ fois)
+    if (!user.organization_id && !user.profile?.organization_id) return;
+
     const fromUrl = readPendingFromSearch(searchParams);
     const fromLocal = readPendingPlan();
     const metaAlreadyChecked = sessionStorage.getItem("pending_plan_meta_checked") === "1";

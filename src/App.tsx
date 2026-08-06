@@ -25,9 +25,12 @@ import SuperAdminAudit from "@/pages/super-admin/Audit";
 import SuperAdminSystem from "@/pages/super-admin/System";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import { PendingCheckoutRedirect } from "@/components/PendingCheckoutRedirect";
+import { HashAuthRedirect } from "@/components/HashAuthRedirect";
 import Landing from "./pages/Landing";
 import Register from "./pages/Register";
 import Pricing from "./pages/Pricing";
+import AuthCallback from "./pages/AuthCallback";
+import Onboarding from "./pages/Onboarding";
 import { LegalPage } from "./pages/LegalPage";
 import ContactPage from "./pages/ContactPage";
 import MondeVetoPage from "./pages/MondeVetoPage";
@@ -68,6 +71,7 @@ const App = () => (
             <SettingsProvider>
               <ThemeProvider>
                 <BrowserRouter>
+                  <HashAuthRedirect />
                   <PendingCheckoutRedirect />
                   <div className="min-h-screen bg-background w-full text-foreground overflow-x-hidden app-shell">
                     <Routes>
@@ -81,6 +85,8 @@ const App = () => (
                         }
                       />
                       <Route path="/register" element={<Register />} />
+                      <Route path="/auth/callback" element={<AuthCallback />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/pricing" element={<Pricing />} />
                       <Route path="/privacy" element={<LegalPage docId="privacy" />} />
                       <Route path="/terms" element={<LegalPage docId="terms" />} />

@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase, UserProfile, signIn, signOut, getCurrentUserProfile, createUserProfileIfNotExists, signInWithGoogle, resetPassword } from '../lib/supabase'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { supabase, UserProfile, signIn, signOut, getCurrentUserProfile, signInWithGoogle, resetPassword } from '../lib/supabase'
 
 export interface User {
   id: string
@@ -41,19 +40,20 @@ const fetchAuthSession = async (): Promise<User | null> => {
       console.log('✅ Profile loaded from database:', profile);
     } catch (profileError: any) {
       console.error('❌ Error loading profile:', profileError);
-      console.error('❌ Error details:', profileError?.message, profileError?.code);
-      
-      // Try to create profile if it doesn't exist
-      try {
-        console.log('🔄 Attempting to create profile...');
-        profile = await createUserProfileIfNotExists(session.user);
-        console.log('✅ Profile created:', profile);
-      } catch (createError: any) {
-        console.error('❌ Failed to create user profile:', createError);
-        console.error('❌ Create error details:', createError?.message, createError?.code);
-        // CRITICAL: Return null instead of throwing - let user try to login again
-        return null;
-      }
+      // OAuth first login: no clinic yet — allow session so /onboarding can run
+      const metadata = session.user.user_metadata || {};
+      const fullName = metadata.full_name || metadata.name || null;
+      profile = {
+        id: session.user.id,
+        email: session.user.email!,
+        username: (session.user.email || 'user').split('@')[0],
+        full_name: fullName,
+        role: 'admin',
+        status: 'pending',
+        organization_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
     }
 
     if (!profile) {

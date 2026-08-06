@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AccessProvider, AccessGate, ReadOnlyBanner } from "@/contexts/AccessContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -22,6 +22,7 @@ function PrivateSeo() {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { t } = useTranslation("auth");
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -36,6 +37,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
+  }
+
+  const role = (user.profile?.role as string) || "";
+  const hasOrg = !!(user.organization_id || user.profile?.organization_id);
+  const isSuper = role === "super_admin";
+  if (!hasOrg && !isSuper && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return (

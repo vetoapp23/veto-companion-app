@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { supabase, createUserProfileIfNotExists } from "@/lib/supabase";
+import { supabase, getCurrentUserProfile } from "@/lib/supabase";
 import { authKeys } from "@/hooks/useAuth";
 import { readPendingPlan } from "@/components/PendingCheckoutRedirect";
 
 /**
- * Landing page for Google / email OAuth redirects.
- * Parses hash (?code= or #access_token=), creates a clinic profile if needed,
- * strips tokens from the URL, then sends the user to the dashboard (or Checkout).
+ * OAuth / magic-link landing: establish session, then route to
+ * onboarding (no clinic) or dashboard (+ checkout if pending plan).
  */
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -27,22 +26,18 @@ export default function AuthCallback() {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
         } else {
-          // Implicit grant: client parses #access_token on init
-          const { data, error } = await supabase.auth.getSession();
+          let { data, error } = await supabase.auth.getSession();
           if (error) throw error;
           if (!data.session && window.location.hash.includes("access_token")) {
-            // Force a second pass after hash is available
-            await new Promise((r) => setTimeout(r, 200));
-            const again = await supabase.auth.getSession();
-            if (!again.data.session) {
-              throw new Error("session_missing");
-            }
+            await new Promise((r) => setTimeout(r, 300));
+            ({ data, error } = await supabase.auth.getSession());
+            if (error) throw error;
+            if (!data.session) throw new Error("session_missing");
           }
+          if (!data.session) throw new Error("session_missing");
         }
 
-        // Remove tokens from the address bar ASAP
-        const clean = `${window.location.origin}/auth/callback`;
-        window.history.replaceState({}, document.title, clean);
+        window.history.replaceState({}, document.title, `${window.location.origin}/auth/callback`);
 
         const {
           data: { user },
@@ -51,41 +46,46 @@ export default function AuthCallback() {
         if (userErr || !user) throw userErr || new Error("unauthorized");
 
         setMessage("Préparation de votre espace…");
-        await createUserProfileIfNotExists(user);
+
+        let profile = null as Awaited<ReturnType<typeof getCurrentUserProfile>>;
+        try {
+          profile = await getCurrentUserProfile();
+        } catch {
+          profile = null;
+        }
 
         if (cancelled) return;
+
         await queryClient.invalidateQueries({ queryKey: authKeys.session() });
-        // Wait for react-query to refetch so ProtectedRoute sees the user
-        await queryClient.fetchQuery({
-          queryKey: authKeys.session(),
-          queryFn: async () => {
-            const { fetchAuthSession } = await import("@/hooks/useAuth");
-            // fallback: re-invalidate is enough; navigate after short tick
-            return null;
-          },
-        }).catch(() => undefined);
+        await queryClient.refetchQueries({ queryKey: authKeys.session() }).catch(() => undefined);
+
+        const needsOnboarding = !profile?.organization_id;
+        if (needsOnboarding) {
+          navigate("/onboarding", { replace: true });
+          return;
+        }
 
         const pending = readPendingPlan();
         const fromQueryPlan = searchParams.get("plan");
-        const planCode = pending?.planCode || (fromQueryPlan && fromQueryPlan !== "free" ? fromQueryPlan : null);
-
-        if (cancelled) return;
+        const planCode =
+          pending?.planCode ||
+          (fromQueryPlan && fromQueryPlan !== "free" ? fromQueryPlan : null);
 
         if (planCode) {
-          const cycle = pending?.cycle || (searchParams.get("cycle") === "yearly" ? "yearly" : "monthly");
+          const cycle =
+            pending?.cycle || (searchParams.get("cycle") === "yearly" ? "yearly" : "monthly");
           const currency = pending?.currency || searchParams.get("currency") || "MAD";
           navigate(
             `/dashboard?billing=checkout&plan=${encodeURIComponent(planCode)}&cycle=${cycle}&currency=${currency}`,
             { replace: true },
           );
-        } else {
-          navigate("/dashboard", { replace: true });
+          return;
         }
+
+        navigate("/dashboard", { replace: true });
       } catch (e) {
         console.error("[AuthCallback]", e);
-        if (!cancelled) {
-          navigate("/login?error=oauth", { replace: true });
-        }
+        if (!cancelled) navigate("/login?error=oauth", { replace: true });
       }
     })();
 
@@ -98,6 +98,9 @@ export default function AuthCallback() {
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">{message}</p>
+      <Link to="/login" className="text-xs text-muted-foreground underline">
+        Retour connexion
+      </Link>
     </div>
   );
 }

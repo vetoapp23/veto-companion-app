@@ -59,7 +59,7 @@ export function LoginForm() {
     setError("");
     try {
       await googleLoginMutation.mutateAsync();
-      navigate(redirectTo, { replace: true });
+      // OAuth redirects away — no local navigate
     } catch {
       setError(t("login.googleError"));
     }
