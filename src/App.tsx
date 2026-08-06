@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import { VetNavigation } from "@/components/VetNavigation";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -67,6 +68,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <Analytics />
         <AuthProvider>
           <ClientProvider>
             <SettingsProvider>
