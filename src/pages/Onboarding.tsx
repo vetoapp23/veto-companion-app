@@ -64,7 +64,6 @@ export default function Onboarding() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id || !user.email) return;
     if (!form.fullName.trim() || !form.clinicName.trim()) {
       toast({
         title: t("register.errorTitle"),
@@ -76,10 +75,29 @@ export default function Onboarding() {
 
     setBusy(true);
     try {
+      // Always use the live Auth user — cached context can reference a deleted account
+      const {
+        data: { user: authUser },
+        error: authErr,
+      } = await supabase.auth.getUser();
+      if (authErr || !authUser?.id || !authUser.email) {
+        toast({
+          title: t("register.errorTitle"),
+          description: t("onboarding.sessionExpired", {
+            defaultValue:
+              "Session expirée. Déconnectez-vous puis reconnectez-vous avec Google.",
+          }),
+          variant: "destructive",
+        });
+        await logout();
+        navigate("/login", { replace: true });
+        return;
+      }
+
       const { data, error } = await supabase.rpc("create_user_profile", {
-        p_user_id: user.id,
+        p_user_id: authUser.id,
         p_full_name: form.fullName.trim(),
-        p_email: user.email,
+        p_email: authUser.email,
         p_role: "admin",
         p_organization_code: null,
         p_clinic_name: form.clinicName.trim(),
@@ -113,11 +131,17 @@ export default function Onboarding() {
       }
     } catch (err) {
       console.error("[Onboarding]", err);
+      const msg = err instanceof Error ? err.message : t("register.errors.profileCreate");
       toast({
         title: t("register.errorTitle"),
-        description: err instanceof Error ? err.message : t("register.errors.profileCreate"),
+        description: msg,
         variant: "destructive",
       });
+      if (
+        /session expirée|Compte introuvable|foreign key|owner_id/i.test(msg)
+      ) {
+        // Stale JWT after auth.users deletion — force clean re-login
+      }
     } finally {
       setBusy(false);
     }
