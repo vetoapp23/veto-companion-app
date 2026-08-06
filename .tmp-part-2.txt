@@ -1,0 +1,362 @@
+").insert(consRows).select("id, animal_id, consultation_type");
+
+  // —— Visits : radio, écho, labo, chirurgie ——
+  type VisitSpec = {
+    animalKey: string;
+    daysAgo: number;
+    reason: string;
+    services: Array<{
+      code: string;
+      label: string;
+      amount: number;
+      details?: Record<string, unknown>;
+      attachments?: string[];
+      notes?: string;
+      linkConsultationType?: string;
+    }>;
+  };
+
+  const visitSpecs: VisitSpec[] = [];
+
+  if (get("max")) {
+    visitSpecs.push({
+      animalKey: "max",
+      daysAgo: 22,
+      reason: "Boiterie postérieure — bilan radiographique hanches",
+      services: [
+        {
+          code: "consultation",
+          label: "Consultation",
+          amount: 150,
+          notes: "Boiterie intermittent postérieur gauche, douleur à l’extension de hanche",
+        },
+        {
+          code: "radiography",
+          label: "Radiographie",
+          amount: 350,
+          details: {
+            region: "Bassin / hanches (VD étendu)",
+            technique: "Radiographie numérique, 2 incidences",
+            findings:
+              "Dysplasie coxo-fémorale bilatérale modérée (Norberg ↓). Pas de fracture. Recommandation : gestion poids, AINS à la demande, contrôle annuel.",
+          },
+          attachments: [IMG.xrayPelvis, IMG.xrayPelvisVd],
+          notes: "Clichés bassin — dysplasie (VD + latéral)",
+        },
+      ],
+    });
+  }
+
+  if (get("rex") && plan !== "free") {
+    visitSpecs.push({
+      animalKey: "rex",
+      daysAgo: 35,
+      reason: "Toux chronique — radio thorax",
+      services: [
+        {
+          code: "radiography",
+          label: "Radiographie",
+          amount: 300,
+          details: {
+            region: "Thorax (face + profil)",
+            technique: "Radiographie numérique",
+            findings:
+              "Trame bronchique marquée, pas d’épanchement. Compatible avec bronchite chronique. Contrôle clinique sous traitement.",
+          },
+          attachments: [CLINICAL.thorax, IMG.xrayPelvisLat],
+        },
+      ],
+    });
+  }
+
+  if (get("luna")) {
+    const cbc = labReportSvg("NFS + Biochimie — Luna", [
+      ["Hématocrite", "38 %", "37–55"],
+      ["Leucocytes", "11.2 G/L", "5.5–19"],
+      ["Créatinine", "14 mg/L", "5–18"],
+      ["Urée", "0.42 g/L", "0.2–0.5"],
+      ["ALAT", "52 U/L", "<80"],
+      ["Protéines tot.", "68 g/L", "54–78"],
+    ]);
+    visitSpecs.push({
+      animalKey: "luna",
+      daysAgo: 28,
+      reason: "Bilan urinaire / biochimie post-cystite",
+      services: [
+        {
+          code: "lab",
+          label: "Analyses",
+          amount: 280,
+          details: {
+            tests: "NFS, biochimie rénale/hépatique, bandelette urinaire + densitomètre",
+            results:
+              "Biochimie dans les normes. Urines : densité 1.045, sang traces, leucocytes +, pH 6.5 — compatible cystite en résolution.",
+            lab_ref: `LAB-DEMO-${plan.toUpperCase()}-001`,
+          },
+          attachments: [cbc],
+          notes: "Rapport laboratoire joint",
+        },
+      ],
+    });
+  }
+
+  if (get("bella") && ["pro_plus", "duo", "clinic"].includes(plan)) {
+    const biochem = labReportSvg("Biochimie — Bella", [
+      ["Glycémie", "0.95 g/L", "0.7–1.2"],
+      ["Cholestérol", "2.8 g/L", "1.2–3.0"],
+      ["Triglycérides", "1.1 g/L", "<1.5"],
+      ["ALAT", "48 U/L", "<80"],
+      ["Phosph. alk.", "90 U/L", "<150"],
+    ]);
+    visitSpecs.push({
+      animalKey: "bella",
+      daysAgo: 9,
+      reason: "Bilan métabolique — suivi poids",
+      services: [
+        {
+          code: "lab",
+          label: "Analyses",
+          amount: 220,
+          details: {
+            tests: "Glycémie, lipidique, hépatique",
+            results: "Bilan rassurant. Cholestérol haut de normale — poursuivre ration light.",
+            lab_ref: `LAB-DEMO-${plan.toUpperCase()}-002`,
+          },
+          attachments: [biochem],
+        },
+      ],
+    });
+  }
+
+  if (get("rocky")) {
+    visitSpecs.push({
+      animalKey: "rocky",
+      daysAgo: 60,
+      reason: "Intervention chirurgicale — parage plaie",
+      services: [
+        {
+          code: "surgery",
+          label: "Chirurgie",
+          amount: 800,
+          notes:
+            "AG isoflurane. Parage large, lavage NaCl, drainage pénrose, suture partielle. Analgésie multimodale.",
+          linkConsultationType: "chirurgie",
+        },
+        {
+          code: "radiography",
+          label: "Radiographie",
+          amount: 250,
+          details: {
+            region: "Membre postérieur gauche",
+            technique: "2 incidences",
+            findings: "Pas de corps étranger osseux. Soft tissue swelling. Fractures absentes.",
+          },
+          attachments: [CLINICAL.leg, IMG.xrayPelvisLat],
+        },
+      ],
+    });
+  }
+
+  if (get("mila") && ["duo", "clinic"].includes(plan)) {
+    visitSpecs.push({
+      animalKey: "mila",
+      daysAgo: 14,
+      reason: "Échographie abdominale — vomissements intermittents",
+      services: [
+        {
+          code: "ultrasound",
+          label: "Échographie",
+          amount: 400,
+          details: {
+            region: "Abdomen complet",
+            technique: "Échographie haute fréquence",
+            findings:
+              "Estomac : contenu mixte sans corps étranger. Intestin : péristaltisme normal. Reins / foie : aspect normal. Pas d’épanchement.",
+          },
+          attachments: [CLINICAL.ultrasound],
+        },
+      ],
+    });
+  }
+
+  if (get("zeus") && plan === "clinic") {
+    visitSpecs.push({
+      animalKey: "zeus",
+      daysAgo: 5,
+      reason: "Contrôle annuel + radio thorax check-up sénior",
+      services: [
+        {
+          code: "checkup",
+          label: "Contrôle",
+          amount: 120,
+          notes: "Auscultation normale, dentition tartre modéré",
+        },
+        {
+          code: "radiography",
+          label: "Radiographie",
+          amount: 300,
+          details: {
+            region: "Thorax",
+            technique: "Face + profil",
+            findings: "Silhouette cardiaque dans les normes. Pas d’anomalie pulmonaire notable.",
+          },
+          attachments: [CLINICAL.thorax],
+        },
+      ],
+    });
+  }
+
+  let visitsCreated = 0;
+  for (const vs of visitSpecs) {
+    const animal = get(vs.animalKey);
+    if (!animal) continue;
+
+    const { data: visit, error: vErr } = await admin
+      .from("visits")
+      .insert({
+        organization_id: orgId,
+        client_id: animal.client_id,
+        animal_id: animal.id,
+        veterinarian_id: userId,
+        visit_date: isoDaysAgo(vs.daysAgo),
+        status: "completed",
+        reason: vs.reason,
+        notes: "Dossier démo — visite complète",
+        total_amount: vs.services.reduce((s, x) => s + x.amount, 0),
+        invoiced: false,
+        context: "companion",
+      })
+      .select("id")
+      .single();
+    if (vErr || !visit) continue;
+    visitsCreated++;
+
+    let sort = 0;
+    for (const svc of vs.services) {
+      let reference_type: string | null = null;
+      let reference_id: string | null = null;
+
+      // Sync imaging/lab/surgery into consultations
+      if (svc.code === "radiography" || svc.code === "ultrasound" || svc.code === "lab") {
+        const isImaging = svc.code !== "lab";
+        const { data: cons } = await admin
+          .from("consultations")
+          .insert({
+            organization_id: orgId,
+            animal_id: animal.id,
+            client_id: animal.client_id,
+            veterinarian_id: userId,
+            visit_id: visit.id,
+            consultation_date: isoDaysAgo(vs.daysAgo),
+            consultation_type: svc.label,
+            symptoms: isImaging
+              ? [
+                  svc.details?.region && `Région : ${svc.details.region}`,
+                  svc.details?.technique && `Technique : ${svc.details.technique}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : svc.details?.tests
+              ? `Analyses : ${svc.details.tests}`
+              : null,
+            diagnosis: isImaging
+              ? (svc.details?.findings as string) ?? null
+              : (svc.details?.results as string) ?? null,
+            notes: isImaging
+              ? `Visite · ${svc.label}`
+              : [`Réf. labo : ${svc.details?.lab_ref ?? ""}`, `Visite · ${svc.label}`]
+                  .filter(Boolean)
+                  .join("\n"),
+            photos: svc.attachments ?? [],
+            status: "completed",
+            cost: svc.amount,
+          })
+          .select("id")
+          .single();
+        if (cons) {
+          reference_type = "consultation";
+          reference_id = cons.id;
+        }
+      } else if (svc.code === "surgery" && svc.linkConsultationType && insertedCons) {
+        const linked = insertedCons.find(
+          (c) => c.animal_id === animal.id && c.consultation_type === svc.linkConsultationType,
+        );
+        if (linked) {
+          reference_type = "consultation";
+          reference_id = linked.id;
+          await admin.from("consultations").update({ visit_id: visit.id }).eq("id", linked.id);
+        }
+      }
+
+      await admin.from("visit_services").insert({
+        visit_id: visit.id,
+        organization_id: orgId,
+        service_code: svc.code,
+        service_label: svc.label,
+        status: "done",
+        amount: svc.amount,
+        notes: svc.notes ?? null,
+        sort_order: sort++,
+        attachments: svc.attachments ?? [],
+        details: svc.details ?? {},
+        reference_type,
+        reference_id,
+      });
+    }
+  }
+
+  // —— Vaccinations / antiparasitaires ——
+  const vaxPayload = animals.map((a, i) => ({
+    organization_id: orgId,
+    animal_id: a.id,
+    vaccine_name: a.name && String(a.name).length ? (i % 2 === 0 ? "CHPPi" : "Rage") : "CHPPi",
+    vaccine_type: "annuel",
+    vaccination_date: dateDaysAgo(60 + i * 7),
+    next_due_date: dateDaysAgo(-(300 - i * 10)),
+    administered_by: "Dr Démo",
+    manufacturer: i % 2 === 0 ? "Boehringer" : "MSD",
+    batch_number: `LOT-DEMO-${1000 + i}`,
+  }));
+  await admin.from("vaccinations").insert(vaxPayload);
+
+  const antiPayload = animals.map((a, i) => ({
+    organization_id: orgId,
+    animal_id: a.id,
+    product_name: i % 2 === 0 ? "Bravecto" : "Frontline Spot-on",
+    active_ingredient: i % 2 === 0 ? "Fluralaner" : "Fipronil",
+    parasite_type: "puces/tiques",
+    administration_route: i % 2 === 0 ? "orale" : "topique",
+    dosage: i % 2 === 0 ? "1 comprimé" : "1 pipette",
+    treatment_date: dateDaysAgo(20 + i),
+    next_treatment_date: dateDaysAgo(-(70 - i)),
+    administered_by: "Dr Démo",
+  }));
+  await admin.from("antiparasitics").insert(antiPayload);
+
+  // —— Ordonnances liées aux consultations ——
+  if (insertedCons?.length) {
+    const derm = insertedCons.find((c) => c.consultation_type === "générale");
+    const target = derm || insertedCons[0];
+    const animal = animals.find((a) => a.id === target.animal_id);
+    if (animal) {
+      const { data: rx } = await admin
+        .from("prescriptions")
+        .insert({
+          organization_id: orgId,
+          consultation_id: target.id,
+          animal_id: animal.id,
+          client_id: animal.client_id,
+          veterinarian_id: userId,
+          prescription_date: dateDaysAgo(45),
+          diagnosis: "Dermatite atopique",
+          notes: "Ordonnance démo",
+          status: "active",
+          valid_until: dateDaysAgo(15),
+        })
+        .select("id")
+        .single();
+      if (rx) {
+        await admin.from("prescription_medications").insert([
+          {
+            prescription_id: rx.id,
+            medication_name: "Prednisolone 

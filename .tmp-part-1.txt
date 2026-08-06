@@ -1,0 +1,379 @@
+      {
+        key: "rocky",
+        name: "Rocky",
+        species: "chien",
+        breed: "Bulldog Anglais",
+        sex: "Mâle",
+        weight: 24.0,
+        birthDaysAgo: 1400,
+        sterilized: true,
+        photo: IMG.dogBulldog,
+        color: "Blanc/fauve",
+        notes: "Respiration bruyante — surveillance BOAS.",
+        microchip: "250268712345682",
+      },
+    ],
+  },
+  {
+    first: "Nadia",
+    last: "Alaoui",
+    city: "Meknès",
+    phone: "+212661100007",
+    animals: [
+      {
+        key: "daisy",
+        name: "Daisy",
+        species: "chien",
+        breed: "Caniche",
+        sex: "Femelle",
+        weight: 7.5,
+        birthDaysAgo: 800,
+        sterilized: true,
+        photo: IMG.dogPoodle,
+        color: "Apricot",
+      },
+      {
+        key: "kiwi",
+        name: "Kiwi",
+        species: "chat",
+        breed: "Européen",
+        sex: "Femelle",
+        weight: 3.9,
+        birthDaysAgo: 500,
+        sterilized: false,
+        photo: IMG.catEuro,
+      },
+    ],
+  },
+  {
+    first: "Omar",
+    last: "Lahlou",
+    city: "Oujda",
+    phone: "+212661100008",
+    animals: [
+      {
+        key: "zeus",
+        name: "Zeus",
+        species: "chien",
+        breed: "Berger Allemand",
+        sex: "Mâle",
+        weight: 36.2,
+        birthDaysAgo: 2500,
+        sterilized: false,
+        photo: IMG.dogShepherd,
+        notes: "Chien de garde — suivi annuel.",
+        microchip: "250268712345683",
+      },
+    ],
+  },
+];
+
+function daysAgo(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+function isoDaysAgo(n: number) {
+  return daysAgo(n).toISOString();
+}
+
+function dateDaysAgo(n: number) {
+  return daysAgo(n).toISOString().slice(0, 10);
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body, null, 2), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
+function rosterForPlan(plan: string): CaseClient[] {
+  switch (plan) {
+    case "free":
+      return CLINIC_ROSTER.slice(0, 4); // ≤10 animals
+    case "pro":
+      return CLINIC_ROSTER.slice(0, 5);
+    case "pro_plus":
+      return CLINIC_ROSTER.slice(0, 6);
+    case "duo":
+      return CLINIC_ROSTER.slice(0, 7);
+    default:
+      return CLINIC_ROSTER;
+  }
+}
+
+async function clearOrgClinicalData(admin: Admin, orgId: string) {
+  await admin.from("visit_services").delete().eq("organization_id", orgId);
+  await admin.from("visits").delete().eq("organization_id", orgId);
+
+  const { data: rxIds } = await admin.from("prescriptions").select("id").eq("organization_id", orgId);
+  if (rxIds?.length) {
+    await admin
+      .from("prescription_medications")
+      .delete()
+      .in(
+        "prescription_id",
+        rxIds.map((p) => p.id),
+      );
+  }
+  await admin.from("prescriptions").delete().eq("organization_id", orgId);
+  await admin.from("consultations").delete().eq("organization_id", orgId);
+  await admin.from("vaccinations").delete().eq("organization_id", orgId);
+  await admin.from("antiparasitics").delete().eq("organization_id", orgId);
+  await admin.from("appointments").delete().eq("organization_id", orgId);
+
+  // Farms: delete children via farm ids when org column missing on some tables
+  const { data: farmRows } = await admin.from("farms").select("id").eq("organization_id", orgId);
+  const farmIds = (farmRows ?? []).map((f) => f.id);
+  if (farmIds.length) {
+    await admin.from("farm_batch_health_events").delete().in("farm_id", farmIds);
+    await admin.from("farm_interventions").delete().in("farm_id", farmIds);
+    await admin.from("farm_batches").delete().in("farm_id", farmIds);
+    await admin.from("farm_infrastructures").delete().in("farm_id", farmIds);
+  }
+  await admin.from("farms").delete().eq("organization_id", orgId);
+  await admin.from("animals").delete().eq("organization_id", orgId);
+  await admin.from("clients").delete().eq("organization_id", orgId);
+  await admin.from("stock_items").delete().eq("organization_id", orgId);
+}
+
+async function seedOrgData(
+  admin: Admin,
+  orgId: string,
+  userId: string,
+  plan: string,
+  force: boolean,
+) {
+  const { count } = await admin
+    .from("clients")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", orgId);
+
+  if ((count ?? 0) > 0 && !force) return { skipped: true };
+  if ((count ?? 0) > 0 && force) await clearOrgClinicalData(admin, orgId);
+
+  await admin.from("stock_items").insert(
+    STOCK.map((s) => ({
+      organization_id: orgId,
+      user_id: userId,
+      name: s.name,
+      category: s.category,
+      unit: s.unit,
+      description: s.description,
+      current_quantity: s.qty,
+      minimum_quantity: s.min,
+      unit_cost: s.cost,
+      selling_price: s.price,
+      requires_prescription: s.category === "medicament",
+      active: true,
+    })),
+  );
+
+  const roster = rosterForPlan(plan);
+  const clientsPayload = roster.map((c) => ({
+    organization_id: orgId,
+    user_id: userId,
+    first_name: c.first,
+    last_name: c.last,
+    email: `${c.first}.${c.last}@demo.test`.toLowerCase().replace(/\s/g, ""),
+    phone: c.phone,
+    mobile_phone: c.phone,
+    address: `${12 + Math.floor(Math.random() * 80)} Avenue Hassan II`,
+    city: c.city,
+    client_type: "particulier",
+  }));
+
+  const { data: clients, error: cErr } = await admin
+    .from("clients")
+    .insert(clientsPayload)
+    .select("id, first_name, last_name");
+  if (cErr || !clients) return { skipped: false, error: "clients: " + (cErr?.message ?? "none") };
+
+  const animalKeyToId: Record<string, { id: string; client_id: string }> = {};
+  const animalsPayload: Record<string, unknown>[] = [];
+  const animalKeys: string[] = [];
+
+  for (let i = 0; i < roster.length; i++) {
+    const c = roster[i];
+    const clientId = clients[i].id;
+    for (const a of c.animals) {
+      animalKeys.push(a.key);
+      animalsPayload.push({
+        organization_id: orgId,
+        user_id: userId,
+        client_id: clientId,
+        name: a.name,
+        species: a.species,
+        breed: a.breed,
+        sex: a.sex,
+        weight: a.weight,
+        birth_date: dateDaysAgo(a.birthDaysAgo),
+        sterilized: a.sterilized,
+        sterilization_date: a.sterilized ? dateDaysAgo(Math.min(a.birthDaysAgo - 180, 400)) : null,
+        photo_url: a.photo,
+        color: a.color ?? null,
+        notes: a.notes ?? null,
+        microchip_number: a.microchip ?? null,
+        status: "vivant",
+      });
+    }
+  }
+
+  const { data: animals, error: aErr } = await admin
+    .from("animals")
+    .insert(animalsPayload)
+    .select("id, client_id, name");
+  if (aErr || !animals) return { skipped: false, error: "animals: " + (aErr?.message ?? "none") };
+
+  animals.forEach((row, idx) => {
+    animalKeyToId[animalKeys[idx]] = { id: row.id, client_id: row.client_id };
+  });
+
+  const get = (key: string) => animalKeyToId[key];
+
+  // —— Consultations cliniques avec photos ——
+  const consRows: Record<string, unknown>[] = [];
+  const pushCons = (row: Record<string, unknown>) => consRows.push(row);
+
+  if (get("rex")) {
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("rex")!.id,
+      client_id: get("rex")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(45),
+      consultation_type: "générale",
+      symptoms: "Prurit intense, lésions cutanées ventrales, léchage compulsif",
+      diagnosis: "Dermatite atopique — poussée allergique",
+      treatment: "Prednisolone 5 jours dégressifs + shampooing thérapeutique + régime hypoallergénique",
+      notes: "Photos des lésions avant traitement. Éviter le poulet.",
+      weight: 32.5,
+      temperature: 38.6,
+      heart_rate: 92,
+      respiratory_rate: 24,
+      photos: [CLINICAL.skin],
+      status: "completed",
+      cost: 180,
+    });
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("rex")!.id,
+      client_id: get("rex")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(12),
+      consultation_type: "suivi",
+      symptoms: "Amélioration nette du prurit",
+      diagnosis: "Dermatite atopique — évolution favorable",
+      treatment: "Maintien régime + antiparasitaire externe à jour",
+      weight: 32.0,
+      temperature: 38.4,
+      photos: [],
+      status: "completed",
+      cost: 100,
+    });
+  }
+
+  if (get("luna")) {
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("luna")!.id,
+      client_id: get("luna")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(30),
+      consultation_type: "urgence",
+      symptoms: "Dysurie, pollakiurie, vocalises en bac",
+      diagnosis: "Cystite idiopathique féline (suspicion)",
+      treatment: "Antispasmodique, hydratation, litière supplémentaire, contrôle analyse urinaire",
+      notes: "Stress environnemental évoqué. Suivi 7 jours.",
+      weight: 4.2,
+      temperature: 39.1,
+      photos: [],
+      status: "completed",
+      cost: 220,
+      follow_up_date: dateDaysAgo(23),
+    });
+  }
+
+  if (get("simba")) {
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("simba")!.id,
+      client_id: get("simba")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(18),
+      consultation_type: "générale",
+      symptoms: "Secouements de tête, odeur forte oreille droite",
+      diagnosis: "Otite externe bilatérale (prédominance droite)",
+      treatment: "Aurizon 1 application 2×/j pendant 7 jours + nettoyage",
+      notes: "Cliché otoscopique / aspect du conduit.",
+      weight: 5.1,
+      temperature: 38.7,
+      photos: [CLINICAL.ear],
+      status: "completed",
+      cost: 160,
+    });
+  }
+
+  if (get("rocky")) {
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("rocky")!.id,
+      client_id: get("rocky")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(60),
+      consultation_type: "chirurgie",
+      symptoms: "Plaie de morsure infectée membre postérieur gauche",
+      diagnosis: "Plaie contaminée — parage chirurgical et drainage",
+      treatment: "Chirurgical : parage, lavage, suture partielle, ATB 10j, AINS 5j",
+      notes: "Compte-rendu opératoire. Photos pré-op et pansement.",
+      weight: 24.0,
+      temperature: 39.3,
+      photos: [CLINICAL.wound],
+      status: "completed",
+      cost: 950,
+    });
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("rocky")!.id,
+      client_id: get("rocky")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(50),
+      consultation_type: "suivi",
+      symptoms: "Contrôle cicatrisation J10",
+      diagnosis: "Bonne évolution — retrait partiel des points",
+      treatment: "Pansement léger, fin ATB",
+      weight: 23.8,
+      photos: [],
+      status: "completed",
+      cost: 80,
+    });
+  }
+
+  if (get("bella")) {
+    pushCons({
+      organization_id: orgId,
+      animal_id: get("bella")!.id,
+      client_id: get("bella")!.client_id,
+      veterinarian_id: userId,
+      consultation_date: isoDaysAgo(8),
+      consultation_type: "générale",
+      symptoms: "Surpoids, intolérance à l’effort légère",
+      diagnosis: "Surpoids BCS 7/9 — conseil nutritionnel",
+      treatment: "Ration calculée, croquettes light, contrôle poids 4 semaines",
+      weight: 12.8,
+      temperature: 38.5,
+      status: "completed",
+      cost: 120,
+    });
+  }
+
+  const { data: insertedCons } = await admin.from("consultations

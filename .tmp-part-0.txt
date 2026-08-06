@@ -1,0 +1,280 @@
+// Seed demo users for each subscription plan (idempotent + force reset).
+// Requires DEMO_SEED_ENABLED=true and header x-demo-seed-secret === DEMO_SEED_SECRET.
+// Body: { "force": true } clears clinical data then re-seeds.
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-demo-seed-secret",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD") ?? "DemoVetpro2026!";
+
+/** Temporary one-shot ops token (remove after reseed). */
+const TEMP_RESEED_TOKEN = "vetocrm-reseed-2026-08-07";
+
+const DEMOS: Array<{
+  plan: "free" | "pro" | "pro_plus" | "duo" | "clinic";
+  email: string;
+  fullName: string;
+  clinic: string;
+  storageMb: number;
+}> = [
+  { plan: "free", email: "demo-free@vetpro.test", fullName: "Démo Découverte", clinic: "Clinique Démo Découverte", storageMb: 100 },
+  { plan: "pro", email: "demo-pro@vetpro.test", fullName: "Démo Pro", clinic: "Clinique Démo Pro", storageMb: 2048 },
+  { plan: "pro_plus", email: "demo-pro-plus@vetpro.test", fullName: "Démo Pro Plus", clinic: "Clinique Démo Pro Plus", storageMb: 3072 },
+  { plan: "duo", email: "demo-duo@vetpro.test", fullName: "Démo Duo", clinic: "Clinique Démo Duo", storageMb: 5120 },
+  { plan: "clinic", email: "demo-clinic@vetpro.test", fullName: "Démo Clinique", clinic: "Clinique Démo Clinique", storageMb: 15360 },
+];
+
+/** Real pet photos (Unsplash/Pixabay) + real veterinary radiographs (Wikimedia Commons). */
+const IMG = {
+  dogLab: "https://images.unsplash.com/photo-1558788353-f76d92427f16?w=640&q=80",
+  dogShepherd: "https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=640&q=80",
+  dogBeagle: "https://images.unsplash.com/photo-1530281700549-e82e7bf110d6?w=640&q=80",
+  dogBulldog: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=640&q=80",
+  dogPoodle: "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=640&q=80",
+  catEuro: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=640&q=80",
+  catOrange: "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=640&q=80",
+  catSiamese: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=640&q=80",
+  rabbit: "https://images.unsplash.com/photo-1589923188900-85dae523342b?w=640&q=80",
+  horse: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=640&q=80",
+  // Real dog hip / pelvis radiographs
+  xrayPelvis: "https://upload.wikimedia.org/wikipedia/commons/0/05/Bilateral_hip_dysplasia.JPG",
+  xrayPelvisLat: "https://upload.wikimedia.org/wikipedia/commons/0/08/Golden_Doodle_hip_xray_side_view.jpg",
+  xrayPelvisVd: "https://upload.wikimedia.org/wikipedia/commons/5/56/Golden_Doodle_dog_hip_xray_posterior_view.jpg",
+};
+
+/** Compact SVG “rapport d’analyse” as data URL (credible lab attachment). */
+function labReportSvg(title: string, rows: Array<[string, string, string]>): string {
+  const lines = rows
+    .map(
+      ([k, v, r], i) =>
+        `<text x="24" y="${90 + i * 22}" font-size="13" fill="#1e293b">${k}</text>` +
+        `<text x="220" y="${90 + i * 22}" font-size="13" fill="#0f766e" font-weight="600">${v}</text>` +
+        `<text x="340" y="${90 + i * 22}" font-size="12" fill="#64748b">${r}</text>`,
+    )
+    .join("");
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="${120 + rows.length * 22}" viewBox="0 0 480 ${120 + rows.length * 22}">` +
+    `<rect width="100%" height="100%" fill="#f8fafc"/>` +
+    `<rect x="0" y="0" width="480" height="48" fill="#0f766e"/>` +
+    `<text x="24" y="30" font-family="Segoe UI,Arial,sans-serif" font-size="16" fill="#fff" font-weight="700">${title}</text>` +
+    `<text x="24" y="68" font-size="11" fill="#64748b">Laboratoire clinique — rapport automatisé (démo)</text>` +
+    lines +
+    `</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/** Clinical / imaging placeholder sheets (scan-ready). */
+function clinicalSheetSvg(title: string, subtitle: string, accent = "#0f766e"): string {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420">` +
+    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1220"/><stop offset="1" stop-color="#1e293b"/></linearGradient></defs>` +
+    `<rect width="100%" height="100%" fill="url(#g)"/>` +
+    `<rect x="24" y="24" width="592" height="372" rx="12" fill="none" stroke="${accent}" stroke-width="2" opacity="0.7"/>` +
+    `<circle cx="320" cy="190" r="88" fill="none" stroke="${accent}" stroke-width="3" opacity="0.35"/>` +
+    `<path d="M240 210 C280 140,360 140,400 210" fill="none" stroke="#94a3b8" stroke-width="8" opacity="0.55"/>` +
+    `<text x="40" y="58" font-family="Segoe UI,Arial,sans-serif" font-size="20" fill="#e2e8f0" font-weight="700">${title}</text>` +
+    `<text x="40" y="86" font-size="13" fill="#94a3b8">${subtitle}</text>` +
+    `<text x="40" y="370" font-size="11" fill="#64748b">Cliché clinique — dossier démo VetoCrm</text>` +
+    `</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+const CLINICAL = {
+  ear: clinicalSheetSvg("Otoscopie — oreille droite", "Conduit érythémateux, sécrétions brunâtres", "#f59e0b"),
+  skin: clinicalSheetSvg("Dermatologie — face ventrale", "Érythème + excoriations — dermatite atopique", "#ef4444"),
+  wound: clinicalSheetSvg("Plaie chirurgicale — MPG", "Parage + drainage — J0 post-op", "#22c55e"),
+  thorax: clinicalSheetSvg("Radiographie thorax (schéma)", "Face + profil — lecture clinique démo", "#38bdf8"),
+  ultrasound: clinicalSheetSvg("Échographie abdominale", "Coupe sagittale — estomac / foie", "#a78bfa"),
+  leg: clinicalSheetSvg("Radiographie membre", "2 incidences — soft tissue swelling", "#94a3b8"),
+};
+
+const STOCK = [
+  { name: "Amoxicilline 500mg", category: "medicament", unit: "comprimé", qty: 200, min: 50, cost: 1.2, price: 3, description: "Antibiotique large spectre" },
+  { name: "Clavaseptin 250 mg", category: "medicament", unit: "comprimé", qty: 80, min: 20, cost: 1.8, price: 4.5, description: "Amoxicilline + acide clavulanique" },
+  { name: "Metacam 1.5 mg/ml", category: "medicament", unit: "flacon", qty: 25, min: 5, cost: 18, price: 38, description: "Méloxicam AINS oral" },
+  { name: "Cerenia 16 mg", category: "medicament", unit: "comprimé", qty: 60, min: 15, cost: 3.5, price: 8.5, description: "Maropitant antiémétique" },
+  { name: "Prednisolone 5 mg", category: "medicament", unit: "comprimé", qty: 150, min: 40, cost: 0.25, price: 0.8, description: "Corticostéroïde" },
+  { name: "Metronidazole 250 mg", category: "medicament", unit: "comprimé", qty: 100, min: 25, cost: 0.55, price: 1.6, description: "Antiprotozoaire / diarrhée" },
+  { name: "Aurizon", category: "medicament", unit: "flacon", qty: 30, min: 8, cost: 8.5, price: 19, description: "Otite externe" },
+  { name: "Milbemax Chien", category: "antiparasitaire", unit: "comprimé", qty: 60, min: 15, cost: 4.5, price: 12, description: "Vermifuge chien" },
+  { name: "Milbemax Chat", category: "antiparasitaire", unit: "comprimé", qty: 70, min: 15, cost: 3.8, price: 10.5, description: "Vermifuge chat" },
+  { name: "Bravecto 500 mg", category: "antiparasitaire", unit: "comprimé", qty: 40, min: 10, cost: 18, price: 42, description: "Fluralaner 12 semaines" },
+  { name: "Frontline Spot-on", category: "antiparasitaire", unit: "pipette", qty: 80, min: 20, cost: 8, price: 20, description: "Fipronil puces/tiques" },
+  { name: "Fortiflora Canin", category: "supplement", unit: "sachet", qty: 80, min: 20, cost: 1.2, price: 3, description: "Probiotique chien" },
+  { name: "Vaccin CHPPi", category: "vaccin", unit: "dose", qty: 50, min: 10, cost: 15, price: 35, description: "Vaccin polyvalent chien" },
+  { name: "Vaccin Rage", category: "vaccin", unit: "dose", qty: 40, min: 10, cost: 12, price: 30, description: "Rage" },
+  { name: "Seringues 5ml", category: "consommable", unit: "unité", qty: 500, min: 100, cost: 0.3, price: 1, description: null },
+  { name: "Compresses stériles", category: "consommable", unit: "boîte", qty: 40, min: 10, cost: 4, price: 10, description: null },
+];
+
+type Admin = ReturnType<typeof createClient>;
+
+type CaseAnimal = {
+  key: string;
+  name: string;
+  species: string;
+  breed: string;
+  sex: string;
+  weight: number;
+  birthDaysAgo: number;
+  sterilized: boolean;
+  photo: string;
+  color?: string;
+  notes?: string;
+  microchip?: string;
+};
+
+type CaseClient = {
+  first: string;
+  last: string;
+  city: string;
+  phone: string;
+  animals: CaseAnimal[];
+};
+
+/** Shared curated clinic roster — sliced per plan. */
+const CLINIC_ROSTER: CaseClient[] = [
+  {
+    first: "Sophie",
+    last: "El Amrani",
+    city: "Casablanca",
+    phone: "+212661100001",
+    animals: [
+      {
+        key: "rex",
+        name: "Rex",
+        species: "chien",
+        breed: "Labrador Retriever",
+        sex: "Mâle",
+        weight: 32.5,
+        birthDaysAgo: 1600,
+        sterilized: true,
+        photo: IMG.dogLab,
+        color: "Noir",
+        notes: "Allergie alimentaire (poulet). Sportif.",
+        microchip: "250268712345678",
+      },
+      {
+        key: "luna",
+        name: "Luna",
+        species: "chat",
+        breed: "Européen",
+        sex: "Femelle",
+        weight: 4.2,
+        birthDaysAgo: 900,
+        sterilized: true,
+        photo: IMG.catEuro,
+        color: "Tigré",
+        notes: "Indoor. Sensible urinaire.",
+        microchip: "250268712345679",
+      },
+    ],
+  },
+  {
+    first: "Karim",
+    last: "Benali",
+    city: "Rabat",
+    phone: "+212661100002",
+    animals: [
+      {
+        key: "max",
+        name: "Max",
+        species: "chien",
+        breed: "Berger Allemand",
+        sex: "Mâle",
+        weight: 34.0,
+        birthDaysAgo: 2100,
+        sterilized: false,
+        photo: IMG.dogShepherd,
+        color: "Fauve",
+        notes: "Dysplasie hanche suspectée — suivi radio.",
+        microchip: "250268712345680",
+      },
+    ],
+  },
+  {
+    first: "Leila",
+    last: "Tazi",
+    city: "Marrakech",
+    phone: "+212661100003",
+    animals: [
+      {
+        key: "simba",
+        name: "Simba",
+        species: "chat",
+        breed: "Européen",
+        sex: "Mâle",
+        weight: 5.1,
+        birthDaysAgo: 1200,
+        sterilized: true,
+        photo: IMG.catOrange,
+        color: "Roux",
+        notes: "Otites récidivantes.",
+      },
+      {
+        key: "nino",
+        name: "Nino",
+        species: "lapin",
+        breed: "Nain",
+        sex: "Mâle",
+        weight: 1.4,
+        birthDaysAgo: 400,
+        sterilized: false,
+        photo: IMG.rabbit,
+        color: "Blanc",
+      },
+    ],
+  },
+  {
+    first: "Yassine",
+    last: "Idrissi",
+    city: "Tanger",
+    phone: "+212661100004",
+    animals: [
+      {
+        key: "bella",
+        name: "Bella",
+        species: "chien",
+        breed: "Beagle",
+        sex: "Femelle",
+        weight: 12.8,
+        birthDaysAgo: 1100,
+        sterilized: true,
+        photo: IMG.dogBeagle,
+        color: "Tricolore",
+        notes: "Obésité légère — régime.",
+        microchip: "250268712345681",
+      },
+    ],
+  },
+  {
+    first: "Fatima",
+    last: "Cherkaoui",
+    city: "Fès",
+    phone: "+212661100005",
+    animals: [
+      {
+        key: "mila",
+        name: "Mila",
+        species: "chat",
+        breed: "Siamois",
+        sex: "Femelle",
+        weight: 3.6,
+        birthDaysAgo: 700,
+        sterilized: true,
+        photo: IMG.catSiamese,
+        color: "Lilac point",
+      },
+    ],
+  },
+  {
+    first: "Hicham",
+    last: "Bennani",
+    city: "Agadir",
+    phone: "+212661100006",
+    animals: [

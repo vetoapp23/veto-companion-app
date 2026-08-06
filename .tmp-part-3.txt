@@ -1,0 +1,217 @@
+5 mg",
+            dosage: "1 cp",
+            frequency: "1×/j matin",
+            duration: "5 jours dégressifs",
+            instructions: "Avec nourriture",
+            quantity: 5,
+          },
+          {
+            prescription_id: rx.id,
+            medication_name: "Fortiflora Canin",
+            dosage: "1 sachet",
+            frequency: "1×/j",
+            duration: "14 jours",
+            instructions: "Sur les croquettes",
+            quantity: 14,
+          },
+        ]);
+      }
+    }
+  }
+
+  // —— RDV futurs ——
+  const apptPayload = clients.slice(0, Math.min(5, clients.length)).map((c, i) => {
+    const animal = animals.find((a) => a.client_id === c.id);
+    const d = new Date();
+    d.setDate(d.getDate() + i + 1);
+    d.setHours(9 + (i % 6), i % 2 === 0 ? 0 : 30, 0, 0);
+    return {
+      organization_id: orgId,
+      client_id: c.id,
+      animal_id: animal?.id ?? null,
+      appointment_date: d.toISOString(),
+      appointment_type: ["consultation", "vaccination", "controle", "chirurgie", "checkup"][i % 5],
+      status: "scheduled",
+      duration_minutes: 30,
+      notes: "RDV démo",
+    };
+  });
+  await admin.from("appointments").insert(apptPayload);
+
+  // —— Farms for higher plans ——
+  let farms = 0;
+  if (["pro_plus", "duo", "clinic"].includes(plan)) {
+    const farmClient = clients[0];
+    const { data: farm } = await admin
+      .from("farms")
+      .insert({
+        organization_id: orgId,
+        client_id: farmClient.id,
+        user_id: userId,
+        farm_name: `Elevage Démo ${plan}`,
+        farm_type: "bovin",
+        farm_types: ["bovin", "ovin"],
+        address: "Route des Fermes, km 12",
+        phone: "+212661199000",
+        herd_size: plan === "clinic" ? 120 : 45,
+        production_type: "laitier",
+        housing_type: "stabulation libre",
+        surface_hectares: plan === "clinic" ? 28 : 12,
+        active: true,
+        notes: "Exploitation démo — prophylaxie et interventions",
+        photos: [IMG.horse],
+      })
+      .select("id")
+      .single();
+    if (farm) {
+      farms = 1;
+      await admin.from("farm_interventions").insert({
+        organization_id: orgId,
+        farm_id: farm.id,
+        veterinarian_id: userId,
+        intervention_date: dateDaysAgo(10),
+        intervention_type: "prophylaxie",
+        description: "Vaccination de lot — FCO / IBR. 40 têtes. RAS post-injection.",
+        diagnosis: "Prophylaxie planifiée",
+        treatment: "Vaccins selon protocole élevage",
+        animal_count: 40,
+        cost: 1200,
+        photos: [],
+        notes: "Intervention démo élevage",
+      });
+    }
+  }
+
+  return {
+    skipped: false,
+    clients: clients.length,
+    animals: animals.length,
+    consultations: consRows.length,
+    visits: visitsCreated,
+    farms,
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const enabled = Deno.env.get("DEMO_SEED_ENABLED") === "true";
+  const expected = Deno.env.get("DEMO_SEED_SECRET") ?? "";
+  const provided = req.headers.get("x-demo-seed-secret") ?? "";
+  const tempOk = timingSafeEqual(provided, TEMP_RESEED_TOKEN);
+  const secretOk = !!(enabled && expected && timingSafeEqual(provided, expected));
+
+  if (!secretOk && !tempOk) {
+    return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
+  }
+
+  let force = false;
+  try {
+    const body = await req.json();
+    force = !!body?.force;
+  } catch {
+    force = false;
+  }
+  // Temp reseed always forces
+  if (tempOk) force = true;
+
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+
+  const results: Record<string, unknown>[] = [];
+
+  for (const d of DEMOS) {
+    try {
+      let userId: string | null = null;
+      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const existing = list?.users?.find((u) => u.email?.toLowerCase() === d.email.toLowerCase());
+      if (existing) {
+        userId = existing.id;
+        await admin.auth.admin.updateUserById(userId, { password: DEMO_PASSWORD, email_confirm: true });
+      } else {
+        const { data: created, error: cErr } = await admin.auth.admin.createUser({
+          email: d.email,
+          password: DEMO_PASSWORD,
+          email_confirm: true,
+          user_metadata: { full_name: d.fullName },
+        });
+        if (cErr) throw cErr;
+        userId = created.user!.id;
+      }
+
+      const { data: profile } = await admin.from("user_profiles").select("organization_id").eq("id", userId).maybeSingle();
+      let orgId: string | null = profile?.organization_id ?? null;
+
+      if (!orgId) {
+        const code = "DEMO" + d.plan.toUpperCase().replace("_", "").slice(0, 4);
+        const { data: org, error: oErr } = await admin
+          .from("organizations")
+          .insert({
+            name: d.clinic,
+            clinic_name: d.clinic,
+            clinic_address: "12 Rue de la Démo, Casablanca",
+            phone: "+212600000000",
+            invitation_code: code,
+            owner_id: userId,
+          })
+          .select("id")
+          .single();
+        if (oErr) throw oErr;
+        orgId = org.id;
+
+        const { error: pErr } = await admin.from("user_profiles").insert({
+          id: userId,
+          email: d.email,
+          username: d.email.split("@")[0],
+          full_name: d.fullName,
+          role: "admin",
+          status: "approved",
+          organization_id: orgId,
+        });
+        if (pErr) throw pErr;
+      } else {
+        await admin
+          .from("user_profiles")
+          .update({ status: "approved", role: "admin", full_name: d.fullName })
+          .eq("id", userId);
+        await admin
+          .from("organizations")
+          .update({ name: d.clinic, clinic_name: d.clinic })
+          .eq("id", orgId);
+      }
+
+      const { data: sub } = await admin
+        .from("organization_subscriptions")
+        .select("id")
+        .eq("organization_id", orgId)
+        .maybeSingle();
+
+      const subPayload = {
+        organization_id: orgId,
+        plan_code: d.plan,
+        storage_quota_mb: d.storageMb,
+        status: "active",
+        current_period_start: new Date().toISOString(),
+      };
+
+      if (sub) {
+        await admin.from("organization_subscriptions").update(subPayload).eq("id", sub.id);
+      } else {
+        await admin.from("organization_subscriptions").insert(subPayload);
+      }
+
+      const seedRes = await seedOrgData(admin, orgId!, userId!, d.plan, force);
+      results.push({ plan: d.plan, email: d.email, userId, orgId, ok: true, seed: seedRes });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      results.push({ plan: d.plan, email: d.email, ok: false, error: message });
+    }
+  }
+
+  return jsonResponse({ ok: true, force, results });
+});
