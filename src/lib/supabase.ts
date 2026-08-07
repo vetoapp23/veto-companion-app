@@ -228,8 +228,6 @@ export const createUserProfileIfNotExists = async (user: SupabaseUser): Promise<
   return data;
 };
 
-import { appPath } from './appUrl'
-
 export const signInWithGoogle = async (opts?: { next?: string }) => {
   const next = opts?.next || '/auth/callback'
   const { data, error } = await supabase.auth.signInWithOAuth({
