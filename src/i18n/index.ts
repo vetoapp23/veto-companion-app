@@ -77,6 +77,7 @@ void i18n
     defaultNS: "common",
     ns: ["common", "nav", "auth", "marketing", "app", "medical", "settings"],
     interpolation: { escapeValue: false },
+    compatibilityJSON: "v4",
     detection: {
       order: ["localStorage", "navigator"],
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,

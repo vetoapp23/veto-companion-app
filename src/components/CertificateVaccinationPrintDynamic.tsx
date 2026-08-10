@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Printer } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAnimals, useClients, useVaccinations, useAppointmentsByAnimal } from '@/hooks/useDatabase';
@@ -27,6 +28,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
   const { data: clients } = useClients();
   const { data: vaccinations } = useVaccinations();
   const { data: appointments = [] } = useAppointmentsByAnimal(animalId);
+  const [includeAnimalPhoto, setIncludeAnimalPhoto] = useState(true);
 
   const vets = (settings.veterinarians || []).filter((v: any) => v.isActive !== false);
 
@@ -358,7 +360,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
             <div class="animal-info">
               <h2>${t('vaccinationCertificate.animalInfo')}</h2>
               
-              ${animal.photo_url ? `
+              ${includeAnimalPhoto && animal.photo_url ? `
               <div class="animal-photo">
                 <img src="${u(animal.photo_url)}" alt="${e(t('vaccinationCertificate.animalPhotoAlt', { name: animal.name }))}" />
               </div>
@@ -463,14 +465,27 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
     );
   }
 
+  const hasPhoto = !!animal.photo_url;
+
   return (
-    <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={handlePrint}>
-      <Printer className="h-4 w-4 mr-2 shrink-0" />
-      <span className="sm:hidden">{t('vaccinationCertificate.buttonShort')}{doseRows.length > 0 ? ` (${doseRows.length})` : ""}</span>
-      <span className="hidden sm:inline">
-        {t('vaccinationCertificate.button')}{doseRows.length > 0 ? ` (${doseRows.length})` : ""}
-      </span>
-    </Button>
+    <div className="flex flex-col gap-2 w-full sm:w-auto">
+      {hasPhoto && (
+        <label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+          <Checkbox
+            checked={includeAnimalPhoto}
+            onCheckedChange={(v) => setIncludeAnimalPhoto(v === true)}
+          />
+          <span>{t('vaccinationCertificate.includeAnimalPhoto')}</span>
+        </label>
+      )}
+      <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={handlePrint}>
+        <Printer className="h-4 w-4 mr-2 shrink-0" />
+        <span className="sm:hidden">{t('vaccinationCertificate.buttonShort')}{doseRows.length > 0 ? ` (${doseRows.length})` : ""}</span>
+        <span className="hidden sm:inline">
+          {t('vaccinationCertificate.button')}{doseRows.length > 0 ? ` (${doseRows.length})` : ""}
+        </span>
+      </Button>
+    </div>
   );
 }
 

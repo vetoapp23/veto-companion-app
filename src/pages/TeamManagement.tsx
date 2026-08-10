@@ -41,6 +41,8 @@ import {
   UserCheck,
   UserX,
   Clock,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import { AppPageHeader } from "@/components/AppPageHeader";
 import { useTranslation } from "react-i18next";
@@ -64,7 +66,7 @@ export default function TeamManagement() {
   const [savingPerms, setSavingPerms] = useState(false);
 
   const admins = useMemo(
-    () => teamMembers?.filter((m) => m.role === "admin") || [],
+    () => teamMembers?.filter((m) => m.role === "admin" && m.status !== "pending") || [],
     [teamMembers]
   );
   const assistants = useMemo(
@@ -74,6 +76,13 @@ export default function TeamManagement() {
   const pending = useMemo(
     () => teamMembers?.filter((m) => m.status === "pending") || [],
     [teamMembers]
+  );
+
+  const maxUsers = limitFor("users");
+  const allowInviteVet = maxUsers == null || maxUsers > 1;
+  const approvedAdminCount = useMemo(
+    () => admins.filter((a) => a.status === "approved").length,
+    [admins]
   );
 
   const invalidate = () =>
@@ -113,24 +122,58 @@ export default function TeamManagement() {
       });
       if (approveErr) throw approveErr;
 
-      const { error: permErr } = await supabase.rpc("update_user_permissions", {
-        user_id_param: member.id,
-        permissions_param: DEFAULT_ASSISTANT_PERMISSIONS,
-        updated_by_param: user.id,
-      });
-      if (permErr) console.warn("permissions after approve", permErr);
+      if (member.role !== "admin") {
+        const { error: permErr } = await supabase.rpc("update_user_permissions", {
+          user_id_param: member.id,
+          permissions_param: DEFAULT_ASSISTANT_PERMISSIONS,
+          updated_by_param: user.id,
+        });
+        if (permErr) console.warn("permissions after approve", permErr);
+      }
 
       toast({
-        title: t("team.approved"),
-        description: t("team.approvedBody", {
-          name: member.full_name || member.email,
-        }),
+        title: member.role === "admin" ? t("team.approvedVet") : t("team.approved"),
+        description:
+          member.role === "admin"
+            ? t("team.approvedVetBody", { name: member.full_name || member.email })
+            : t("team.approvedBody", { name: member.full_name || member.email }),
       });
       await invalidate();
     } catch (e: any) {
       toast({
         title: tc("error"),
         description: e?.message || t("team.cannotApprove"),
+        variant: "destructive",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleSetRole = async (member: TeamMember, role: "admin" | "assistant") => {
+    if (!user?.id || member.id === user.id) return;
+    setBusyId(member.id);
+    try {
+      const { data, error: roleErr } = await supabase.rpc("set_org_member_role" as any, {
+        p_user_id: member.id,
+        p_role: role,
+      });
+      if (roleErr) throw roleErr;
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || t("team.cannotChangeRole"));
+      }
+      toast({
+        title: t("team.roleUpdated"),
+        description:
+          role === "admin"
+            ? t("team.promotedBody", { name: member.full_name || member.email })
+            : t("team.demotedBody", { name: member.full_name || member.email }),
+      });
+      await invalidate();
+    } catch (e: any) {
+      toast({
+        title: tc("error"),
+        description: e?.message || t("team.cannotChangeRole"),
         variant: "destructive",
       });
     } finally {
@@ -257,12 +300,14 @@ export default function TeamManagement() {
         title={t("team.title")}
         description={
           limitFor("users") != null
-            ? `${t("team.description")} — ${counts.users}/${limitFor("users")} ${t("team.seats", { defaultValue: "sièges" })} (${quota?.plan_name ?? ""})`
-            : t("team.description")
+            ? `${allowInviteVet ? t("team.descriptionMulti") : t("team.description")} — ${counts.users}/${limitFor("users")} ${t("team.seats", { defaultValue: "sièges" })} (${quota?.plan_name ?? ""})`
+            : allowInviteVet
+              ? t("team.descriptionMulti")
+              : t("team.description")
         }
       />
 
-      <OrganizationInviteCode />
+      <OrganizationInviteCode allowInviteVet={allowInviteVet} />
 
       <div className="app-kpi-grid grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -366,7 +411,7 @@ export default function TeamManagement() {
             {t("team.vetsAdmins")}
           </CardTitle>
           <CardDescription>
-            {t("team.adminsHint")}
+            {allowInviteVet ? t("team.adminsHintMulti") : t("team.adminsHint")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -374,17 +419,17 @@ export default function TeamManagement() {
             {admins.map((admin) => (
               <div
                 key={admin.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center space-x-4">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                     <UserCircle className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium flex items-center">
+                    <p className="font-medium flex items-center flex-wrap gap-1">
                       {admin.full_name || t("team.noName")}
                       {admin.id === user?.id && (
-                        <Badge variant="outline" className="ml-2 text-xs">
+                        <Badge variant="outline" className="ml-1 text-xs">
                           {t("team.you")}
                         </Badge>
                       )}
@@ -392,12 +437,30 @@ export default function TeamManagement() {
                     <p className="text-sm text-muted-foreground">{admin.email}</p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center flex-wrap gap-2">
                   <Badge className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20">
                     <Crown className="mr-1 h-3 w-3" />
                     Admin
                   </Badge>
                   {statusBadge(admin.status)}
+                  {allowInviteVet &&
+                    admin.id !== user?.id &&
+                    admin.status === "approved" &&
+                    approvedAdminCount > 1 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busyId === admin.id}
+                        onClick={() => handleSetRole(admin, "assistant")}
+                      >
+                        {busyId === admin.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <ArrowDownRight className="h-4 w-4 mr-1" />
+                        )}
+                        {t("team.demoteToAssistant")}
+                      </Button>
+                    )}
                 </div>
               </div>
             ))}
@@ -448,7 +511,22 @@ export default function TeamManagement() {
                   {assistant.status === "approved" && (
                     <Button size="sm" variant="outline" onClick={() => openPermissions(assistant)}>
                       <KeyRound className="h-4 w-4 mr-1" />
-                      Droits
+                      {t("team.permissionsBtn", { defaultValue: "Droits" })}
+                    </Button>
+                  )}
+                  {allowInviteVet && assistant.status === "approved" && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={busyId === assistant.id}
+                      onClick={() => handleSetRole(assistant, "admin")}
+                    >
+                      {busyId === assistant.id ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <ArrowUpRight className="h-4 w-4 mr-1" />
+                      )}
+                      {t("team.promoteToVet")}
                     </Button>
                   )}
                 </div>
@@ -458,7 +536,7 @@ export default function TeamManagement() {
               <div className="text-center py-8 space-y-3">
                 <p className="text-muted-foreground">{t("team.empty")}</p>
                 <p className="text-sm text-muted-foreground">
-                  {t("team.emptyInviteHint")}
+                  {allowInviteVet ? t("team.emptyInviteHintMulti") : t("team.emptyInviteHint")}
                 </p>
               </div>
             )}

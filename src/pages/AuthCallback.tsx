@@ -47,6 +47,13 @@ export default function AuthCallback() {
 
         setMessage("Préparation de votre espace…");
 
+        // Returning Google users whose profile was lost (auth recreated): reclaim orphan clinic
+        try {
+          await supabase.rpc("ensure_returning_user_org" as any);
+        } catch (e) {
+          console.warn("[AuthCallback] ensure_returning_user_org", e);
+        }
+
         let profile = null as Awaited<ReturnType<typeof getCurrentUserProfile>>;
         try {
           profile = await getCurrentUserProfile();

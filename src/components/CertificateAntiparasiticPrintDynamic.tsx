@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Printer } from 'lucide-react';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useAnimals, useClients, useAntiparasitics, useAppointmentsByAnimal } from '@/hooks/useDatabase';
@@ -27,6 +28,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
   const { data: clients } = useClients();
   const { data: antiparasitics } = useAntiparasitics();
   const { data: appointments = [] } = useAppointmentsByAnimal(animalId);
+  const [includeAnimalPhoto, setIncludeAnimalPhoto] = useState(true);
 
   const vets = (settings.veterinarians || []).filter((v: any) => v.isActive !== false);
 
@@ -358,7 +360,7 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
             <div class="animal-info">
               <h2>${t('vaccinationCertificate.animalInfo')}</h2>
               
-              ${animal.photo_url ? `
+              ${includeAnimalPhoto && animal.photo_url ? `
               <div class="animal-photo">
                 <img src="${u(animal.photo_url)}" alt="${e(t('vaccinationCertificate.animalPhotoAlt', { name: animal.name }))}" />
               </div>
@@ -462,12 +464,25 @@ export function CertificateAntiparasiticPrintDynamic({ animalId }: CertificatePr
     );
   }
 
+  const hasPhoto = !!animal.photo_url;
+
   return (
-    <Button variant="outline" onClick={handlePrint}>
-      <Printer className="h-4 w-4 mr-2" />
-      {t('antiparasiticCertificate.button')}
-      {doseRows.length > 0 ? ` (${doseRows.length})` : ''}
-    </Button>
+    <div className="flex flex-col gap-2 w-full sm:w-auto">
+      {hasPhoto && (
+        <label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+          <Checkbox
+            checked={includeAnimalPhoto}
+            onCheckedChange={(v) => setIncludeAnimalPhoto(v === true)}
+          />
+          <span>{t('vaccinationCertificate.includeAnimalPhoto')}</span>
+        </label>
+      )}
+      <Button variant="outline" onClick={handlePrint}>
+        <Printer className="h-4 w-4 mr-2" />
+        {t('antiparasiticCertificate.button')}
+        {doseRows.length > 0 ? ` (${doseRows.length})` : ''}
+      </Button>
+    </div>
   );
 }
 

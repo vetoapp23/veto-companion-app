@@ -39,6 +39,7 @@ import {
 
 type SectionKey =
   | "identity"
+  | "animalPhoto"
   | "pedigree"
   | "history"
   | "consultations"
@@ -51,22 +52,22 @@ type Template = "complete" | "summary" | "vaccinations" | "certificate";
 
 const TEMPLATES: Record<Template, Record<SectionKey, boolean>> = {
   complete: {
-    identity: true, pedigree: true, history: true,
+    identity: true, animalPhoto: true, pedigree: true, history: true,
     consultations: true, vaccinations: true, antiparasitics: true,
     prescriptions: true, photos: false,
   },
   summary: {
-    identity: true, pedigree: false, history: true,
+    identity: true, animalPhoto: true, pedigree: false, history: true,
     consultations: true, vaccinations: true, antiparasitics: false,
     prescriptions: false, photos: false,
   },
   vaccinations: {
-    identity: true, pedigree: false, history: false,
+    identity: true, animalPhoto: true, pedigree: false, history: false,
     consultations: false, vaccinations: true, antiparasitics: true,
     prescriptions: false, photos: false,
   },
   certificate: {
-    identity: true, pedigree: true, history: false,
+    identity: true, animalPhoto: true, pedigree: true, history: false,
     consultations: false, vaccinations: true, antiparasitics: false,
     prescriptions: false, photos: false,
   },
@@ -160,22 +161,42 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
     const sectionsHtml: string[] = [];
 
     if (sections.identity) {
+      const mainPhoto = animal.photo || animal.photo_url;
+      const showAnimalPhoto = sections.animalPhoto && !!mainPhoto;
       sectionsHtml.push(`
         <section class="block">
           <h2>${e(t("print.dossier.identityHeading"))}</h2>
-          <table class="info">
-            <tr><th>${e(t("print.dossier.name"))}</th><td>${e(animal.name ?? "—")}</td><th>${e(t("print.dossier.owner"))}</th><td>${e(ownerName)}</td></tr>
-            <tr><th>${e(t("print.dossier.species"))}</th><td>${e(animal.species ?? animal.type ?? "—")}</td><th>${e(t("print.dossier.breed"))}</th><td>${e(animal.breed ?? "—")}</td></tr>
-            <tr><th>${e(t("print.dossier.sex"))}</th><td>${e(animal.sex ?? animal.gender ?? "—")}</td><th>${e(t("print.dossier.color"))}</th><td>${e(animal.color ?? "—")}</td></tr>
-            <tr><th>${e(t("print.dossier.birthDate"))}</th><td>${e(fmtDate(animal.birth_date ?? animal.birthDate))}</td><th>${e(t("print.dossier.age"))}</th><td>${e(animal.birth_date || animal.birthDate ? calculateAge(animal.birth_date ?? animal.birthDate) : "—")}</td></tr>
-            <tr><th>${e(t("print.dossier.weight"))}</th><td>${e(animal.weight ? `${animal.weight} kg` : "—")}</td><th>${e(t("print.dossier.microchip"))}</th><td>${e(animal.microchip_number ?? animal.microchip ?? "—")}</td></tr>
-            <tr><th>${e(t("print.dossier.sterilized"))}</th><td>${e(animal.sterilized ? tc("yes") : tc("no"))}</td><th>${e(t("print.dossier.status"))}</th><td>${e(animal.status ?? "—")}</td></tr>
-          </table>
+          <div class="identity-row">
+            ${showAnimalPhoto ? `
+            <div class="animal-portrait">
+              <img src="${u(mainPhoto)}" alt="${e(t("print.dossier.mainPhoto", { name: animal.name }))}" />
+            </div>` : ""}
+            <table class="info identity-table">
+              <tr><th>${e(t("print.dossier.name"))}</th><td>${e(animal.name ?? "—")}</td><th>${e(t("print.dossier.owner"))}</th><td>${e(ownerName)}</td></tr>
+              <tr><th>${e(t("print.dossier.species"))}</th><td>${e(animal.species ?? animal.type ?? "—")}</td><th>${e(t("print.dossier.breed"))}</th><td>${e(animal.breed ?? "—")}</td></tr>
+              <tr><th>${e(t("print.dossier.sex"))}</th><td>${e(animal.sex ?? animal.gender ?? "—")}</td><th>${e(t("print.dossier.color"))}</th><td>${e(animal.color ?? "—")}</td></tr>
+              <tr><th>${e(t("print.dossier.birthDate"))}</th><td>${e(fmtDate(animal.birth_date ?? animal.birthDate))}</td><th>${e(t("print.dossier.age"))}</th><td>${e(animal.birth_date || animal.birthDate ? calculateAge(animal.birth_date ?? animal.birthDate) : "—")}</td></tr>
+              <tr><th>${e(t("print.dossier.weight"))}</th><td>${e(animal.weight ? `${animal.weight} kg` : "—")}</td><th>${e(t("print.dossier.microchip"))}</th><td>${e(animal.microchip_number ?? animal.microchip ?? "—")}</td></tr>
+              <tr><th>${e(t("print.dossier.sterilized"))}</th><td>${e(animal.sterilized ? tc("yes") : tc("no"))}</td><th>${e(t("print.dossier.status"))}</th><td>${e(animal.status ?? "—")}</td></tr>
+            </table>
+          </div>
           ${animal.medical_history ? `<p><strong>${e(t("print.dossier.history"))}</strong> ${e(animal.medical_history)}</p>` : ""}
           ${animal.allergies?.length ? `<p><strong>${e(t("print.dossier.allergies"))}</strong> ${e(animal.allergies.join(", "))}</p>` : ""}
           ${animal.chronic_conditions?.length ? `<p><strong>${e(t("print.dossier.chronic"))}</strong> ${e(animal.chronic_conditions.join(", "))}</p>` : ""}
         </section>
       `);
+    } else if (sections.animalPhoto) {
+      const mainPhoto = animal.photo || animal.photo_url;
+      if (mainPhoto) {
+        sectionsHtml.push(`
+          <section class="block">
+            <h2>${e(t("dossier.sections.animalPhoto"))}</h2>
+            <div class="animal-portrait animal-portrait-solo">
+              <img src="${u(mainPhoto)}" alt="${e(t("print.dossier.mainPhoto", { name: animal.name }))}" />
+            </div>
+          </section>
+        `);
+      }
     }
 
     if (sections.pedigree && pedigree) {
@@ -313,8 +334,9 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
     if (sections.photos) {
       const photoItems: { src: string; label: string }[] = [];
+      // Portrait animal already covered by animalPhoto — avoid duplicate unless that section is off
       const mainPhoto = animal.photo || animal.photo_url;
-      if (mainPhoto) {
+      if (mainPhoto && !sections.animalPhoto) {
         photoItems.push({ src: mainPhoto, label: t("print.dossier.mainPhoto", { name: animal.name }) });
       }
       consultations
@@ -509,6 +531,7 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
 
   const SECTION_LABELS: Record<SectionKey, string> = {
     identity: t("dossier.sections.identity"),
+    animalPhoto: t("dossier.sections.animalPhoto"),
     pedigree: t("dossier.sections.pedigree"),
     history: t("dossier.sections.history"),
     consultations: t("dossier.sections.consultations"),

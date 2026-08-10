@@ -13,13 +13,14 @@
     "sectionsToInclude": "Secciones a incluir",
     "sections": {
       "identity": "Identidad",
+      "animalPhoto": "Foto del animal",
       "pedigree": "Pedigrí",
       "history": "Historial general",
       "consultations": "Consultas y exámenes",
       "vaccinations": "Vacunaciones",
       "antiparasitics": "Antiparasitarios",
       "prescriptions": "Recetas",
-      "photos": "Fotos"
+      "photos": "Fotos de consultas"
     },
     "includeTransferQr": "Incluir un QR de transferencia",
     "includeTransferQrHint": "Genere un código corto (como la invitación de clínica) + QR, luego comparta o imprima.",
@@ -159,7 +160,8 @@
     "notes": "Notas:",
     "empty": "Ninguna vacunación registrada para este animal",
     "clinicLogoAlt": "Logo de la clínica",
-    "animalPhotoAlt": "Foto de {{name}}"
+    "animalPhotoAlt": "Foto de {{name}}",
+    "includeAnimalPhoto": "Incluir la foto del animal"
   },
   "antiparasiticCertificate": {
     "button": "Certificado antiparasitario",
@@ -616,6 +618,7 @@
   "petDossier": {
     "subtitle": "Historial clínico · {{owner}}",
     "printQr": "Imprimir historial / QR",
+    "printShort": "Imprimir",
     "quickConsult": "Consult.",
     "quickVaccin": "Vacuna",
     "quickAnti": "Anti-P.",
@@ -637,6 +640,7 @@
     "color": "Color:",
     "weight": "Peso:",
     "microchip": "N.º chip:",
+    "statusLabel": "Estado:",
     "status": {
       "completedF": "Terminada",
       "completedM": "Terminado",

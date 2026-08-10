@@ -11,6 +11,35 @@ function htmlLang() {
 }
 
 export const REPORT_PHOTO_STYLES = `
+  .identity-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .identity-table {
+    flex: 1;
+    min-width: 0;
+  }
+  .animal-portrait {
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f8fafc;
+  }
+  .animal-portrait img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  .animal-portrait-solo {
+    width: 160px;
+    height: 160px;
+  }
   .photos {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -39,6 +68,10 @@ export const REPORT_PHOTO_STYLES = `
     object-position: center;
     border-radius: 4px;
     background: #fff;
+  }
+  @media print {
+    .identity-row { gap: 12px; }
+    .animal-portrait { width: 100px; height: 100px; }
   }
 `;
 

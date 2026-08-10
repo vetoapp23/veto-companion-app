@@ -284,17 +284,37 @@
   "inviteCode": {
     "title": "Código de invitación",
     "description": "Comparta este código con sus asistentes veterinarios",
+    "descriptionMulti": "Comparta este código para invitar a un veterinario o un asistente",
     "copied": "¡Código copiado!",
     "copiedBody": "El código de invitación se copió al portapapeles",
     "yourCode": "Su código",
+    "copyCode": "Copiar código",
     "howToInvite": "¿Cómo invitar a un asistente?",
+    "howToInviteMulti": "¿Cómo invitar a un miembro?",
     "hideInstructions": "Ocultar instrucciones",
+    "inviteAs": "Invitar como",
+    "roleVet": "Veterinario",
+    "roleVetHint": "Administrador, acceso completo",
+    "roleAssistant": "Asistente",
+    "roleAssistantHint": "Permisos configurables",
+    "copyVetLink": "Copiar enlace de invitación veterinario",
+    "copyAssistantLink": "Copiar enlace de invitación asistente",
+    "linkCopied": "Enlace copiado",
+    "linkCopiedVetBody": "Se copió el enlace de registro veterinario",
+    "linkCopiedAssistantBody": "Se copió el enlace de registro asistente",
     "steps": {
       "1": "Comparta este código con su asistente",
       "2": "Crea una cuenta en VetoCrm",
       "3": "Introduce el código de invitación",
       "4": "Aparece en su equipo",
       "5": "Usted le asigna los permisos"
+    },
+    "stepsMulti": {
+      "1": "Elija el rol (veterinario o asistente)",
+      "2": "Comparta el código o el enlace de invitación",
+      "3": "El miembro crea su cuenta con este código",
+      "4": "Aparece en las solicitudes pendientes",
+      "5": "Usted aprueba y, para un asistente, ajusta los permisos"
     }
   },
   "adminPanel": {

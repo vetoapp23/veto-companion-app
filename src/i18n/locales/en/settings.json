@@ -284,17 +284,37 @@
   "inviteCode": {
     "title": "Invitation code",
     "description": "Share this code with your veterinary assistants",
+    "descriptionMulti": "Share this code to invite a veterinarian or an assistant",
     "copied": "Code copied!",
     "copiedBody": "The invitation code has been copied to the clipboard",
     "yourCode": "Your code",
+    "copyCode": "Copy code",
     "howToInvite": "How to invite an assistant?",
+    "howToInviteMulti": "How to invite a team member?",
     "hideInstructions": "Hide instructions",
+    "inviteAs": "Invite as",
+    "roleVet": "Veterinarian",
+    "roleVetHint": "Administrator, full access",
+    "roleAssistant": "Assistant",
+    "roleAssistantHint": "Configurable permissions",
+    "copyVetLink": "Copy veterinarian invite link",
+    "copyAssistantLink": "Copy assistant invite link",
+    "linkCopied": "Link copied",
+    "linkCopiedVetBody": "The veterinarian signup link was copied",
+    "linkCopiedAssistantBody": "The assistant signup link was copied",
     "steps": {
       "1": "Share this code with your assistant",
       "2": "They create a VetoCrm account",
       "3": "They enter the invite code",
       "4": "They appear in your team",
       "5": "You assign their permissions"
+    },
+    "stepsMulti": {
+      "1": "Choose the role (veterinarian or assistant)",
+      "2": "Share the invite code or link",
+      "3": "They create an account with this code",
+      "4": "They appear in pending requests",
+      "5": "You approve and, for an assistant, adjust permissions"
     }
   },
   "adminPanel": {

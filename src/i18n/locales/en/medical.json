@@ -13,13 +13,14 @@
     "sectionsToInclude": "Sections to include",
     "sections": {
       "identity": "Identity",
+      "animalPhoto": "Animal photo",
       "pedigree": "Pedigree",
       "history": "General history",
       "consultations": "Consultations & exams",
       "vaccinations": "Vaccinations",
       "antiparasitics": "Antiparasitics",
       "prescriptions": "Prescriptions",
-      "photos": "Photos"
+      "photos": "Consultation photos"
     },
     "includeTransferQr": "Include a transfer QR",
     "includeTransferQrHint": "Generate a short code (like clinic invite) + QR, then share or print.",
@@ -159,7 +160,8 @@
     "notes": "Notes:",
     "empty": "No vaccinations recorded for this patient",
     "clinicLogoAlt": "Clinic logo",
-    "animalPhotoAlt": "Photo of {{name}}"
+    "animalPhotoAlt": "Photo of {{name}}",
+    "includeAnimalPhoto": "Include animal photo"
   },
   "antiparasiticCertificate": {
     "button": "Antiparasitic certificate",
@@ -616,6 +618,7 @@
   "petDossier": {
     "subtitle": "Medical record · {{owner}}",
     "printQr": "Print record / QR",
+    "printShort": "Print",
     "quickConsult": "Consult.",
     "quickVaccin": "Vaccine",
     "quickAnti": "Anti-P.",
@@ -637,6 +640,7 @@
     "color": "Color:",
     "weight": "Weight:",
     "microchip": "Microchip:",
+    "statusLabel": "Status:",
     "status": {
       "completedF": "Completed",
       "completedM": "Completed",

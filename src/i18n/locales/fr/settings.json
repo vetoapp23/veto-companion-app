@@ -284,17 +284,37 @@
   "inviteCode": {
     "title": "Code d'invitation",
     "description": "Partagez ce code avec vos assistants vétérinaires",
+    "descriptionMulti": "Partagez ce code pour inviter un vétérinaire ou un assistant",
     "copied": "Code copié!",
     "copiedBody": "Le code d'invitation a été copié dans le presse-papier",
     "yourCode": "Votre Code",
+    "copyCode": "Copier le code",
     "howToInvite": "Comment inviter un assistant ?",
+    "howToInviteMulti": "Comment inviter un membre ?",
     "hideInstructions": "Masquer les instructions",
+    "inviteAs": "Inviter en tant que",
+    "roleVet": "Vétérinaire",
+    "roleVetHint": "Administrateur, accès complet",
+    "roleAssistant": "Assistant",
+    "roleAssistantHint": "Droits modulables",
+    "copyVetLink": "Copier le lien d'invitation vétérinaire",
+    "copyAssistantLink": "Copier le lien d'invitation assistant",
+    "linkCopied": "Lien copié",
+    "linkCopiedVetBody": "Le lien d'inscription vétérinaire a été copié",
+    "linkCopiedAssistantBody": "Le lien d'inscription assistant a été copié",
     "steps": {
       "1": "Partagez ce code avec votre assistant",
       "2": "Il crée un compte sur VetoCrm",
       "3": "Il saisit le code d'invitation",
       "4": "Il apparaît dans votre équipe",
       "5": "Vous lui attribuez les permissions"
+    },
+    "stepsMulti": {
+      "1": "Choisissez le rôle (vétérinaire ou assistant)",
+      "2": "Partagez le code ou le lien d'invitation",
+      "3": "Le membre crée son compte avec ce code",
+      "4": "Il apparaît dans les demandes en attente",
+      "5": "Vous approuvez et, pour un assistant, ajustez les droits"
     }
   },
   "adminPanel": {

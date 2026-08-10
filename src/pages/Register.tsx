@@ -59,16 +59,22 @@ const Register = () => {
 
   const urlPlan = searchParams.get("plan") ?? "free";
   const urlMode = searchParams.get("mode");
+  const urlCode = searchParams.get("code") ?? "";
   const urlCycle = (searchParams.get("cycle") === "yearly" ? "yearly" : "monthly") as Cycle;
   const urlCurrency = (["MAD", "EUR", "USD"].includes(searchParams.get("currency") ?? "")
     ? searchParams.get("currency")
     : null) as Currency | null;
 
-  const [step, setStep] = useState<Step>(urlMode === "assistant" ? "account" : "plan");
+  const isJoinMode = urlMode === "assistant" || urlMode === "vet" || urlMode === "join";
+  const initialJoinRole: "admin" | "assistant" =
+    urlMode === "vet" || searchParams.get("role") === "admin" ? "admin" : "assistant";
+
+  const [step, setStep] = useState<Step>(isJoinMode ? "account" : "plan");
   const [selectedPlan, setSelectedPlan] = useState<string>(urlPlan);
   const [currency, setCurrency] = useState<Currency>(urlCurrency ?? detectCurrency());
   const [cycle] = useState<Cycle>(urlCycle);
-  const [isJoiningOrganization, setIsJoiningOrganization] = useState(urlMode === "assistant");
+  const [isJoiningOrganization, setIsJoiningOrganization] = useState(isJoinMode);
+  const [joinRole, setJoinRole] = useState<"admin" | "assistant">(initialJoinRole);
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -81,7 +87,7 @@ const Register = () => {
     clinicName: "",
     clinicAddress: "",
     phone: "",
-    organizationCode: "",
+    organizationCode: urlCode.toUpperCase(),
   });
 
   const formatPrice = (amount: number, curr: Currency) => {
@@ -170,7 +176,7 @@ const Register = () => {
         p_user_id: authData.user.id,
         p_full_name: formData.fullName,
         p_email: formData.email,
-        p_role: isJoiningOrganization ? "assistant" : "admin",
+        p_role: isJoiningOrganization ? joinRole : "admin",
         p_organization_code: isJoiningOrganization ? formData.organizationCode : null,
         p_clinic_name: !isJoiningOrganization ? formData.clinicName : null,
         p_clinic_address: !isJoiningOrganization ? formData.clinicAddress : null,
@@ -375,7 +381,9 @@ const Register = () => {
             </CardTitle>
             <CardDescription className="text-base">
               {isJoiningOrganization
-                ? t("register.joinAsAssistant")
+                ? joinRole === "admin"
+                  ? t("register.joinAsVet")
+                  : t("register.joinAsAssistant")
                 : currentPlan
                 ? t("register.selectedPlan", { name: currentPlan.name })
                 : t("register.clinicSignup")}
@@ -449,6 +457,43 @@ const Register = () => {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase">
                     {t("register.orgCodeSection")}
                   </h3>
+                  <div className="space-y-2">
+                    <Label>{t("register.joinRoleLabel")}</Label>
+                    <RadioGroup
+                      value={joinRole}
+                      onValueChange={(v) => setJoinRole(v as "admin" | "assistant")}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+                    >
+                      <label
+                        htmlFor="join-role-admin"
+                        className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                          joinRole === "admin" ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                        }`}
+                      >
+                        <RadioGroupItem value="admin" id="join-role-admin" className="mt-0.5" />
+                        <span>
+                          <span className="block text-sm font-medium">{t("register.joinRoleVet")}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {t("register.joinRoleVetHint")}
+                          </span>
+                        </span>
+                      </label>
+                      <label
+                        htmlFor="join-role-assistant"
+                        className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                          joinRole === "assistant" ? "border-primary bg-primary/5" : "hover:bg-muted/40"
+                        }`}
+                      >
+                        <RadioGroupItem value="assistant" id="join-role-assistant" className="mt-0.5" />
+                        <span>
+                          <span className="block text-sm font-medium">{t("register.joinRoleAssistant")}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {t("register.joinRoleAssistantHint")}
+                          </span>
+                        </span>
+                      </label>
+                    </RadioGroup>
+                  </div>
                   <div>
                     <Label htmlFor="organizationCode">
                       {t("register.orgCodeLabel")}
@@ -457,9 +502,10 @@ const Register = () => {
                       id="organizationCode"
                       value={formData.organizationCode}
                       onChange={(e) =>
-                        setFormData({ ...formData, organizationCode: e.target.value })
+                        setFormData({ ...formData, organizationCode: e.target.value.toUpperCase() })
                       }
                       placeholder="ABC123"
+                      className="font-mono tracking-wider uppercase"
                       required
                     />
                   </div>

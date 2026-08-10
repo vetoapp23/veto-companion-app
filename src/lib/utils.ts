@@ -68,7 +68,7 @@ export function calculateAge(birthDate: string): string {
   } else if (months === 0) {
     return t("ageYears", { count: years });
   } else {
-    return t("ageYearsAndMonths", { years, months });
+    return t("ageYearsAndMonths", { count: years, years, months });
   }
 }
 
