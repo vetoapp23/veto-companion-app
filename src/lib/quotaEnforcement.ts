@@ -40,8 +40,15 @@ export async function checkQuotaLimit(kind: QuotaKind): Promise<QuotaCheckResult
   return (data ?? null) as QuotaCheckResult | null;
 }
 
+/** Fail-closed: RPC failure or missing payload blocks the action. */
 export async function assertQuotaAvailable(kind: QuotaKind): Promise<void> {
   const result = await checkQuotaLimit(kind);
+  if (!result) {
+    throw new QuotaLimitError(kind, {
+      allowed: false,
+      message: "Impossible de vérifier les limites du plan. Réessayez.",
+    });
+  }
   if (result.bypass || result.allowed) return;
   throw new QuotaLimitError(kind, result);
 }

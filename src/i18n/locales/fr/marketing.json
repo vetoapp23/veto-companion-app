@@ -69,7 +69,14 @@
     "ctaBandBody": "Démarrez gratuitement, évoluez quand vous voulez. Annulation simple, sans engagement opaque.",
     "ctaCreateAccount": "Créer mon compte",
     "ctaSeePricing": "Voir les tarifs CRM",
-    "footerCopy": "© {{year}} VetoCrm — CRM et logiciel de gestion pour cliniques vétérinaires"
+    "footerCopy": "© {{year}} VetoCrm — CRM et logiciel de gestion pour cliniques vétérinaires",
+    "plansLabel": "Formules",
+    "plansTitle": "Des packs adaptés à votre clinique",
+    "plansCopy": "Les limites et modules actifs se mettent à jour automatiquement selon votre offre. Comparez et choisissez.",
+    "plansSeeAll": "Comparer tous les tarifs",
+    "plansLoading": "Chargement des formules…",
+    "plansFrom": "À partir de",
+    "plansPerMonth": "/mois"
   },
   "pricing": {
     "seoTitle": "Tarifs VetoCrm — Formules CRM vétérinaire",
@@ -103,6 +110,30 @@
     "free": "Gratuit",
     "unitMb": "Mo",
     "unitGb": "Go"
+  },
+  "planBullets": {
+    "users_one": "{{count}} utilisateur",
+    "users_other": "{{count}} utilisateurs",
+    "clientsMax": "{{count}} clients max",
+    "clientsUnlimited": "Clients illimités",
+    "animalsMax": "{{count}} animaux max",
+    "animalsUnlimited": "Animaux illimités",
+    "storage": "{{size}} de stockage photos",
+    "unitMb": "Mo",
+    "unitGb": "Go",
+    "modulesIncluded": "Modules : {{list}}",
+    "modules": {
+      "consultations": "Consultations",
+      "visits": "Visites",
+      "appointments": "Rendez-vous",
+      "vaccinations": "Vaccinations",
+      "antiparasites": "Antiparasites",
+      "farm": "Élevage / Fermes",
+      "stock": "Stock",
+      "accounting": "Comptabilité",
+      "clients": "Clients",
+      "animals": "Animaux"
+    }
   },
   "contact": {
     "seoTitle": "Nous contacter — VetoCrm",

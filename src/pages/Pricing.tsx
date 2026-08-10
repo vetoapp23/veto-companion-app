@@ -15,6 +15,11 @@ import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { startCheckoutSession } from "@/lib/stripeBilling";
 import { useToast } from "@/hooks/use-toast";
+import {
+  buildPlanMarketingBullets,
+  resolvePlanDisplayName,
+  resolvePlanTagline,
+} from "@/lib/planMarketing";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -30,7 +35,8 @@ interface Plan {
   max_users: number;
   max_clients: number | null;
   max_animals: number | null;
-  features: string[];
+  features: unknown;
+  limits: Record<string, boolean> | null;
   is_highlighted: boolean;
   display_order: number;
 }
@@ -47,7 +53,7 @@ function detectCurrency(): Currency {
 }
 
 export default function Pricing() {
-  const { t } = useTranslation("marketing");
+  const { t, i18n } = useTranslation("marketing");
   const { t: tc } = useTranslation("common");
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -124,7 +130,8 @@ export default function Pricing() {
         setPlans(
           (data as unknown as Plan[]).map((p) => ({
             ...p,
-            features: Array.isArray(p.features) ? p.features : [],
+            features: p.features ?? null,
+            limits: p.limits && typeof p.limits === "object" ? p.limits : {},
             prices: p.prices && typeof p.prices === "object" ? p.prices : {},
           }))
         );
@@ -235,6 +242,9 @@ export default function Pricing() {
               {plans.map((plan) => {
                 const price = plan.prices?.[cycle]?.[currency] ?? 0;
                 const isFree = plan.code === "free";
+                const displayName = resolvePlanDisplayName(plan, i18n.language);
+                const displayTagline = resolvePlanTagline(plan, i18n.language);
+                const bullets = buildPlanMarketingBullets(plan, i18n.language, t);
                 return (
                   <Card
                     key={plan.id}
@@ -248,8 +258,8 @@ export default function Pricing() {
                       </Badge>
                     )}
                     <CardHeader>
-                      <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                      <CardDescription>{plan.tagline}</CardDescription>
+                      <CardTitle className="text-2xl">{displayName}</CardTitle>
+                      {displayTagline ? <CardDescription>{displayTagline}</CardDescription> : null}
                       <div className="pt-3">
                         <div className="flex items-baseline gap-1">
                           <span className="text-4xl font-bold">{formatPrice(price, currency)}</span>
@@ -280,7 +290,7 @@ export default function Pricing() {
                         </span>
                       </div>
                       <ul className="space-y-2 text-sm flex-1">
-                        {(plan.features ?? []).map((feat, i) => (
+                        {bullets.map((feat, i) => (
                           <li key={i} className="flex gap-2">
                             <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                             <span>{feat}</span>

@@ -562,7 +562,22 @@
       "active": "Activo",
       "confirmDelete": "¿Eliminar este plan?",
       "editPlan": "Editar {{name}}",
-      "confirmDeleteNamed": "¿Eliminar el plan {{code}}?"
+      "confirmDeleteNamed": "¿Eliminar el plan {{code}}?",
+      "modulesTitle": "Módulos incluidos en este plan",
+      "modulesHint": "Activos = disponibles para clínicas en este plan (salvo override).",
+      "notesTitle": "Notas de marketing (por idioma)",
+      "notesHint": "Añada puntos personalizados (soporte 24/7, recordatorios email, etc.). Las cuotas y módulos se generan automáticamente en la landing y precios.",
+      "notesFr": "Notas FR",
+      "notesEn": "Notas EN",
+      "notesEs": "Notas ES",
+      "taglineFr": "Tagline FR",
+      "taglineEn": "Tagline EN",
+      "taglineEs": "Tagline ES",
+      "nameFr": "Nombre FR",
+      "nameEn": "Nombre EN",
+      "nameEs": "Nombre ES",
+      "previewTitle": "Vista previa de bullets (auto + notas)",
+      "previewLang": "Idioma de vista previa"
     },
     "system": {
       "saved": "Ajustes del sistema guardados",

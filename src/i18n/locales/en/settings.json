@@ -562,7 +562,22 @@
       "priceMadMonth": "Price MAD/month",
       "active": "Active",
       "confirmDelete": "Delete this plan?",
-      "confirmDeleteNamed": "Delete plan {{code}}?"
+      "confirmDeleteNamed": "Delete plan {{code}}?",
+      "modulesTitle": "Modules included in this plan",
+      "modulesHint": "Enabled = available for clinics on this plan (unless overridden).",
+      "notesTitle": "Marketing notes (per language)",
+      "notesHint": "Add custom bullets (24/7 support, email reminders, etc.). Quotas and modules are generated automatically on the landing and pricing pages.",
+      "notesFr": "Notes FR",
+      "notesEn": "Notes EN",
+      "notesEs": "Notes ES",
+      "taglineFr": "Tagline FR",
+      "taglineEn": "Tagline EN",
+      "taglineEs": "Tagline ES",
+      "nameFr": "Name FR",
+      "nameEn": "Name EN",
+      "nameEs": "Name ES",
+      "previewTitle": "Bullets preview (auto + notes)",
+      "previewLang": "Preview language"
     },
     "system": {
       "saved": "System settings saved",

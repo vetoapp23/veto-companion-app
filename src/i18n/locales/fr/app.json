@@ -2106,6 +2106,7 @@
     "permissionsHelpEdit": "Modifier",
     "permissionsHelpEditHint": "(créer / éditer / supprimer).",
     "permissionsHelpRefresh": "L'assistant doit rafraîchir sa session pour voir les changements.",
+    "moduleNotInPlan": "Module non inclus dans votre forfait",
     "assistantsSection": "Assistants",
     "modulesLabel": "{{count}} modules",
     "editAccessLabel": "{{count}} en modification",

@@ -86,19 +86,22 @@ export function useQuotaCheck() {
     const result = await checkQuotaLimit(kind);
     if (result?.bypass) return true;
 
+    // Fail-closed: RPC failure / null → block
     const blocked =
-      (result && result.allowed === false) ||
-      (!result && reached(kind));
+      !result ||
+      result.allowed === false ||
+      (result.allowed !== true && reached(kind));
 
     if (!blocked) return true;
 
     const max = result?.max ?? limitFor(kind);
     toast({
-      title: "Limite du plan atteinte",
-      description:
-        (result?.message ||
-          `Votre pack ${result?.plan_name ?? quota?.plan_name ?? ""} est limité à ${max} ${quotaKindLabel(kind)}.`) +
-        " Rendez-vous sur la page Tarifs pour passer à un pack payant.",
+      title: !result ? "Vérification impossible" : "Limite du plan atteinte",
+      description: !result
+        ? "Impossible de vérifier les limites du plan. Réessayez dans un instant."
+        : (result.message ||
+            `Votre pack ${result.plan_name ?? quota?.plan_name ?? ""} est limité à ${max} ${quotaKindLabel(kind)}.`) +
+          " Rendez-vous sur la page Tarifs pour passer à un pack payant.",
       variant: "destructive",
     });
     return false;

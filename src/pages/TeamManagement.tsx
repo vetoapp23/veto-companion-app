@@ -21,10 +21,13 @@ import { supabase } from "@/lib/supabase";
 import {
   DEFAULT_ASSISTANT_PERMISSIONS,
   PERMISSION_CATALOG,
+  PERMISSION_TO_PLAN_MODULE,
+  clampPermissionsToPlan,
   getGroupLabel,
   getPermissionCatalog,
   getPermissionPresets,
   getAccessLevelOptions,
+  isPlanModuleEnabled,
   normalizePermissions,
   type AccessLevel,
   type AssistantPermissions,
@@ -53,7 +56,7 @@ export default function TeamManagement() {
   const { t, i18n } = useTranslation("app");
   const { t: tc } = useTranslation("common");
   const { enforce, counts, limitFor } = useQuotaCheck();
-  const { quota } = usePlanLimits();
+  const { limits: planLimits } = usePlanLimits();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -90,7 +93,9 @@ export default function TeamManagement() {
 
   const openPermissions = (member: TeamMember) => {
     setSelected(member);
-    setDraftPerms(normalizePermissions(member.permissions as any));
+    setDraftPerms(
+      clampPermissionsToPlan(normalizePermissions(member.permissions as any), planLimits),
+    );
     setPermOpen(true);
   };
 
@@ -98,12 +103,19 @@ export default function TeamManagement() {
   const accessLevelOptions = useMemo(() => getAccessLevelOptions(), [i18n.language]);
   const permissionCatalog = useMemo(() => getPermissionCatalog(), [i18n.language]);
 
+  const isPermAvailableOnPlan = (key: PermissionKey) => {
+    const moduleKey = PERMISSION_TO_PLAN_MODULE[key];
+    if (!moduleKey) return true;
+    return isPlanModuleEnabled(moduleKey, planLimits);
+  };
+
   const applyPreset = (presetId: string) => {
     const preset = permissionPresets.find((p) => p.id === presetId);
-    if (preset) setDraftPerms({ ...preset.permissions });
+    if (preset) setDraftPerms(clampPermissionsToPlan({ ...preset.permissions }, planLimits));
   };
 
   const setLevel = (key: PermissionKey, level: AccessLevel) => {
+    if (!isPermAvailableOnPlan(key) && level !== "none") return;
     setDraftPerms((p) => {
       const next = { ...p, [key]: level };
       if (key === "can_view_history") next.can_view_reports = level === "edit" ? "view" : level;
@@ -125,7 +137,7 @@ export default function TeamManagement() {
       if (member.role !== "admin") {
         const { error: permErr } = await supabase.rpc("update_user_permissions", {
           user_id_param: member.id,
-          permissions_param: DEFAULT_ASSISTANT_PERMISSIONS,
+          permissions_param: clampPermissionsToPlan(DEFAULT_ASSISTANT_PERMISSIONS, planLimits),
           updated_by_param: user.id,
         });
         if (permErr) console.warn("permissions after approve", permErr);
@@ -209,9 +221,10 @@ export default function TeamManagement() {
     if (!user?.id || !selected) return;
     setSavingPerms(true);
     try {
+      const clamped = clampPermissionsToPlan(draftPerms, planLimits);
       const { error: saveErr } = await supabase.rpc("update_user_permissions", {
         user_id_param: selected.id,
-        permissions_param: draftPerms,
+        permissions_param: clamped,
         updated_by_param: user.id,
       });
       if (saveErr) throw saveErr;
@@ -581,6 +594,7 @@ export default function TeamManagement() {
                 <div className="space-y-2 rounded-lg border p-3">
                   {groupedCatalog[group].map((def) => {
                     const level = draftPerms[def.key] || "none";
+                    const onPlan = isPermAvailableOnPlan(def.key);
                     const options = def.viewOnly
                       ? accessLevelOptions.filter((o) => o.value !== "edit")
                       : accessLevelOptions;
@@ -593,12 +607,15 @@ export default function TeamManagement() {
                           <Label htmlFor={def.key} className="text-sm font-medium">
                             {def.label}
                           </Label>
-                          <p className="text-xs text-muted-foreground">{def.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {onPlan ? def.description : t("team.moduleNotInPlan")}
+                          </p>
                         </div>
                         <select
                           id={def.key}
-                          className="flex h-9 w-full sm:w-[160px] shrink-0 rounded-md border border-input bg-background px-2 text-sm"
-                          value={level}
+                          className="flex h-9 w-full sm:w-[160px] shrink-0 rounded-md border border-input bg-background px-2 text-sm disabled:opacity-50"
+                          value={onPlan ? level : "none"}
+                          disabled={!onPlan}
                           onChange={(e) => setLevel(def.key, e.target.value as AccessLevel)}
                         >
                           {options.map((o) => (

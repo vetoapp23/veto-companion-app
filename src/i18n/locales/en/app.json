@@ -2106,6 +2106,7 @@
     "permissionsHelpEdit": "Edit",
     "permissionsHelpEditHint": "(create / edit / delete).",
     "permissionsHelpRefresh": "The assistant must refresh their session to see changes.",
+    "moduleNotInPlan": "Module not included in your plan",
     "assistantsSection": "Assistants",
     "modulesLabel": "{{count}} modules",
     "editAccessLabel": "{{count}} with edit access",

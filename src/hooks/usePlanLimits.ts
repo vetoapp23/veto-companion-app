@@ -85,7 +85,8 @@ export function usePlanLimits() {
     refetch: query.refetch,
     canUpload: (additionalBytes: number) => {
       if (isSuper) return true;
-      if (!quota) return true;
+      if (query.isLoading) return false;
+      if (!quota) return false;
       const projectedMb = storageUsedMb + additionalBytes / (1024 * 1024);
       return projectedMb <= storageTotalMb;
     },
@@ -102,9 +103,16 @@ export function usePlanLimits() {
     hasClients: moduleEnabled("clients"),
     hasAnimals: moduleEnabled("animals"),
     storageWarning: quota ? percentUsed >= 80 : false,
-    // Clinic admins are subject to storage caps; only super_admin bypasses
-    storageBlocked: isSuper ? false : quota ? percentUsed >= 100 || !!quota.over_quota : false,
+    // Fail-closed if quota unknown; avoid blocked flash while loading
+    storageBlocked: isSuper
+      ? false
+      : query.isLoading
+        ? false
+        : !quota
+          ? true
+          : percentUsed >= 100 || !!quota.over_quota,
     isPrivileged,
     isSuper,
+    moduleEnabled,
   };
 }

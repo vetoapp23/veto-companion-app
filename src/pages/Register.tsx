@@ -15,6 +15,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { SeoHead } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  buildPlanMarketingBullets,
+  resolvePlanDisplayName,
+  resolvePlanTagline,
+} from "@/lib/planMarketing";
 
 type Currency = "MAD" | "EUR" | "USD";
 type Cycle = "monthly" | "yearly";
@@ -29,7 +34,8 @@ interface Plan {
   max_users: number;
   max_clients: number | null;
   max_animals: number | null;
-  features: string[];
+  features: unknown;
+  limits: Record<string, boolean> | null;
   is_highlighted: boolean;
   display_order: number;
 }
@@ -52,6 +58,7 @@ type Step = "plan" | "account";
 
 const Register = () => {
   const { t } = useTranslation("auth");
+  const { t: tm, i18n } = useTranslation("marketing");
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -111,7 +118,8 @@ const Register = () => {
       setPlans(
         ((data as unknown as Plan[]) ?? []).map((p) => ({
           ...p,
-          features: Array.isArray(p.features) ? p.features : [],
+          features: p.features ?? null,
+          limits: p.limits && typeof p.limits === "object" ? p.limits : {},
           prices: p.prices && typeof p.prices === "object" ? p.prices : {},
         }))
       );
@@ -268,6 +276,9 @@ const Register = () => {
             {plans.map((plan) => {
               const price = plan.prices?.[cycle]?.[currency] ?? 0;
               const selected = selectedPlan === plan.code;
+              const displayName = resolvePlanDisplayName(plan, i18n.language);
+              const displayTagline = resolvePlanTagline(plan, i18n.language);
+              const bullets = buildPlanMarketingBullets(plan, i18n.language, tm);
               return (
                 <label key={plan.id} htmlFor={plan.code} className="cursor-pointer">
                   <RadioGroupItem id={plan.code} value={plan.code} className="sr-only" />
@@ -285,9 +296,9 @@ const Register = () => {
                       </Badge>
                     )}
                     <CardHeader>
-                      <CardTitle className="text-lg">{plan.name}</CardTitle>
-                      {plan.tagline && (
-                        <CardDescription className="text-xs">{plan.tagline}</CardDescription>
+                      <CardTitle className="text-lg">{displayName}</CardTitle>
+                      {displayTagline && (
+                        <CardDescription className="text-xs">{displayTagline}</CardDescription>
                       )}
                       <div className="pt-2">
                         <span className="text-3xl font-bold">{formatPrice(price, currency)}</span>
@@ -306,7 +317,7 @@ const Register = () => {
                         <span>{t("register.users", { count: plan.max_users })}</span>
                       </div>
                       <ul className="space-y-1 pt-2 border-t">
-                        {(plan.features || []).slice(0, 4).map((f, i) => (
+                        {bullets.map((f, i) => (
                           <li key={i} className="flex items-start gap-2 text-xs">
                             <Check className="h-3 w-3 text-primary mt-0.5 shrink-0" />
                             <span>{f}</span>

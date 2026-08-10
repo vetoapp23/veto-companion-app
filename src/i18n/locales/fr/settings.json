@@ -562,7 +562,22 @@
       "priceMadMonth": "Prix MAD/mois",
       "active": "Actif",
       "confirmDelete": "Supprimer ce plan ?",
-      "confirmDeleteNamed": "Supprimer le plan {{code}} ?"
+      "confirmDeleteNamed": "Supprimer le plan {{code}} ?",
+      "modulesTitle": "Modules inclus dans ce plan",
+      "modulesHint": "Activés = disponibles pour les cliniques sur ce plan (sauf override).",
+      "notesTitle": "Notes marketing (par langue)",
+      "notesHint": "Ajoutez des points custom (support 24/7, relances email, etc.). Les quotas et modules sont générés automatiquement sur la landing et la page tarifs.",
+      "notesFr": "Notes FR",
+      "notesEn": "Notes EN",
+      "notesEs": "Notes ES",
+      "taglineFr": "Tagline FR",
+      "taglineEn": "Tagline EN",
+      "taglineEs": "Tagline ES",
+      "nameFr": "Nom FR",
+      "nameEn": "Nom EN",
+      "nameEs": "Nom ES",
+      "previewTitle": "Aperçu bullets (auto + notes)",
+      "previewLang": "Langue aperçu"
     },
     "system": {
       "saved": "Paramètres système enregistrés",

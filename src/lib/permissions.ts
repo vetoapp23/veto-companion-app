@@ -59,6 +59,60 @@ const PERMISSION_KEY_TO_MODULE: Record<PermissionKey, string> = {
   can_manage_settings: "settings",
 };
 
+export type PlanFeatureModule =
+  | "clients"
+  | "animals"
+  | "appointments"
+  | "visits"
+  | "consultations"
+  | "vaccinations"
+  | "antiparasites"
+  | "farm"
+  | "stock"
+  | "accounting";
+
+/** Maps assistant permission → subscription_plans.limits key */
+export const PERMISSION_TO_PLAN_MODULE: Partial<Record<PermissionKey, PlanFeatureModule>> = {
+  can_manage_clients: "clients",
+  can_manage_animals: "animals",
+  can_manage_appointments: "appointments",
+  can_manage_visits: "visits",
+  can_create_consultations: "consultations",
+  can_manage_vaccinations: "vaccinations",
+  can_manage_antiparasites: "antiparasites",
+  can_manage_farms: "farm",
+  can_manage_stock: "stock",
+  can_manage_accounting: "accounting",
+};
+
+const PREMIUM_PLAN_MODULES = new Set<PlanFeatureModule>(["farm", "stock", "accounting"]);
+
+export function isPlanModuleEnabled(
+  moduleKey: PlanFeatureModule,
+  limits?: Record<string, boolean> | null,
+): boolean {
+  if (limits && Object.prototype.hasOwnProperty.call(limits, moduleKey)) {
+    return limits[moduleKey] === true;
+  }
+  return !PREMIUM_PLAN_MODULES.has(moduleKey);
+}
+
+/** Force "none" on permissions whose module is off in the effective plan. */
+export function clampPermissionsToPlan(
+  perms: AssistantPermissions,
+  limits?: Record<string, boolean> | null,
+): AssistantPermissions {
+  const next = { ...perms };
+  (Object.entries(PERMISSION_TO_PLAN_MODULE) as [PermissionKey, PlanFeatureModule][]).forEach(
+    ([permKey, moduleKey]) => {
+      if (!isPlanModuleEnabled(moduleKey, limits)) {
+        next[permKey] = "none";
+      }
+    },
+  );
+  return next;
+}
+
 const PRESET_ID_TO_I18N: Record<string, string> = {
   clinique: "clinical",
   lecture: "readonly",
