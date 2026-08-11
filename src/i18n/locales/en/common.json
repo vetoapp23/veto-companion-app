@@ -291,5 +291,12 @@
   "supplier": "Supplier",
   "margin": "Margin",
   "totalValue": "Total value",
-  "deleting": "Deleting…"
+  "deleting": "Deleting…",
+  "cookieConsent": {
+    "title": "Cookies and analytics",
+    "body": "We use essential cookies to run the service. With your consent, we also enable anonymous audience measurement (Vercel Analytics).",
+    "learnMore": "Cookie policy",
+    "accept": "Accept",
+    "reject": "Reject"
+  }
 }

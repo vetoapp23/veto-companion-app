@@ -291,5 +291,12 @@
   "supplier": "Fournisseur",
   "margin": "Marge",
   "totalValue": "Valeur totale",
-  "deleting": "Suppression…"
+  "deleting": "Suppression…",
+  "cookieConsent": {
+    "title": "Cookies et mesure d’audience",
+    "body": "Nous utilisons des cookies essentiels pour le service. Avec votre accord, nous activons aussi une mesure d’audience anonyme (Vercel Analytics).",
+    "learnMore": "Politique cookies",
+    "accept": "Accepter",
+    "reject": "Refuser"
+  }
 }

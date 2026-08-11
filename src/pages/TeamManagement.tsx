@@ -56,7 +56,7 @@ export default function TeamManagement() {
   const { t, i18n } = useTranslation("app");
   const { t: tc } = useTranslation("common");
   const { enforce, counts, limitFor } = useQuotaCheck();
-  const { limits: planLimits } = usePlanLimits();
+  const { quota, limits: planLimits } = usePlanLimits();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();

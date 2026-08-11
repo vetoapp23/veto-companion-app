@@ -1,0 +1,5 @@
+-- Local mirror of remote migration super_admin_console_v2
+-- Applied via Supabase MCP on 2026-07-19
+-- See remote: admin_audit_logs, platform_settings, org_support_notes,
+-- admin_impersonation_sessions, get_access_status, impersonation RPCs,
+-- admin_update_user_profile, admin_upsert_subscription, billing overview

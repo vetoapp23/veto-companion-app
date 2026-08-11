@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
+import { AnalyticsGate, CookieConsentBanner } from "@/components/CookieConsent";
 import { VetNavigation } from "@/components/VetNavigation";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -68,7 +69,9 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <Analytics />
+        <AnalyticsGate>
+          <Analytics />
+        </AnalyticsGate>
         <AuthProvider>
           <ClientProvider>
             <SettingsProvider>
@@ -76,6 +79,7 @@ const App = () => (
                 <BrowserRouter>
                   <HashAuthRedirect />
                   <PendingCheckoutRedirect />
+                  <CookieConsentBanner />
                   <div className="min-h-screen bg-background w-full text-foreground overflow-x-hidden app-shell">
                     <Routes>
                       <Route path="/" element={<Landing />} />

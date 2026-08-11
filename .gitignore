@@ -6,3 +6,5 @@ database-exports/
 *.md
 *.sh
 *.sql
+!supabase/migrations/*.sql
+!supabase/migrations/*.json
