@@ -70,23 +70,6 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
     ageGroups: []
   });
 
-  // Vérification de sécurité pour s'assurer que farmManagement existe
-  if (!settings.farmManagement) {
-    console.error('farmManagement settings not found, using defaults');
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("farms.ui.configErrorTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("farms.ui.configErrorDesc")}
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   useEffect(() => {
     if (farm && open) {
       setFormData({
@@ -133,6 +116,23 @@ const FarmEditModal = ({ open, onOpenChange, farm }: FarmEditModalProps) => {
       });
     }
   }, [open]);
+
+  // Vérification de sécurité pour s'assurer que farmManagement existe
+  if (!settings.farmManagement) {
+    console.error('farmManagement settings not found, using defaults');
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("farms.ui.configErrorTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("farms.ui.configErrorDesc")}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const handleChange = (field: string, value: any) => {
     if (field.includes('.')) {

@@ -776,7 +776,6 @@ export const useDeleteConsultation = () => {
                 
               if (deleteError) {
                 console.warn(`Could not delete from ${relation.table}: ${deleteError.message}`);
-              } else {
               }
             }
           } catch (relationError) {

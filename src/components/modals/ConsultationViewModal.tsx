@@ -18,8 +18,8 @@ interface ConsultationViewModalProps {
 }
 
 const ConsultationViewModal = ({ consultation, open, onOpenChange, onEdit }: ConsultationViewModalProps) => {
-  if (!consultation) return null;
   const { getClientById, getPetById } = useClients();
+  if (!consultation) return null;
   const client = getClientById(consultation.clientId);
   const pet = getPetById(consultation.petId);
 

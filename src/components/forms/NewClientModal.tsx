@@ -112,7 +112,7 @@ export function NewClientModal({ open, onOpenChange, onCreated }: NewClientModal
     }
 
     // Validate phone format (basic check)
-    if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+    if (formData.phone && !/^[\d\s\-+()]+$/.test(formData.phone)) {
       toast({
         title: t("clients.phoneInvalid"),
         description: t("clients.phoneInvalidBody"),

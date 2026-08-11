@@ -232,7 +232,7 @@ export default function Stock() {
 
   // Filtrer et trier les éléments
   const filteredItems = useMemo(() => {
-    let filtered = stockItems.filter(item => {
+    const filtered = stockItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.batchNumber?.toLowerCase().includes(searchTerm.toLowerCase());

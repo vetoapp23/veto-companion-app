@@ -236,11 +236,12 @@ const Accounting: React.FC = () => {
     const now = new Date();
     
     switch (period) {
-      case 'day':
+      case 'day': {
         const today = format(now, 'yyyy-MM-dd');
         setStartDate(today);
         setEndDate(today);
         break;
+      }
       case 'week': {
         const day = now.getDay();
         const mondayOffset = day === 0 ? -6 : 1 - day;
@@ -251,18 +252,20 @@ const Accounting: React.FC = () => {
         setEndDate(format(endOfWeek, 'yyyy-MM-dd'));
         break;
       }
-      case 'month':
+      case 'month': {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         setStartDate(format(startOfMonth, 'yyyy-MM-dd'));
         setEndDate(format(endOfMonth, 'yyyy-MM-dd'));
         break;
-      case 'year':
+      }
+      case 'year': {
         const startOfYear = new Date(now.getFullYear(), 0, 1);
         const endOfYear = new Date(now.getFullYear(), 11, 31);
         setStartDate(format(startOfYear, 'yyyy-MM-dd'));
         setEndDate(format(endOfYear, 'yyyy-MM-dd'));
         break;
+      }
     }
   };
 

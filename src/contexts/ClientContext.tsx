@@ -1023,7 +1023,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     const antiparasiticWithStock = checkAndManageAntiparasiticStock(antiparasiticData);
     
     // Déduire la quantité du stock si l'antiparasitaire est disponible
-    let updatedStockItems = [...stockItems];
+    const updatedStockItems = [...stockItems];
     
     if (antiparasiticWithStock.stockDeducted && antiparasiticWithStock.stockItemId) {
       const stockItemIndex = updatedStockItems.findIndex(item => item.id === antiparasiticWithStock.stockItemId);
@@ -1247,7 +1247,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     const medicationsWithStock = checkAndManageStock(prescriptionData.medications);
     
     // Déduire les quantités du stock pour les médicaments disponibles
-    let updatedStockItems = [...stockItems];
+    const updatedStockItems = [...stockItems];
     
     medicationsWithStock.forEach(medication => {
       if (medication.stockDeducted && medication.stockItemId) {
@@ -1428,7 +1428,7 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     const vaccinationWithStock = checkAndManageVaccineStock(vaccinationData);
     
     // Déduire la quantité du stock si le vaccin est disponible
-    let updatedStockItems = [...stockItems];
+    const updatedStockItems = [...stockItems];
     
     if (vaccinationWithStock.stockDeducted && vaccinationWithStock.stockItemId) {
       const stockItemIndex = updatedStockItems.findIndex(item => item.id === vaccinationWithStock.stockItemId);

@@ -187,7 +187,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => {
                         if (!guardWrite()) return;
-                        confirm(t("farms.ui.drawer.deleteBatchConfirm")) && delBatch.mutate(b.id);
+                        if (confirm(t("farms.ui.drawer.deleteBatchConfirm"))) delBatch.mutate(b.id);
                       }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -230,7 +230,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => {
                           if (!guardWrite()) return;
-                          confirm(t("farms.ui.drawer.deleteInterventionConfirm")) && delIntervention.mutate(i.id);
+                          if (confirm(t("farms.ui.drawer.deleteInterventionConfirm"))) delIntervention.mutate(i.id);
                         }}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -271,7 +271,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                   {canWrite && (
                     <Button size="icon" variant="ghost" onClick={() => {
                       if (!guardWrite()) return;
-                      confirm(t("farms.ui.drawer.deleteConfirm")) && delEvent.mutate(e.id);
+                      if (confirm(t("farms.ui.drawer.deleteConfirm"))) delEvent.mutate(e.id);
                     }}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -320,7 +320,7 @@ const FarmDetailDrawer = ({ open, onOpenChange, farm, onEdit }: FarmDetailDrawer
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => {
                         if (!guardWrite()) return;
-                        confirm(t("farms.ui.drawer.deleteConfirm")) && delInfra.mutate(inf.id);
+                        if (confirm(t("farms.ui.drawer.deleteConfirm"))) delInfra.mutate(inf.id);
                       }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

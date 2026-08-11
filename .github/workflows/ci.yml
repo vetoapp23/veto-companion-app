@@ -21,6 +21,6 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # Placeholder so Vite build does not fail on missing public keys in CI
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.placeholder
+          VITE_SITE_URL: https://example.com

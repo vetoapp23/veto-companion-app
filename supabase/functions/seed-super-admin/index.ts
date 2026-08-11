@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
   try {
     const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-    let existing = list?.users?.find((u) => u.email?.toLowerCase() === EMAIL.toLowerCase());
+    const existing = list?.users?.find((u) => u.email?.toLowerCase() === EMAIL.toLowerCase());
     let userId: string;
 
     if (existing) {
