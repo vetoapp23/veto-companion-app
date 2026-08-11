@@ -17,7 +17,7 @@ export type LegalDoc = {
 
 export type LegalBundle = Record<LegalDocId, LegalDoc>;
 
-/** Shared publisher facts — update when the legal entity is finalized. */
+/** Publisher identity used across legal pages and contact. */
 export const LEGAL_ENTITY = {
   brand: "VetoCrm",
   website: "https://vetocrm.com",
@@ -25,11 +25,13 @@ export const LEGAL_ENTITY = {
   privacyEmail: "privacy@vetocrm.com",
   supportEmail: "support@vetocrm.com",
   /** Public contact email shown on /contact */
-  publicEmail: "vetoapp23@gmail.com",
-  /** Operating / correspondence address — replace with registered seat when available */
-  address: "Rabat, Maroc",
-  /** Replace with registered company name when available */
+  publicEmail: "contact@vetocrm.com",
+  address: "Rabat, Royaume du Maroc",
   companyFormalName: "VetoCrm",
+  country: "Maroc",
+  publicationDirector: "Le représentant légal de VetoCrm",
+  hostingApp: "Vercel Inc. (hébergement front / CDN)",
+  hostingData: "Supabase Inc. (base de données, authentification, stockage fichiers)",
   linkedin: "https://www.linkedin.com/company/vetocrm/",
   instagram: "https://www.instagram.com/vetocrm/",
 } as const;

@@ -1,7 +1,7 @@
 import type { LegalBundle } from "./types";
 import { LEGAL_ENTITY as E } from "./types";
 
-const UPDATED = "5 de agosto de 2026";
+const UPDATED = "11 de agosto de 2026";
 
 export const legalEs: LegalBundle = {
   privacy: {
@@ -31,7 +31,7 @@ export const legalEs: LegalBundle = {
           `Dirección de correspondencia: ${E.address}`,
           `LinkedIn: ${E.linkedin}`,
           `Instagram: ${E.instagram}`,
-          "Los datos societarios completos (forma jurídica, registro, domicilio social) figuran en el Aviso legal y se actualizarán al finalizar la entidad mercantil.",
+          `Los datos de identificación del editor se publican en la página de Aviso legal.`,
         ],
       },
       {
@@ -284,22 +284,23 @@ export const legalEs: LegalBundle = {
           `Dirección: ${E.address}`,
           `LinkedIn: ${E.linkedin}`,
           `Instagram: ${E.instagram}`,
-          "Forma jurídica, capital y registro mercantil: a completar tras la inscripción definitiva. Mientras tanto, el contacto anterior vale para requerimientos legales.",
+          `Los datos de contacto anteriores identifican al editor del servicio. Las solicitudes legales o administrativas deben enviarse a ${E.contactEmail}.`,
         ],
       },
       {
         id: "director",
         title: "2. Dirección de la publicación",
         paragraphs: [
-          "Director de la publicación: el representante legal del editor, contactable en contact@vetocrm.com.",
+          `Director de la publicación: ${E.publicationDirector}, contactable en ${E.contactEmail}.`,
         ],
       },
       {
         id: "hosting",
         title: "3. Alojamiento",
         paragraphs: [
-          "Aplicación y datos: infraestructura cloud, en particular Supabase (base de datos, auth, almacenamiento) y hosting/CDN del dominio vetocrm.com.",
-          "Detalles de región: support@vetocrm.com.",
+          `Aplicación (front): ${E.hostingApp}.`,
+          `Datos y backend: ${E.hostingData}.`,
+          `Consultas sobre alojamiento o ubicación de datos: ${E.supportEmail}.`,
         ],
       },
       {

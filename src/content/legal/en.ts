@@ -1,7 +1,7 @@
 import type { LegalBundle } from "./types";
 import { LEGAL_ENTITY as E } from "./types";
 
-const UPDATED = "August 5, 2026";
+const UPDATED = "August 11, 2026";
 
 export const legalEn: LegalBundle = {
   privacy: {
@@ -31,7 +31,7 @@ export const legalEn: LegalBundle = {
           `Correspondence address: ${E.address}`,
           `LinkedIn: ${E.linkedin}`,
           `Instagram: ${E.instagram}`,
-          "Full legal notice details (legal form, registration number, registered office) appear on the Legal Notice page and will be updated once the commercial entity is finalized.",
+          `Publisher identification details are published on the Legal Notice page.`,
         ],
       },
       {
@@ -285,22 +285,23 @@ export const legalEn: LegalBundle = {
           `Correspondence address: ${E.address}`,
           `LinkedIn: ${E.linkedin}`,
           `Instagram: ${E.instagram}`,
-          "Legal form, share capital, company registration (RCS/ICE/SIRET): to be completed once the publishing company is fully registered. Until then, the contact above applies for legal requests.",
+          `The contact details above identify the Service publisher. Legal or administrative requests must be sent to ${E.contactEmail}.`,
         ],
       },
       {
         id: "director",
         title: "2. Publication director",
         paragraphs: [
-          "Publication director: the legal representative of the publisher, reachable at contact@vetocrm.com.",
+          `Publication director: ${E.publicationDirector}, reachable at ${E.contactEmail}.`,
         ],
       },
       {
         id: "hosting",
         title: "3. Hosting",
         paragraphs: [
-          "Application and data: cloud infrastructure including Supabase (database, auth, storage) and front-end hosting/CDN associated with vetocrm.com.",
-          "For hosting region details, contact support@vetocrm.com.",
+          `Application (front end): ${E.hostingApp}.`,
+          `Data and backend: ${E.hostingData}.`,
+          `Hosting or data-location questions: ${E.supportEmail}.`,
         ],
       },
       {

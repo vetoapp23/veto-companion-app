@@ -244,7 +244,6 @@
   "socialNetworks": "Réseaux sociaux",
   "legalLastUpdated": "Dernière mise à jour : {{date}}",
   "legalToc": "Sommaire",
-  "legalDisclaimer": "Ces documents sont fournis à titre informatif pour la conformité opérationnelle (RGPD, Stripe, App Store). Faites-les valider par un conseil juridique et complétez les mentions d’identification de votre société (RCS/ICE, siège, capital) dès qu’elles sont disponibles.",
   "ok": "OK",
   "gotIt": "Compris",
   "skip": "Passer",
@@ -294,7 +293,7 @@
   "deleting": "Suppression…",
   "cookieConsent": {
     "title": "Cookies et mesure d’audience",
-    "body": "Nous utilisons des cookies essentiels pour le service. Avec votre accord, nous activons aussi une mesure d’audience anonyme (Vercel Analytics).",
+    "body": "Nous utilisons des cookies essentiels pour le service. Avec votre accord, nous activons aussi une mesure d’audience anonyme.",
     "learnMore": "Politique cookies",
     "accept": "Accepter",
     "reject": "Refuser"

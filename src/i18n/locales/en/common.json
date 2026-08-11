@@ -244,7 +244,6 @@
   "socialNetworks": "Social networks",
   "legalLastUpdated": "Last updated: {{date}}",
   "legalToc": "Table of contents",
-  "legalDisclaimer": "These documents support operational compliance (GDPR, Stripe, App Store). Have them reviewed by counsel and complete your company identification details (registration number, registered office, share capital) as soon as available.",
   "ok": "OK",
   "gotIt": "Got it",
   "skip": "Skip",
@@ -294,7 +293,7 @@
   "deleting": "Deleting…",
   "cookieConsent": {
     "title": "Cookies and analytics",
-    "body": "We use essential cookies to run the service. With your consent, we also enable anonymous audience measurement (Vercel Analytics).",
+    "body": "We use essential cookies to run the service. With your consent, we also enable anonymous audience measurement.",
     "learnMore": "Cookie policy",
     "accept": "Accept",
     "reject": "Reject"

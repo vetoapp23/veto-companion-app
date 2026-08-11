@@ -1,7 +1,7 @@
 import type { LegalBundle } from "./types";
 import { LEGAL_ENTITY as E } from "./types";
 
-const UPDATED = "5 août 2026";
+const UPDATED = "11 août 2026";
 
 export const legalFr: LegalBundle = {
   privacy: {
@@ -33,7 +33,7 @@ export const legalFr: LegalBundle = {
           `Adresse de correspondance : ${E.address}`,
           `LinkedIn : ${E.linkedin}`,
           `Instagram : ${E.instagram}`,
-          "Les mentions légales complètes (forme juridique, numéro d’immatriculation, siège exact) figurent sur la page Mentions légales et seront mises à jour dès finalisation de l’entité commerciale.",
+          `Les mentions d’identification de l’éditeur sont publiées sur la page Mentions légales.`,
         ],
       },
       {
@@ -288,22 +288,23 @@ export const legalFr: LegalBundle = {
           `Adresse de correspondance : ${E.address}`,
           `LinkedIn : ${E.linkedin}`,
           `Instagram : ${E.instagram}`,
-          "Forme juridique, capital, RCS/ICE/SIRET : à compléter dès immatriculation définitive de la société éditrice. En attendant, le contact ci-dessus fait foi pour toute demande légale.",
+          `Les coordonnées ci-dessus identifient l’éditeur du service. Toute demande légale ou administrative doit être adressée à ${E.contactEmail}.`,
         ],
       },
       {
         id: "director",
         title: "2. Direction de la publication",
         paragraphs: [
-          "Directeur de la publication : le représentant légal de l’éditeur, joignable via contact@vetocrm.com.",
+          `Directeur de la publication : ${E.publicationDirector}, joignable via ${E.contactEmail}.`,
         ],
       },
       {
         id: "hosting",
         title: "3. Hébergement",
         paragraphs: [
-          "Application et données : infrastructure cloud fournie notamment via Supabase (base de données, auth, stockage) et prestataires CDN/hébergement front associés au domaine vetocrm.com.",
-          "Pour les détails techniques d’hébergement (région), contactez support@vetocrm.com.",
+          `Application (front) : ${E.hostingApp}.`,
+          `Données et backend : ${E.hostingData}.`,
+          `Pour toute question relative à l’hébergement ou à la localisation des données : ${E.supportEmail}.`,
         ],
       },
       {

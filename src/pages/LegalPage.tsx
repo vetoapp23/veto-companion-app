@@ -77,8 +77,6 @@ export function LegalPage({ docId }: Props) {
               )}
             </section>
           ))}
-
-          <p className="mk-legal-disclaimer">{t("legalDisclaimer")}</p>
         </article>
       </main>
 
