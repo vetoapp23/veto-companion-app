@@ -270,8 +270,17 @@ const Register = () => {
 
           <RadioGroup
             value={selectedPlan}
-            onValueChange={setSelectedPlan}
-            className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"
+            onValueChange={(code) => {
+              setSelectedPlan(code);
+              // Keep Continue visible after tap on long plan lists (mobile)
+              requestAnimationFrame(() => {
+                document.getElementById("register-plan-cta")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "nearest",
+                });
+              });
+            }}
+            className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 pb-28 md:pb-4"
           >
             {plans.map((plan) => {
               const price = plan.prices?.[cycle]?.[currency] ?? 0;
@@ -331,7 +340,7 @@ const Register = () => {
             })}
           </RadioGroup>
 
-          <div className="flex items-center justify-between mt-8 max-w-2xl mx-auto">
+          <div className="hidden md:flex items-center justify-between mt-8 max-w-2xl mx-auto">
             <Button
               variant="ghost"
               onClick={() => {
@@ -342,19 +351,61 @@ const Register = () => {
               <UserPlus className="mr-2 h-4 w-4" />
               {t("register.joinExistingClinic")}
             </Button>
-            <Button onClick={() => setStep("account")} size="lg">
+            <Button onClick={() => setStep("account")} size="lg" disabled={!selectedPlan}>
               {t("register.continue")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-8">
+          <p className="text-center text-sm text-muted-foreground mt-8 mb-4 md:mb-0">
             {t("register.alreadyHaveAccount")}{" "}
             <Link to="/login" className="text-primary hover:underline font-medium">
               {t("register.signIn")}
             </Link>
           </p>
+          <p className="md:hidden text-center">
+            <Button
+              variant="link"
+              className="text-muted-foreground"
+              onClick={() => {
+                setIsJoiningOrganization(true);
+                setStep("account");
+              }}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              {t("register.joinExistingClinic")}
+            </Button>
+          </p>
         </div>
+
+        {/* Sticky Continue — always visible on mobile once a plan is selected */}
+        {selectedPlan ? (
+          <div
+            id="register-plan-cta"
+            className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+          >
+            <div className="mx-auto flex max-w-lg items-center gap-3">
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="truncate font-medium">
+                  {currentPlan
+                    ? resolvePlanDisplayName(currentPlan, i18n.language)
+                    : selectedPlan}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {t("register.continue")}
+                </p>
+              </div>
+              <Button
+                className="shrink-0"
+                size="lg"
+                onClick={() => setStep("account")}
+              >
+                {t("register.continue")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }

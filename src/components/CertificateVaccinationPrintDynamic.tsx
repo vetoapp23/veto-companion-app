@@ -7,6 +7,7 @@ import { useAnimals, useClients, useVaccinations, useAppointmentsByAnimal } from
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { buildWatermarkHtml, watermarkStyle } from "@/lib/printWatermark";
 import { escapeHtml, safePrintUrl } from '@/lib/utils';
+import { qrCodeDataUrl } from '@/lib/medicalShare';
 import { format } from 'date-fns';
 import { useAppLocale } from '@/i18n/useAppLocale';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +30,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
   const { data: vaccinations } = useVaccinations();
   const { data: appointments = [] } = useAppointmentsByAnimal(animalId);
   const [includeAnimalPhoto, setIncludeAnimalPhoto] = useState(true);
+  const [printing, setPrinting] = useState(false);
 
   const vets = (settings.veterinarians || []).filter((v: any) => v.isActive !== false);
 
@@ -71,18 +73,43 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
     return parts.join(', ') || t('vaccinationCertificate.ageDays', { count: 0 });
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!animal || !client) {
       alert(t('alerts.missingAnimalClient'));
       return;
     }
 
+    setPrinting(true);
+    // Open synchronously (before await) so mobile browsers don't block the popup
+    const printWindow = window.open('', `vaccination_certificate_${animal.id}`, 'height=900,width=820');
+    if (!printWindow) {
+      setPrinting(false);
+      alert(t('alerts.printBlocked'));
+      return;
+    }
     try {
-      const printWindow = window.open('', `vaccination_certificate_${animal.id}`, 'height=800,width=800');
-      if (!printWindow) {
-        alert(t('alerts.printBlocked'));
-        return;
-      }
+      printWindow.document.open();
+      printWindow.document.write(
+        `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${escapeHtml(t('vaccinationCertificate.heading'))}</title></head><body style="font-family:Arial,sans-serif;padding:24px;color:#555;">${escapeHtml(t('alerts.printPreparing', { defaultValue: 'Preparing…' }))}</body></html>`
+      );
+      printWindow.document.close();
+
+      const issuedAt = format(new Date(), 'PPp', { locale: dateFns });
+      const qrPayload = [
+        t('vaccinationCertificate.heading'),
+        `${settings.clinicName || t('vaccinationCertificate.clinicFallback')}`,
+        `${animal.name} · ${animal.species}${animal.breed ? ` · ${animal.breed}` : ''}`,
+        animal.microchip_number || animal.chip_number
+          ? `Chip: ${animal.microchip_number || animal.chip_number}`
+          : null,
+        `${client.first_name} ${client.last_name}`,
+        settings.phone || settings.email || settings.website || '',
+        issuedAt,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      const qrDataUrl = await qrCodeDataUrl(qrPayload, 160);
 
       const e = escapeHtml;
       const u = safePrintUrl;
@@ -144,63 +171,96 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
         <!DOCTYPE html>
         <html>
           <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>${e(t('vaccinationCertificate.docTitle', { name: animal.name }))}</title>
             <style>
+              @page { size: A4; margin: 12mm; }
+              * { box-sizing: border-box; }
               body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-                line-height: 1.6;
+                font-family: Arial, Helvetica, sans-serif;
+                margin: 0;
+                padding: 12px;
+                line-height: 1.5;
                 color: #333;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
               }
               .header {
-                text-align: center;
+                display: flex;
+                flex-direction: row;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 16px;
                 border-bottom: 3px solid #2c5530;
-                padding-bottom: 20px;
-                margin-bottom: 30px;
+                padding-bottom: 16px;
+                margin-bottom: 24px;
               }
-              .header img {
+              .header-main {
+                flex: 1;
+                min-width: 0;
+                text-align: center;
+              }
+              .header-main img {
                 max-height: 70px;
+                max-width: 180px;
                 width: auto;
                 object-fit: contain;
                 margin-bottom: 8px;
               }
               .header h1 {
                 color: #2c5530;
-                font-size: 28px;
-                margin: 10px 0;
+                font-size: 24px;
+                margin: 8px 0 0;
                 font-weight: bold;
               }
+              .qr-section {
+                flex: 0 0 auto;
+                width: 104px;
+                text-align: center;
+              }
+              .qr-section img {
+                width: 100px;
+                height: 100px;
+                display: block;
+                margin: 0 auto;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                background: #fff;
+              }
+              .qr-caption {
+                margin-top: 4px;
+                font-size: 9px;
+                color: #64748b;
+                line-height: 1.2;
+              }
               .clinic-info {
-                margin-bottom: 30px;
-                padding: 15px;
+                margin-bottom: 24px;
+                padding: 14px;
                 background-color: #f8f9fa;
                 border-radius: 8px;
               }
               .clinic-info h2 {
                 color: #2c5530;
-                margin: 10px 0;
-              }
-              .qr-section {
-                float: right;
-                margin-left: 20px;
+                margin: 0 0 8px;
+                font-size: 18px;
               }
               .animal-info {
-                clear: both;
-                margin-bottom: 30px;
-                padding: 20px;
+                margin-bottom: 24px;
+                padding: 16px;
                 border: 2px solid #2c5530;
                 border-radius: 8px;
               }
               .animal-info h2 {
                 color: #2c5530;
                 border-bottom: 2px solid #2c5530;
-                padding-bottom: 10px;
-                margin-bottom: 15px;
-                font-size: 22px;
+                padding-bottom: 8px;
+                margin: 0 0 12px;
+                font-size: 18px;
               }
               .animal-photo {
                 text-align: center;
-                margin-bottom: 20px;
+                margin-bottom: 16px;
               }
               .animal-photo img {
                 width: 120px;
@@ -212,40 +272,47 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
               .info-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 15px;
-                margin-bottom: 20px;
+                gap: 10px 14px;
               }
               .info-item {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
+                gap: 8px;
+                min-width: 0;
               }
               .info-label {
                 font-weight: bold;
-                min-width: 120px;
+                min-width: 88px;
                 color: #2c5530;
+                flex-shrink: 0;
               }
               .info-value {
-                color: #666;
+                color: #555;
+                word-break: break-word;
               }
-              .vaccinations-section {
-                margin-bottom: 30px;
-              }
+              .vaccinations-section { margin-bottom: 24px; }
               .vaccinations-section h2 {
                 color: #2c5530;
                 border-bottom: 2px solid #2c5530;
-                padding-bottom: 10px;
-                margin-bottom: 16px;
-                font-size: 22px;
+                padding-bottom: 8px;
+                margin: 0 0 12px;
+                font-size: 18px;
+              }
+              .table-wrap {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
               }
               .doses-table {
                 width: 100%;
                 border-collapse: collapse;
-                font-size: 13px;
+                font-size: 12px;
+                min-width: 520px;
               }
               .doses-table th,
               .doses-table td {
                 border: 1px solid #d0d7d1;
-                padding: 8px 10px;
+                padding: 7px 8px;
                 text-align: left;
                 vertical-align: top;
               }
@@ -253,9 +320,7 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                 background: #e8f0e9;
                 color: #2c5530;
               }
-              .row-planned td {
-                background: #fffaf0;
-              }
+              .row-planned td { background: #fffaf0; }
               .muted {
                 color: #777;
                 font-size: 11px;
@@ -268,17 +333,11 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                 font-size: 11px;
                 font-weight: 600;
               }
-              .badge-done {
-                background: #e6f4ea;
-                color: #1e7a3a;
-              }
-              .badge-planned {
-                background: #fff3cd;
-                color: #8a6d1d;
-              }
+              .badge-done { background: #e6f4ea; color: #1e7a3a; }
+              .badge-planned { background: #fff3cd; color: #8a6d1d; }
               .notes-row td {
                 background: #fafafa;
-                font-size: 12px;
+                font-size: 11px;
                 color: #555;
               }
               .doses-summary {
@@ -287,41 +346,46 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
                 color: #555;
               }
               .vets-info {
-                margin-bottom: 30px;
-                padding: 15px;
+                margin-bottom: 24px;
+                padding: 14px;
                 background-color: #f8f9fa;
                 border-radius: 8px;
               }
               .vets-info h2 {
                 color: #2c5530;
-                margin-bottom: 15px;
+                margin: 0 0 10px;
+                font-size: 18px;
               }
-              .vet-item {
-                margin-bottom: 8px;
-                color: #666;
-              }
+              .vet-item { margin-bottom: 6px; color: #666; }
               .footer {
                 text-align: center;
-                margin-top: 40px;
-                padding-top: 20px;
+                margin-top: 28px;
+                padding-top: 14px;
                 border-top: 1px solid #ddd;
                 color: #888;
-                font-size: 12px;
+                font-size: 11px;
               }
               .no-vaccinations {
                 text-align: center;
                 color: #666;
                 font-style: italic;
-                padding: 40px;
+                padding: 32px 16px;
                 border: 2px dashed #ddd;
                 border-radius: 8px;
               }
-              
+
               @media print {
-                body { margin: 0; }
-                .no-print { display: none; }
-                .row-planned td { background: #fffaf0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .badge-done, .badge-planned { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                body { padding: 0; }
+                .no-print { display: none !important; }
+                .table-wrap { overflow: visible; }
+                .doses-table { min-width: 0; }
+                .row-planned td,
+                .badge-done,
+                .badge-planned,
+                .doses-table th {
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
               }
               ${watermarkStyle}
             </style>
@@ -329,10 +393,13 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
           <body>
             ${buildWatermarkHtml(isFree)}
             <div class="header">
-              ${settings.logo ? `<img src="${u(settings.logo)}" alt="${e(t('vaccinationCertificate.clinicLogoAlt'))}" />` : ''}
-              <h1>${e(t('vaccinationCertificate.heading'))}</h1>
+              <div class="header-main">
+                ${settings.logo ? `<img src="${u(settings.logo)}" alt="${e(t('vaccinationCertificate.clinicLogoAlt'))}" />` : ''}
+                <h1>${e(t('vaccinationCertificate.heading'))}</h1>
+              </div>
               <div class="qr-section">
-                <canvas id="qrcode" width="100" height="100"></canvas>
+                <img src="${u(qrDataUrl)}" width="100" height="100" alt="QR" />
+                <div class="qr-caption">${e(t('vaccinationCertificate.qrCaption', { defaultValue: 'Scan' }))}</div>
               </div>
             </div>
 
@@ -359,13 +426,11 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
 
             <div class="animal-info">
               <h2>${t('vaccinationCertificate.animalInfo')}</h2>
-              
               ${includeAnimalPhoto && animal.photo_url ? `
               <div class="animal-photo">
                 <img src="${u(animal.photo_url)}" alt="${e(t('vaccinationCertificate.animalPhotoAlt', { name: animal.name }))}" />
               </div>
               ` : ''}
-
               <div class="info-grid">
                 <div class="info-item">
                   <span class="info-label">${t('vaccinationCertificate.labels.name')}</span>
@@ -404,34 +469,20 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
 
             <div class="vaccinations-section">
               <h2>${t('vaccinationCertificate.scheduleTitle')}</h2>
-              ${dosesTableHtml}
+              <div class="table-wrap">${dosesTableHtml}</div>
             </div>
 
             <div class="footer">
-              <p>${e(t('vaccinationCertificate.generatedAt', { datetime: format(new Date(), 'PPp', { locale: dateFns }) }))}</p>
+              <p>${e(t('vaccinationCertificate.generatedAt', { datetime: issuedAt }))}</p>
               <p>${e(t('vaccinationCertificate.footerSystem'))}</p>
             </div>
 
             <script>
-              function generateQRCode() {
-                const canvas = document.getElementById('qrcode');
-                if (canvas) {
-                  const ctx = canvas.getContext('2d');
-                  ctx.fillStyle = '#000';
-                  ctx.fillRect(0, 0, 100, 100);
-                  ctx.fillStyle = '#fff';
-                  ctx.font = '12px Arial';
-                  ctx.textAlign = 'center';
-                  ctx.fillText('QR', 50, 45);
-                  ctx.fillText('CODE', 50, 60);
-                }
-              }
-              
               window.onload = function() {
-                generateQRCode();
                 setTimeout(function() {
+                  window.focus();
                   window.print();
-                }, 500);
+                }, 350);
               };
             </script>
           </body>
@@ -441,17 +492,16 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
       printWindow.document.open();
       printWindow.document.write(printContent);
       printWindow.document.close();
-
-      printWindow.onload = function() {
-        setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-        }, 500);
-      };
-
     } catch (error) {
-      console.error('Erreur lors de l\'impression:', error);
+      console.error("Erreur lors de l'impression:", error);
+      try {
+        printWindow.close();
+      } catch {
+        /* ignore */
+      }
       alert(t('alerts.printError'));
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -478,7 +528,13 @@ export function CertificateVaccinationPrintDynamic({ animalId }: CertificateProp
           <span>{t('vaccinationCertificate.includeAnimalPhoto')}</span>
         </label>
       )}
-      <Button variant="outline" size="sm" className="w-full sm:w-auto justify-center" onClick={handlePrint}>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full sm:w-auto justify-center"
+        onClick={() => void handlePrint()}
+        disabled={printing}
+      >
         <Printer className="h-4 w-4 mr-2 shrink-0" />
         <span className="sm:hidden">{t('vaccinationCertificate.buttonShort')}{doseRows.length > 0 ? ` (${doseRows.length})` : ""}</span>
         <span className="hidden sm:inline">

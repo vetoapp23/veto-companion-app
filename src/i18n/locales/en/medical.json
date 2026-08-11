@@ -161,7 +161,8 @@
     "empty": "No vaccinations recorded for this patient",
     "clinicLogoAlt": "Clinic logo",
     "animalPhotoAlt": "Photo of {{name}}",
-    "includeAnimalPhoto": "Include animal photo"
+    "includeAnimalPhoto": "Include animal photo",
+    "qrCaption": "Scan"
   },
   "antiparasiticCertificate": {
     "button": "Antiparasitic certificate",

@@ -161,7 +161,8 @@
     "empty": "Aucune vaccination enregistrée pour cet animal",
     "clinicLogoAlt": "Logo clinique",
     "animalPhotoAlt": "Photo de {{name}}",
-    "includeAnimalPhoto": "Inclure la photo de l'animal"
+    "includeAnimalPhoto": "Inclure la photo de l'animal",
+    "qrCaption": "Scan"
   },
   "antiparasiticCertificate": {
     "button": "Certificat antiparasitaire",
