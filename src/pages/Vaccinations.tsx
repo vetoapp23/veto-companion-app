@@ -495,7 +495,7 @@ export default function Vaccinations() {
        
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-4">
+      <TabsContent value="overview" className="space-y-4" data-tour="vaccinations-list">
         {/* Filters */}
         <Card>
         <CardContent className="p-4">

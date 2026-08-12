@@ -456,10 +456,10 @@ const PetsContent = () => {
               <List className="h-4 w-4" />
               <span className="hidden sm:inline">{ts("display.modes.table")}</span>
             </Button>
-            {canWriteAnimals && (
+            {canWriteAnimals ? (
               <>
                 <Button variant="outline" size="sm" className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3" asChild>
-                  <Link to="/import/dossier" aria-label={t("pets.importDossierQr")}>
+                  <Link to="/import/dossier" aria-label={t("pets.importDossierQr")} data-tour="pets-import">
                     <QrCode className="h-4 w-4" />
                     <span className="hidden sm:inline">{t("pets.importDossierQr")}</span>
                   </Link>
@@ -472,13 +472,20 @@ const PetsContent = () => {
                   <span className="text-xs sm:text-sm">{t("pets.new")}</span>
                 </Button>
               </>
+            ) : (
+              <Button variant="outline" size="sm" className="gap-1 sm:gap-2 rounded-full px-2.5 sm:px-3" asChild>
+                <Link to="/import/dossier" aria-label={t("pets.importDossierQr")} data-tour="pets-import">
+                  <QrCode className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("pets.importDossierQr")}</span>
+                </Link>
+              </Button>
             )}
           </>
         }
       />
 
       {/* Statistiques médicales globales */}
-      <div className="app-kpi-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="app-kpi-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-tour="pets-kpis">
       <Card>
         <CardContent className="p-4">
         <div className="flex items-center gap-2">
@@ -596,7 +603,7 @@ const PetsContent = () => {
       </Card>
 
       {viewMode === 'cards' ? (
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" data-tour="pets-list">
         {filteredPets.map((pet) => (
         <Card key={pet.id} className="card-hover">
           <CardContent className="p-4 sm:p-6">
@@ -719,7 +726,7 @@ const PetsContent = () => {
         ))}
       </div>
       ) : (
-      <Card>
+      <Card data-tour="pets-list">
         <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[600px]">

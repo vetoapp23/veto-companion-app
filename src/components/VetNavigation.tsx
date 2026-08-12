@@ -112,7 +112,7 @@ export function VetNavigation() {
   const allNavItems = [...filteredPrimaryNavItems, ...filteredSecondaryNavItems];
 
   return (
-    <nav className="app-nav" aria-label={t("mainNavigation")}>
+    <nav className="app-nav" aria-label={t("mainNavigation")} data-tour="main-nav">
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-2.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">

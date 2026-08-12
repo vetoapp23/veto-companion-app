@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile, useUpdateUserProfile } from '@/hooks/useDatabase';
 import { SUPPORTED_LANGS, type AppLanguage } from '@/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { isDemoWriteBlocked, assertDemoCanWrite, DemoReadOnlyError } from '@/lib/demoWriteGuard';
 import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
@@ -36,11 +37,13 @@ export default function Profile() {
   const { i18n } = useTranslation();
   const { t } = useTranslation("app");
   const { t: tc } = useTranslation("common");
+  const { t: td } = useTranslation("demo");
   const { t: tSettings } = useTranslation("settings");
   const { data: userProfile, isLoading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const updateProfileMutation = useUpdateUserProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const demoLocked = isDemoWriteBlocked(user?.email);
   
   // État local pour les modifications - utilise les données de la base de données
   const [profileData, setProfileData] = useState({
@@ -105,6 +108,7 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     try {
+      assertDemoCanWrite(user?.email);
       await updateProfileMutation.mutateAsync({
         full_name: profileData.full_name,
         username: profileData.username,
@@ -127,6 +131,10 @@ export default function Profile() {
       });
       setIsEditing(false);
     } catch (error) {
+      if (error instanceof DemoReadOnlyError) {
+        toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+        return;
+      }
       toast({
         title: tc("error"),
         description: error instanceof Error ? error.message : t("profile.saveError"),
@@ -232,7 +240,7 @@ export default function Profile() {
                 {updateProfileMutation.isPending ? t("profile.saving") : t("profile.save")}
               </Button>
             </>
-          ) : (
+          ) : demoLocked ? null : (
             <Button onClick={() => setIsEditing(true)} className="gap-2 rounded-full">
               <Edit className="h-4 w-4" />
               {tc("edit")}

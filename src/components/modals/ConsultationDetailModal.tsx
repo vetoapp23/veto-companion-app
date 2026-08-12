@@ -12,6 +12,8 @@ import { compressPhoto, estimateDataUrlBytes, recordStorageChange } from "@/lib/
 import { roundTemperature, formatTemperature, temperatureInputValue } from "@/lib/utils";
 import { Edit, Save, X, Loader2, ImagePlus, Pill } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useWriteAccess } from "@/components/RoleGuard";
+import { assertDemoCanWrite, DemoReadOnlyError } from "@/lib/demoWriteGuard";
 
 interface Props {
   open: boolean;
@@ -22,7 +24,9 @@ interface Props {
 export function ConsultationDetailModal({ open, onOpenChange, consultation }: Props) {
   const { t } = useTranslation("medical");
   const { t: tc } = useTranslation("common");
+  const { t: td } = useTranslation("demo");
   const { toast } = useToast();
+  const { canWrite, guardWrite } = useWriteAccess("can_create_consultations");
   const update = useUpdateConsultation();
   const animalId = consultation?.animal_id || "";
   const { data: prescriptions = [] } = usePrescriptionsByAnimal(animalId);
@@ -55,7 +59,9 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
   const fmt = (d?: string) => (d ? new Date(d).toLocaleDateString("fr-FR") : "—");
 
   const handleSave = async () => {
+    if (!guardWrite()) return;
     try {
+      assertDemoCanWrite();
       await update.mutateAsync({
         id: consultation.id,
         data: {
@@ -73,14 +79,20 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
       toast({ title: t("alerts.consultationUpdatedCheck") });
       setEditing(false);
     } catch (e: any) {
+      if (e instanceof DemoReadOnlyError) {
+        toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+        return;
+      }
       toast({ title: tc("error"), description: e.message, variant: "destructive" });
     }
   };
 
   const handleAddPhotos = async (files: FileList | null) => {
     if (!files?.length) return;
+    if (!guardWrite()) return;
     setUploading(true);
     try {
+      assertDemoCanWrite();
       const arr = Array.from(files);
       const results = await Promise.all(arr.map(async (f) => (await compressPhoto(f)).dataUrl));
       const bytes = results.reduce((s, u) => s + estimateDataUrlBytes(u), 0);
@@ -88,6 +100,10 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
       recordStorageChange("consultation", bytes, results.length).catch(() => {});
       toast({ title: t("alerts.photosAddedCheck", { count: results.length }) });
     } catch (e: any) {
+      if (e instanceof DemoReadOnlyError) {
+        toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+        return;
+      }
       toast({ title: t("alerts.photosError"), description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
@@ -107,9 +123,11 @@ export function ConsultationDetailModal({ open, onOpenChange, consultation }: Pr
                 </DialogDescription>
               </div>
               {!editing ? (
+                canWrite ? (
                 <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
                   <Edit className="h-4 w-4 mr-1" /> {tc("edit")}
                 </Button>
+                ) : null
               ) : (
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => setEditing(false)} disabled={update.isPending}>

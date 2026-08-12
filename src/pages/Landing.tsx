@@ -1,17 +1,43 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Users, Calendar, FileText, BarChart3, Shield, PawPrint } from "lucide-react";
+import { ArrowRight, Users, Calendar, FileText, BarChart3, Shield, PawPrint, Play, Loader2 } from "lucide-react";
 import heroImage from "@/assets/vet-hero.jpg";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
+import { launchClinicDemo } from "@/lib/demoLogin";
+import { useToast } from "@/hooks/use-toast";
 
 type FaqItem = { q: string; a: string };
 
 export default function Landing() {
   const { t } = useTranslation("marketing");
+  const { t: td } = useTranslation("demo");
+  const { t: tc } = useTranslation("common");
+  const { toast } = useToast();
+  const [demoBusy, setDemoBusy] = useState(false);
   const faq = t("landing.faq", { returnObjects: true }) as FaqItem[];
   const faqItems = Array.isArray(faq) ? faq : [];
+
+  const handleHeroDemo = async () => {
+    setDemoBusy(true);
+    try {
+      const result = await launchClinicDemo();
+      if (!result.ok) {
+        toast({
+          title: result.reason === "unavailable" ? td("loginRequiredTitle") : tc("error"),
+          description:
+            result.reason === "unavailable"
+              ? td("loginRequiredBody")
+              : (result.message ?? td("authFailed")),
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setDemoBusy(false);
+    }
+  };
 
   return (
     <div className="marketing-shell">
@@ -77,6 +103,19 @@ export default function Landing() {
               {t("landing.ctaTrial")}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
+            <button
+              type="button"
+              className="mk-btn mk-btn-ghost"
+              disabled={demoBusy}
+              onClick={() => void handleHeroDemo()}
+            >
+              {demoBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Play className="h-4 w-4" aria-hidden />
+              )}
+              {t("landing.ctaDemo")}
+            </button>
             <Link to="/login" className="mk-btn mk-btn-ghost">
               {t("landing.ctaAccess")}
             </Link>

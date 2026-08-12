@@ -65,6 +65,8 @@ export function accessMessage(status?: AccessStatus | null): string {
       return "Paiement en retard — accès en lecture seule jusqu'à régularisation.";
     case "force_read_only":
       return "La plateforme est temporairement en lecture seule.";
+    case "demo_readonly":
+      return "Mode démo — exploration en lecture seule.";
     default:
       return status.message || "Accès restreint.";
   }

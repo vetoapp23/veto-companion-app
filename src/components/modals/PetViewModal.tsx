@@ -9,6 +9,8 @@ import { useUpdateAnimal } from "@/hooks/useDatabase";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { useAppLocale } from "@/i18n/useAppLocale";
+import { useWriteAccess } from "@/components/RoleGuard";
+import { assertDemoCanWrite, DemoReadOnlyError } from "@/lib/demoWriteGuard";
 
 interface PetViewModalProps {
   open: boolean;
@@ -24,7 +26,9 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
   const { toast } = useToast();
   const { t } = useTranslation("app");
   const { t: tc } = useTranslation("common");
+  const { t: td } = useTranslation("demo");
   const { bcp47 } = useAppLocale();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_animals");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   // Initialize preview with existing photo on open
   useEffect(() => {
@@ -37,6 +41,7 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !pet) return;
+    if (!guardWrite()) return;
     const animalId = pet.dbId || (typeof pet.id === "string" ? pet.id : null);
     if (!animalId) {
       toast({ title: tc("error"), description: t("pets.animalIdNotFound"), variant: "destructive" });
@@ -47,12 +52,17 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
       const dataUrl = event.target?.result as string;
       setPhotoPreview(dataUrl);
       try {
+        assertDemoCanWrite();
         await updateAnimalMutation.mutateAsync({
           id: animalId,
           data: { photo_url: dataUrl },
         });
         toast({ title: t("pets.photoSaved") });
       } catch (err) {
+        if (err instanceof DemoReadOnlyError) {
+          toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+          return;
+        }
         toast({
           title: tc("error"),
           description: err instanceof Error ? err.message : t("pets.photoSaveError"),
@@ -93,6 +103,8 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
               </Avatar>
               
               <div className="space-y-2">
+                {canWrite ? (
+                  <>
                 <Button
                   size="sm"
                   variant="outline"
@@ -107,9 +119,29 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                     size="sm"
                     variant="destructive"
                     className="gap-2 w-full"
-                    onClick={() => {
-                      setPhotoPreview(null);
-                      updatePet(pet.id, { photo: undefined });
+                    onClick={async () => {
+                      if (!guardWrite()) return;
+                      const animalId = pet.dbId || (typeof pet.id === "string" ? pet.id : null);
+                      if (!animalId) return;
+                      try {
+                        assertDemoCanWrite();
+                        setPhotoPreview(null);
+                        await updateAnimalMutation.mutateAsync({
+                          id: animalId,
+                          data: { photo_url: null },
+                        });
+                        toast({ title: t("pets.photoSaved") });
+                      } catch (err) {
+                        if (err instanceof DemoReadOnlyError) {
+                          toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+                          return;
+                        }
+                        toast({
+                          title: tc("error"),
+                          description: err instanceof Error ? err.message : t("pets.photoSaveError"),
+                          variant: "destructive",
+                        });
+                      }
                     }}
                   >
                     {t("pets.removePhoto")}
@@ -122,6 +154,8 @@ export function PetViewModal({ open, onOpenChange, pet, onEdit, onShowDossier, o
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
+                  </>
+                ) : null}
               </div>
             </div>
             

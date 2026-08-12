@@ -60,6 +60,8 @@ import AuthSettings from "./pages/AuthSettings";
 import { ResetPassword } from "./pages/ResetPassword";
 import ImportMedicalDossier from "./pages/ImportMedicalDossier";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { DemoTourProvider, DemoTourBootstrap } from "@/contexts/DemoTourContext";
+import { DemoTourOverlay } from "@/components/demo/DemoTourOverlay";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { queryClient } from "@/lib/queryClient";
 
@@ -77,6 +79,7 @@ const App = () => (
             <SettingsProvider>
               <ThemeProvider>
                 <BrowserRouter>
+                  <DemoTourProvider>
                   <HashAuthRedirect />
                   <PendingCheckoutRedirect />
                   <CookieConsentBanner />
@@ -301,7 +304,10 @@ const App = () => (
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     <MobileBottomNav />
+                    <DemoTourBootstrap />
+                    <DemoTourOverlay />
                   </div>
+                  </DemoTourProvider>
                 </BrowserRouter>
               </ThemeProvider>
             </SettingsProvider>

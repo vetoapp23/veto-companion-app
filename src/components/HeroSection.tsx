@@ -68,7 +68,7 @@ export function HeroSection() {
 
   return (
     <>
-      <div className="app-dash-hero mb-4 md:mb-6">
+      <div className="app-dash-hero mb-4 md:mb-6" data-tour="dashboard-hero">
         <div className="flex flex-col gap-4 md:gap-6">
           <div className="space-y-2 md:space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium" style={{ color: "#5eead4" }}>

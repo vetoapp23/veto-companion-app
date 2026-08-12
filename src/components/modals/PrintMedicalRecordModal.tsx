@@ -36,6 +36,8 @@ import {
   medicalShareImportUrl,
   qrCodeDataUrl,
 } from "@/lib/medicalShare";
+import { isDemoWriteBlocked } from "@/lib/demoWriteGuard";
+import { useAuth } from "@/contexts/AuthContext";
 
 type SectionKey =
   | "identity"
@@ -89,8 +91,11 @@ type SharePreview = {
 export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMedicalRecordModalProps) {
   const { t } = useTranslation("medical");
   const { t: tc } = useTranslation("common");
+  const { t: td } = useTranslation("demo");
   const { bcp47 } = useAppLocale();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const demoLocked = isDemoWriteBlocked(user?.email);
   const { settings } = useSettings();
   const { isFree } = usePlanLimits();
   const animalId = animal?.id || animal?.dbId;
@@ -605,6 +610,10 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
           </div>
 
           <div className="space-y-3 p-3 border rounded-md bg-muted/30">
+            {demoLocked ? (
+              <p className="text-sm text-muted-foreground">{td("readOnlyToastBody")}</p>
+            ) : (
+              <>
             <label className="flex items-start gap-2 text-sm cursor-pointer">
               <Checkbox
                 checked={includeTransferQr}
@@ -720,6 +729,8 @@ export function PrintMedicalRecordModal({ open, onOpenChange, animal }: PrintMed
                   </div>
                 )}
               </div>
+            )}
+              </>
             )}
           </div>
         </div>

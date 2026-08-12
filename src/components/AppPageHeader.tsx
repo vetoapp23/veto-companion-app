@@ -20,7 +20,7 @@ export function AppPageHeader({
   className,
 }: AppPageHeaderProps) {
   return (
-    <div className={cn("app-page-header", className)}>
+    <div className={cn("app-page-header", className)} data-tour="page-header">
       <div className="min-w-0">
         <div className="app-page-eyebrow">
           {Icon ? <Icon className="h-3.5 w-3.5" /> : null}

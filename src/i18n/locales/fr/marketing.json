@@ -1,6 +1,7 @@
 {
   "nav": {
     "pricing": "Tarifs",
+    "demo": "Démo",
     "signIn": "Se connecter",
     "getStarted": "Commencer",
     "getStartedShort": "Commencer",
@@ -19,7 +20,11 @@
     "heroAlt": "Clinique vétérinaire moderne — logiciel VetoCrm pour la gestion du cabinet",
     "tagline": "La clinique, fluide.",
     "heroSub": "Clients, animaux, rendez-vous et dossiers médicaux — un CRM pensé pour les vétérinaires, du cabinet solo à la clinique multi-praticiens.",
+    "demoLabel": "Démo interactive",
+    "demoTitle": "Explorez VetoCrm avec la Clinique Démo",
+    "demoCopy": "Visite guidée dans la vraie application, sur les données de la Clinique Démo — en lecture seule. Dossiers, documents, certificats et modules clés, sans inscription ni risque de modifier les données.",
     "ctaTrial": "Essayer gratuitement",
+    "ctaDemo": "Voir la démo",
     "ctaAccess": "Accéder à mon espace",
     "journeyLabel": "Parcours",
     "journeyTitle": "En trois gestes, votre clinique est prête",

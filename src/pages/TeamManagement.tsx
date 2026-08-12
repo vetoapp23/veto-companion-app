@@ -307,7 +307,7 @@ export default function TeamManagement() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl space-y-6">
+    <div className="container mx-auto p-6 max-w-6xl space-y-6" data-tour="team-page">
       <AppPageHeader
         icon={Users}
         title={t("team.title")}

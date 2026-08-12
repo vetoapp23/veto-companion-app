@@ -244,7 +244,7 @@ const Consultations = () => {
       </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="space-y-4" data-tour="consultations-list">
       <h3 className="text-base sm:text-lg font-semibold">
         {t("consultations.title")} ({filteredConsultations.length})
       </h3>

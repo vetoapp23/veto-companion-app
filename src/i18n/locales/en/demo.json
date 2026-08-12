@@ -1,0 +1,127 @@
+{
+  "badge": "Guided tour — read-only",
+  "startInline": "Launch clinic demo",
+  "clinicAccountNote": "Explore the real app on the Clinic Demo (Clinic plan) in read-only mode: clients, patient records, documents, consultations, inventory — with no risk of changing the data.",
+  "bullet1": "You explore the real application, not a simulated preview.",
+  "bullet2": "Read-only mode: no create, edit or delete actions.",
+  "bullet3": "The tour details every module: records, documents, certificates and key features.",
+  "readOnlyBanner": "Demo mode — read-only exploration. Clinic Demo data cannot be changed.",
+  "readOnlyToastTitle": "Demo mode — read-only",
+  "readOnlyToastBody": "Clinic Demo data cannot be changed. Start a free trial to work freely.",
+  "quitDemo": "Exit demo",
+  "quitDemoShort": "Exit",
+  "loginRequiredTitle": "Clinic demo unavailable",
+  "loginRequiredBody": "Enable demo on this environment (VITE_ENABLE_DEMO) or try again later.",
+  "authFailed": "Could not start the clinic demo. Check that demo accounts are seeded (including demo-viewer).",
+  "tourLabel": "Step {{current}} / {{total}}",
+  "next": "Next",
+  "prev": "Previous",
+  "finish": "Finish",
+  "quit": "Quit",
+  "steps": {
+    "welcome": {
+      "title": "Welcome to the Clinic Demo",
+      "body": "You are exploring VetoCrm on a pre-filled clinic account, in read-only mode.\n\nThis tour covers the dashboard, client & patient records, medical files, documents (X-rays, labs, certificates), calendar, farm visits, inventory and more — just like daily practice, without changing any data."
+    },
+    "navigation": {
+      "title": "Main menu",
+      "body": "The top bar opens every clinic module: dashboard, clients, patients, appointments, visits, consultations, vaccinations, antiparasitics, history, farms, stock, accounting and settings.\n\nOn mobile, a bottom bar complements this menu."
+    },
+    "dashboardHero": {
+      "title": "Dashboard — overview",
+      "body": "Daily entry point: welcome message, key metrics (clients, patients, today’s appointments) and shortcuts to frequent actions.\n\nIn read-only demo, create buttons may be hidden or blocked — no writes are allowed."
+    },
+    "dashboardTabs": {
+      "title": "KPIs, activity & charts",
+      "body": "Tabs switch between summary, detailed KPIs, recent activity and charts (consultations, vaccinations, etc.).\n\nUseful to grasp clinic workload at a glance."
+    },
+    "clients": {
+      "title": "Client management",
+      "body": "Owner / farmer directory: identity, phone, email, address, client type and linked animals.\n\nSearch and filters find a record quickly; each client opens visit history and related patients."
+    },
+    "clientsList": {
+      "title": "Client list & records",
+      "body": "Card or table view: contact details, linked animals, last visit.\n\nOpen a record for full detail — in demo you browse without editing or deleting."
+    },
+    "pets": {
+      "title": "Patients / animals",
+      "body": "Core medical record: species, breed, sex, weight, ID (chip / tattoo), photo, status and owner.\n\nFrom here you open the clinical file, consultations and shared-record import."
+    },
+    "petsKpis": {
+      "title": "Patient indicators",
+      "body": "Global counters: total headcount, active animals, vaccine reminders, alerts.\n\nThey help the team prioritise follow-ups (boosters, ongoing treatments)."
+    },
+    "petsDossier": {
+      "title": "Patient medical record",
+      "body": "Each animal has a consolidated file: consultations, vaccinations, antiparasitics, attachments (X-rays, labs, clinical photos) and history.\n\nOpen a card for detail — the structure matches a real practice."
+    },
+    "dossierImport": {
+      "title": "Record import / sharing",
+      "body": "Secure transfer of a medical record via code or QR: a partner clinic shares a temporary link, you import the file into VetoCrm.\n\nIdeal for referrals, patient moves or inter-clinic collaboration — without retyping."
+    },
+    "appointments": {
+      "title": "Calendar & appointments",
+      "body": "Schedule consultations, check-ups and reminders: calendar view, slots, statuses (confirmed, done, cancelled) and patient / reason link.\n\nThe agenda syncs the day’s flow with medical records."
+    },
+    "visits": {
+      "title": "Field & farm visits",
+      "body": "Rounds and off-site interventions: visit list, linked farm, on-site services (prophylaxis, surgery, follow-up).\n\nEach visit can produce procedures, attachments and related billing."
+    },
+    "consultations": {
+      "title": "Clinical consultations",
+      "body": "Structured medical act: reason, history, exam, diagnosis, treatment, prescription and notes.\n\nEach consultation feeds the patient history and can carry attachments."
+    },
+    "consultationsDocs": {
+      "title": "Documents & attachments",
+      "body": "X-rays, ultrasounds, lab reports, dermatology or post-op photos: attached to the consultation and visible in the record.\n\nThe clinic demo includes realistic examples (images, lab sheets) to show the document flow."
+    },
+    "vaccinations": {
+      "title": "Vaccinations & protocols",
+      "body": "Track protocols (CHPPi, rabies, etc.), doses given, upcoming boosters and per-animal vaccine history.\n\nDue dates feed dashboard and patient alerts."
+    },
+    "vaccinationsCerts": {
+      "title": "Vaccine certificates (QR)",
+      "body": "Printable certificates / attestations with a verification QR code.\n\nUseful for travel, boarding, farms or inspections — the document stays traceable from the record."
+    },
+    "antiparasites": {
+      "title": "Antiparasitics",
+      "body": "Treatment calendar (fleas, ticks, deworming): product, date, next due and reminders.\n\nComplements vaccinations in the patient prevention plan."
+    },
+    "history": {
+      "title": "Consolidated medical history",
+      "body": "Single timeline of clinical events: consultations, vaccines, antiparasitics and related acts.\n\nFilter by patient or period to rebuild the care journey quickly."
+    },
+    "historyTimeline": {
+      "title": "Care journey & documents",
+      "body": "Each timeline entry opens the act detail and linked documents.\n\nThis is the “full record” view for a review, referral or team handoff."
+    },
+    "farms": {
+      "title": "Farms / herds",
+      "body": "Farm records: type (cattle, sheep…), herd size, production, acreage, interventions and batch prophylaxis.\n\nKey module for Clinic / Duo / Pro+ rural plans."
+    },
+    "stock": {
+      "title": "Inventory & pharmacy",
+      "body": "Medicines, vaccines, antiparasitics and consumables: quantities, alert thresholds, expiry, stock movements.\n\nConnects clinical work to daily inventory management."
+    },
+    "accounting": {
+      "title": "Clinic accounting",
+      "body": "Track revenue and expenses, lines linked to acts / visits, financial dashboards.\n\nGives an economic view of activity without leaving VetoCrm."
+    },
+    "team": {
+      "title": "Team & roles",
+      "body": "Invite vets and assistants, roles (admin / assistant) and per-module permissions (view / edit).\n\nOn the public demo, team access may be limited; in a real trial you configure your organisation."
+    },
+    "settings": {
+      "title": "Clinic settings",
+      "body": "Identity (name, logo, address, phone), hours, veterinarians, print preferences and subscription options.\n\nIn read-only: browse settings without saving."
+    },
+    "mobileNav": {
+      "title": "Mobile navigation",
+      "body": "On phone, the bottom bar opens essential sections (dashboard, clients, patients, calendar…).\n\nThe guided tour also adapts to small screens."
+    },
+    "finish": {
+      "title": "Tour complete",
+      "body": "You explored the Clinic Demo: patient records, documents, certificates, calendar, field work, stock and operations.\n\nEverything stayed read-only to protect shared data.\n\nStart a free trial to open your own clinic and work freely."
+    }
+  }
+}

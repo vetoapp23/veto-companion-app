@@ -111,6 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(authKeys.session(), null);
       queryClient.clear();
     }
+    try {
+      const { clearDemoReadOnlySession } = await import("@/lib/demoMode");
+      const { DEMO_TOUR_STORAGE_KEY } = await import("@/lib/demoTour/types");
+      clearDemoReadOnlySession();
+      sessionStorage.removeItem(DEMO_TOUR_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
   };
 
   const refreshProfile = async (): Promise<void> => {

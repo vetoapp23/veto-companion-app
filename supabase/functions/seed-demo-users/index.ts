@@ -42,6 +42,17 @@ const IMG = {
   xrayPelvis: "https://upload.wikimedia.org/wikipedia/commons/0/05/Bilateral_hip_dysplasia.JPG",
   xrayPelvisLat: "https://upload.wikimedia.org/wikipedia/commons/0/08/Golden_Doodle_hip_xray_side_view.jpg",
   xrayPelvisVd: "https://upload.wikimedia.org/wikipedia/commons/5/56/Golden_Doodle_dog_hip_xray_posterior_view.jpg",
+  // Farm demo imagery
+  cow1: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=960&q=80",
+  cow2: "https://images.unsplash.com/photo-1570042223112-7c8fdbcb2f6f?w=960&q=80",
+  barn: "https://images.unsplash.com/photo-1500076656116-558758c991c1?w=960&q=80",
+  sheep1: "https://images.unsplash.com/photo-1484557985045-edf25e08da73?w=960&q=80",
+  sheep2: "https://images.unsplash.com/photo-1545468800-85cc9bc6ecf7?w=960&q=80",
+  chick1: "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=960&q=80",
+  chick2: "https://images.unsplash.com/photo-1612170153139-6f881ff067e0?w=960&q=80",
+  chick3: "https://images.unsplash.com/photo-1569428034239-f05570d4c2ed?w=960&q=80",
+  coop: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=960&q=80",
+  field: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=960&q=80",
 };
 
 /** Compact SVG “rapport d’analyse” as data URL (credible lab attachment). */
@@ -90,24 +101,52 @@ const CLINICAL = {
   leg: clinicalSheetSvg("Radiographie membre", "2 incidences — soft tissue swelling", "#94a3b8"),
 };
 
-const STOCK = [
-  { name: "Amoxicilline 500mg", category: "medicament", unit: "comprimé", qty: 200, min: 50, cost: 1.2, price: 3, description: "Antibiotique large spectre" },
-  { name: "Clavaseptin 250 mg", category: "medicament", unit: "comprimé", qty: 80, min: 20, cost: 1.8, price: 4.5, description: "Amoxicilline + acide clavulanique" },
-  { name: "Metacam 1.5 mg/ml", category: "medicament", unit: "flacon", qty: 25, min: 5, cost: 18, price: 38, description: "Méloxicam AINS oral" },
-  { name: "Cerenia 16 mg", category: "medicament", unit: "comprimé", qty: 60, min: 15, cost: 3.5, price: 8.5, description: "Maropitant antiémétique" },
-  { name: "Prednisolone 5 mg", category: "medicament", unit: "comprimé", qty: 150, min: 40, cost: 0.25, price: 0.8, description: "Corticostéroïde" },
-  { name: "Metronidazole 250 mg", category: "medicament", unit: "comprimé", qty: 100, min: 25, cost: 0.55, price: 1.6, description: "Antiprotozoaire / diarrhée" },
-  { name: "Aurizon", category: "medicament", unit: "flacon", qty: 30, min: 8, cost: 8.5, price: 19, description: "Otite externe" },
-  { name: "Milbemax Chien", category: "antiparasitaire", unit: "comprimé", qty: 60, min: 15, cost: 4.5, price: 12, description: "Vermifuge chien" },
-  { name: "Milbemax Chat", category: "antiparasitaire", unit: "comprimé", qty: 70, min: 15, cost: 3.8, price: 10.5, description: "Vermifuge chat" },
-  { name: "Bravecto 500 mg", category: "antiparasitaire", unit: "comprimé", qty: 40, min: 10, cost: 18, price: 42, description: "Fluralaner 12 semaines" },
-  { name: "Frontline Spot-on", category: "antiparasitaire", unit: "pipette", qty: 80, min: 20, cost: 8, price: 20, description: "Fipronil puces/tiques" },
-  { name: "Fortiflora Canin", category: "supplement", unit: "sachet", qty: 80, min: 20, cost: 1.2, price: 3, description: "Probiotique chien" },
-  { name: "Vaccin CHPPi", category: "vaccin", unit: "dose", qty: 50, min: 10, cost: 15, price: 35, description: "Vaccin polyvalent chien" },
-  { name: "Vaccin Rage", category: "vaccin", unit: "dose", qty: 40, min: 10, cost: 12, price: 30, description: "Rage" },
-  { name: "Seringues 5ml", category: "consommable", unit: "unité", qty: 500, min: 100, cost: 0.3, price: 1, description: null },
-  { name: "Compresses stériles", category: "consommable", unit: "boîte", qty: 40, min: 10, cost: 4, price: 10, description: null },
+type StockSeed = {
+  name: string;
+  category: string;
+  unit: string;
+  qty: number;
+  min: number;
+  cost: number;
+  price: number;
+  description: string | null;
+  supplier: string;
+  location: string;
+  expiryDays: number;
+};
+
+const STOCK: StockSeed[] = [
+  { name: "Amoxicilline 500mg", category: "medicament", unit: "comprimé", qty: 200, min: 50, cost: 1.2, price: 3, description: "Antibiotique large spectre", supplier: "Boehringer Ingelheim", location: "Armoire A — pharmacie", expiryDays: 420 },
+  { name: "Clavaseptin 250 mg", category: "medicament", unit: "comprimé", qty: 80, min: 20, cost: 1.8, price: 4.5, description: "Amoxicilline + acide clavulanique", supplier: "Vetoquinol", location: "Armoire A — pharmacie", expiryDays: 400 },
+  { name: "Metacam 1.5 mg/ml", category: "medicament", unit: "flacon", qty: 25, min: 5, cost: 18, price: 38, description: "Méloxicam AINS oral", supplier: "Boehringer Ingelheim", location: "Armoire A — pharmacie", expiryDays: 360 },
+  { name: "Cerenia 16 mg", category: "medicament", unit: "comprimé", qty: 60, min: 15, cost: 3.5, price: 8.5, description: "Maropitant antiémétique", supplier: "Zoetis", location: "Armoire A — pharmacie", expiryDays: 450 },
+  { name: "Prednisolone 5 mg", category: "medicament", unit: "comprimé", qty: 150, min: 40, cost: 0.25, price: 0.8, description: "Corticostéroïde", supplier: "Centravet", location: "Armoire A — pharmacie", expiryDays: 500 },
+  { name: "Metronidazole 250 mg", category: "medicament", unit: "comprimé", qty: 100, min: 25, cost: 0.55, price: 1.6, description: "Antiprotozoaire / diarrhée", supplier: "Centravet", location: "Armoire A — pharmacie", expiryDays: 480 },
+  { name: "Aurizon", category: "medicament", unit: "flacon", qty: 30, min: 8, cost: 8.5, price: 19, description: "Otite externe", supplier: "Vetoquinol", location: "Armoire A — pharmacie", expiryDays: 300 },
+  { name: "Milbemax Chien", category: "antiparasitaire", unit: "comprimé", qty: 60, min: 15, cost: 4.5, price: 12, description: "Vermifuge chien", supplier: "Elanco", location: "Armoire B — antiparasitaires", expiryDays: 540 },
+  { name: "Milbemax Chat", category: "antiparasitaire", unit: "comprimé", qty: 70, min: 15, cost: 3.8, price: 10.5, description: "Vermifuge chat", supplier: "Elanco", location: "Armoire B — antiparasitaires", expiryDays: 540 },
+  { name: "Bravecto 500 mg", category: "antiparasitaire", unit: "comprimé", qty: 40, min: 10, cost: 18, price: 42, description: "Fluralaner 12 semaines", supplier: "MSD Animal Health", location: "Armoire B — antiparasitaires", expiryDays: 600 },
+  { name: "Frontline Spot-on", category: "antiparasitaire", unit: "pipette", qty: 80, min: 20, cost: 8, price: 20, description: "Fipronil puces/tiques", supplier: "Boehringer Ingelheim", location: "Armoire B — antiparasitaires", expiryDays: 520 },
+  { name: "Fortiflora Canin", category: "supplement", unit: "sachet", qty: 80, min: 20, cost: 1.2, price: 3, description: "Probiotique chien", supplier: "Purina Pro Plan", location: "Rayon compléments", expiryDays: 365 },
+  { name: "Vaccin CHPPi", category: "vaccin", unit: "dose", qty: 50, min: 10, cost: 15, price: 35, description: "Vaccin polyvalent chien", supplier: "Boehringer Ingelheim", location: "Frigo vaccins 4°C", expiryDays: 180 },
+  { name: "Vaccin Rage", category: "vaccin", unit: "dose", qty: 40, min: 10, cost: 12, price: 30, description: "Rage", supplier: "Boehringer Ingelheim", location: "Frigo vaccins 4°C", expiryDays: 200 },
+  { name: "Seringues 5ml", category: "consommable", unit: "unité", qty: 500, min: 100, cost: 0.3, price: 1, description: null, supplier: "BD Medical", location: "Réserve consommables", expiryDays: 900 },
+  { name: "Compresses stériles", category: "consommable", unit: "boîte", qty: 40, min: 10, cost: 4, price: 10, description: null, supplier: "Hartmann", location: "Réserve consommables", expiryDays: 800 },
 ];
+
+/** Extra stock rows for clinic demo (low stock / near expiry for realistic tables). */
+const STOCK_CLINIC_EXTRA: StockSeed[] = [
+  { name: "Allercalm Shampooing", category: "medicament", unit: "flacon", qty: 4, min: 10, cost: 6, price: 18, description: "Shampooing hypoallergénique", supplier: "Virbac", location: "Armoire A — pharmacie", expiryDays: 90 },
+  { name: "Vaccin Leptospirose", category: "vaccin", unit: "dose", qty: 8, min: 12, cost: 14, price: 32, description: "Lepto 4 valences", supplier: "Zoetis", location: "Frigo vaccins 4°C", expiryDays: 45 },
+  { name: "Gants nitrile M", category: "consommable", unit: "boîte", qty: 12, min: 8, cost: 5.5, price: 12, description: "Boîte 100 gants", supplier: "Hartmann", location: "Réserve consommables", expiryDays: 900 },
+  { name: "Advantage Chat", category: "antiparasitaire", unit: "pipette", qty: 6, min: 15, cost: 7, price: 18, description: "Imidaclopride spot-on chat", supplier: "Elanco", location: "Armoire B — antiparasitaires", expiryDays: 25 },
+  { name: "Cardalis 2.5/20", category: "medicament", unit: "comprimé", qty: 35, min: 10, cost: 2.2, price: 5.5, description: "Traitement insuffisance cardiaque", supplier: "Vetoquinol", location: "Armoire A — pharmacie", expiryDays: 300 },
+  { name: "Sérum physiologique 500ml", category: "consommable", unit: "poche", qty: 28, min: 15, cost: 1.8, price: 4.5, description: "NaCl 0.9%", supplier: "B Braun", location: "Réserve consommables", expiryDays: 365 },
+];
+
+function stockLocationBatch(name: string) {
+  return `LOT-DEMO-${name.replace(/\s+/g, "").slice(0, 6).toUpperCase()}-26`;
+}
 
 type Admin = ReturnType<typeof createClient>;
 
@@ -388,6 +427,251 @@ function rosterForPlan(plan: string): CaseClient[] {
   }
 }
 
+async function seedClinicFarms(
+  admin: Admin,
+  orgId: string,
+  userId: string,
+  clients: Array<{ id: string; first_name?: string; last_name?: string }>,
+): Promise<number> {
+  const c0 = clients[0];
+  const c1 = clients[1] ?? clients[0];
+  const c2 = clients[2] ?? clients[0];
+
+  await admin.from("clients").update({ client_type: "eleveur" }).in("id", [c0.id, c1.id]);
+  await admin.from("clients").update({ client_type: "ferme" }).eq("id", c2.id);
+
+  const farmDefs = [
+    {
+      client_id: c0.id,
+      farm_name: "Ferme Atlas — Bovins",
+      farm_type: "bovin",
+      farm_types: ["bovin"],
+      registration_number: "MA-BOV-2024-001",
+      address: "Douar Tizi, Route de Settat km 18, Casablanca",
+      phone: "+212661199001",
+      email: "atlas.bovins@demo.test",
+      herd_size: 86,
+      certifications: ["Label Rouge", "Bien-être animal"],
+      notes: "Cheptel laitier Holstein + génisses — suivi reproduction et prophylaxie.",
+      production_type: "Lait",
+      housing_type: "Stabulation libre",
+      coordinates: "33.4501, -7.6205",
+      surface_hectares: 32.5,
+      photos: [IMG.cow1, IMG.cow2, IMG.barn, IMG.field],
+      metadata: { breeds: ["Holstein", "Montbéliarde"], milk_liters_day: 980, demo: true },
+      infras: [
+        { name: "Stabulation libre Nord", infra_type: "logement", location: "Parc A", capacity: 60, surface_sqm: 420, photos: [IMG.barn], notes: "Paillage quotidien" },
+        { name: "Salle de traite 2×6", infra_type: "traite", location: "Bâtiment principal", capacity: 12, surface_sqm: 85, photos: [IMG.barn], notes: "Machine DeLaval" },
+      ],
+      batches: [
+        { name: "VL Holstein A", species: "Bovin", category: "Vaches laitières", animal_count: 48, birth_period: "2019-2022", location: "Stabulation Nord", notes: "Production moyenne 28 L/j", chip_numbers: ["MA-BOV-1001", "MA-BOV-1002", "MA-BOV-1003"] },
+        { name: "Génisses renouvellement", species: "Bovin", category: "Génisses", animal_count: 22, birth_period: "2023-2024", location: "Parc B", notes: "Insémination prévue T3", chip_numbers: ["MA-BOV-2001", "MA-BOV-2002"] },
+        { name: "Veaux laitiers", species: "Bovin", category: "Veaux", animal_count: 16, birth_period: "2025-2026", location: "Nurserie", notes: "Colostrum + vaccination", chip_numbers: ["MA-BOV-3001"] },
+      ],
+      interventions: [
+        { days: 8, type: "Vaccination collective", count: 48, batchIdx: 0, description: "Vaccination IBR / BVD — lot VL Holstein A.", diagnosis: "Prophylaxie planifiée", treatment: "Vaccins viraux + vermifuge", meds: ["Vaccin IBR", "Vaccin BVD"], cost: 1850, photos: [IMG.cow1, IMG.barn], chips: ["MA-BOV-1001", "MA-BOV-1002"] },
+        { days: 22, type: "Suivi reproduction", count: 12, batchIdx: 1, description: "Échographies de gestation — génisses.", diagnosis: "10 gestantes / 2 à revoir", treatment: "Suivi IA", meds: null, cost: 900, photos: [IMG.cow2], chips: ["MA-BOV-2001"] },
+        { days: 45, type: "Visite sanitaire", count: 86, batchIdx: null, description: "Bilan sanitaire trimestriel cheptel bovin.", diagnosis: "Bon état général", treatment: "Conseil alimentation", meds: null, cost: 650, photos: [IMG.field, IMG.cow1], chips: null },
+      ],
+      events: [
+        { batchIdx: 0, type: "vaccination", days: 8, product: "Vaccin IBR/BVD", dose: "1 dose/tête", count: 48, cost: 1850, notes: "Lot VL Holstein A" },
+        { batchIdx: 2, type: "birth", days: 12, product: null, dose: null, count: 3, cost: null, notes: "3 veaux nés — colostrum OK" },
+        { batchIdx: 0, type: "treatment", days: 19, product: "Ceftiofur", dose: "selon protocole", count: 2, cost: 180, notes: "Métrite postpartum" },
+      ],
+    },
+    {
+      client_id: c1.id,
+      farm_name: "Bergerie Benali — Ovins",
+      farm_type: "ovin",
+      farm_types: ["ovin"],
+      registration_number: "MA-OVI-2024-014",
+      address: "Plateau de Zaër, Rabat",
+      phone: "+212661199002",
+      email: "benali.ovins@demo.test",
+      herd_size: 240,
+      certifications: ["IGP"],
+      notes: "Troupeau viande / laine — agnelage printanier et tonte sanitaire.",
+      production_type: "Mixte",
+      housing_type: "Bergerie",
+      coordinates: "33.9716, -6.8498",
+      surface_hectares: 18,
+      photos: [IMG.sheep1, IMG.sheep2, IMG.field],
+      metadata: { breeds: ["Sardi", "Timahdite"], demo: true },
+      infras: [
+        { name: "Bergerie principale", infra_type: "logement", location: "Bâtiment 1", capacity: 180, surface_sqm: 310, photos: [IMG.sheep1], notes: "Aération naturelle" },
+        { name: "Parc d'agnelage", infra_type: "parc", location: "Extérieur Est", capacity: 80, surface_sqm: 200, photos: [IMG.field], notes: "Saison mars-avril" },
+      ],
+      batches: [
+        { name: "Brebis Sardi", species: "Ovin", category: "Brebis", animal_count: 160, birth_period: "2020-2023", location: "Bergerie principale", notes: "Troupeau principal", chip_numbers: ["MA-OVI-010", "MA-OVI-011", "MA-OVI-012"] },
+        { name: "Agneaux printemps", species: "Ovin", category: "Agneaux", animal_count: 70, birth_period: "2026", location: "Parc agnelage", notes: "Sevrage en cours", chip_numbers: ["MA-OVI-100", "MA-OVI-101"] },
+        { name: "Béliers reproducteurs", species: "Ovin", category: "Béliers", animal_count: 10, birth_period: "2021-2022", location: "Box isolé", notes: "Contrôle fertilité OK", chip_numbers: ["MA-OVI-900"] },
+      ],
+      interventions: [
+        { days: 5, type: "Vaccination collective", count: 160, batchIdx: 0, description: "Vaccination clostridioses + pasteurellose.", diagnosis: "Prophylaxie ovine", treatment: "Vaccin polyvalent ovin", meds: ["Covexin 8"], cost: 980, photos: [IMG.sheep1, IMG.sheep2], chips: ["MA-OVI-010"] },
+        { days: 18, type: "Tonte sanitaire", count: 140, batchIdx: 0, description: "Tonte + examen peaux / ectoparasites.", diagnosis: "Quelques cas de gale", treatment: "Traitement spot-on", meds: ["Ivomec"], cost: 720, photos: [IMG.sheep1, IMG.field], chips: null },
+        { days: 35, type: "Échographie de gestation", count: 40, batchIdx: 0, description: "Contrôle gestation brebis.", diagnosis: "32 gestantes", treatment: "Préparation agnelage", meds: null, cost: 560, photos: [IMG.sheep2], chips: ["MA-OVI-011"] },
+      ],
+      events: [
+        { batchIdx: 1, type: "birth", days: 40, product: null, dose: null, count: 28, cost: null, notes: "Vague d'agnelage" },
+        { batchIdx: 0, type: "vaccination", days: 5, product: "Covexin 8", dose: "2 ml SC", count: 160, cost: 980, notes: "Prophylaxie clostridioses" },
+        { batchIdx: 0, type: "treatment", days: 18, product: "Ivomec", dose: "spot-on", count: 12, cost: 120, notes: "Gale localisée" },
+        { batchIdx: 1, type: "mortality", days: 9, product: null, dose: null, count: 2, cost: null, notes: "2 agneaux faibles" },
+      ],
+    },
+    {
+      client_id: c2.id,
+      farm_name: "Poulailler Idrissi — Pondeuses",
+      farm_type: "avicole",
+      farm_types: ["avicole"],
+      registration_number: "MA-AVI-2025-007",
+      address: "Zone industrielle Tanger Free Zone",
+      phone: "+212661199003",
+      email: "idrissi.avia@demo.test",
+      herd_size: 4500,
+      certifications: ["Bio", "Sans antibiotique"],
+      notes: "Bâtiment pondeuses + poussinière — vide sanitaire planifié.",
+      production_type: "Pondeuses",
+      housing_type: "Bâtiment fermé",
+      coordinates: "35.7595, -5.8340",
+      surface_hectares: 2.4,
+      photos: [IMG.chick1, IMG.chick2, IMG.chick3, IMG.coop],
+      metadata: { eggs_per_day: 3800, strain: "ISA Brown", demo: true },
+      infras: [
+        { name: "Bâtiment pondeuses B1", infra_type: "logement", location: "Hall 1", capacity: 3000, surface_sqm: 900, photos: [IMG.coop, IMG.chick1], notes: "Ventilation dynamique" },
+        { name: "Poussinière", infra_type: "logement", location: "Hall 2", capacity: 1500, surface_sqm: 280, photos: [IMG.chick2], notes: "Chauffage radiant" },
+      ],
+      batches: [
+        { name: "Pondeuses Lot P-26", species: "Volaille", category: "Pondeuses", animal_count: 3200, birth_period: "2025-W42", location: "Bâtiment B1", notes: "Pic de ponte 92%", chip_numbers: null },
+        { name: "Poulettes élevage", species: "Volaille", category: "Poulettes", animal_count: 900, birth_period: "2026-W10", location: "Poussinière", notes: "Transfert prévu semaine 18", chip_numbers: null },
+        { name: "Poussins démarrage", species: "Volaille", category: "Poussins", animal_count: 400, birth_period: "2026-W28", location: "Poussinière", notes: "Livraison couvoir", chip_numbers: null },
+      ],
+      interventions: [
+        { days: 3, type: "Vaccination collective", count: 3200, batchIdx: 0, description: "Rappel Newcastle / Gumboro — pondeuses P-26.", diagnosis: "Prophylaxie aviaire", treatment: "Vaccins eau de boisson", meds: ["NDV", "IBD"], cost: 2100, photos: [IMG.chick1, IMG.coop], chips: null },
+        { days: 14, type: "Désinfection bâtiment", count: null, batchIdx: null, description: "Vide sanitaire partiel poussinière.", diagnosis: "Prévention coccidiose", treatment: "Désinfectant + flamme", meds: ["Virkon S"], cost: 480, photos: [IMG.coop, IMG.chick2], chips: null },
+        { days: 28, type: "Visite sanitaire", count: 4500, batchIdx: 0, description: "Audit mortalité et ponte.", diagnosis: "Mortalité 0.4%/sem — conforme", treatment: "Ajustement ventilation", meds: null, cost: 350, photos: [IMG.chick3, IMG.chick1], chips: null },
+      ],
+      events: [
+        { batchIdx: 0, type: "vaccination", days: 3, product: "NDV + IBD", dose: "eau de boisson", count: 3200, cost: 2100, notes: "Rappel pondeuses" },
+        { batchIdx: 0, type: "mortality", days: 11, product: null, dose: null, count: 14, cost: null, notes: "Mortalité hebdo normale" },
+        { batchIdx: null, type: "other", days: 14, product: "Virkon S", dose: "désinfection", count: null, cost: 480, notes: "Vide sanitaire poussinière" },
+        { batchIdx: 1, type: "transfer", days: 55, product: null, dose: null, count: 900, cost: null, notes: "Entrée poulettes" },
+      ],
+    },
+  ];
+
+  let created = 0;
+  for (const def of farmDefs) {
+    const { data: farm, error } = await admin
+      .from("farms")
+      .insert({
+        organization_id: orgId,
+        user_id: userId,
+        client_id: def.client_id,
+        farm_name: def.farm_name,
+        farm_type: def.farm_type,
+        farm_types: def.farm_types,
+        registration_number: def.registration_number,
+        address: def.address,
+        phone: def.phone,
+        email: def.email,
+        herd_size: def.herd_size,
+        certifications: def.certifications,
+        notes: def.notes,
+        active: true,
+        production_type: def.production_type,
+        housing_type: def.housing_type,
+        coordinates: def.coordinates,
+        surface_hectares: def.surface_hectares,
+        photos: def.photos,
+        metadata: def.metadata,
+      })
+      .select("id")
+      .single();
+    if (error || !farm) continue;
+    created += 1;
+
+    await admin.from("farm_infrastructures").insert(
+      def.infras.map((x) => ({
+        organization_id: orgId,
+        farm_id: farm.id,
+        name: x.name,
+        infra_type: x.infra_type,
+        location: x.location,
+        capacity: x.capacity,
+        surface_sqm: x.surface_sqm,
+        photos: x.photos,
+        notes: x.notes,
+        metadata: {},
+      })),
+    );
+
+    const { data: batches } = await admin
+      .from("farm_batches")
+      .insert(
+        def.batches.map((b) => ({
+          organization_id: orgId,
+          farm_id: farm.id,
+          name: b.name,
+          species: b.species,
+          category: b.category,
+          farm_type: def.farm_type,
+          animal_count: b.animal_count,
+          birth_period: b.birth_period,
+          location: b.location,
+          status: "active",
+          notes: b.notes,
+          chip_numbers: b.chip_numbers,
+          metadata: {},
+        })),
+      )
+      .select("id");
+
+    const batchIds = batches?.map((b) => b.id) ?? [];
+
+    await admin.from("farm_interventions").insert(
+      def.interventions.map((iv) => ({
+        organization_id: orgId,
+        farm_id: farm.id,
+        veterinarian_id: userId,
+        intervention_date: dateDaysAgo(iv.days),
+        intervention_type: iv.type,
+        animal_count: iv.count,
+        description: iv.description,
+        diagnosis: iv.diagnosis,
+        treatment: iv.treatment,
+        medications_used: iv.meds,
+        cost: iv.cost,
+        follow_up_date: dateDaysAgo(-30),
+        notes: "Historique démo — photos associées",
+        batch_id: iv.batchIdx != null ? batchIds[iv.batchIdx] ?? null : null,
+        protocol_type: "demo",
+        affected_count: iv.count,
+        next_visit_date: dateDaysAgo(-45),
+        chip_numbers: iv.chips,
+        photos: iv.photos,
+      })),
+    );
+
+    await admin.from("farm_batch_health_events").insert(
+      def.events.map((ev) => ({
+        organization_id: orgId,
+        farm_id: farm.id,
+        batch_id: ev.batchIdx != null ? batchIds[ev.batchIdx] ?? null : null,
+        event_type: ev.type,
+        event_date: dateDaysAgo(ev.days),
+        product: ev.product,
+        dose: ev.dose,
+        affected_count: ev.count,
+        cost: ev.cost,
+        notes: ev.notes,
+        metadata: {},
+      })),
+    );
+  }
+
+  return created;
+}
+
 async function clearOrgClinicalData(admin: Admin, orgId: string) {
   await admin.from("visit_services").delete().eq("organization_id", orgId);
   await admin.from("visits").delete().eq("organization_id", orgId);
@@ -420,6 +704,16 @@ async function clearOrgClinicalData(admin: Admin, orgId: string) {
   await admin.from("farms").delete().eq("organization_id", orgId);
   await admin.from("animals").delete().eq("organization_id", orgId);
   await admin.from("clients").delete().eq("organization_id", orgId);
+
+  await admin.from("revenue").delete().eq("organization_id", orgId);
+  await admin.from("expenses").delete().eq("organization_id", orgId);
+
+  const { data: stockRows } = await admin.from("stock_items").select("id").eq("organization_id", orgId);
+  const stockIds = (stockRows ?? []).map((s) => s.id);
+  if (stockIds.length) {
+    await admin.from("stock_alerts").delete().in("item_id", stockIds);
+    await admin.from("stock_movements").delete().in("stock_item_id", stockIds);
+  }
   await admin.from("stock_items").delete().eq("organization_id", orgId);
 }
 
@@ -438,22 +732,31 @@ async function seedOrgData(
   if ((count ?? 0) > 0 && !force) return { skipped: true };
   if ((count ?? 0) > 0 && force) await clearOrgClinicalData(admin, orgId);
 
-  await admin.from("stock_items").insert(
-    STOCK.map((s) => ({
-      organization_id: orgId,
-      user_id: userId,
-      name: s.name,
-      category: s.category,
-      unit: s.unit,
-      description: s.description,
-      current_quantity: s.qty,
-      minimum_quantity: s.min,
-      unit_cost: s.cost,
-      selling_price: s.price,
-      requires_prescription: s.category === "medicament",
-      active: true,
-    })),
-  );
+  const stockCatalog = plan === "clinic" ? [...STOCK, ...STOCK_CLINIC_EXTRA] : STOCK;
+  const { data: stockInserted } = await admin
+    .from("stock_items")
+    .insert(
+      stockCatalog.map((s) => ({
+        organization_id: orgId,
+        user_id: userId,
+        name: s.name,
+        category: s.category,
+        unit: s.unit,
+        description: s.description,
+        current_quantity: s.qty,
+        minimum_quantity: s.min,
+        maximum_quantity: Math.max(s.qty * 2, s.min * 4),
+        unit_cost: s.cost,
+        selling_price: s.price,
+        supplier: s.supplier,
+        location: s.location,
+        batch_number: stockLocationBatch(s.name),
+        expiration_date: dateDaysAgo(-s.expiryDays),
+        requires_prescription: s.category === "medicament",
+        active: true,
+      })),
+    )
+    .select("id, name");
 
   const roster = rosterForPlan(plan);
   const clientsPayload = roster.map((c) => ({
@@ -1056,7 +1359,9 @@ async function seedOrgData(
 
   // —— Farms for higher plans ——
   let farms = 0;
-  if (["pro_plus", "duo", "clinic"].includes(plan)) {
+  if (plan === "clinic" && clients.length >= 3) {
+    farms = await seedClinicFarms(admin, orgId, userId, clients);
+  } else if (["pro_plus", "duo"].includes(plan)) {
     const farmClient = clients[0];
     const { data: farm } = await admin
       .from("farms")
@@ -1069,13 +1374,13 @@ async function seedOrgData(
         farm_types: ["bovin", "ovin"],
         address: "Route des Fermes, km 12",
         phone: "+212661199000",
-        herd_size: plan === "clinic" ? 120 : 45,
-        production_type: "laitier",
-        housing_type: "stabulation libre",
-        surface_hectares: plan === "clinic" ? 28 : 12,
+        herd_size: 45,
+        production_type: "Lait",
+        housing_type: "Stabulation libre",
+        surface_hectares: 12,
         active: true,
         notes: "Exploitation démo — prophylaxie et interventions",
-        photos: [IMG.horse],
+        photos: [IMG.cow1, IMG.barn],
       })
       .select("id")
       .single();
@@ -1086,16 +1391,158 @@ async function seedOrgData(
         farm_id: farm.id,
         veterinarian_id: userId,
         intervention_date: dateDaysAgo(10),
-        intervention_type: "prophylaxie",
+        intervention_type: "Vaccination collective",
         description: "Vaccination de lot — FCO / IBR. 40 têtes. RAS post-injection.",
         diagnosis: "Prophylaxie planifiée",
         treatment: "Vaccins selon protocole élevage",
         animal_count: 40,
         cost: 1200,
-        photos: [],
+        photos: [IMG.cow1, IMG.field],
         notes: "Intervention démo élevage",
       });
     }
+  }
+
+  // —— Stock movements / alerts + accounting ledger (clinic / duo / pro_plus) ——
+  let stockMovements = 0;
+  let revenueRows = 0;
+  let expenseRows = 0;
+  if (["pro_plus", "duo", "clinic"].includes(plan) && stockInserted?.length) {
+    const byName = Object.fromEntries(stockInserted.map((s) => [s.name, s.id]));
+    const pick = (name: string) => byName[name] as string | undefined;
+    const movementPayload = [
+      { name: "Amoxicilline 500mg", type: "in", qty: 100, reason: "Réapprovisionnement", days: 45, ref: "BL-2026-0312" },
+      { name: "Amoxicilline 500mg", type: "out", qty: 12, reason: "Prescription", days: 12, ref: "RX-DEM-118" },
+      { name: "Metacam 1.5 mg/ml", type: "in", qty: 20, reason: "Réapprovisionnement", days: 30, ref: "BL-2026-0288" },
+      { name: "Metacam 1.5 mg/ml", type: "out", qty: 3, reason: "Consultation", days: 8, ref: "CONS-DEM-44" },
+      { name: "Bravecto 500 mg", type: "out", qty: 5, reason: "Vente comptoir", days: 6, ref: "VTE-DEM-09" },
+      { name: "Vaccin CHPPi", type: "in", qty: 30, reason: "Réapprovisionnement", days: 20, ref: "BL-2026-0401" },
+      { name: "Vaccin CHPPi", type: "out", qty: 8, reason: "Vaccination", days: 4, ref: "VAC-DEM-22" },
+      { name: "Seringues 5ml", type: "out", qty: 40, reason: "Consommation clinique", days: 3, ref: "INT-DEM-03" },
+      { name: "Frontline Spot-on", type: "in", qty: 50, reason: "Réapprovisionnement", days: 15, ref: "BL-2026-0415" },
+      { name: "Aurizon", type: "out", qty: 4, reason: "Consultation", days: 2, ref: "CONS-DEM-51" },
+    ].filter((m) => pick(m.name));
+
+    if (plan === "clinic") {
+      if (pick("Allercalm Shampooing")) {
+        movementPayload.push({
+          name: "Allercalm Shampooing",
+          type: "out",
+          qty: 6,
+          reason: "Vente stock",
+          days: 1,
+          ref: "VTE-DEM-14",
+        });
+      }
+      if (pick("Advantage Chat")) {
+        movementPayload.push({
+          name: "Advantage Chat",
+          type: "adjustment",
+          qty: 2,
+          reason: "Inventaire",
+          days: 5,
+          ref: "INV-DEM-01",
+        });
+      }
+    }
+
+    const { data: mov } = await admin
+      .from("stock_movements")
+      .insert(
+        movementPayload.map((m) => ({
+          stock_item_id: pick(m.name)!,
+          item_name: m.name,
+          movement_type: m.type,
+          quantity: m.qty,
+          reason: m.reason,
+          reference: m.ref,
+          performed_by: "Dr. Démo Clinique",
+          movement_date: daysAgo(m.days).toISOString(),
+        })),
+      )
+      .select("id");
+    stockMovements = mov?.length ?? 0;
+
+    const alertPayload: Array<Record<string, unknown>> = [];
+    for (const s of stockCatalog) {
+      if (s.qty <= s.min && pick(s.name)) {
+        alertPayload.push({
+          user_id: userId,
+          item_id: pick(s.name),
+          item_name: s.name,
+          alert_type: "low_stock",
+          message: `Stock bas : ${s.qty} ${s.unit} (seuil ${s.min})`,
+          severity: s.qty < s.min / 2 ? "high" : "medium",
+          is_read: false,
+        });
+      }
+      if (s.expiryDays <= 60 && pick(s.name)) {
+        alertPayload.push({
+          user_id: userId,
+          item_id: pick(s.name),
+          item_name: s.name,
+          alert_type: "expiring_soon",
+          message: `Péremption proche — ${stockLocationBatch(s.name)}`,
+          severity: "medium",
+          is_read: false,
+        });
+      }
+    }
+    if (alertPayload.length) await admin.from("stock_alerts").insert(alertPayload);
+
+    const c0 = clients[0]?.id ?? null;
+    const c1 = clients[1]?.id ?? null;
+    const c2 = clients[2]?.id ?? null;
+    const monthStart = () => {
+      const d = new Date();
+      d.setUTCDate(1);
+      return d.toISOString().slice(0, 10);
+    };
+    const prevMonthStart = () => {
+      const d = new Date();
+      d.setUTCDate(1);
+      d.setUTCMonth(d.getUTCMonth() - 1);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const { data: rev } = await admin
+      .from("revenue")
+      .insert([
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(2), source: "consultation", category: "consultation", description: `Consultation — ${clients[0]?.first_name ?? "Client"} / patient`, amount: 250, tax_amount: 50, payment_method: "card", client_id: c0, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(5), source: "consultation", category: "consultation", description: `Consultation — ${clients[1]?.first_name ?? "Client"} / patient`, amount: 180, tax_amount: 36, payment_method: "cash", client_id: c1, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(7), source: "vaccination", category: "vaccination", description: "Vaccination CHPPi", amount: 120, tax_amount: 24, payment_method: "card", client_id: c2, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(10), source: "antiparasitic", category: "antiparasitic", description: "Antiparasitaire — Bravecto", amount: 85, tax_amount: 17, payment_method: "cash", client_id: c0, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(14), source: "prescription", category: "prescription", description: "Ordonnance + délivrance", amount: 160, tax_amount: 32, payment_method: "card", client_id: c1, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(16), source: "stock_sale", category: "stock_sale", description: "Vente stock — Frontline Spot-on ×2", amount: 40, tax_amount: 8, payment_method: "cash", client_id: c2, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(18), source: "visit", category: "elevage", description: "Visite d'élevage — suivi reproduction", amount: 450, tax_amount: 90, payment_method: "transfer", client_id: c0, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: monthStart(), source: "other", category: "manual", description: "Forfait téléconseil mensuel", amount: 300, tax_amount: 60, payment_method: "transfer", client_id: null, frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, revenue_date: prevMonthStart(), source: "other", category: "manual", description: "Forfait téléconseil mensuel", amount: 300, tax_amount: 60, payment_method: "transfer", client_id: null, frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(25), source: "consultation", category: "consultation", description: "Consultation dermatologie", amount: 280, tax_amount: 56, payment_method: "card", client_id: c1, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(32), source: "vaccination", category: "vaccination", description: "Primo-vaccination", amount: 150, tax_amount: 30, payment_method: "card", client_id: c2, frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, revenue_date: dateDaysAgo(40), source: "visit", category: "elevage", description: "Visite sanitaire élevage", amount: 600, tax_amount: 120, payment_method: "transfer", client_id: c0, frequency: "occasional" },
+      ])
+      .select("id");
+    revenueRows = rev?.length ?? 0;
+
+    const { data: exp } = await admin
+      .from("expenses")
+      .insert([
+        { user_id: userId, organization_id: orgId, expense_date: monthStart(), category: "rent", description: "Loyer clinique", amount: 8500, payment_method: "transfer", supplier_name: "Immobilier Atlas", is_deductible: true, status: "approved", frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, expense_date: prevMonthStart(), category: "rent", description: "Loyer clinique", amount: 8500, payment_method: "transfer", supplier_name: "Immobilier Atlas", is_deductible: true, status: "approved", frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(1), category: "salary", description: "Salaires équipe clinique", amount: 22000, payment_method: "transfer", is_deductible: true, status: "approved", frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(2), category: "insurance", description: "Assurance RC professionnelle", amount: 1200, payment_method: "transfer", supplier_name: "AXA Pro", is_deductible: true, status: "approved", frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(90), category: "tax", description: "Taxe professionnelle annuelle", amount: 4800, payment_method: "transfer", supplier_name: "Direction des impôts", is_deductible: true, status: "approved", frequency: "annual" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(6), category: "stock_purchase", description: "Commande Centravet — médicaments", amount: 4200, payment_method: "transfer", supplier_name: "Centravet", tax_amount: 840, is_deductible: true, status: "approved", frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(15), category: "stock_purchase", description: "Commande vaccins Zoetis", amount: 2800, payment_method: "card", supplier_name: "Zoetis", tax_amount: 560, is_deductible: true, status: "approved", frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(3), category: "cogs", subcategory: "stock", description: "Coût de revient — Amoxicilline 500mg ×12", amount: 14.4, is_deductible: true, status: "approved", frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(4), category: "cogs", subcategory: "stock", description: "Coût de revient — Vaccin CHPPi ×8", amount: 120, is_deductible: true, status: "approved", frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(6), category: "cogs", subcategory: "stock", description: "Coût de revient — Bravecto 500 mg ×5", amount: 90, is_deductible: true, status: "approved", frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(10), category: "utilities", description: "Électricité & eau clinique", amount: 980, payment_method: "transfer", supplier_name: "Lydec", tax_amount: 196, is_deductible: true, status: "approved", frequency: "monthly" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(22), category: "equipment", description: "Entretien autoclave", amount: 650, payment_method: "card", supplier_name: "MedEquip", tax_amount: 130, is_deductible: true, status: "approved", frequency: "occasional" },
+        { user_id: userId, organization_id: orgId, expense_date: dateDaysAgo(35), category: "stock_purchase", subcategory: "inventory_valuation", description: "Valorisation stock — Vaccin CHPPi ×30", amount: 450, is_deductible: true, status: "approved", frequency: "occasional" },
+      ])
+      .select("id");
+    expenseRows = exp?.length ?? 0;
   }
 
   return {
@@ -1105,6 +1552,10 @@ async function seedOrgData(
     consultations: consRows.length,
     visits: visitsCreated,
     farms,
+    stock: stockInserted?.length ?? 0,
+    stockMovements,
+    revenue: revenueRows,
+    expenses: expenseRows,
   };
 }
 
@@ -1219,7 +1670,76 @@ Deno.serve(async (req) => {
 
       const seedRes = await seedOrgData(admin, orgId!, userId!, d.plan, force);
       results.push({ plan: d.plan, email: d.email, userId, orgId, ok: true, seed: seedRes });
-    } catch (e: unknown) {
+
+      // Public marketing viewer on clinic org: assistant + all modules view (read-only enforced in get_access_status)
+      if (d.plan === "clinic" && orgId) {
+        const viewerEmail = "demo-viewer@vetpro.test";
+        const viewerPerms = {
+          can_manage_clients: "view",
+          can_manage_animals: "view",
+          can_manage_appointments: "view",
+          can_manage_visits: "view",
+          can_create_consultations: "view",
+          can_manage_vaccinations: "view",
+          can_manage_antiparasites: "view",
+          can_view_history: "view",
+          can_view_reports: "view",
+          can_manage_farms: "view",
+          can_manage_stock: "view",
+          can_manage_accounting: "view",
+          can_manage_settings: "view",
+        };
+        let viewerId: string | null = null;
+        const viewerExisting = list?.users?.find((u) => u.email?.toLowerCase() === viewerEmail);
+        if (viewerExisting) {
+          viewerId = viewerExisting.id;
+          await admin.auth.admin.updateUserById(viewerId, { password: DEMO_PASSWORD, email_confirm: true });
+        } else {
+          const { data: createdViewer, error: vErr } = await admin.auth.admin.createUser({
+            email: viewerEmail,
+            password: DEMO_PASSWORD,
+            email_confirm: true,
+            user_metadata: { full_name: "Visiteur Démo" },
+          });
+          if (vErr) throw vErr;
+          viewerId = createdViewer.user!.id;
+        }
+
+        const { data: viewerProfile } = await admin
+          .from("user_profiles")
+          .select("id")
+          .eq("id", viewerId)
+          .maybeSingle();
+
+        if (viewerProfile) {
+          await admin
+            .from("user_profiles")
+            .update({
+              email: viewerEmail,
+              username: "demo-viewer",
+              full_name: "Visiteur Démo",
+              role: "assistant",
+              status: "approved",
+              organization_id: orgId,
+              permissions: viewerPerms,
+              approved_at: new Date().toISOString(),
+            })
+            .eq("id", viewerId);
+        } else {
+          await admin.from("user_profiles").insert({
+            id: viewerId,
+            email: viewerEmail,
+            username: "demo-viewer",
+            full_name: "Visiteur Démo",
+            role: "assistant",
+            status: "approved",
+            organization_id: orgId,
+            permissions: viewerPerms,
+            approved_at: new Date().toISOString(),
+          });
+        }
+        results.push({ plan: "clinic-viewer", email: viewerEmail, userId: viewerId, orgId, ok: true });
+      }
       const message = e instanceof Error ? e.message : String(e);
       results.push({ plan: d.plan, email: d.email, ok: false, error: message });
     }

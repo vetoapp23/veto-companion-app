@@ -27,16 +27,19 @@ import {
 } from "@/lib/medicalShare";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { isDemoWriteBlocked, DemoReadOnlyError } from "@/lib/demoWriteGuard";
 
 const QR_READER_ID = "medical-share-qr-reader";
 
 export default function ImportMedicalDossier() {
   const { t } = useTranslation("medical");
+  const { t: td } = useTranslation("demo");
   const { token: routeToken = "" } = useParams<{ token?: string }>();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const demoLocked = isDemoWriteBlocked(user?.email);
 
   const [pasteValue, setPasteValue] = useState("");
   const [scanError, setScanError] = useState<string | null>(null);
@@ -189,6 +192,14 @@ export default function ImportMedicalDossier() {
 
   const handleImport = async () => {
     if (!routeToken) return;
+    if (demoLocked) {
+      toast({
+        title: td("readOnlyToastTitle"),
+        description: td("readOnlyToastBody"),
+        variant: "destructive",
+      });
+      return;
+    }
     setImporting(true);
     try {
       const result = await importMedicalShare(routeToken);
@@ -203,6 +214,10 @@ export default function ImportMedicalDossier() {
       });
       navigate("/pets", { replace: true });
     } catch (e: any) {
+      if (e instanceof DemoReadOnlyError) {
+        toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+        return;
+      }
       toast({
         title: t("import.importFailed"),
         description: e?.message || "Une erreur est survenue",
@@ -236,7 +251,7 @@ export default function ImportMedicalDossier() {
         path={routeToken ? `/import/dossier/${routeToken}` : "/import/dossier"}
         noIndex
       />
-      <Card className="w-full max-w-lg shadow-sm border-border bg-card text-card-foreground">
+      <Card className="w-full max-w-lg shadow-sm border-border bg-card text-card-foreground" data-tour="import-dossier">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
             <QrCode className="h-5 w-5" />
@@ -409,6 +424,14 @@ export default function ImportMedicalDossier() {
                 </Alert>
               ) : view.valid ? (
                 <div className="space-y-3">
+                  {demoLocked ? (
+                    <Alert>
+                      <ShieldCheck className="h-4 w-4" />
+                      <AlertTitle>{td("readOnlyToastTitle")}</AlertTitle>
+                      <AlertDescription>{td("readOnlyToastBody")}</AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
                   <Alert>
                     <ShieldCheck className="h-4 w-4" />
                     <AlertTitle>{t("import.readyTitle")}</AlertTitle>
@@ -428,6 +451,8 @@ export default function ImportMedicalDossier() {
                     )}
                     {t("import.addToClinic")}
                   </Button>
+                    </>
+                  )}
                 </div>
               ) : null}
 

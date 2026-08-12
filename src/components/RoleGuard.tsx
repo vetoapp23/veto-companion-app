@@ -9,6 +9,7 @@ import {
   userCanView,
   getAccessLevel,
 } from "@/lib/permissions";
+import { isDemoReadOnlyActive } from "@/lib/demoMode";
 
 interface RoleGuardProps {
   children: React.ReactNode;
@@ -92,21 +93,24 @@ export const useRoleCheck = () => {
  * Accès écriture strict pour un module.
  * canWrite = false → masquer les boutons ; guardWrite() bloque aussi les handlers.
  */
-export const useWriteAccess = (permission: PermissionKey) => {
+export function useWriteAccess(permission: PermissionKey) {
   const { canEdit } = useRoleCheck();
+  const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation("settings");
+  const { t: td } = useTranslation("demo");
   const canWrite = canEdit(permission);
 
   const guardWrite = (): boolean => {
     if (canWrite) return true;
+    const isDemo = isDemoReadOnlyActive(user?.email);
     toast({
-      title: t("roleGuard.forbiddenTitle"),
-      description: t("roleGuard.forbiddenBody"),
+      title: isDemo ? td("readOnlyToastTitle") : t("roleGuard.forbiddenTitle"),
+      description: isDemo ? td("readOnlyToastBody") : t("roleGuard.forbiddenBody"),
       variant: "destructive",
     });
     return false;
   };
 
   return { canWrite, guardWrite };
-};
+}

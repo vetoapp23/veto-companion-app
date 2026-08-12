@@ -1,0 +1,127 @@
+{
+  "badge": "Visita guiada — solo lectura",
+  "startInline": "Iniciar demo clínica",
+  "clinicAccountNote": "Explore la aplicación real en la Demo Clínica (plan Clinic) en modo solo lectura: clientes, historiales, documentos, consultas, stock — sin riesgo de modificar los datos.",
+  "bullet1": "Recorre la aplicación real, no una vista simulada.",
+  "bullet2": "Modo solo lectura: sin crear, editar ni eliminar.",
+  "bullet3": "La visita detalla cada módulo: historiales, documentos, certificados y funciones clave.",
+  "readOnlyBanner": "Modo demo — exploración en solo lectura. Los datos de la Demo Clínica no se pueden modificar.",
+  "readOnlyToastTitle": "Modo demo — solo lectura",
+  "readOnlyToastBody": "Los datos de la Demo Clínica no se pueden modificar. Cree una prueba gratuita para trabajar libremente.",
+  "quitDemo": "Salir de la demo",
+  "quitDemoShort": "Salir",
+  "loginRequiredTitle": "Demo clínica no disponible",
+  "loginRequiredBody": "Active la demo en este entorno (VITE_ENABLE_DEMO) o inténtelo más tarde.",
+  "authFailed": "No se pudo iniciar la demo clínica. Compruebe que las cuentas demo están inicializadas (incluido demo-viewer).",
+  "tourLabel": "Paso {{current}} / {{total}}",
+  "next": "Siguiente",
+  "prev": "Anterior",
+  "finish": "Terminar",
+  "quit": "Salir",
+  "steps": {
+    "welcome": {
+      "title": "Bienvenido a la Demo Clínica",
+      "body": "Explora VetoCrm en una cuenta de clínica precargada, en solo lectura.\n\nEsta visita recorre el panel, fichas de clientes y pacientes, historiales médicos, documentos (radios, análisis, certificados), agenda, visitas de campo, stock y más — como en el día a día, sin alterar los datos."
+    },
+    "navigation": {
+      "title": "Menú principal",
+      "body": "La barra superior abre todos los módulos: panel, clientes, pacientes, citas, visitas, consultas, vacunas, antiparasitarios, historial, granjas, stock, contabilidad y ajustes.\n\nEn móvil, una barra inferior complementa este menú."
+    },
+    "dashboardHero": {
+      "title": "Panel — vista general",
+      "body": "Punto de entrada diario: bienvenida, indicadores clave (clientes, pacientes, citas del día) y accesos a acciones frecuentes.\n\nEn la demo de solo lectura, los botones de creación pueden ocultarse o bloquearse — no hay escritura."
+    },
+    "dashboardTabs": {
+      "title": "Indicadores, actividad y gráficos",
+      "body": "Pestañas para pasar del resumen a los KPI, la actividad reciente y los gráficos (consultas, vacunas, etc.).\n\nÚtil para ver la carga de la clínica de un vistazo."
+    },
+    "clients": {
+      "title": "Gestión de clientes",
+      "body": "Directorio de propietarios / ganaderos: identidad, teléfono, correo, dirección, tipo de cliente y animales vinculados.\n\nBúsqueda y filtros para localizar una ficha; cada cliente abre el historial de visitas y pacientes."
+    },
+    "clientsList": {
+      "title": "Lista y fichas de clientes",
+      "body": "Vista tarjetas o tabla: contacto, animales asociados, última visita.\n\nAbra una ficha para el detalle completo — en la demo consulta sin editar ni borrar."
+    },
+    "pets": {
+      "title": "Pacientes / animales",
+      "body": "Núcleo del historial: especie, raza, sexo, peso, identificación (chip / tatuaje), foto, estado y propietario.\n\nDesde aquí accede al historial clínico, consultas e importación de historial compartido."
+    },
+    "petsKpis": {
+      "title": "Indicadores de pacientes",
+      "body": "Contadores globales: plantel total, animales activos, recordatorios de vacunas, alertas.\n\nAyudan al equipo a priorizar seguimientos (refuerzos, tratamientos en curso)."
+    },
+    "petsDossier": {
+      "title": "Historial médico del paciente",
+      "body": "Cada animal tiene un expediente consolidado: consultas, vacunas, antiparasitarios, adjuntos (radios, análisis, fotos clínicas) e historial.\n\nAbra una ficha para el detalle — la estructura es la de una clínica real."
+    },
+    "dossierImport": {
+      "title": "Importación / compartición de historial",
+      "body": "Transferencia segura de un historial médico vía código o QR: una clínica asociada comparte un enlace temporal y usted lo importa en VetoCrm.\n\nIdeal para referidos, mudanzas de pacientes o colaboración entre clínicas — sin volver a teclear."
+    },
+    "appointments": {
+      "title": "Agenda y citas",
+      "body": "Planifique consultas, controles y recordatorios: vista calendario, franjas, estados (confirmado, terminado, anulado) y vínculo paciente / motivo.\n\nLa agenda sincroniza el día con los historiales."
+    },
+    "visits": {
+      "title": "Visitas de campo y granja",
+      "body": "Rutas e intervenciones fuera de consulta: lista de visitas, granja asociada, servicios in situ (profilaxis, cirugía, seguimiento).\n\nCada visita puede generar actos, adjuntos y facturación."
+    },
+    "consultations": {
+      "title": "Consultas clínicas",
+      "body": "Acto médico estructurado: motivo, anamnesis, examen, diagnóstico, tratamiento, receta y notas.\n\nCada consulta alimenta el historial del paciente y puede llevar documentos adjuntos."
+    },
+    "consultationsDocs": {
+      "title": "Documentos y adjuntos",
+      "body": "Radiografías, ecografías, informes de laboratorio, fotos dermatológicas o postoperatorias: unidos a la consulta y visibles en el historial.\n\nLa demo clínica incluye ejemplos realistas (imágenes, analíticas) para ilustrar el flujo documental."
+    },
+    "vaccinations": {
+      "title": "Vacunaciones y protocolos",
+      "body": "Seguimiento de protocolos (CHPPi, rabia, etc.), dosis administradas, próximos refuerzos e historial vacunal por animal.\n\nLos vencimientos alimentan alertas del panel y de las fichas."
+    },
+    "vaccinationsCerts": {
+      "title": "Certificados vacunales (QR)",
+      "body": "Generación de certificados / atestaciones imprimibles con código QR de verificación.\n\nÚtil para viajes, residencias, granjas o controles — el documento queda trazable desde el historial."
+    },
+    "antiparasites": {
+      "title": "Antiparasitarios",
+      "body": "Calendario de tratamientos (pulgas, garrapatas, desparasitantes): producto, fecha, próxima dosis y recordatorios.\n\nComplementa la prevención junto a las vacunas en el historial del paciente."
+    },
+    "history": {
+      "title": "Historial médico consolidado",
+      "body": "Línea de tiempo única de eventos clínicos: consultas, vacunas, antiparasitarios y actos relacionados.\n\nFiltre por paciente o periodo para reconstruir el recorrido de cuidados."
+    },
+    "historyTimeline": {
+      "title": "Recorrido de cuidados y documentos",
+      "body": "Cada entrada de la línea de tiempo abre el detalle del acto y los documentos asociados.\n\nEs la vista de «historial completo» para un balance, un referido o un traspaso de equipo."
+    },
+    "farms": {
+      "title": "Granjas / explotaciones",
+      "body": "Fichas de explotación: tipo (bovino, ovino…), censo, producción, superficie, intervenciones y profilaxis de lote.\n\nMódulo clave para planes Clinic / Duo / Pro+ orientados al medio rural."
+    },
+    "stock": {
+      "title": "Stock y farmacia",
+      "body": "Inventario de medicamentos, vacunas, antiparasitarios y consumibles: cantidades, umbrales de alerta, caducidad, movimientos.\n\nConecta la clínica con la gestión de stock diaria."
+    },
+    "accounting": {
+      "title": "Contabilidad de la clínica",
+      "body": "Seguimiento de ingresos y gastos, líneas ligadas a actos / visitas, paneles financieros.\n\nDa una visión económica de la actividad sin salir de VetoCrm."
+    },
+    "team": {
+      "title": "Equipo y roles",
+      "body": "Invitación de veterinarios y asistentes, roles (admin / asistente) y permisos por módulo (lectura / edición).\n\nEn la demo pública el acceso al equipo puede estar limitado; en una prueba real configura su organización."
+    },
+    "settings": {
+      "title": "Ajustes de la clínica",
+      "body": "Identidad (nombre, logo, dirección, teléfono), horarios, veterinarios, preferencias de impresión y opciones de suscripción.\n\nEn solo lectura: consulta de ajustes sin guardar."
+    },
+    "mobileNav": {
+      "title": "Navegación móvil",
+      "body": "En el teléfono, la barra inferior abre las secciones esenciales (panel, clientes, pacientes, agenda…).\n\nLa visita guiada también se adapta a pantallas pequeñas."
+    },
+    "finish": {
+      "title": "Fin del recorrido",
+      "body": "Ha recorrido la Demo Clínica: historiales, documentos, certificados, agenda, campo, stock y gestión.\n\nTodo permaneció en solo lectura para proteger los datos compartidos.\n\nCree una prueba gratuita para abrir su propia clínica y trabajar con libertad."
+    }
+  }
+}

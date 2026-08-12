@@ -9,6 +9,8 @@ import { useOrgSettings } from "@/hooks/useOrgSettings";
 import { usePedigree, useUpsertPedigree, type Pedigree } from "@/hooks/usePedigree";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
+import { useWriteAccess } from "@/components/RoleGuard";
+import { assertDemoCanWrite, DemoReadOnlyError } from "@/lib/demoWriteGuard";
 
 interface PedigreeSectionProps {
   animalId: string;
@@ -21,10 +23,12 @@ const empty: Pedigree = {
 export function PedigreeSection({ animalId }: PedigreeSectionProps) {
   const { t } = useTranslation("app");
   const { t: tc } = useTranslation("common");
+  const { t: td } = useTranslation("demo");
   const { data: settings } = useOrgSettings();
   const { data: pedigree } = usePedigree(animalId);
   const upsert = useUpsertPedigree();
   const { toast } = useToast();
+  const { canWrite, guardWrite } = useWriteAccess("can_manage_animals");
   const [form, setForm] = useState<Pedigree>({ ...empty, animal_id: animalId });
   const depth = settings?.pedigree_depth ?? "parents";
 
@@ -37,13 +41,19 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
     setForm((f) => ({ ...f, [k]: v }));
 
   const handleSave = async () => {
+    if (!guardWrite()) return;
     try {
+      assertDemoCanWrite();
       await upsert.mutateAsync({ ...form, animal_id: animalId });
       toast({
         title: t("pedigreeSection.saved"),
         description: t("pedigreeSection.savedBody"),
       });
     } catch (e: any) {
+      if (e instanceof DemoReadOnlyError) {
+        toast({ title: td("readOnlyToastTitle"), description: td("readOnlyToastBody"), variant: "destructive" });
+        return;
+      }
       toast({
         title: tc("error"),
         description: e?.message ?? t("pedigreeSection.saveImpossible"),
@@ -70,6 +80,7 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
             value={(form[`${prefix}_name` as keyof Pedigree] as string) || ""}
             onChange={(e) => update(`${prefix}_name` as keyof Pedigree, e.target.value)}
             placeholder={t("pedigreeSection.parentNamePlaceholder")}
+            disabled={!canWrite}
           />
         </div>
         <div className="space-y-1">
@@ -78,6 +89,7 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
             value={(form[`${prefix}_breed` as keyof Pedigree] as string) || ""}
             onChange={(e) => update(`${prefix}_breed` as keyof Pedigree, e.target.value)}
             placeholder={t("pedigreeSection.breedPlaceholder")}
+            disabled={!canWrite}
           />
         </div>
         <div className="space-y-1">
@@ -86,6 +98,7 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
             value={(form[`${prefix}_registration` as keyof Pedigree] as string) || ""}
             onChange={(e) => update(`${prefix}_registration` as keyof Pedigree, e.target.value)}
             placeholder={t("pedigreeSection.regNumberPlaceholder")}
+            disabled={!canWrite}
           />
         </div>
       </CardContent>
@@ -183,12 +196,14 @@ export function PedigreeSection({ animalId }: PedigreeSectionProps) {
         </div>
       )}
 
+      {canWrite ? (
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={upsert.isPending} className="gap-2">
           <Save className="h-4 w-4" />
           {upsert.isPending ? t("pedigreeSection.saving") : t("pedigreeSection.savePedigree")}
         </Button>
       </div>
+      ) : null}
     </div>
   );
 }

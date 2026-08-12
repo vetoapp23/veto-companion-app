@@ -430,7 +430,7 @@ const History = () => {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="medical" className="space-y-4">
+      <TabsContent value="medical" className="space-y-4" data-tour="history-timeline">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h3 className="text-lg font-semibold">
           {t("history.title")} ({filteredHistory.length})

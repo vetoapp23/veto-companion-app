@@ -8,6 +8,7 @@
  */
 
 import i18n from "@/i18n";
+import { isDemoReadOnlyActive } from "@/lib/demoMode";
 
 export type PermissionKey =
   | "can_manage_clients"
@@ -327,8 +328,10 @@ export function normalizePermissions(
 }
 
 type AuthLike = {
+  email?: string;
   profile?: {
     role?: string;
+    email?: string;
     permissions?: Record<string, unknown> | null;
   } | null;
 } | null;
@@ -375,6 +378,10 @@ export function userCanEdit(
   user: AuthLike,
   permission: PermissionKey | null | undefined
 ): boolean {
+  const email =
+    (user as { email?: string } | null)?.email ??
+    (user?.profile as { email?: string } | null | undefined)?.email;
+  if (isDemoReadOnlyActive(email)) return false;
   return getAccessLevel(user, permission) === "edit";
 }
 

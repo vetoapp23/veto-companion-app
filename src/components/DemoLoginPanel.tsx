@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { clearDemoReadOnlySession } from "@/lib/demoMode";
 
 const DEMO_ACCOUNTS = [
   { plan: "free", email: "demo-free@vetpro.test", labelKey: "demo.plans.free" },
@@ -31,6 +32,8 @@ export function DemoLoginPanel() {
 
   const loginAs = async (email: string, plan: string) => {
     setBusy(plan);
+    // Internal QA logins are writable — clear public demo lock
+    clearDemoReadOnlySession();
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,

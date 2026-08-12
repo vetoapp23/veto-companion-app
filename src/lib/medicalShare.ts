@@ -4,6 +4,7 @@ import { getBcp47Locale } from "@/i18n/useAppLocale";
 import { supabase } from "@/lib/supabase";
 import { escapeHtml, safePrintUrl } from "@/lib/utils";
 import { siteUrl } from "@/components/SeoHead";
+import { assertDemoCanWrite } from "@/lib/demoWriteGuard";
 
 const t = (key: string, opts?: Record<string, unknown>) =>
   i18n.t(key, { ns: "medical", ...opts });
@@ -351,6 +352,7 @@ export async function createMedicalShare(params: {
   expiresDays?: number;
   maxUses?: number;
 }): Promise<CreateMedicalShareResult> {
+  assertDemoCanWrite();
   const { data, error } = await supabase.rpc("create_medical_share", {
     p_animal_id: params.animalId,
     p_payload: params.payload,
@@ -375,6 +377,7 @@ export async function getMedicalShare(token: string): Promise<MedicalShareView> 
 export async function importMedicalShare(
   token: string
 ): Promise<ImportMedicalShareResult> {
+  assertDemoCanWrite();
   const { data, error } = await supabase.rpc("import_medical_share", {
     p_token: token,
   });

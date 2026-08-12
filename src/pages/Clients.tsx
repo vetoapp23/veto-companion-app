@@ -341,7 +341,7 @@ const ClientsContent = () => {
       </Card>
 
       {viewMode === 'cards' ? (
-      <div className="grid gap-6">
+      <div className="grid gap-6" data-tour="clients-list">
         {filteredClients.map((client) => (
         <Card key={client.id} className="card-hover">
           <CardContent className="p-4 sm:p-6">
@@ -430,7 +430,7 @@ const ClientsContent = () => {
         ))}
       </div>
       ) : (
-      <Card>
+      <Card data-tour="clients-list">
         <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full">

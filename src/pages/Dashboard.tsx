@@ -38,7 +38,7 @@ const Dashboard = () => {
 
       <div className="mt-6 sm:mt-8">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-6 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-6 h-auto p-1" data-tour="dashboard-tabs">
             <TabsTrigger value="overview" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="text-[10px] sm:text-xs lg:text-sm">{t("dashboard.tabOverview")}</span>

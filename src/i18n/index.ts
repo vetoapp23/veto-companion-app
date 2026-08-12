@@ -9,6 +9,7 @@ import frMarketing from "./locales/fr/marketing.json";
 import frApp from "./locales/fr/app.json";
 import frMedical from "./locales/fr/medical.json";
 import frSettings from "./locales/fr/settings.json";
+import frDemo from "./locales/fr/demo.json";
 
 import enCommon from "./locales/en/common.json";
 import enNav from "./locales/en/nav.json";
@@ -17,6 +18,7 @@ import enMarketing from "./locales/en/marketing.json";
 import enApp from "./locales/en/app.json";
 import enMedical from "./locales/en/medical.json";
 import enSettings from "./locales/en/settings.json";
+import enDemo from "./locales/en/demo.json";
 
 import esCommon from "./locales/es/common.json";
 import esNav from "./locales/es/nav.json";
@@ -25,6 +27,7 @@ import esMarketing from "./locales/es/marketing.json";
 import esApp from "./locales/es/app.json";
 import esMedical from "./locales/es/medical.json";
 import esSettings from "./locales/es/settings.json";
+import esDemo from "./locales/es/demo.json";
 
 export const SUPPORTED_LANGS = ["fr", "en", "es"] as const;
 export type AppLanguage = (typeof SUPPORTED_LANGS)[number];
@@ -46,6 +49,7 @@ const resources = {
     app: frApp,
     medical: frMedical,
     settings: frSettings,
+    demo: frDemo,
   },
   en: {
     common: enCommon,
@@ -55,6 +59,7 @@ const resources = {
     app: enApp,
     medical: enMedical,
     settings: enSettings,
+    demo: enDemo,
   },
   es: {
     common: esCommon,
@@ -64,6 +69,7 @@ const resources = {
     app: esApp,
     medical: esMedical,
     settings: esSettings,
+    demo: esDemo,
   },
 };
 
@@ -75,7 +81,7 @@ void i18n
     fallbackLng: "fr",
     supportedLngs: [...SUPPORTED_LANGS],
     defaultNS: "common",
-    ns: ["common", "nav", "auth", "marketing", "app", "medical", "settings"],
+    ns: ["common", "nav", "auth", "marketing", "app", "medical", "settings", "demo"],
     interpolation: { escapeValue: false },
     compatibilityJSON: "v4",
     detection: {

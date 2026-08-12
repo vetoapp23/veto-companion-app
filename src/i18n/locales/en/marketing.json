@@ -1,6 +1,7 @@
 {
   "nav": {
     "pricing": "Pricing",
+    "demo": "Demo",
     "signIn": "Sign in",
     "getStarted": "Get started",
     "getStartedShort": "Start",
@@ -19,7 +20,11 @@
     "heroAlt": "Modern veterinary clinic — VetoCrm practice management software",
     "tagline": "The clinic, made fluid.",
     "heroSub": "Clients, patients, appointments, and medical records — a CRM built for veterinarians, from solo practice to multi-vet clinics.",
+    "demoLabel": "Interactive demo",
+    "demoTitle": "Explore VetoCrm with the Clinic Demo",
+    "demoCopy": "Guided tour in the real app on Clinic Demo data — read-only. Records, documents, certificates and key modules, with no sign-up and no risk of changing data.",
     "ctaTrial": "Try for free",
+    "ctaDemo": "View demo",
     "ctaAccess": "Go to my workspace",
     "journeyLabel": "Journey",
     "journeyTitle": "In three steps, your clinic is ready",

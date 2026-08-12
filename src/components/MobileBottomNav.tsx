@@ -141,6 +141,7 @@ export function MobileBottomNav() {
         className="lg:hidden fixed bottom-0 inset-x-0 z-40 app-bottom-nav"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label={t("mainNavigation")}
+        data-tour="mobile-nav"
       >
         <div
           className="grid h-16"
