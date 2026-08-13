@@ -9,6 +9,7 @@ export default tseslint.config(
     ignores: [
       "dist",
       "supabase/functions/**",
+      ".tmp-seed-deploy/**",
       "src/**/*.backup.tsx",
       "src/pages/SimpleTest.tsx",
       "src/pages/TestStats.tsx",

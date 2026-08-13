@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { clearDemoReadOnlySession } from "@/lib/demoMode";
 import { isDemoQaPanelEnabled } from "@/lib/demoLogin";
+
+const DEMO_ACCOUNTS = [
   { plan: "free", email: "demo-free@vetpro.test", labelKey: "demo.plans.free" },
   { plan: "pro", email: "demo-pro@vetpro.test", labelKey: "demo.plans.pro" },
   { plan: "pro_plus", email: "demo-pro-plus@vetpro.test", labelKey: "demo.plans.proPlus" },
