@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": ["./**/*.ts", "../supabase/functions/deno.d.ts"]
+}

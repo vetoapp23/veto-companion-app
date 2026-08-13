@@ -1,6 +1,7 @@
 // Seed demo users for each subscription plan (idempotent + force reset).
 // Requires DEMO_SEED_ENABLED=true and header x-demo-seed-secret === DEMO_SEED_SECRET.
 // Body: { "force": true } clears clinical data then re-seeds.
+/// <reference path="../supabase/functions/deno.d.ts" />
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {

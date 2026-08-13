@@ -10,7 +10,11 @@ import {
 
 export { DEMO_CLINIC_EMAIL, DEMO_VIEWER_EMAIL };
 
-export const isDemoLoginEnabled =
+/** Internal QA login panel (writable plan accounts) — local dev only, never in deploy. */
+export const isDemoQaPanelEnabled = import.meta.env.DEV === true;
+
+/** Public read-only clinic demo from landing / marketing. */
+export const isPublicClinicDemoEnabled =
   import.meta.env.DEV === true || import.meta.env.VITE_ENABLE_DEMO === "true";
 
 export const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "DemoVetpro2026!";
@@ -64,7 +68,7 @@ export async function launchClinicDemo(): Promise<LaunchClinicDemoResult> {
     }
   }
 
-  if (!isDemoLoginEnabled) {
+  if (!isPublicClinicDemoEnabled) {
     try {
       sessionStorage.removeItem(DEMO_TOUR_STORAGE_KEY);
     } catch {

@@ -6,18 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { clearDemoReadOnlySession } from "@/lib/demoMode";
-
-const DEMO_ACCOUNTS = [
+import { isDemoQaPanelEnabled } from "@/lib/demoLogin";
   { plan: "free", email: "demo-free@vetpro.test", labelKey: "demo.plans.free" },
   { plan: "pro", email: "demo-pro@vetpro.test", labelKey: "demo.plans.pro" },
   { plan: "pro_plus", email: "demo-pro-plus@vetpro.test", labelKey: "demo.plans.proPlus" },
   { plan: "duo", email: "demo-duo@vetpro.test", labelKey: "demo.plans.duo" },
   { plan: "clinic", email: "demo-clinic@vetpro.test", labelKey: "demo.plans.clinic" },
 ] as const;
-
-/** Demo UI only in local/dev or when explicitly enabled (never enable in production). */
-export const isDemoLoginEnabled =
-  import.meta.env.DEV === true || import.meta.env.VITE_ENABLE_DEMO === "true";
 
 const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "DemoVetpro2026!";
 
@@ -28,7 +23,7 @@ export function DemoLoginPanel() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  if (!isDemoLoginEnabled) return null;
+  if (!isDemoQaPanelEnabled) return null;
 
   const loginAs = async (email: string, plan: string) => {
     setBusy(plan);
