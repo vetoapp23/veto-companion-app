@@ -147,6 +147,7 @@ export default function Pricing() {
       <SeoHead
         title={t("pricing.seoTitle")}
         description={t("pricing.seoDescription")}
+        keywords={t("pricing.seoKeywords")}
         path="/pricing"
         jsonLd={{
           "@context": "https://schema.org",

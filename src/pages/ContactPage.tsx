@@ -14,6 +14,7 @@ export default function ContactPage() {
       <SeoHead
         title={t("marketing:contact.seoTitle")}
         description={t("marketing:contact.seoDescription")}
+        keywords={t("marketing:contact.seoKeywords")}
         path="/contact"
       />
 

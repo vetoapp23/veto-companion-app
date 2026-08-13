@@ -15,8 +15,9 @@
     "mondeVeto": "The Veto World"
   },
   "landing": {
-    "seoTitle": "VetoCrm — Veterinary CRM for clinics and practices",
-    "seoDescription": "Veterinary CRM software: clients, patients, appointments, consultations, vaccines, inventory, and farms. Free trial for practices and clinics.",
+    "seoTitle": "VetoCrm — Veterinary CRM Software | Clinic Practice Management",
+    "seoDescription": "All-in-one veterinary CRM: clients, patients, appointments, medical records, vaccines, inventory, accounting and livestock. Free interactive demo and trial.",
+    "seoKeywords": "veterinary CRM, veterinary CRM software, veterinary practice management, clinic software, animal medical records, veterinary CRM solutions, VetoCrm",
     "heroAlt": "Modern veterinary clinic — VetoCrm practice management software",
     "tagline": "The clinic, made fluid.",
     "heroSub": "Clients, patients, appointments, and medical records — a CRM built for veterinarians, from solo practice to multi-vet clinics.",
@@ -68,6 +69,14 @@
       {
         "q": "Can I manage vaccines and antiparasitics?",
         "a": "Yes. Protocols, due dates, certificates, and history are built into the patient record."
+      },
+      {
+        "q": "Can I try VetoCrm without signing up?",
+        "a": "Yes. The interactive clinic demo lets you explore the real app in read-only mode with realistic data, straight from the homepage."
+      },
+      {
+        "q": "Is VetoCrm a veterinary practice management system?",
+        "a": "Yes. VetoCrm combines CRM, medical records, scheduling, inventory and accounting — a modern alternative to spreadsheets and scattered files."
       }
     ],
     "ctaBandTitle": "Ready to modernize your veterinary practice?",
@@ -84,8 +93,9 @@
     "plansPerMonth": "/mo"
   },
   "pricing": {
-    "seoTitle": "VetoCrm pricing — Veterinary CRM plans",
-    "seoDescription": "Compare VetoCrm plans: free, Pro, Duo, Clinic. Storage, users, and modules for your veterinary practice or clinic.",
+    "seoTitle": "VetoCrm Pricing — Veterinary CRM Plans & Features",
+    "seoDescription": "Compare VetoCrm plans: Free, Pro, Duo, Clinic. Storage, users, inventory, accounting and modules for your veterinary practice or clinic.",
+    "seoKeywords": "veterinary CRM pricing, vet clinic software cost, practice management pricing, VetoCrm plans",
     "badge": "Simple, transparent pricing",
     "title": "Choose the plan that fits your practice",
     "subtitle": "From independent vet to multi-practitioner clinic. Start free, upgrade whenever you like.",
@@ -141,8 +151,9 @@
     }
   },
   "contact": {
-    "seoTitle": "Contact us — VetoCrm",
-    "seoDescription": "Contact the VetoCrm team by email, LinkedIn or Instagram. Support for veterinary clinics.",
+    "seoTitle": "Contact VetoCrm — Veterinary CRM Support & Demo",
+    "seoDescription": "Contact the VetoCrm team for a demo, support or partnership. CRM software built for veterinary clinics and practices.",
+    "seoKeywords": "contact VetoCrm, veterinary software support, veterinary CRM demo",
     "eyebrow": "Support & partnerships",
     "title": "Contact us",
     "lead": "Questions about VetoCrm, your subscription or a partnership? Email us or reach out on social media.",
@@ -157,8 +168,9 @@
     "writeUs": "Send an email"
   },
   "mondeVeto": {
-    "seoTitle": "The Veto World — News & guides for veterinary clinics | VetoCrm",
-    "seoDescription": "Veterinary guides and news: digitization, AI, accounting, pet insurance, CRM and modern practice. VetoCrm resources to modernize your clinic.",
+    "seoTitle": "The Veto World — Veterinary CRM & Clinic Management Guides | VetoCrm",
+    "seoDescription": "Veterinary guides: digitization, AI, clinic accounting, pet insurance, CRM and modern practice. Resources to run your clinic more efficiently.",
+    "seoKeywords": "veterinary blog, clinic digitization, veterinary CRM guide, practice management tips",
     "eyebrow": "Guides & news",
     "title": "The Veto World",
     "lead": "Practical articles for clinics and practices: digitization, AI, management, insurance and CRM — care better and run your clinic with more clarity.",

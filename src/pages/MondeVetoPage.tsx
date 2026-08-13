@@ -28,6 +28,7 @@ export default function MondeVetoPage() {
       <SeoHead
         title={t("marketing:mondeVeto.seoTitle")}
         description={t("marketing:mondeVeto.seoDescription")}
+        keywords={t("marketing:mondeVeto.seoKeywords")}
         path="/monde-veto"
         jsonLd={[
           {

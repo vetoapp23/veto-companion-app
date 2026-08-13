@@ -85,7 +85,8 @@ void i18n
     interpolation: { escapeValue: false },
     compatibilityJSON: "v4",
     detection: {
-      order: ["localStorage", "navigator"],
+      order: ["querystring", "localStorage", "navigator"],
+      lookupQuerystring: "lng",
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,
       caches: ["localStorage"],
     },
@@ -96,6 +97,11 @@ export function setAppLanguage(lang: AppLanguage) {
   void i18n.changeLanguage(lang);
   if (typeof document !== "undefined") {
     document.documentElement.lang = lang;
+  }
+  if (typeof window !== "undefined") {
+    const url = new URL(window.location.href);
+    url.searchParams.set("lng", lang);
+    window.history.replaceState(null, "", url);
   }
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);

@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 type FaqItem = { q: string; a: string };
 
 export default function Landing() {
-  const { t } = useTranslation("marketing");
+  const { t, i18n } = useTranslation("marketing");
   const { t: td } = useTranslation("demo");
   const { t: tc } = useTranslation("common");
   const { toast } = useToast();
@@ -44,11 +44,30 @@ export default function Landing() {
       <SeoHead
         title={t("landing.seoTitle")}
         description={t("landing.seoDescription")}
+        keywords={t("landing.seoKeywords")}
         path="/"
         jsonLd={[
           {
             "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "VetoCrm",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
+            url: siteUrl("/"),
+            description: t("landing.seoDescription"),
+            inLanguage: ["fr", "en", "es"],
+            offers: {
+              "@type": "Offer",
+              price: "0",
+              priceCurrency: "EUR",
+              description: t("pricing.free", { defaultValue: "Formule découverte gratuite" }),
+            },
+            publisher: { "@type": "Organization", name: "VetoCrm", url: siteUrl("/") },
+          },
+          {
+            "@context": "https://schema.org",
             "@type": "FAQPage",
+            inLanguage: i18n.language?.split("-")[0] || "fr",
             mainEntity: faqItems.map((item) => ({
               "@type": "Question",
               name: item.q,

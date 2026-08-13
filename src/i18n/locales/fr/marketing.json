@@ -15,8 +15,9 @@
     "mondeVeto": "Le Monde Veto"
   },
   "landing": {
-    "seoTitle": "VetoCrm — CRM vétérinaire pour cliniques et cabinets",
-    "seoDescription": "Logiciel CRM vétérinaire : clients, animaux, RDV, consultations, vaccins, stock et fermes. Essai gratuit pour cabinets et cliniques.",
+    "seoTitle": "VetoCrm — Logiciel CRM vétérinaire | Gestion clinique & cabinet",
+    "seoDescription": "CRM vétérinaire tout-en-un : clients, animaux, RDV, dossiers médicaux, vaccins, stock, comptabilité et élevage. Démo interactive gratuite et essai sans engagement.",
+    "seoKeywords": "CRM vétérinaire, logiciel clinique vétérinaire, gestion cabinet véto, dossier médical animal, logiciel vétérinaire Maroc, solution CRM vétérinaire, VetoCrm",
     "heroAlt": "Clinique vétérinaire moderne — logiciel VetoCrm pour la gestion du cabinet",
     "tagline": "La clinique, fluide.",
     "heroSub": "Clients, animaux, rendez-vous et dossiers médicaux — un CRM pensé pour les vétérinaires, du cabinet solo à la clinique multi-praticiens.",
@@ -68,6 +69,14 @@
       {
         "q": "Puis-je gérer vaccins et antiparasites ?",
         "a": "Oui. Protocoles, échéances, certificats et historique sont intégrés au dossier animal."
+      },
+      {
+        "q": "Puis-je essayer VetoCrm sans créer de compte ?",
+        "a": "Oui. La démo clinique interactive permet d’explorer l’application en lecture seule, avec des données réalistes, directement depuis la page d’accueil."
+      },
+      {
+        "q": "VetoCrm remplace-t-il Excel et les dossiers papier ?",
+        "a": "Oui. VetoCrm centralise clients, animaux, consultations, documents, stock et comptabilité — une alternative moderne aux tableurs et fichiers dispersés."
       }
     ],
     "ctaBandTitle": "Prêt à moderniser votre pratique vétérinaire ?",
@@ -84,8 +93,9 @@
     "plansPerMonth": "/mois"
   },
   "pricing": {
-    "seoTitle": "Tarifs VetoCrm — Formules CRM vétérinaire",
-    "seoDescription": "Comparez les packs VetoCrm : gratuit, Pro, Duo, Clinique. Stockage, utilisateurs et modules pour votre cabinet ou clinique vétérinaire.",
+    "seoTitle": "Tarifs VetoCrm — Formules & prix CRM vétérinaire",
+    "seoDescription": "Comparez les packs VetoCrm : gratuit, Pro, Duo, Clinique. Stockage, utilisateurs, stock, compta et modules pour votre cabinet ou clinique vétérinaire.",
+    "seoKeywords": "tarifs CRM vétérinaire, prix logiciel vétérinaire, abonnement clinique véto, VetoCrm pricing",
     "badge": "Tarifs simples et transparents",
     "title": "Choisissez la formule adaptée à votre pratique",
     "subtitle": "Du vétérinaire indépendant à la clinique multi-praticiens. Commencez gratuitement, évoluez quand vous le souhaitez.",
@@ -141,8 +151,9 @@
     }
   },
   "contact": {
-    "seoTitle": "Nous contacter — VetoCrm",
-    "seoDescription": "Contactez l’équipe VetoCrm par e-mail, LinkedIn ou Instagram. Support pour cliniques vétérinaires.",
+    "seoTitle": "Contact VetoCrm — Support & démo CRM vétérinaire",
+    "seoDescription": "Contactez l’équipe VetoCrm pour une démo, le support ou un partenariat. Logiciel CRM pour cliniques et cabinets vétérinaires.",
+    "seoKeywords": "contact VetoCrm, support logiciel vétérinaire, démo CRM véto",
     "eyebrow": "Support & partenariats",
     "title": "Nous contacter",
     "lead": "Une question sur VetoCrm, votre abonnement ou un partenariat ? Écrivez-nous ou rejoignez-nous sur les réseaux.",
@@ -157,8 +168,9 @@
     "writeUs": "Écrire un e-mail"
   },
   "mondeVeto": {
-    "seoTitle": "Le Monde Veto — Actualités & guides pour cliniques vétérinaires | VetoCrm",
-    "seoDescription": "Guides et actualités vétérinaires : digitalisation, IA, comptabilité, assurance animale, CRM et nouvelles pratiques. Ressources VetoCrm pour moderniser votre clinique.",
+    "seoTitle": "Le Monde Veto — Guides CRM & gestion clinique vétérinaire | VetoCrm",
+    "seoDescription": "Guides vétérinaires : digitalisation, IA, comptabilité clinique, assurance animale, CRM et nouvelles pratiques. Ressources pour moderniser votre cabinet.",
+    "seoKeywords": "blog vétérinaire, digitalisation clinique, CRM vétérinaire guide, gestion cabinet véto",
     "eyebrow": "Guides & actualités",
     "title": "Le Monde Veto",
     "lead": "Articles pratiques pour cliniques et cabinets : digitalisation, IA, gestion, assurance et CRM — pour soigner mieux et piloter plus sereinement.",
