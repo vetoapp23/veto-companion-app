@@ -20,7 +20,7 @@ export type LegalBundle = Record<LegalDocId, LegalDoc>;
 /** Publisher identity used across legal pages and contact. */
 export const LEGAL_ENTITY = {
   brand: "VetoCrm",
-  website: "https://vetocrm.com",
+  website: "https://www.vetocrm.com",
   contactEmail: "contact@vetocrm.com",
   privacyEmail: "privacy@vetocrm.com",
   supportEmail: "support@vetocrm.com",

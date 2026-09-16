@@ -276,7 +276,7 @@ Deno.serve(async (req) => {
 
     const { user, email_data } = data;
 
-    const PUBLIC_APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://vetocrm.com";
+    const PUBLIC_APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://www.vetocrm.com";
     const incoming_redirect = email_data.redirect_to || "";
     const safe_redirect =
       incoming_redirect && !/lovable\.(dev|app)\/(login|auth-bridge)/.test(incoming_redirect)

@@ -2,7 +2,11 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SUPPORTED_LANGS, type AppLanguage } from "@/i18n";
 
-const SITE_URL = (import.meta.env.VITE_SITE_URL || import.meta.env.VITE_APP_URL || "https://vetocrm.com").replace(/\/$/, "");
+const SITE_URL = (
+  import.meta.env.VITE_SITE_URL ||
+  import.meta.env.VITE_APP_URL ||
+  "https://www.vetocrm.com"
+).replace(/\/$/, "");
 const DEFAULT_OG = `${SITE_URL}/og-cover.jpg`;
 
 const OG_LOCALE: Record<string, string> = {
@@ -10,6 +14,12 @@ const OG_LOCALE: Record<string, string> = {
   en: "en_US",
   es: "es_ES",
 };
+
+/** Clean page URL (no ?lng=) — must match sitemap loc for indexing. */
+function pageUrl(path: string) {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${SITE_URL}${p === "/" ? "/" : p}`;
+}
 
 export type SeoProps = {
   title: string;
@@ -89,7 +99,7 @@ export function useSeo({
 }: SeoProps) {
   const { i18n } = useTranslation();
   useEffect(() => {
-    const url = localizedPageUrl(path, (i18n.language || "fr").split("-")[0] as AppLanguage);
+    const url = pageUrl(path);
     const lang = (i18n.language || "fr").split("-")[0] as AppLanguage;
     document.title = title;
     document.documentElement.lang = lang;
@@ -117,9 +127,9 @@ export function useSeo({
     upsertLink("canonical", url);
 
     SUPPORTED_LANGS.forEach((lng) => {
-      upsertHreflang(lng, localizedPageUrl(path, lng));
+      upsertHreflang(lng, lng === "fr" ? pageUrl(path) : localizedPageUrl(path, lng));
     });
-    upsertHreflang("x-default", localizedPageUrl(path, "fr"));
+    upsertHreflang("x-default", pageUrl(path));
 
     if (jsonLd) {
       upsertJsonLd("vetocrm-jsonld", Array.isArray(jsonLd) ? jsonLd : jsonLd);
@@ -128,8 +138,7 @@ export function useSeo({
 }
 
 export function siteUrl(path = "/") {
-  const p = path.startsWith("/") ? path : `/${path}`;
-  return `${SITE_URL}${p}`;
+  return pageUrl(path);
 }
 
 export const SEO_DEFAULTS = {

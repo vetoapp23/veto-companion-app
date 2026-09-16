@@ -14,7 +14,7 @@ export function getAppOrigin(): string {
   const fromEnv = (
     import.meta.env.VITE_SITE_URL ||
     import.meta.env.VITE_APP_URL ||
-    "https://vetocrm.com"
+    "https://www.vetocrm.com"
   )
     .toString()
     .replace(/\/$/, "");

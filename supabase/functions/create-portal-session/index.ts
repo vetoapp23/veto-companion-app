@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       httpClient: Stripe.createFetchHttpClient(),
     });
 
-    const appUrl = (Deno.env.get("APP_URL") || Deno.env.get("SITE_URL") || "https://vetocrm.com").replace(
+    const appUrl = (Deno.env.get("APP_URL") || Deno.env.get("SITE_URL") || "https://www.vetocrm.com").replace(
       /\/$/,
       "",
     );
