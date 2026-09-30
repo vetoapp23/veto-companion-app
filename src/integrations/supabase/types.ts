@@ -1882,20 +1882,26 @@ export type Database = {
       stock_items: {
         Row: {
           active: boolean
+          barcode: string | null
           batch_number: string | null
           category: string
           created_at: string
           current_quantity: number
           description: string | null
+          dosage: string | null
           expiration_date: string | null
           id: string
           location: string | null
+          manufacturer: string | null
           maximum_quantity: number | null
           minimum_quantity: number
           name: string
           organization_id: string
+          production_date: string | null
           requires_prescription: boolean
           selling_price: number | null
+          sku: string | null
+          subcategory: string | null
           supplier: string | null
           supplier_id: string | null
           unit: string
@@ -1905,20 +1911,26 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          barcode?: string | null
           batch_number?: string | null
           category: string
           created_at?: string
           current_quantity?: number
           description?: string | null
+          dosage?: string | null
           expiration_date?: string | null
           id?: string
           location?: string | null
+          manufacturer?: string | null
           maximum_quantity?: number | null
           minimum_quantity?: number
           name: string
           organization_id: string
+          production_date?: string | null
           requires_prescription?: boolean
           selling_price?: number | null
+          sku?: string | null
+          subcategory?: string | null
           supplier?: string | null
           supplier_id?: string | null
           unit?: string
@@ -1928,20 +1940,26 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          barcode?: string | null
           batch_number?: string | null
           category?: string
           created_at?: string
           current_quantity?: number
           description?: string | null
+          dosage?: string | null
           expiration_date?: string | null
           id?: string
           location?: string | null
+          manufacturer?: string | null
           maximum_quantity?: number | null
           minimum_quantity?: number
           name?: string
           organization_id?: string
+          production_date?: string | null
           requires_prescription?: boolean
           selling_price?: number | null
+          sku?: string | null
+          subcategory?: string | null
           supplier?: string | null
           supplier_id?: string | null
           unit?: string

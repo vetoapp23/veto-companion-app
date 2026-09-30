@@ -13,7 +13,10 @@ export interface DatabaseStockItem {
   organization_id: string;
   name: string;
   category: string;
+  subcategory?: string;
   description?: string;
+  manufacturer?: string;
+  dosage?: string;
   unit: string;
   current_quantity: number;
   minimum_quantity: number;
@@ -23,7 +26,10 @@ export interface DatabaseStockItem {
   supplier?: string;
   batch_number?: string;
   expiration_date?: string;
+  production_date?: string;
   location?: string;
+  barcode?: string;
+  sku?: string;
   requires_prescription?: boolean;
   active: boolean;
   created_at: string;
@@ -78,7 +84,10 @@ export const convertDatabaseStockItem = (dbItem: DatabaseStockItem): any => {
     id: parseInt(dbItem.id.replace(/-/g, '').slice(0, 8), 16), // Convert UUID to number for compatibility
     name: dbItem.name,
     category: dbItem.category,
+    subcategory: dbItem.subcategory || '',
     description: dbItem.description,
+    manufacturer: dbItem.manufacturer || '',
+    dosage: dbItem.dosage || '',
     unit: dbItem.unit,
     currentStock: Number(dbItem.current_quantity) || 0,
     minimumStock: Number(dbItem.minimum_quantity) || 0,
@@ -87,12 +96,15 @@ export const convertDatabaseStockItem = (dbItem: DatabaseStockItem): any => {
     sellingPrice: Number(dbItem.selling_price) || 0,
     totalValue: (Number(dbItem.current_quantity) || 0) * (Number(dbItem.unit_cost) || 0),
     expirationDate: dbItem.expiration_date,
+    productionDate: dbItem.production_date,
     supplier: dbItem.supplier,
     location: dbItem.location,
+    notes: dbItem.description || '',
+    barcode: dbItem.barcode || '',
+    sku: dbItem.sku || '',
     lastUpdated: dbItem.updated_at,
     isActive: dbItem.active,
     batchNumber: dbItem.batch_number,
-    manufacturer: dbItem.supplier, // Use supplier as manufacturer for compatibility
   };
 };
 

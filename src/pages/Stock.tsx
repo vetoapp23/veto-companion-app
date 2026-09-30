@@ -61,6 +61,7 @@ interface StockItem {
   sellingPrice: number;
   totalValue: number;
   expirationDate?: string;
+  productionDate?: string;
   supplier?: string;
   location?: string;
   notes?: string;
@@ -157,10 +158,10 @@ export default function Stock() {
       id: parseInt(item.id.replace(/-/g, '').slice(0, 8), 16), // Convert UUID to number for compatibility
       name: item.name,
       category: item.category as any,
-      subcategory: '', // Not in database
-      manufacturer: item.supplier || '', // Use supplier as manufacturer
+      subcategory: item.subcategory || '',
+      manufacturer: item.manufacturer || '',
       batchNumber: item.batch_number || '',
-      dosage: '', // Not in database
+      dosage: item.dosage || '',
       unit: item.unit,
       currentStock: Number(item.current_quantity) || 0,
       minimumStock: Number(item.minimum_quantity) || 0,
@@ -169,11 +170,12 @@ export default function Stock() {
       sellingPrice: Number(item.selling_price) || 0,
       totalValue: (Number(item.current_quantity) || 0) * (Number(item.unit_cost) || 0),
       expirationDate: item.expiration_date,
+      productionDate: item.production_date,
       supplier: item.supplier || '',
       location: item.location || '',
       notes: item.description || '',
-      barcode: '', // Not in database
-      sku: '', // Not in database
+      barcode: item.barcode || '',
+      sku: item.sku || '',
       lastUpdated: item.updated_at,
       isActive: item.active || true
     }));
@@ -235,7 +237,10 @@ export default function Stock() {
     const filtered = stockItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            item.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           item.batchNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+                           item.supplier?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           item.batchNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           item.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           item.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesCategory = filterCategory === "all" ||
         normalizeCategory(item.category) === filterCategory ||
@@ -407,26 +412,61 @@ export default function Stock() {
     return `"${str.replace(/"/g, '""')}"`;
   };
 
+  /** Parse une ligne CSV en respectant les guillemets */
+  const parseCsvLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += ch;
+        }
+      } else if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
   const stockCsvHeaders = {
     name: t("stock.csvHeaders.name"),
     category: t("stock.csvHeaders.category"),
+    subcategory: t("stock.csvHeaders.subcategory"),
     manufacturer: t("stock.csvHeaders.manufacturer"),
-    batchNumber: t("stock.batchNumber"),
-    dosage: t("stock.dosage"),
-    unit: t("stock.units.unit"),
+    batchNumber: t("stock.csvHeaders.batchNumber"),
+    dosage: t("stock.csvHeaders.dosage"),
+    unit: t("stock.csvHeaders.unit"),
     stock: t("stock.csvHeaders.stock"),
-    minimumStock: t("stock.minimumStock"),
+    minimumStock: t("stock.csvHeaders.minimumStock"),
     purchasePrice: t("stock.csvHeaders.purchasePrice"),
     sellingPrice: t("stock.csvHeaders.sellingPrice"),
     expiration: t("stock.csvHeaders.expiration"),
-    supplier: t("stock.supplier"),
+    productionDate: t("stock.csvHeaders.productionDate"),
+    supplier: t("stock.csvHeaders.supplier"),
     location: t("stock.csvHeaders.location"),
-    notes: tc("notes"),
+    notes: t("stock.csvHeaders.notes"),
+    barcode: t("stock.csvHeaders.barcode"),
+    sku: t("stock.csvHeaders.sku"),
   };
   const STOCK_CSV_HEADERS = [
     stockCsvHeaders.name,
     stockCsvHeaders.category,
-    'Sous-catégorie',
+    stockCsvHeaders.subcategory,
     stockCsvHeaders.manufacturer,
     stockCsvHeaders.batchNumber,
     stockCsvHeaders.dosage,
@@ -436,11 +476,12 @@ export default function Stock() {
     stockCsvHeaders.purchasePrice,
     stockCsvHeaders.sellingPrice,
     stockCsvHeaders.expiration,
+    stockCsvHeaders.productionDate,
     stockCsvHeaders.supplier,
     stockCsvHeaders.location,
     stockCsvHeaders.notes,
-    'Code-barres',
-    'SKU',
+    stockCsvHeaders.barcode,
+    stockCsvHeaders.sku,
   ];
 
   // Fonction pour exporter en Excel
@@ -461,6 +502,7 @@ export default function Stock() {
           item.purchasePrice,
           item.sellingPrice,
           item.expirationDate || '',
+          item.productionDate || '',
           item.supplier || '',
           item.location || '',
           item.notes || '',
@@ -487,12 +529,31 @@ export default function Stock() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      toast({
+        title: t("stock.importError"),
+        description: t("stock.importCsvOnly"),
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const csv = (e.target?.result as string).replace(/^\uFEFF/, '');
-        const lines = csv.split(/\r?\n/);
-        const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').replace(/""/g, '"').trim());
+        const lines = csv.split(/\r?\n/).filter((l) => l.trim());
+        if (lines.length < 2) {
+          toast({
+            title: t("stock.importError"),
+            description: t("stock.importReadError"),
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const headers = parseCsvLine(lines[0]);
         
         // Vérifier les en-têtes requis
         const requiredHeaders = [
@@ -523,7 +584,7 @@ export default function Stock() {
           if (!line) continue;
 
           try {
-            const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+            const values = parseCsvLine(line);
             const row: Record<string, string> = {};
             
             headers.forEach((header, index) => {
@@ -543,20 +604,28 @@ export default function Stock() {
               continue;
             }
 
+            const emptyToNull = (v?: string) => (v && v.trim() ? v.trim() : null);
+
             const newItem = {
               name: row[stockCsvHeaders.name],
               category: row[stockCsvHeaders.category] as any,
+              subcategory: row[stockCsvHeaders.subcategory] || '',
+              manufacturer: row[stockCsvHeaders.manufacturer] || '',
+              dosage: row[stockCsvHeaders.dosage] || '',
               description: row[stockCsvHeaders.notes] || '',
               unit: row[stockCsvHeaders.unit] as any,
-              current_quantity: parseInt(row[stockCsvHeaders.stock]) || 0,
-              minimum_quantity: parseInt(row[stockCsvHeaders.minimumStock]) || 0,
+              current_quantity: parseInt(row[stockCsvHeaders.stock], 10) || 0,
+              minimum_quantity: parseInt(row[stockCsvHeaders.minimumStock], 10) || 0,
               maximum_quantity: 0,
               unit_cost: parseFloat(row[stockCsvHeaders.purchasePrice]) || 0,
               selling_price: parseFloat(row[stockCsvHeaders.sellingPrice]) || 0,
-              expiration_date: row[stockCsvHeaders.expiration] || null,
+              expiration_date: emptyToNull(row[stockCsvHeaders.expiration]),
+              production_date: emptyToNull(row[stockCsvHeaders.productionDate]),
               supplier: row[stockCsvHeaders.supplier] || '',
               location: row[stockCsvHeaders.location] || '',
               batch_number: row[stockCsvHeaders.batchNumber] || '',
+              barcode: row[stockCsvHeaders.barcode] || '',
+              sku: row[stockCsvHeaders.sku] || '',
               active: true
             };
 
@@ -596,17 +665,17 @@ export default function Stock() {
       STOCK_CSV_HEADERS.map(csvEscape).join(','),
       [
         'Amoxicilline 500mg', 'medication', 'Antibiotique', 'Boehringer Ingelheim', 'AMX2024001', '500mg', 'box',
-        '15', '5', '20.00', '25.50', '2025-12-31', 'Pharmacie Vétérinaire Centrale', 'Armoire A - Étagère 1',
+        '15', '5', '20.00', '25.50', '2025-12-31', '2024-06-15', 'Pharmacie Vétérinaire Centrale', 'Armoire A - Étagère 1',
         'Stockage à température ambiante', '1234567890123', 'MED-AMX-500',
       ].map(csvEscape).join(','),
       [
         'Vaccin DHPP', 'vaccine', 'Vaccin combiné', 'Merial', 'VAC2024001', '1ml', 'vial',
-        '25', '10', '45.00', '55.00', '2025-06-30', 'VetoPharma', 'Réfrigérateur - Étagère 1',
+        '25', '10', '45.00', '55.00', '2025-06-30', '2024-01-10', 'VetoPharma', 'Réfrigérateur - Étagère 1',
         'Conservation entre 2-8°C', '9876543210987', 'VAC-DHPP-001',
       ].map(csvEscape).join(','),
       [
         'Seringues 5ml', 'consumable', 'Matériel médical', 'BD', 'SYR2024001', '5ml', 'unit',
-        '100', '20', '0.50', '0.75', '', 'MedSupply', 'Armoire B - Étagère 2',
+        '100', '20', '0.50', '0.75', '', '2024-03-01', 'MedSupply', 'Armoire B - Étagère 2',
         'Usage unique', '5556667778889', 'CON-SYR-5ML',
       ].map(csvEscape).join(','),
     ].join('\n');
@@ -654,7 +723,7 @@ export default function Stock() {
               <div className="relative">
                 <input
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".csv"
                   onChange={importFromExcel}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   id="import-file"
@@ -846,6 +915,7 @@ export default function Stock() {
                   <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colPurchasePrice")}</TableHead>
                   <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colSellingPrice")}</TableHead>
                   <TableHead className="min-w-[100px] hidden lg:table-cell">{t("stock.colTotalValue")}</TableHead>
+                  <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colProduction")}</TableHead>
                   <TableHead className="min-w-[100px] hidden md:table-cell">{t("stock.colExpiration")}</TableHead>
                   <TableHead className="min-w-[120px] hidden lg:table-cell">{t("stock.colLocation")}</TableHead>
                   <TableHead className="min-w-[120px]">{tc("actions")}</TableHead>
@@ -894,7 +964,12 @@ export default function Stock() {
                           <div className="text-sm">{item.manufacturer || '-'}</div>
                           {item.supplier && (
                             <div className="text-xs text-muted-foreground">
-                              {item.supplier}
+                              {t("stock.supplier")}: {item.supplier}
+                            </div>
+                          )}
+                          {item.sku && (
+                            <div className="text-xs text-muted-foreground">
+                              SKU: {item.sku}
                             </div>
                           )}
                         </div>
@@ -995,6 +1070,16 @@ export default function Stock() {
                         <div className="font-medium text-sm">
                           {item.totalValue.toFixed(2)} MAD
                         </div>
+                      </TableCell>
+
+                      <TableCell className="hidden md:table-cell">
+                        {item.productionDate ? (
+                          <div className="text-xs sm:text-sm">
+                            {format(new Date(item.productionDate), 'dd/MM/yyyy', { locale: dateFns })}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs sm:text-sm">-</span>
+                        )}
                       </TableCell>
                       
                       <TableCell className="hidden md:table-cell">

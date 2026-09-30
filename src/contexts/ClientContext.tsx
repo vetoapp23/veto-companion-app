@@ -2200,6 +2200,7 @@ export interface StockItem {
   sellingPrice: number; // Prix de vente
   totalValue: number; // Valeur totale basée sur le prix d'achat
   expirationDate?: string;
+  productionDate?: string;
   supplier?: string;
   location?: string;
   notes?: string;

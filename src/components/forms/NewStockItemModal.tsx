@@ -29,6 +29,7 @@ interface StockItem {
   sellingPrice: number;
   totalValue: number;
   expirationDate?: string;
+  productionDate?: string;
   supplier?: string;
   location?: string;
   notes?: string;
@@ -117,7 +118,6 @@ export function NewStockItemModal({
     const dbId = findDatabaseItemId(compatibilityId);
     if (!dbId) return null;
     
-    // Convert UI updates to database format - only include fields that exist in database
     const dbUpdates: any = {};
     if (updates.currentStock !== undefined) dbUpdates.current_quantity = updates.currentStock;
     if (updates.minimumStock !== undefined) dbUpdates.minimum_quantity = updates.minimumStock;
@@ -128,21 +128,29 @@ export function NewStockItemModal({
     if (updates.supplier !== undefined) dbUpdates.supplier = updates.supplier;
     if (updates.location !== undefined) dbUpdates.location = updates.location;
     if (updates.batchNumber !== undefined) dbUpdates.batch_number = updates.batchNumber;
-    if (updates.expirationDate !== undefined) dbUpdates.expiration_date = updates.expirationDate;
+    if (updates.expirationDate !== undefined) dbUpdates.expiration_date = updates.expirationDate || null;
+    if (updates.productionDate !== undefined) dbUpdates.production_date = updates.productionDate || null;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.notes !== undefined) dbUpdates.description = updates.notes;
     if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
     if (updates.category !== undefined) dbUpdates.category = updates.category;
-    // Skip non-existent database fields: subcategory, dosage, barcode, sku, manufacturer, notes
+    if (updates.subcategory !== undefined) dbUpdates.subcategory = updates.subcategory;
+    if (updates.manufacturer !== undefined) dbUpdates.manufacturer = updates.manufacturer;
+    if (updates.dosage !== undefined) dbUpdates.dosage = updates.dosage;
+    if (updates.barcode !== undefined) dbUpdates.barcode = updates.barcode;
+    if (updates.sku !== undefined) dbUpdates.sku = updates.sku;
     
     return await updateStockItemRaw(dbId, dbUpdates);
   };
 
   const addStockItem = async (itemData: StockItem) => {
-    // Convert UI item to database format - only include fields that exist in database
     const dbItemData = {
       name: itemData.name,
       category: itemData.category,
-      description: itemData.description,
+      subcategory: itemData.subcategory,
+      description: itemData.notes || itemData.description,
+      manufacturer: itemData.manufacturer,
+      dosage: itemData.dosage,
       batch_number: itemData.batchNumber,
       unit: itemData.unit,
       current_quantity: itemData.currentStock,
@@ -150,11 +158,13 @@ export function NewStockItemModal({
       maximum_quantity: itemData.maximumStock,
       unit_cost: itemData.purchasePrice,
       selling_price: itemData.sellingPrice,
-      expiration_date: itemData.expirationDate,
+      expiration_date: itemData.expirationDate || null,
+      production_date: itemData.productionDate || null,
       supplier: itemData.supplier,
       location: itemData.location,
+      barcode: itemData.barcode,
+      sku: itemData.sku,
       active: itemData.isActive !== undefined ? itemData.isActive : true,
-      // Skip non-existent database fields: subcategory, manufacturer, dosage, barcode, sku, notes, last_restocked
     };
     
     return await addStockItemRaw(dbItemData);
@@ -175,6 +185,7 @@ export function NewStockItemModal({
     purchasePrice: 0,
     sellingPrice: 0,
     expirationDate: '',
+    productionDate: '',
     supplier: '',
     location: '',
     notes: '',
@@ -201,6 +212,7 @@ export function NewStockItemModal({
         purchasePrice: editingItem.purchasePrice,
         sellingPrice: editingItem.sellingPrice,
         expirationDate: editingItem.expirationDate || '',
+        productionDate: editingItem.productionDate || '',
         supplier: editingItem.supplier || '',
         location: editingItem.location || '',
         notes: editingItem.notes || '',
@@ -225,6 +237,7 @@ export function NewStockItemModal({
         purchasePrice: 0,
         sellingPrice: 0,
         expirationDate: '',
+        productionDate: '',
         supplier: '',
         location: '',
         notes: '',
@@ -266,6 +279,7 @@ export function NewStockItemModal({
       sellingPrice: Number(formData.sellingPrice),
       totalValue: Number(formData.currentStock) * Number(formData.purchasePrice), // Calculate total value
       expirationDate: formData.expirationDate || undefined,
+      productionDate: formData.productionDate || undefined,
       subcategory: formData.subcategory || undefined,
       description: formData.description || undefined,
       manufacturer: formData.manufacturer || undefined,
@@ -546,6 +560,16 @@ export function NewStockItemModal({
             <h3 className="text-lg font-semibold">{t("stock.additionalInfo")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="productionDate">{t("stock.productionDate")}</Label>
+                <Input
+                  id="productionDate"
+                  type="date"
+                  value={formData.productionDate}
+                  onChange={(e) => handleChange('productionDate', e.target.value)}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="expirationDate">{t("stock.expirationDate")}</Label>
                 <Input

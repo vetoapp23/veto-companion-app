@@ -45,6 +45,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     purchasePrice: '',
     sellingPrice: '',
     expirationDate: '',
+    productionDate: '',
     supplier: '',
     location: '',
     batchNumber: '',
@@ -73,10 +74,16 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     if (updates.supplier !== undefined) dbUpdates.supplier = updates.supplier;
     if (updates.location !== undefined) dbUpdates.location = updates.location;
     if (updates.batchNumber !== undefined) dbUpdates.batch_number = updates.batchNumber;
-    if (updates.expirationDate !== undefined) dbUpdates.expiration_date = updates.expirationDate;
+    if (updates.expirationDate !== undefined) dbUpdates.expiration_date = updates.expirationDate || null;
+    if (updates.productionDate !== undefined) dbUpdates.production_date = updates.productionDate || null;
     if (updates.unit !== undefined) dbUpdates.unit = updates.unit;
     if (updates.category !== undefined) dbUpdates.category = updates.category;
     if (updates.description !== undefined) dbUpdates.description = updates.description;
+    if (updates.manufacturer !== undefined) dbUpdates.manufacturer = updates.manufacturer;
+    if (updates.dosage !== undefined) dbUpdates.dosage = updates.dosage;
+    if (updates.subcategory !== undefined) dbUpdates.subcategory = updates.subcategory;
+    if (updates.barcode !== undefined) dbUpdates.barcode = updates.barcode;
+    if (updates.sku !== undefined) dbUpdates.sku = updates.sku;
     
     return await updateStockItemRaw(dbId, dbUpdates);
   };
@@ -85,17 +92,23 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
     const dbItemData = {
       name: itemData.name,
       category: itemData.category,
+      subcategory: itemData.subcategory,
       description: itemData.description,
+      manufacturer: itemData.manufacturer,
+      dosage: itemData.dosage,
       unit: itemData.unit,
       current_quantity: itemData.currentStock,
       minimum_quantity: itemData.minimumStock,
       maximum_quantity: itemData.maximumStock,
       unit_cost: itemData.purchasePrice,
       selling_price: itemData.sellingPrice,
-      expiration_date: itemData.expirationDate,
+      expiration_date: itemData.expirationDate || null,
+      production_date: itemData.productionDate || null,
       supplier: itemData.supplier,
       location: itemData.location,
       batch_number: itemData.batchNumber,
+      barcode: itemData.barcode,
+      sku: itemData.sku,
       active: true,
     };
     
@@ -115,6 +128,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
         purchasePrice: editingItem.purchasePrice?.toString() || '',
         sellingPrice: editingItem.sellingPrice?.toString() || '',
         expirationDate: editingItem.expirationDate || '',
+        productionDate: editingItem.productionDate || '',
         supplier: editingItem.supplier || '',
         location: editingItem.location || '',
         batchNumber: editingItem.batchNumber || '',
@@ -133,6 +147,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
         purchasePrice: '',
         sellingPrice: '',
         expirationDate: '',
+        productionDate: '',
         supplier: '',
         location: '',
         batchNumber: '',
@@ -176,6 +191,7 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
       sellingPrice: Number(formData.sellingPrice),
       totalValue: Number(formData.currentStock) * Number(formData.purchasePrice),
       expirationDate: formData.expirationDate || undefined,
+      productionDate: formData.productionDate || undefined,
       supplier: formData.supplier,
       location: formData.location,
       batchNumber: formData.batchNumber,
@@ -386,6 +402,16 @@ export function NewStockItemModal({ open, onOpenChange, editingItem }: NewStockI
             <h3 className="text-lg font-medium">{t("stock.additionalInfo")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="productionDate">{t("stock.productionDate")}</Label>
+                <Input
+                  id="productionDate"
+                  type="date"
+                  value={formData.productionDate}
+                  onChange={(e) => setFormData({...formData, productionDate: e.target.value})}
+                />
+              </div>
+
               <div>
                 <Label htmlFor="expirationDate">{t("stock.expirationDate")}</Label>
                 <Input

@@ -29,6 +29,7 @@ interface StockItem {
   sellingPrice: number;
   totalValue: number;
   expirationDate?: string;
+  productionDate?: string;
   supplier?: string;
   location?: string;
   notes?: string;

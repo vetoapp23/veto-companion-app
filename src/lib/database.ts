@@ -264,6 +264,9 @@ export interface StockItem {
   name: string
   description?: string
   category: 'medication' | 'vaccine' | 'consumable' | 'equipment' | 'supplement'
+  subcategory?: string
+  manufacturer?: string
+  dosage?: string
   unit: string
   current_quantity: number
   minimum_quantity: number
@@ -273,7 +276,10 @@ export interface StockItem {
   supplier?: string
   batch_number?: string
   expiration_date?: string
+  production_date?: string
   location?: string
+  barcode?: string
+  sku?: string
   requires_prescription: boolean
   active: boolean
   created_at: string
