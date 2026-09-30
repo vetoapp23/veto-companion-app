@@ -1520,14 +1520,16 @@
     "filters": {
       "allCategories": "Toutes les catégories",
       "allStatuses": "Tous les statuts",
+      "active": "Actif",
       "lowStock": "Stock faible",
       "expiringSoon": "Expiration proche"
     },
     "badges": {
+      "active": "Actif",
       "lowStock": "Stock faible",
       "outOfStock": "Rupture",
       "expired": "Expiré",
-      "expiringSoon": "Expire bientôt"
+      "expiringSoon": "Expiration proche"
     },
     "csvHeaders": {
       "name": "Nom",

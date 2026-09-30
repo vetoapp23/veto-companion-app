@@ -1520,10 +1520,12 @@
     "filters": {
       "allCategories": "Todas las categorías",
       "allStatuses": "Todos los estados",
+      "active": "Activo",
       "lowStock": "Stock bajo",
       "expiringSoon": "Caduca pronto"
     },
     "badges": {
+      "active": "Activo",
       "lowStock": "Stock bajo",
       "outOfStock": "Sin existencias",
       "expired": "Caducado",

@@ -69,6 +69,7 @@ interface StockItem {
   sku?: string;
   lastUpdated?: string;
   isActive: boolean;
+  status?: 'active' | 'low_stock' | 'expired' | 'expiring_soon';
 }
 
 // Catégories de stock avec leurs couleurs (clés EN + alias FR issus des seeds / DB)
@@ -177,7 +178,8 @@ export default function Stock() {
       barcode: item.barcode || '',
       sku: item.sku || '',
       lastUpdated: item.updated_at,
-      isActive: item.active || true
+      isActive: item.active || true,
+      status: (item.status as StockItem['status']) || undefined,
     }));
   }, [rawStockItems, refreshKey]);
 
@@ -206,14 +208,18 @@ export default function Stock() {
   const stats = useMemo(() => {
     const totalItems = stockItems.length;
     const totalValue = stockItems.reduce((sum, item) => sum + item.totalValue, 0);
-    const lowStockItems = stockItems.filter(item => item.currentStock <= item.minimumStock).length;
-    const expiredItems = stockItems.filter(item => 
-      item.expirationDate && new Date(item.expirationDate) < new Date()
+    const lowStockItems = stockItems.filter(item =>
+      item.status === 'low_stock' || (!item.status && item.currentStock <= item.minimumStock)
     ).length;
-    const expiringSoonItems = stockItems.filter(item => 
-      item.expirationDate && 
-      new Date(item.expirationDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
-      new Date(item.expirationDate) > new Date()
+    const expiredItems = stockItems.filter(item =>
+      item.status === 'expired' ||
+      (!item.status && item.expirationDate && new Date(item.expirationDate) < new Date())
+    ).length;
+    const expiringSoonItems = stockItems.filter(item =>
+      item.status === 'expiring_soon' ||
+      (!item.status && item.expirationDate &&
+        new Date(item.expirationDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
+        new Date(item.expirationDate) > new Date())
     ).length;
 
     return {
@@ -248,15 +254,23 @@ export default function Stock() {
       
       let matchesStatus = true;
       if (filterStatus === "low_stock") {
-        matchesStatus = item.currentStock <= item.minimumStock;
+        matchesStatus = item.status
+          ? item.status === "low_stock"
+          : item.currentStock <= item.minimumStock;
       } else if (filterStatus === "expired") {
-        matchesStatus = item.expirationDate && new Date(item.expirationDate) < new Date();
+        matchesStatus = item.status
+          ? item.status === "expired"
+          : !!(item.expirationDate && new Date(item.expirationDate) < new Date());
       } else if (filterStatus === "expiring_soon") {
-        matchesStatus = item.expirationDate && 
-          new Date(item.expirationDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
-          new Date(item.expirationDate) > new Date();
+        matchesStatus = item.status
+          ? item.status === "expiring_soon"
+          : !!(item.expirationDate &&
+            new Date(item.expirationDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
+            new Date(item.expirationDate) > new Date());
       } else if (filterStatus === "active") {
-        matchesStatus = item.isActive;
+        matchesStatus = item.status
+          ? item.status === "active"
+          : item.isActive && item.currentStock > item.minimumStock;
       }
       
       return matchesSearch && matchesCategory && matchesStatus;
@@ -865,7 +879,7 @@ export default function Stock() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("stock.filters.allStatuses")}</SelectItem>
-                <SelectItem value="active">{tc("active")}</SelectItem>
+                <SelectItem value="active">{t("stock.filters.active")}</SelectItem>
                 <SelectItem value="low_stock">{t("stock.filters.lowStock")}</SelectItem>
                 <SelectItem value="expired">{t("stock.badges.expired")}</SelectItem>
                 <SelectItem value="expiring_soon">{t("stock.filters.expiringSoon")}</SelectItem>
@@ -923,11 +937,12 @@ export default function Stock() {
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => {
-                  const isLowStock = item.currentStock <= item.minimumStock;
-                  const isExpired = item.expirationDate && new Date(item.expirationDate) < new Date();
-                  const isExpiringSoon = item.expirationDate && 
+                  const isLowStock = item.status === 'low_stock' || (!item.status && item.currentStock <= item.minimumStock);
+                  const isExpired = item.status === 'expired' || (!item.status && !!(item.expirationDate && new Date(item.expirationDate) < new Date()));
+                  const isExpiringSoon = item.status === 'expiring_soon' || (!item.status && !!(item.expirationDate &&
                     new Date(item.expirationDate) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) &&
-                    new Date(item.expirationDate) > new Date();
+                    new Date(item.expirationDate) > new Date()));
+                  const isActiveStatus = item.status === 'active' || (!item.status && item.isActive && !isLowStock && !isExpired && !isExpiringSoon);
                   const cat = getCategoryConfig(item.category);
                   
                   return (
@@ -945,6 +960,28 @@ export default function Stock() {
                               {item.dosage}
                             </div>
                           )}
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {isActiveStatus && (
+                              <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                                {t("stock.badges.active")}
+                              </Badge>
+                            )}
+                            {isLowStock && (
+                              <Badge variant="destructive" className="text-xs">
+                                {t("stock.badges.lowStock")}
+                              </Badge>
+                            )}
+                            {isExpired && (
+                              <Badge variant="destructive" className="text-xs">
+                                {t("stock.badges.expired")}
+                              </Badge>
+                            )}
+                            {isExpiringSoon && !isExpired && (
+                              <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
+                                {t("stock.badges.expiringSoon")}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       
@@ -984,11 +1021,6 @@ export default function Stock() {
                             Min: {item.minimumStock}
                           </div>
                           <div className="flex items-center gap-2">
-                            {isLowStock && (
-                              <Badge variant="destructive" className="text-xs">
-                                {t("stock.badges.lowStock")}
-                              </Badge>
-                            )}
                             {item.lastUpdated && new Date(item.lastUpdated).getTime() > Date.now() - 24 * 60 * 60 * 1000 && (
                               <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
                                 Mis à jour

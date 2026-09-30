@@ -1520,10 +1520,12 @@
     "filters": {
       "allCategories": "All categories",
       "allStatuses": "All statuses",
+      "active": "Active",
       "lowStock": "Low stock",
       "expiringSoon": "Expiring soon"
     },
     "badges": {
+      "active": "Active",
       "lowStock": "Low stock",
       "outOfStock": "Out of stock",
       "expired": "Expired",

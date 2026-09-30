@@ -1901,6 +1901,7 @@ export type Database = {
           requires_prescription: boolean
           selling_price: number | null
           sku: string | null
+          status: string
           subcategory: string | null
           supplier: string | null
           supplier_id: string | null
@@ -1930,6 +1931,7 @@ export type Database = {
           requires_prescription?: boolean
           selling_price?: number | null
           sku?: string | null
+          status?: string
           subcategory?: string | null
           supplier?: string | null
           supplier_id?: string | null
@@ -1959,6 +1961,7 @@ export type Database = {
           requires_prescription?: boolean
           selling_price?: number | null
           sku?: string | null
+          status?: string
           subcategory?: string | null
           supplier?: string | null
           supplier_id?: string | null

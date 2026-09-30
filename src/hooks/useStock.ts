@@ -30,6 +30,7 @@ export interface DatabaseStockItem {
   location?: string;
   barcode?: string;
   sku?: string;
+  status?: 'active' | 'low_stock' | 'expired' | 'expiring_soon';
   requires_prescription?: boolean;
   active: boolean;
   created_at: string;
@@ -102,6 +103,7 @@ export const convertDatabaseStockItem = (dbItem: DatabaseStockItem): any => {
     notes: dbItem.description || '',
     barcode: dbItem.barcode || '',
     sku: dbItem.sku || '',
+    status: dbItem.status || 'active',
     lastUpdated: dbItem.updated_at,
     isActive: dbItem.active,
     batchNumber: dbItem.batch_number,

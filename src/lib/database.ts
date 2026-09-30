@@ -280,6 +280,7 @@ export interface StockItem {
   location?: string
   barcode?: string
   sku?: string
+  status?: 'active' | 'low_stock' | 'expired' | 'expiring_soon'
   requires_prescription: boolean
   active: boolean
   created_at: string
