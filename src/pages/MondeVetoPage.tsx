@@ -70,6 +70,28 @@ export default function MondeVetoPage() {
           <h1>{t("marketing:mondeVeto.title")}</h1>
           <p className="mk-blog-lead">{t("marketing:mondeVeto.lead")}</p>
 
+          <div className="mk-blog-featured">
+            <p className="mk-section-label">{t("marketing:landingResources.label")}</p>
+            <div className="mk-resource-links">
+              <Link to="/monde-veto/logiciel-gestion-clinique-veterinaire" className="mk-resource-link">
+                {t("marketing:landingResources.guidePm")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link to="/monde-veto/veterinary-crm-software" className="mk-resource-link">
+                {t("marketing:landingResources.guideCrm")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link to="/monde-veto/classement-meilleurs-crm-erp-veterinaire-2026" className="mk-resource-link">
+                {t("marketing:landingResources.guideRank")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link to="/press" className="mk-resource-link">
+                {t("marketing:nav.press")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
+          </div>
+
           <div className="mk-blog-grid">
             {articles.map((article) => {
               const loc = article.locales[lang];

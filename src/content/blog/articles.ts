@@ -1,9 +1,11 @@
 import type { BlogArticle, BlogLang } from "./types";
 import { BLOG_SEO_ARTICLES } from "./seoArticles";
+import { BLOG_INTENT_ARTICLES } from "./intentArticles";
 
 export type {
   BlogLang,
   BlogSection,
+  BlogFaqItem,
   BlogArticleLocalized,
   BlogArticle,
 } from "./types";
@@ -871,8 +873,12 @@ export const BLOG_STATIC_ARTICLES: BlogArticle[] = [
   },
 ];
 
-/** All Monde Veto articles (guides + SEO comparatifs). */
-export const BLOG_ARTICLES: BlogArticle[] = [...BLOG_STATIC_ARTICLES, ...BLOG_SEO_ARTICLES];
+/** All Monde Veto articles (guides + SEO comparatifs + intent P1). */
+export const BLOG_ARTICLES: BlogArticle[] = [
+  ...BLOG_STATIC_ARTICLES,
+  ...BLOG_SEO_ARTICLES,
+  ...BLOG_INTENT_ARTICLES,
+];
 
 export function getBlogArticle(slug: string): BlogArticle | undefined {
   return BLOG_ARTICLES.find((a) => a.slug === slug);

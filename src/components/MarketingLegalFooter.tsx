@@ -21,6 +21,9 @@ export function MarketingLegalFooter() {
         <Link to="/monde-veto" className="mk-link">
           {t("marketing:nav.mondeVeto")}
         </Link>
+        <Link to="/press" className="mk-link">
+          {t("marketing:nav.press")}
+        </Link>
         <Link to="/privacy" className="mk-link">
           {t("common:privacy")}
         </Link>

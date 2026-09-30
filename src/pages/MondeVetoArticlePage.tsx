@@ -27,7 +27,11 @@ export default function MondeVetoArticlePage() {
   }
 
   const loc = article.locales[lang];
-  const related = BLOG_ARTICLES.filter((a) => a.slug !== article.slug).slice(0, 3);
+  const related = BLOG_ARTICLES.filter((a) => a.slug !== article.slug)
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, 3);
+  const faqItems = loc.faq ?? [];
+  const primaryCtaHref = loc.ctaHref || "/register";
 
   return (
     <div className="marketing-shell min-h-dvh flex flex-col">
@@ -75,6 +79,20 @@ export default function MondeVetoArticlePage() {
               },
             ],
           },
+          ...(faqItems.length > 0
+            ? [
+                {
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  inLanguage: lang,
+                  mainEntity: faqItems.map((item) => ({
+                    "@type": "Question",
+                    name: item.q,
+                    acceptedAnswer: { "@type": "Answer", text: item.a },
+                  })),
+                },
+              ]
+            : []),
         ]}
       />
 
@@ -134,16 +152,35 @@ export default function MondeVetoArticlePage() {
             ))}
           </div>
 
+          {faqItems.length > 0 && (
+            <section className="mk-article-faq">
+              <h2>{t("marketing:landing.faqLabel", { defaultValue: "FAQ" })}</h2>
+              <div className="mk-article-faq-list">
+                {faqItems.map((item) => (
+                  <details key={item.q} className="mk-article-faq-item">
+                    <summary>{item.q}</summary>
+                    <p>{item.a}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+
           <aside className="mk-article-cta">
             <h2>{loc.ctaTitle}</h2>
             <p>{loc.ctaBody}</p>
             <div className="mk-article-cta-actions">
-              <Link to="/register" className="mk-btn mk-btn-primary">
+              <Link to={primaryCtaHref} className="mk-btn mk-btn-primary">
                 {loc.ctaButton}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <Link to="/pricing" className="mk-btn mk-btn-outline-dark">
-                {t("marketing:nav.pricing")}
+              <Link
+                to={primaryCtaHref === "/pricing" ? "/register" : "/pricing"}
+                className="mk-btn mk-btn-outline-dark"
+              >
+                {primaryCtaHref === "/pricing"
+                  ? t("marketing:landing.ctaCreateAccount", { defaultValue: t("marketing:nav.getStarted") })
+                  : t("marketing:nav.pricing")}
               </Link>
             </div>
           </aside>

@@ -9,15 +9,24 @@ export type BlogSection = {
   imageCaption?: string;
 };
 
+export type BlogFaqItem = {
+  q: string;
+  a: string;
+};
+
 export type BlogArticleLocalized = {
   title: string;
   excerpt: string;
   metaDescription: string;
   category: string;
   sections: BlogSection[];
+  /** Optional FAQ for FAQPage schema + on-page block */
+  faq?: BlogFaqItem[];
   ctaTitle: string;
   ctaBody: string;
   ctaButton: string;
+  /** Primary CTA path (default /register) */
+  ctaHref?: string;
 };
 
 export type BlogArticle = {

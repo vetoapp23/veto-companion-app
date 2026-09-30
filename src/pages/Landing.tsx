@@ -235,6 +235,58 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="usecases-title">
+        <p className="mk-section-label">{t("landingUseCases.label")}</p>
+        <h2 id="usecases-title" className="mk-section-title">
+          {t("landingUseCases.title")}
+        </h2>
+        <p className="mk-section-copy">{t("landingUseCases.copy")}</p>
+        <div className="mk-usecases">
+          <article className="mk-usecase">
+            <h3>{t("landingUseCases.soloTitle")}</h3>
+            <p>{t("landingUseCases.soloBody")}</p>
+          </article>
+          <article className="mk-usecase">
+            <h3>{t("landingUseCases.clinicTitle")}</h3>
+            <p>{t("landingUseCases.clinicBody")}</p>
+          </article>
+          <article className="mk-usecase">
+            <h3>{t("landingUseCases.farmTitle")}</h3>
+            <p>{t("landingUseCases.farmBody")}</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="resources-title">
+        <p className="mk-section-label">{t("landingResources.label")}</p>
+        <h2 id="resources-title" className="mk-section-title">
+          {t("landingResources.title")}
+        </h2>
+        <p className="mk-section-copy">{t("landingResources.copy")}</p>
+        <div className="mk-resource-links">
+          <Link to="/monde-veto/logiciel-gestion-clinique-veterinaire" className="mk-resource-link">
+            {t("landingResources.guidePm")}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <Link to="/monde-veto/veterinary-crm-software" className="mk-resource-link">
+            {t("landingResources.guideCrm")}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <Link to="/monde-veto/alternative-excel-clinique-veterinaire" className="mk-resource-link">
+            {t("landingResources.guideExcel")}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <Link to="/monde-veto/prix-logiciel-veterinaire-crm" className="mk-resource-link">
+            {t("landingResources.guidePrice")}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <Link to="/monde-veto/classement-meilleurs-crm-erp-veterinaire-2026" className="mk-resource-link">
+            {t("landingResources.guideRank")}
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        </div>
+      </section>
+
       <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="faq-title">
         <p className="mk-section-label">{t("landing.faqLabel")}</p>
         <h2 id="faq-title" className="mk-section-title">

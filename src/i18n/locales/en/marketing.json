@@ -12,7 +12,8 @@
     "mainNavAria": "Main navigation",
     "footerAria": "Footer",
     "contact": "Contact us",
-    "mondeVeto": "The Veto World"
+    "mondeVeto": "The Veto World",
+    "press": "Press & directories"
   },
   "landing": {
     "seoTitle": "VetoCrm — Veterinary Practice Management Software & CRM",
@@ -177,5 +178,48 @@
     "readArticle": "Read article",
     "readTime": "{{minutes}} min",
     "related": "Related articles"
+  },
+  "press": {
+    "seoTitle": "Press & directories — VetoCrm kit",
+    "seoDescription": "VetoCrm press kit: blurbs, categories, screenshots and directory checklist (Product Hunt, Capterra, G2) for citations and listings.",
+    "seoKeywords": "VetoCrm press kit, veterinary CRM directory, practice management listing",
+    "eyebrow": "Authority & distribution",
+    "title": "Press, directories & product listings",
+    "lead": "Ready-to-paste copy for Product Hunt, Capterra, G2 and SaaS directories. Official spelling: VetoCrm (one t).",
+    "brandTitle": "Identity",
+    "brandSpell": "never “VettoCRM” — one spelling to avoid brand dilution.",
+    "blurbsTitle": "Ready-to-use blurbs",
+    "oneLiner": "One-liner",
+    "shortBlurb": "Short (directories)",
+    "longBlurb": "Long (product page)",
+    "categories": "Suggested categories",
+    "directoriesTitle": "Directories to submit (checklist)",
+    "directoriesLead": "Create / claim listings with the blurbs and screenshots above. Priority: fix any wrong “VettoCRM” mentions.",
+    "screensTitle": "Product screenshots",
+    "screensLead": "Use these public screens for listings.",
+    "ctaTitle": "Need a press demo?",
+    "ctaBody": "Create a discovery account or read the updated 2026 comparison.",
+    "ctaRanking": "See 2026 ranking"
+  },
+  "landingResources": {
+    "label": "Resources",
+    "title": "Guides to choose and get started",
+    "copy": "Intent pages for practice management, CRM and Excel migration — also built for search visibility.",
+    "guidePm": "Practice management software",
+    "guideCrm": "Veterinary CRM",
+    "guideExcel": "Leave spreadsheets",
+    "guidePrice": "Pricing & budget",
+    "guideRank": "2026 ranking"
+  },
+  "landingUseCases": {
+    "label": "Use cases",
+    "title": "Built for real clinic work",
+    "copy": "No invented testimonials — three profiles VetoCrm covers today.",
+    "soloTitle": "Solo practice",
+    "soloBody": "Calendar, records and vaccine recalls without spreadsheets — discovery plan to start.",
+    "clinicTitle": "Multi-vet clinic",
+    "clinicBody": "Admin / assistant roles, isolated data, stock and accounting by plan.",
+    "farmTitle": "Mixed / livestock",
+    "farmBody": "Batches, infrastructures and interventions plus companion-animal core."
   }
 }

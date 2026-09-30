@@ -12,7 +12,8 @@
     "mainNavAria": "Navigation principale",
     "footerAria": "Pied de page",
     "contact": "Nous contacter",
-    "mondeVeto": "Le Monde Veto"
+    "mondeVeto": "Le Monde Veto",
+    "press": "Presse & annuaires"
   },
   "landing": {
     "seoTitle": "VetoCrm — Logiciel de gestion clinique vétérinaire & CRM",
@@ -181,5 +182,48 @@
     "readArticle": "Lire l’article",
     "readTime": "{{minutes}} min",
     "related": "À lire aussi"
+  },
+  "press": {
+    "seoTitle": "Presse & annuaires — Kit VetoCrm",
+    "seoDescription": "Kit presse VetoCrm : descriptions, catégories, captures et liste d’annuaires (Product Hunt, Capterra, G2) pour citations et backlinks.",
+    "seoKeywords": "VetoCrm presse, veterinary CRM directory, practice management listing, kit média VetoCrm",
+    "eyebrow": "Autorité & distribution",
+    "title": "Presse, annuaires & fiches produit",
+    "lead": "Textes prêts à coller pour Product Hunt, Capterra, G2 et annuaires SaaS. Orthographe officielle : VetoCrm (un seul t).",
+    "brandTitle": "Identité",
+    "brandSpell": "jamais « VettoCRM » — une seule orthographe pour éviter la dilution de marque.",
+    "blurbsTitle": "Textes prêts à l’emploi",
+    "oneLiner": "Accroche (1 ligne)",
+    "shortBlurb": "Court (annuaires)",
+    "longBlurb": "Long (fiche produit)",
+    "categories": "Catégories suggérées",
+    "directoriesTitle": "Annuaires à soumettre (checklist)",
+    "directoriesLead": "Créez / revendiquez la fiche avec les textes ci-dessus et les captures. Priorité : corriger toute mention VettoCRM erronée.",
+    "screensTitle": "Captures produit",
+    "screensLead": "Utilisez ces écrans (déjà publics) pour les listings.",
+    "ctaTitle": "Besoin d’une démo presse ?",
+    "ctaBody": "Créez un compte découverte ou lisez le comparatif 2026 mis à jour.",
+    "ctaRanking": "Voir le classement 2026"
+  },
+  "landingResources": {
+    "label": "Ressources",
+    "title": "Guides pour choisir et démarrer",
+    "copy": "Pages d’intention pour les recherches practice management, CRM et migration Excel — aussi utiles pour le référencement.",
+    "guidePm": "Logiciel de gestion clinique",
+    "guideCrm": "CRM vétérinaire",
+    "guideExcel": "Quitter Excel",
+    "guidePrice": "Tarifs & budget",
+    "guideRank": "Classement 2026"
+  },
+  "landingUseCases": {
+    "label": "Cas d’usage",
+    "title": "Conçu pour le terrain clinique",
+    "copy": "Sans inventer de témoignages : trois profils que VetoCrm couvre dès aujourd’hui.",
+    "soloTitle": "Cabinet solo",
+    "soloBody": "Agenda, dossiers et rappels vaccins sans tableur — formule découverte pour démarrer.",
+    "clinicTitle": "Clinique multi-praticiens",
+    "clinicBody": "Rôles admin / assistant, données isolées, modules stock et compta selon le pack.",
+    "farmTitle": "Mixte / élevage",
+    "farmBody": "Lots, infrastructures et interventions en plus du cœur compagnons."
   }
 }
