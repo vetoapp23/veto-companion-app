@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { SeoHead, siteUrl } from "@/components/SeoHead";
+import { SeoHead } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { PRESS_KIT } from "@/content/pressKit";
@@ -21,20 +21,7 @@ export default function PressPage() {
         description={t("marketing:press.seoDescription")}
         keywords={t("marketing:press.seoKeywords")}
         path="/press"
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          name: t("marketing:press.seoTitle"),
-          description: t("marketing:press.seoDescription"),
-          url: siteUrl("/press"),
-          about: {
-            "@type": "SoftwareApplication",
-            name: PRESS_KIT.brand,
-            url: PRESS_KIT.website,
-            applicationCategory: "BusinessApplication",
-            applicationSubCategory: "Veterinary Practice Management Software",
-          },
-        }}
+        noIndex
       />
 
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--mk-fog)" }}>

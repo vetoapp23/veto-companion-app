@@ -85,10 +85,6 @@ export default function MondeVetoPage() {
                 {t("marketing:landingResources.guideRank")}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <Link to="/press" className="mk-resource-link">
-                {t("marketing:nav.press")}
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
             </div>
           </div>
 
