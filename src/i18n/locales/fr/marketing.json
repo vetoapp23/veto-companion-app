@@ -15,12 +15,12 @@
     "mondeVeto": "Le Monde Veto"
   },
   "landing": {
-    "seoTitle": "VetoCrm — Logiciel CRM vétérinaire | Gestion clinique & cabinet",
-    "seoDescription": "CRM vétérinaire tout-en-un : clients, animaux, RDV, dossiers médicaux, vaccins, stock, comptabilité et élevage. Démo interactive gratuite et essai sans engagement.",
-    "seoKeywords": "CRM vétérinaire, logiciel clinique vétérinaire, gestion cabinet véto, dossier médical animal, logiciel vétérinaire Maroc, solution CRM vétérinaire, VetoCrm",
+    "seoTitle": "VetoCrm — Logiciel de gestion clinique vétérinaire & CRM",
+    "seoDescription": "Logiciel de gestion pour cliniques et cabinets vétérinaires : clients, animaux, RDV, dossiers médicaux, vaccins, stock, comptabilité et élevage. Démo gratuite.",
+    "seoKeywords": "logiciel de gestion clinique vétérinaire, logiciel vétérinaire, CRM vétérinaire, practice management vétérinaire, gestion cabinet véto, dossier médical animal, VetoCrm",
     "heroAlt": "Clinique vétérinaire moderne — logiciel VetoCrm pour la gestion du cabinet",
     "tagline": "La clinique, fluide.",
-    "heroSub": "Clients, animaux, rendez-vous et dossiers médicaux — un CRM pensé pour les vétérinaires, du cabinet solo à la clinique multi-praticiens.",
+    "heroSub": "Clients, animaux, rendez-vous et dossiers médicaux — un logiciel de gestion (CRM) pensé pour les vétérinaires, du cabinet solo à la clinique multi-praticiens.",
     "demoLabel": "Démo interactive",
     "demoTitle": "Explorez VetoCrm avec la Clinique Démo",
     "demoCopy": "Visite guidée dans la vraie application, sur les données de la Clinique Démo — en lecture seule. Dossiers, documents, certificats et modules clés, sans inscription ni risque de modifier les données.",
@@ -52,11 +52,15 @@
     "featSecurity": "Sécurité multi-clinique",
     "featSecurityBody": "Données isolées par organisation, rôles et accès maîtrisés.",
     "faqLabel": "FAQ",
-    "faqTitle": "Questions fréquentes sur le CRM vétérinaire",
+    "faqTitle": "Questions fréquentes sur le logiciel de gestion vétérinaire",
     "faq": [
       {
         "q": "Qu’est-ce que VetoCrm ?",
-        "a": "VetoCrm est un CRM / logiciel de gestion pour cliniques et cabinets vétérinaires : clients, animaux, rendez-vous, consultations, vaccins, antiparasites, stock et fermes."
+        "a": "VetoCrm est un logiciel de gestion clinique vétérinaire (CRM / PIMS) : clients, animaux, rendez-vous, consultations, vaccins, antiparasites, stock et fermes — une alternative moderne aux tableurs."
+      },
+      {
+        "q": "VetoCrm est-il un logiciel de practice management ?",
+        "a": "Oui. VetoCrm couvre la gestion de pratique : agenda, dossiers médicaux, prescriptions, rappels vaccins, stock et comptabilité, pour le cabinet solo comme la clinique multi-praticiens."
       },
       {
         "q": "VetoCrm convient-il à un cabinet solo ?",
@@ -83,7 +87,7 @@
     "ctaBandBody": "Démarrez gratuitement, évoluez quand vous voulez. Annulation simple, sans engagement opaque.",
     "ctaCreateAccount": "Créer mon compte",
     "ctaSeePricing": "Voir les tarifs CRM",
-    "footerCopy": "© {{year}} VetoCrm — CRM et logiciel de gestion pour cliniques vétérinaires",
+    "footerCopy": "© {{year}} VetoCrm — Logiciel de gestion clinique & CRM pour vétérinaires",
     "plansLabel": "Formules",
     "plansTitle": "Des packs adaptés à votre clinique",
     "plansCopy": "Les limites et modules actifs se mettent à jour automatiquement selon votre offre. Comparez et choisissez.",
@@ -93,9 +97,9 @@
     "plansPerMonth": "/mois"
   },
   "pricing": {
-    "seoTitle": "Tarifs VetoCrm — Formules & prix CRM vétérinaire",
-    "seoDescription": "Comparez les packs VetoCrm : gratuit, Pro, Duo, Clinique. Stockage, utilisateurs, stock, compta et modules pour votre cabinet ou clinique vétérinaire.",
-    "seoKeywords": "tarifs CRM vétérinaire, prix logiciel vétérinaire, abonnement clinique véto, VetoCrm pricing",
+    "seoTitle": "Tarifs VetoCrm — Prix logiciel de gestion clinique vétérinaire",
+    "seoDescription": "Comparez les formules VetoCrm (gratuit, Pro, Duo, Clinique) : stockage, utilisateurs, stock et modules pour votre logiciel de gestion vétérinaire.",
+    "seoKeywords": "prix logiciel vétérinaire, tarifs CRM vétérinaire, abonnement clinique véto, logiciel gestion cabinet vétérinaire, VetoCrm pricing",
     "badge": "Tarifs simples et transparents",
     "title": "Choisissez la formule adaptée à votre pratique",
     "subtitle": "Du vétérinaire indépendant à la clinique multi-praticiens. Commencez gratuitement, évoluez quand vous le souhaitez.",
@@ -151,9 +155,9 @@
     }
   },
   "contact": {
-    "seoTitle": "Contact VetoCrm — Support & démo CRM vétérinaire",
-    "seoDescription": "Contactez l’équipe VetoCrm pour une démo, le support ou un partenariat. Logiciel CRM pour cliniques et cabinets vétérinaires.",
-    "seoKeywords": "contact VetoCrm, support logiciel vétérinaire, démo CRM véto",
+    "seoTitle": "Contact VetoCrm — Démo logiciel de gestion vétérinaire",
+    "seoDescription": "Contactez VetoCrm pour une démo, du support ou un partenariat. Logiciel de gestion clinique & CRM pour cabinets et cliniques vétérinaires.",
+    "seoKeywords": "contact VetoCrm, démo logiciel vétérinaire, support CRM vétérinaire, logiciel gestion clinique",
     "eyebrow": "Support & partenariats",
     "title": "Nous contacter",
     "lead": "Une question sur VetoCrm, votre abonnement ou un partenariat ? Écrivez-nous ou rejoignez-nous sur les réseaux.",
@@ -168,9 +172,9 @@
     "writeUs": "Écrire un e-mail"
   },
   "mondeVeto": {
-    "seoTitle": "Le Monde Veto — Guides CRM & gestion clinique vétérinaire | VetoCrm",
-    "seoDescription": "Guides vétérinaires : digitalisation, IA, comptabilité clinique, assurance animale, CRM et nouvelles pratiques. Ressources pour moderniser votre cabinet.",
-    "seoKeywords": "blog vétérinaire, digitalisation clinique, CRM vétérinaire guide, gestion cabinet véto",
+    "seoTitle": "Le Monde Veto — Guides logiciel de gestion & CRM vétérinaire | VetoCrm",
+    "seoDescription": "Guides pour cliniques : digitalisation, IA, comptabilité, assurance, CRM et practice management. Ressources VetoCrm pour moderniser votre cabinet.",
+    "seoKeywords": "blog vétérinaire, digitalisation clinique, logiciel gestion vétérinaire, CRM vétérinaire guide, practice management véto",
     "eyebrow": "Guides & actualités",
     "title": "Le Monde Veto",
     "lead": "Articles pratiques pour cliniques et cabinets : digitalisation, IA, gestion, assurance et CRM — pour soigner mieux et piloter plus sereinement.",

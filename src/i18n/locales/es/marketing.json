@@ -15,12 +15,12 @@
     "mondeVeto": "El Mundo Veto"
   },
   "landing": {
-    "seoTitle": "VetoCrm — Software CRM veterinario | Gestión de clínica y consultorio",
-    "seoDescription": "CRM veterinario integral: clientes, pacientes, citas, historiales clínicos, vacunas, inventario, contabilidad y ganadería. Demo interactiva gratuita y prueba sin compromiso.",
-    "seoKeywords": "CRM veterinario, software clínica veterinaria, gestión consultorio veterinario, historial médico animal, soluciones CRM veterinario, VetoCrm",
+    "seoTitle": "VetoCrm — Software de gestión clínica veterinaria y CRM",
+    "seoDescription": "Software de gestión para clínicas veterinarias: clientes, pacientes, citas, historiales clínicos, vacunas, inventario, contabilidad y ganadería. Demo gratuita.",
+    "seoKeywords": "software gestión clínica veterinaria, software veterinario, CRM veterinario, gestión consultorio veterinario, historial médico animal, VetoCrm",
     "heroAlt": "Clínica veterinaria moderna — software de gestión VetoCrm",
     "tagline": "La clínica, fluida.",
-    "heroSub": "Clientes, pacientes, citas e historiales clínicos — un CRM pensado para veterinarios, del consultorio individual a la clínica multipráctica.",
+    "heroSub": "Clientes, pacientes, citas e historiales clínicos — software de gestión (CRM) pensado para veterinarios, del consultorio individual a la clínica multipráctica.",
     "demoLabel": "Demo interactiva",
     "demoTitle": "Explore VetoCrm con la Demo Clínica",
     "demoCopy": "Visita guiada en la aplicación real con datos de la Demo Clínica — solo lectura. Historiales, documentos, certificados y módulos clave, sin registro ni riesgo de modificar datos.",
@@ -52,11 +52,15 @@
     "featSecurity": "Seguridad multicínica",
     "featSecurityBody": "Datos aislados por organización, roles y accesos controlados.",
     "faqLabel": "FAQ",
-    "faqTitle": "Preguntas frecuentes sobre el CRM veterinario",
+    "faqTitle": "Preguntas frecuentes sobre el software de gestión veterinaria",
     "faq": [
       {
         "q": "¿Qué es VetoCrm?",
-        "a": "VetoCrm es un CRM / software de gestión para clínicas veterinarias: clientes, pacientes, citas, consultas, vacunas, antiparasitarios, inventario y granjas."
+        "a": "VetoCrm es un software de gestión clínica veterinaria (CRM / PIMS): clientes, pacientes, citas, consultas, vacunas, antiparasitarios, inventario y granjas — una alternativa moderna a las hojas de cálculo."
+      },
+      {
+        "q": "¿VetoCrm es un software de gestión veterinaria?",
+        "a": "Sí. VetoCrm cubre agenda, historiales clínicos, recetas, recordatorios de vacunas, inventario y contabilidad — para el consultorio individual y la clínica multipráctica."
       },
       {
         "q": "¿VetoCrm sirve para un consultorio individual?",
@@ -73,17 +77,13 @@
       {
         "q": "¿Puedo probar VetoCrm sin registrarme?",
         "a": "Sí. La demo clínica interactiva permite explorar la aplicación real en solo lectura, con datos realistas, desde la página de inicio."
-      },
-      {
-        "q": "¿VetoCrm es un software de gestión veterinaria?",
-        "a": "Sí. VetoCrm reúne CRM, historiales clínicos, agenda, inventario y contabilidad — una alternativa moderna a las hojas de cálculo y archivos dispersos."
       }
     ],
     "ctaBandTitle": "¿Listo para modernizar su práctica veterinaria?",
     "ctaBandBody": "Empiece gratis, evolucione cuando quiera. Cancelación sencilla, sin compromiso opaco.",
     "ctaCreateAccount": "Crear mi cuenta",
     "ctaSeePricing": "Ver precios del CRM",
-    "footerCopy": "© {{year}} VetoCrm — CRM y software de gestión para clínicas veterinarias",
+    "footerCopy": "© {{year}} VetoCrm — Software de gestión clínica veterinaria y CRM",
     "plansLabel": "Planes",
     "plansTitle": "Planes adaptados a su clínica",
     "plansCopy": "Los límites y módulos activos se actualizan automáticamente según su oferta. Compare y elija.",
@@ -93,9 +93,9 @@
     "plansPerMonth": "/mes"
   },
   "pricing": {
-    "seoTitle": "Precios VetoCrm — Planes y tarifas CRM veterinario",
-    "seoDescription": "Compare los planes VetoCrm: gratis, Pro, Duo, Clínica. Almacenamiento, usuarios, inventario, contabilidad y módulos para su clínica veterinaria.",
-    "seoKeywords": "precios CRM veterinario, coste software clínica veterinaria, planes VetoCrm",
+    "seoTitle": "Precios VetoCrm — Tarifas software de gestión clínica veterinaria",
+    "seoDescription": "Compare los planes VetoCrm: gratis, Pro, Duo, Clínica. Almacenamiento, usuarios, inventario y módulos para su software de gestión veterinaria.",
+    "seoKeywords": "precio software veterinario, tarifas CRM veterinario, planes gestión clínica veterinaria, VetoCrm",
     "badge": "Precios simples y transparentes",
     "title": "Elija el plan adecuado a su práctica",
     "subtitle": "Del veterinario independiente a la clínica multipráctica. Empiece gratis, evolucione cuando quiera.",
@@ -151,9 +151,9 @@
     }
   },
   "contact": {
-    "seoTitle": "Contacto VetoCrm — Soporte y demo CRM veterinario",
-    "seoDescription": "Contacte al equipo VetoCrm para una demo, soporte o colaboración. Software CRM para clínicas y consultorios veterinarios.",
-    "seoKeywords": "contacto VetoCrm, soporte software veterinario, demo CRM veterinario",
+    "seoTitle": "Contacto VetoCrm — Demo software de gestión veterinaria",
+    "seoDescription": "Contacte a VetoCrm para una demo, soporte o colaboración. Software de gestión clínica y CRM para clínicas veterinarias.",
+    "seoKeywords": "contacto VetoCrm, demo software veterinario, soporte gestión clínica, CRM veterinario",
     "eyebrow": "Soporte y alianzas",
     "title": "Contáctenos",
     "lead": "¿Preguntas sobre VetoCrm, su suscripción o una colaboración? Escríbanos o síganos en redes.",
@@ -168,9 +168,9 @@
     "writeUs": "Enviar un correo"
   },
   "mondeVeto": {
-    "seoTitle": "El Mundo Veto — Guías CRM y gestión clínica veterinaria | VetoCrm",
-    "seoDescription": "Guías veterinarias: digitalización, IA, contabilidad clínica, seguros, CRM y nuevas prácticas. Recursos para modernizar su consultorio.",
-    "seoKeywords": "blog veterinario, digitalización clínica, guía CRM veterinario, gestión consultorio",
+    "seoTitle": "El Mundo Veto — Guías de gestión clínica y CRM veterinario | VetoCrm",
+    "seoDescription": "Guías para clínicas: digitalización, IA, contabilidad, seguros, CRM y software de gestión. Recursos VetoCrm para modernizar su consultorio.",
+    "seoKeywords": "blog veterinario, digitalización clínica, software gestión veterinaria, guía CRM veterinario",
     "eyebrow": "Guías y noticias",
     "title": "El Mundo Veto",
     "lead": "Artículos prácticos para clínicas y gabinetes: digitalización, IA, gestión, seguros y CRM — para cuidar mejor y gestionar con más claridad.",

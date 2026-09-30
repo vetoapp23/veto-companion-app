@@ -8,6 +8,7 @@ import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { launchClinicDemo } from "@/lib/demoLogin";
 import { useToast } from "@/hooks/use-toast";
+import { LEGAL_ENTITY } from "@/content/legal";
 
 type FaqItem = { q: string; a: string };
 
@@ -49,9 +50,23 @@ export default function Landing() {
         jsonLd={[
           {
             "@context": "https://schema.org",
+            "@type": "Organization",
+            "@id": `${siteUrl("/")}#organization`,
+            name: LEGAL_ENTITY.brand,
+            alternateName: ["Veto CRM", "VetoCrm Veterinary"],
+            url: siteUrl("/"),
+            logo: siteUrl("/favicon.svg"),
+            description: t("landing.seoDescription"),
+            email: LEGAL_ENTITY.publicEmail,
+            sameAs: [LEGAL_ENTITY.linkedin, LEGAL_ENTITY.instagram],
+          },
+          {
+            "@context": "https://schema.org",
             "@type": "SoftwareApplication",
             name: "VetoCrm",
+            alternateName: "Veto CRM",
             applicationCategory: "BusinessApplication",
+            applicationSubCategory: "Veterinary Practice Management Software",
             operatingSystem: "Web",
             url: siteUrl("/"),
             description: t("landing.seoDescription"),
@@ -62,7 +77,7 @@ export default function Landing() {
               priceCurrency: "EUR",
               description: t("pricing.free", { defaultValue: "Formule découverte gratuite" }),
             },
-            publisher: { "@type": "Organization", name: "VetoCrm", url: siteUrl("/") },
+            publisher: { "@id": `${siteUrl("/")}#organization` },
           },
           {
             "@context": "https://schema.org",
