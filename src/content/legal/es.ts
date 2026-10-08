@@ -85,7 +85,7 @@ export const legalEs: LegalBundle = {
         title: "7. Transferencias internacionales",
         paragraphs: [
           "Según el hosting y proveedores, los datos pueden tratarse fuera de su país (incluido fuera del EEE), con garantías adecuadas (CTC de la UE, decisiones de adecuación u equivalentes) y medidas de seguridad.",
-          "Para clínicas en la UE/EEE, un acuerdo de encargo (DPA) está disponible bajo petición en privacy@vetocrm.com.",
+          `Para clínicas en la UE/EEE, un acuerdo de encargo (DPA) está disponible bajo petición en ${E.contactEmail}.`,
         ],
       },
       {

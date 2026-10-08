@@ -22,9 +22,10 @@ export const LEGAL_ENTITY = {
   brand: "VetoCrm",
   website: "https://www.vetocrm.com",
   contactEmail: "contact@vetocrm.com",
-  privacyEmail: "privacy@vetocrm.com",
-  supportEmail: "support@vetocrm.com",
-  /** Public contact email shown on /contact */
+  /** Same public inbox (ImprovMX → Gmail); keep one brand address everywhere */
+  privacyEmail: "contact@vetocrm.com",
+  supportEmail: "contact@vetocrm.com",
+  /** Public contact email shown on /contact, footer, schema */
   publicEmail: "contact@vetocrm.com",
   address: "Rabat, Royaume du Maroc",
   companyFormalName: "VetoCrm",

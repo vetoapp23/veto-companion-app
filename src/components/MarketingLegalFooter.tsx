@@ -48,7 +48,7 @@ export function MarketingLegalFooter() {
           aria-label={`Email ${LEGAL_ENTITY.publicEmail}`}
         >
           <Mail className="h-4 w-4" aria-hidden />
-          <span>Email</span>
+          <span>{LEGAL_ENTITY.publicEmail}</span>
         </a>
         <a
           href={LEGAL_ENTITY.linkedin}

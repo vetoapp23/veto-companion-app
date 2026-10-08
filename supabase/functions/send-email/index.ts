@@ -80,10 +80,12 @@ function buildRaw(opts: SendEmailBody): string {
   const ccList = normalizeEmails(opts.cc).join(", ");
   const bccList = normalizeEmails(opts.bcc).join(", ");
   const fromName = (opts.from_name || "VetoCrm").replace(/[\r\n<>]/g, "").slice(0, 80);
-  const from = `${fromName} <vetoapp23@gmail.com>`;
+  const fromEmail = Deno.env.get("FROM_EMAIL") || "contact@vetocrm.com";
+  const from = `${fromName} <${fromEmail}>`;
 
   const headers = [
     `From: ${from}`,
+    `Reply-To: ${fromEmail}`,
     `To: ${toList}`,
     ccList ? `Cc: ${ccList}` : "",
     bccList ? `Bcc: ${bccList}` : "",

@@ -74,5 +74,5 @@ console.log("Templates Auth mis à jour (FR / VetoCrm).");
 if (process.env.ENABLE_SEND_EMAIL_HOOK === "1") {
   console.log("Send Email Hook activé → auth-email-hook");
 } else {
-  console.log("Astuce : pour envoyer depuis vetoapp23@gmail.com, relance avec ENABLE_SEND_EMAIL_HOOK=1 et SEND_EMAIL_HOOK_SECRET.");
+  console.log("Astuce : pour envoyer depuis contact@vetocrm.com, relance avec ENABLE_SEND_EMAIL_HOOK=1 et SEND_EMAIL_HOOK_SECRET.");
 }

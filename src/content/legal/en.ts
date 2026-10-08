@@ -85,7 +85,7 @@ export const legalEn: LegalBundle = {
         title: "7. International transfers",
         paragraphs: [
           "Depending on hosting and vendors, data may be processed outside your country (including outside the EEA). We rely on appropriate safeguards (EU Standard Contractual Clauses, adequacy decisions, or equivalent) plus technical security measures.",
-          "For clinics in the EU/EEA, a Data Processing Agreement (DPA) is available on request at privacy@vetocrm.com.",
+          `For clinics in the EU/EEA, a Data Processing Agreement (DPA) is available on request at ${E.contactEmail}.`,
         ],
       },
       {
@@ -397,7 +397,7 @@ export const legalEn: LegalBundle = {
         paragraphs: [
           "As a rule, started billing periods are non-refundable on a pro-rata basis.",
           "As a goodwill gesture, a full refund may be granted within 14 days of the first payment on an annual plan if the account has not substantially used the Service (case-by-case).",
-          "Requests: support@vetocrm.com with account email and payment proof. Stripe refunds appear per your bank’s timeline (often 5–10 business days).",
+          `Requests: ${E.contactEmail} with account email and payment proof. Stripe refunds appear per your bank’s timeline (often 5–10 business days).`,
         ],
       },
       {

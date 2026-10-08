@@ -78,15 +78,16 @@ void i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: "fr",
+    fallbackLng: "en",
     supportedLngs: [...SUPPORTED_LANGS],
+    nonExplicitSupportedLngs: true,
     defaultNS: "common",
     ns: ["common", "nav", "auth", "marketing", "app", "medical", "settings", "demo"],
     interpolation: { escapeValue: false },
     compatibilityJSON: "v4",
     detection: {
-      order: ["querystring", "localStorage", "navigator"],
-      lookupQuerystring: "lng",
+      // Manual switcher (localStorage) wins; else browser language; else EN.
+      order: ["localStorage", "navigator"],
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,
       caches: ["localStorage"],
     },
@@ -117,7 +118,7 @@ i18n.on("languageChanged", (lng) => {
 });
 
 if (typeof document !== "undefined") {
-  document.documentElement.lang = i18n.language?.split("-")[0] || "fr";
+  document.documentElement.lang = i18n.language?.split("-")[0] || "en";
 }
 
 export default i18n;

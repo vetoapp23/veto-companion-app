@@ -88,7 +88,7 @@ export const legalFr: LegalBundle = {
         title: "7. Transferts internationaux",
         paragraphs: [
           "Selon la configuration d’hébergement et des prestataires, des données peuvent être traitées hors de votre pays (y compris hors EEE). Dans ce cas, nous nous appuyons sur des garanties appropriées (clauses contractuelles types de la Commission européenne, décisions d’adéquation, ou mesures équivalentes) et des mesures de sécurité techniques.",
-          "Pour les cliniques situées dans l’UE/EEE, un accord de sous-traitance (DPA) peut être fourni sur demande via privacy@vetocrm.com.",
+          `Pour les cliniques situées dans l’UE/EEE, un accord de sous-traitance (DPA) peut être fourni sur demande via ${E.contactEmail}.`,
         ],
       },
       {
@@ -122,7 +122,7 @@ export const legalFr: LegalBundle = {
         id: "deletion",
         title: "11. Suppression de compte (App Store / plateformes)",
         paragraphs: [
-          "Vous pouvez demander la suppression de votre compte et des données associées depuis les paramètres de l’application / du profil, ou par e-mail à support@vetocrm.com. La suppression entraîne la perte d’accès au service ; certaines données peuvent être conservées temporairement pour obligations légales ou résolution de litiges.",
+          `Vous pouvez demander la suppression de votre compte et des données associées depuis les paramètres de l’application / du profil, ou par e-mail à ${E.contactEmail}. La suppression entraîne la perte d’accès au service ; certaines données peuvent être conservées temporairement pour obligations légales ou résolution de litiges.`,
           "Les administrateurs de clinique peuvent également demander l’export puis la suppression des données de leur organisation.",
         ],
       },
@@ -389,7 +389,7 @@ export const legalFr: LegalBundle = {
         id: "cancel",
         title: "1. Annulation",
         paragraphs: [
-          "Vous pouvez annuler un abonnement payant à tout moment depuis l’espace facturation / paramètres, ou en contactant support@vetocrm.com.",
+          `Vous pouvez annuler un abonnement payant à tout moment depuis l’espace facturation / paramètres, ou en contactant ${E.contactEmail}.`,
           "Sauf disposition contraire, l’annulation prend effet à la fin de la période de facturation en cours : vous conservez l’accès payant jusqu’à cette date.",
           "Le plan gratuit ou les fonctionnalités réduites peuvent s’appliquer ensuite selon les quotas.",
         ],
@@ -400,7 +400,7 @@ export const legalFr: LegalBundle = {
         paragraphs: [
           "En principe, les périodes déjà entamées ne sont pas remboursables au prorata.",
           "À titre commercial, un remboursement intégral peut être accordé dans les 14 jours suivant le premier paiement d’un abonnement annuel si le compte n’a pas fait un usage substantiel du service (évaluation au cas par cas).",
-          "Les demandes : support@vetocrm.com avec l’e-mail du compte et la preuve de paiement. Les remboursements Stripe apparaissent selon les délais de votre banque (généralement 5–10 jours ouvrés).",
+          `Les demandes : ${E.contactEmail} avec l’e-mail du compte et la preuve de paiement. Les remboursements Stripe apparaissent selon les délais de votre banque (généralement 5–10 jours ouvrés).`,
         ],
       },
       {

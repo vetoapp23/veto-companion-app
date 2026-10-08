@@ -1,9 +1,9 @@
-// Auth Email Hook: emails d'authentification VetoCrm via Gmail connector.
+// Auth Email Hook: emails d'authentification VetoCrm via Resend (noreply@).
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
 const FROM_NAME = "VetoCrm";
-const FROM_EMAIL = "vetoapp23@gmail.com";
+const FROM_EMAIL = "noreply@vetocrm.com";
+const REPLY_TO_EMAIL = "contact@vetocrm.com";
 const BRAND = {
   teal: "#0f766e",
   mint: "#5eead4",
@@ -14,25 +14,6 @@ const BRAND = {
   line: "#d1e5e1",
   white: "#ffffff",
 };
-
-function b64url(input: string): string {
-  const bytes = new TextEncoder().encode(input);
-  let bin = "";
-  bytes.forEach((b) => (bin += String.fromCharCode(b)));
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-function buildRawMessage(to: string, subject: string, html: string): string {
-  const headers = [
-    `From: ${FROM_NAME} <${FROM_EMAIL}>`,
-    `To: ${to}`,
-    `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
-    "MIME-Version: 1.0",
-    'Content-Type: text/html; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-  ];
-  return headers.join("\r\n") + "\r\n\r\n" + html;
-}
 
 type EmailAction =
   | "signup"
@@ -190,7 +171,6 @@ function renderEmail(opts: {
     <tr>
       <td align="center">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${BRAND.white};border-radius:20px;overflow:hidden;border:1px solid ${BRAND.line};box-shadow:0 12px 40px rgba(15,118,110,0.08);">
-          <!-- Header brand -->
           <tr>
             <td style="background:linear-gradient(135deg,${BRAND.deep} 0%,${BRAND.teal} 100%);padding:28px 28px 24px;">
               <p style="margin:0;font-size:22px;font-weight:800;letter-spacing:-0.04em;color:${BRAND.white};">
@@ -202,7 +182,6 @@ function renderEmail(opts: {
             </td>
           </tr>
 
-          <!-- Body -->
           <tr>
             <td style="padding:32px 28px 8px;">
               <h1 style="margin:0 0 16px;font-size:22px;line-height:1.25;letter-spacing:-0.03em;font-weight:800;color:${BRAND.ink};">
@@ -223,16 +202,19 @@ function renderEmail(opts: {
             </td>
           </tr>
 
-          <!-- Footer -->
           <tr>
             <td style="padding:8px 28px 28px;">
               <hr style="border:none;border-top:1px solid ${BRAND.line};margin:24px 0;" />
+              <p style="margin:0 0 8px;font-size:12px;line-height:1.55;color:${BRAND.muted};">
+                Cet e-mail est envoyé automatiquement. Pour nous joindre : ${REPLY_TO_EMAIL}.
+              </p>
               <p style="margin:0 0 8px;font-size:12px;line-height:1.55;color:${BRAND.muted};">
                 Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail — aucun changement ne sera effectué.
               </p>
               <p style="margin:0;font-size:12px;line-height:1.55;color:${BRAND.muted};">
                 © ${year} VetoCrm — CRM vétérinaire pour cliniques et cabinets<br />
-                <a href="https://vetocrm.com" style="color:${BRAND.teal};text-decoration:none;font-weight:600;">vetocrm.com</a>
+                <a href="https://www.vetocrm.com" style="color:${BRAND.teal};text-decoration:none;font-weight:600;">vetocrm.com</a>
+                · <a href="mailto:${REPLY_TO_EMAIL}" style="color:${BRAND.teal};text-decoration:none;font-weight:600;">${REPLY_TO_EMAIL}</a>
               </p>
             </td>
           </tr>
@@ -246,15 +228,47 @@ function renderEmail(opts: {
   return { subject: copy.subject, html };
 }
 
+async function sendWithResend(opts: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ ok: true; id?: string } | { ok: false; status: number; body: string }> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) throw new Error("RESEND_API_KEY missing");
+
+  const fromEmail = Deno.env.get("AUTH_FROM_EMAIL") || Deno.env.get("FROM_EMAIL") || FROM_EMAIL;
+  const replyTo = Deno.env.get("AUTH_REPLY_TO") || REPLY_TO_EMAIL;
+
+  const resp = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `${FROM_NAME} <${fromEmail}>`,
+      to: [opts.to],
+      reply_to: replyTo,
+      subject: opts.subject,
+      html: opts.html,
+    }),
+  });
+
+  const body = await resp.text();
+  if (!resp.ok) return { ok: false, status: resp.status, body };
+  try {
+    const parsed = JSON.parse(body) as { id?: string };
+    return { ok: true, id: parsed.id };
+  } catch {
+    return { ok: true };
+  }
+}
+
 Deno.serve(async (req) => {
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const GOOGLE_MAIL_API_KEY = Deno.env.get("GOOGLE_MAIL_API_KEY");
     const HOOK_SECRET = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
-
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
-    if (!GOOGLE_MAIL_API_KEY) throw new Error("GOOGLE_MAIL_API_KEY missing — Gmail not connected");
     if (!HOOK_SECRET) throw new Error("SEND_EMAIL_HOOK_SECRET missing");
+    if (!Deno.env.get("RESEND_API_KEY")) throw new Error("RESEND_API_KEY missing");
 
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers as unknown as Iterable<[string, string]>);
@@ -292,23 +306,13 @@ Deno.serve(async (req) => {
       email_action_type: email_data.email_action_type,
     });
 
-    const raw = b64url(buildRawMessage(user.email, subject, html));
-
-    const resp = await fetch(`${GATEWAY_URL}/users/me/messages/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": GOOGLE_MAIL_API_KEY,
-      },
-      body: JSON.stringify({ raw }),
-    });
-
-    if (!resp.ok) {
-      const errText = await resp.text();
-      console.error("Gmail send failed", resp.status, errText);
+    const result = await sendWithResend({ to: user.email, subject, html });
+    if (!result.ok) {
+      console.error("Resend send failed", result.status, result.body);
       return new Response(
-        JSON.stringify({ error: { http_code: 502, message: `Gmail send failed: ${errText}` } }),
+        JSON.stringify({
+          error: { http_code: 502, message: `Resend send failed: ${result.body}` },
+        }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       );
     }
