@@ -74,6 +74,8 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
 }
 
 export const signUp = async (email: string, password: string, username: string, fullName: string, role: 'admin' | 'assistant' = 'assistant') => {
+  const { resolveAppLanguage } = await import('@/i18n')
+  const locale = resolveAppLanguage()
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -81,7 +83,8 @@ export const signUp = async (email: string, password: string, username: string, 
       data: {
         username,
         full_name: fullName,
-        role
+        role,
+        locale,
       }
     }
   })
@@ -242,8 +245,11 @@ export const signInWithGoogle = async (opts?: { next?: string }) => {
 }
 
 export const resetPassword = async (email: string) => {
+  const { resolveAppLanguage } = await import('@/i18n')
+  const { withLng } = await import('./appUrl')
+  const locale = resolveAppLanguage()
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: appPath('/reset-password'),
+    redirectTo: withLng('/reset-password', locale),
   })
 
   if (error) throw error

@@ -1,9 +1,11 @@
-// Auth Email Hook: emails d'authentification VetoCrm via Resend (noreply@).
+// Auth Email Hook: transactional emails via Resend, localized FR / EN / ES.
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
+import { COPY, REPLY_TO_EMAIL, type Lang } from "./locales.ts";
 
 const FROM_NAME = "VetoCrm";
 const FROM_EMAIL = "noreply@vetocrm.com";
-const REPLY_TO_EMAIL = "contact@vetocrm.com";
+const SUPPORTED = ["fr", "en", "es"] as const;
+
 const BRAND = {
   teal: "#0f766e",
   mint: "#5eead4",
@@ -26,86 +28,41 @@ type EmailAction =
   | "reauthentication"
   | string;
 
-function copyFor(action: EmailAction): {
-  subject: string;
-  eyebrow: string;
-  title: string;
-  intro: string;
-  detail: string;
-  cta: string;
-} {
-  switch (action) {
-    case "signup":
-      return {
-        subject: "Confirmez votre compte VetoCrm",
-        eyebrow: "Bienvenue",
-        title: "Activez votre espace clinique",
-        intro:
-          "Merci de rejoindre VetoCrm, le CRM pensé pour les vétérinaires. Une dernière étape : confirmez votre adresse e-mail pour sécuriser votre clinique.",
-        detail:
-          "Après confirmation, vous pourrez gérer clients, patients, rendez-vous, consultations, vaccins et plus encore.",
-        cta: "Confirmer mon e-mail",
-      };
-    case "recovery":
-      return {
-        subject: "Réinitialisation du mot de passe — VetoCrm",
-        eyebrow: "Sécurité",
-        title: "Réinitialisez votre mot de passe",
-        intro:
-          "Vous avez demandé à réinitialiser le mot de passe de votre compte VetoCrm. Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.",
-        detail: "Ce lien est temporaire et à usage unique pour protéger votre clinique.",
-        cta: "Choisir un nouveau mot de passe",
-      };
-    case "invite":
-      return {
-        subject: "Invitation à rejoindre une clinique — VetoCrm",
-        eyebrow: "Invitation",
-        title: "Vous êtes invité(e) sur VetoCrm",
-        intro:
-          "Une clinique vous invite à rejoindre son équipe sur VetoCrm. Acceptez l’invitation pour accéder à l’espace partagé.",
-        detail: "Vous pourrez ensuite vous connecter avec vos identifiants.",
-        cta: "Accepter l’invitation",
-      };
-    case "magiclink":
-      return {
-        subject: "Votre lien de connexion VetoCrm",
-        eyebrow: "Connexion",
-        title: "Connectez-vous en un clic",
-        intro: "Voici votre lien magique pour accéder à votre espace clinique VetoCrm.",
-        detail: "Si vous n’avez pas demandé ce lien, ignorez cet e-mail.",
-        cta: "Accéder à mon espace",
-      };
-    case "email_change":
-    case "email_change_current":
-    case "email_change_new":
-      return {
-        subject: "Confirmez votre nouvelle adresse e-mail — VetoCrm",
-        eyebrow: "Compte",
-        title: "Confirmez le changement d’e-mail",
-        intro:
-          "Une demande de changement d’adresse e-mail a été initiée sur votre compte VetoCrm. Confirmez pour finaliser la modification.",
-        detail: "Sans confirmation, votre adresse actuelle reste inchangée.",
-        cta: "Confirmer mon e-mail",
-      };
-    case "reauthentication":
-      return {
-        subject: "Code de vérification VetoCrm",
-        eyebrow: "Vérification",
-        title: "Votre code de sécurité",
-        intro: "Utilisez le code ci-dessous pour confirmer cette action sensible sur VetoCrm.",
-        detail: "Ne partagez jamais ce code. Il expire rapidement.",
-        cta: "Code de vérification",
-      };
-    default:
-      return {
-        subject: "Notification VetoCrm",
-        eyebrow: "VetoCrm",
-        title: "Action requise",
-        intro: "Cliquez sur le bouton ci-dessous pour continuer.",
-        detail: "",
-        cta: "Continuer",
-      };
+type Copy = (typeof COPY)["en"]["signup"];
+
+function normalizeLang(raw: unknown): Lang {
+  const code = String(raw || "")
+    .split(/[-_]/)[0]
+    ?.toLowerCase();
+  return (SUPPORTED as readonly string[]).includes(code) ? (code as Lang) : "en";
+}
+
+function resolveLang(opts: {
+  userMeta?: Record<string, unknown> | null;
+  redirectTo?: string;
+}): Lang {
+  const meta = opts.userMeta || {};
+  if (meta.locale || meta.lang || meta.language) {
+    return normalizeLang(meta.locale || meta.lang || meta.language);
   }
+  try {
+    if (opts.redirectTo) {
+      const u = new URL(opts.redirectTo);
+      const lng = u.searchParams.get("lng");
+      if (lng) return normalizeLang(lng);
+    }
+  } catch {
+    /* ignore */
+  }
+  return "en";
+}
+
+function copyFor(lang: Lang, action: EmailAction): Copy {
+  const pack = COPY[lang] || COPY.en;
+  if (action === "email_change_current" || action === "email_change_new") {
+    return pack.email_change;
+  }
+  return pack[action] || pack.default;
 }
 
 function escapeHtml(value: string): string {
@@ -122,13 +79,14 @@ function escapeAttr(value: string): string {
 }
 
 function renderEmail(opts: {
+  lang: Lang;
   user_email: string;
   confirmation_url: string;
   token?: string;
   email_action_type: EmailAction;
 }): { subject: string; html: string } {
-  const { confirmation_url, token, email_action_type, user_email } = opts;
-  const copy = copyFor(email_action_type);
+  const { confirmation_url, token, email_action_type, user_email, lang } = opts;
+  const copy = copyFor(lang, email_action_type);
   const year = new Date().getFullYear();
   const safeEmail = escapeHtml(user_email || "");
   const safeUrl = escapeAttr(confirmation_url || "");
@@ -147,20 +105,20 @@ function renderEmail(opts: {
             <td align="center" style="border-radius:999px;background:${BRAND.teal};">
               <a href="${safeUrl}"
                  style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:${BRAND.white};text-decoration:none;border-radius:999px;letter-spacing:-0.01em;">
-                ${copy.cta}
+                ${escapeHtml(copy.cta)}
               </a>
             </td>
           </tr>
         </table>
         <p style="margin:0 0 8px;font-size:13px;line-height:1.55;color:${BRAND.muted};">
-          Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :
+          ${escapeHtml(copy.linkFallback)}
         </p>
         <p style="margin:0;font-size:12px;line-height:1.5;word-break:break-all;">
           <a href="${safeUrl}" style="color:${BRAND.teal};text-decoration:underline;">${escapeHtml(confirmation_url)}</a>
         </p>`;
 
   const html = `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${lang}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -188,7 +146,7 @@ function renderEmail(opts: {
                 ${escapeHtml(copy.title)}
               </h1>
               <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:${BRAND.muted};">
-                Bonjour${safeEmail ? ` <strong style="color:${BRAND.ink};">${safeEmail}</strong>` : ""},
+                ${escapeHtml(copy.hello)}${safeEmail ? ` <strong style="color:${BRAND.ink};">${safeEmail}</strong>` : ""},
               </p>
               <p style="margin:0 0 12px;font-size:15px;line-height:1.65;color:${BRAND.muted};">
                 ${escapeHtml(copy.intro)}
@@ -206,13 +164,13 @@ function renderEmail(opts: {
             <td style="padding:8px 28px 28px;">
               <hr style="border:none;border-top:1px solid ${BRAND.line};margin:24px 0;" />
               <p style="margin:0 0 8px;font-size:12px;line-height:1.55;color:${BRAND.muted};">
-                Cet e-mail est envoyé automatiquement. Pour nous joindre : ${REPLY_TO_EMAIL}.
+                ${escapeHtml(copy.autoNote)}
               </p>
               <p style="margin:0 0 8px;font-size:12px;line-height:1.55;color:${BRAND.muted};">
-                Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail — aucun changement ne sera effectué.
+                ${escapeHtml(copy.ignoreNote)}
               </p>
               <p style="margin:0;font-size:12px;line-height:1.55;color:${BRAND.muted};">
-                © ${year} VetoCrm — CRM vétérinaire pour cliniques et cabinets<br />
+                © ${year} VetoCrm — ${escapeHtml(copy.footerTag)}<br />
                 <a href="https://www.vetocrm.com" style="color:${BRAND.teal};text-decoration:none;font-weight:600;">vetocrm.com</a>
                 · <a href="mailto:${REPLY_TO_EMAIL}" style="color:${BRAND.teal};text-decoration:none;font-weight:600;">${REPLY_TO_EMAIL}</a>
               </p>
@@ -276,7 +234,7 @@ Deno.serve(async (req) => {
     const secret = HOOK_SECRET.replace(/^v1,whsec_/, "");
     const wh = new Webhook(secret);
     const data = wh.verify(payload, headers) as {
-      user: { email: string };
+      user: { email: string; user_metadata?: Record<string, unknown> };
       email_data: {
         token: string;
         token_hash: string;
@@ -297,9 +255,15 @@ Deno.serve(async (req) => {
         ? incoming_redirect
         : PUBLIC_APP_URL;
 
+    const lang = resolveLang({
+      userMeta: user.user_metadata,
+      redirectTo: safe_redirect,
+    });
+
     const confirmation_url = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=${email_data.email_action_type}&redirect_to=${encodeURIComponent(safe_redirect)}`;
 
     const { subject, html } = renderEmail({
+      lang,
       user_email: user.email,
       confirmation_url,
       token: email_data.token,
@@ -329,3 +293,4 @@ Deno.serve(async (req) => {
     );
   }
 });
+

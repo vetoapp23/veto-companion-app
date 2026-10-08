@@ -164,17 +164,26 @@ const Register = () => {
         !isJoiningOrganization && selectedPlan !== "free"
           ? { planCode: selectedPlan, cycle, currency }
           : null;
-      const appOrigin = (await import("@/lib/appUrl")).getAppOrigin();
-      const emailRedirectTo = pending
-        ? `${appOrigin}/dashboard?billing=checkout&plan=${encodeURIComponent(pending.planCode)}&cycle=${pending.cycle}&currency=${pending.currency}`
-        : `${appOrigin}/dashboard`;
+      const { getAppOrigin, withLng } = await import("@/lib/appUrl");
+      const { resolveAppLanguage } = await import("@/i18n");
+      const locale = resolveAppLanguage();
+      const appOrigin = getAppOrigin();
+      const emailRedirectTo = withLng(
+        pending
+          ? `${appOrigin}/dashboard?billing=checkout&plan=${encodeURIComponent(pending.planCode)}&cycle=${pending.cycle}&currency=${pending.currency}`
+          : `${appOrigin}/dashboard`,
+        locale,
+      );
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           emailRedirectTo,
-          data: pending ? { pending_plan: pending } : undefined,
+          data: {
+            locale,
+            ...(pending ? { pending_plan: pending } : {}),
+          },
         },
       });
       if (authError) throw authError;

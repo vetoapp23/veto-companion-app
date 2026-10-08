@@ -86,13 +86,19 @@ void i18n
     interpolation: { escapeValue: false },
     compatibilityJSON: "v4",
     detection: {
-      // Manual switcher (localStorage) wins; else browser language; else EN.
-      order: ["localStorage", "navigator"],
+      // Email links (?lng=) → saved switcher → browser → EN fallback.
+      order: ["querystring", "localStorage", "navigator"],
+      lookupQuerystring: "lng",
       lookupLocalStorage: LANGUAGE_STORAGE_KEY,
       caches: ["localStorage"],
     },
     react: { useSuspense: false },
   });
+
+export function resolveAppLanguage(lang?: string): AppLanguage {
+  const raw = (lang || i18n.language || "en").split("-")[0]?.toLowerCase() || "en";
+  return (SUPPORTED_LANGS as readonly string[]).includes(raw) ? (raw as AppLanguage) : "en";
+}
 
 export function setAppLanguage(lang: AppLanguage) {
   void i18n.changeLanguage(lang);
@@ -109,6 +115,15 @@ export function setAppLanguage(lang: AppLanguage) {
   } catch {
     /* ignore */
   }
+  // Persist for transactional auth emails (Resend hook reads user_metadata.locale).
+  void import("@/integrations/supabase/client")
+    .then(({ supabase }) =>
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data.session) return;
+        return supabase.auth.updateUser({ data: { locale: lang } });
+      }),
+    )
+    .catch(() => undefined);
 }
 
 i18n.on("languageChanged", (lng) => {

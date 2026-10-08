@@ -25,3 +25,19 @@ export function appPath(path: string): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${getAppOrigin()}${p}`;
 }
+
+/** Append / merge `lng` on a path or absolute URL (auth redirects, email links). */
+export function withLng(pathOrUrl: string, lng: string): string {
+  try {
+    const base =
+      pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")
+        ? undefined
+        : getAppOrigin();
+    const url = base ? new URL(pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`, base) : new URL(pathOrUrl);
+    url.searchParams.set("lng", lng);
+    return url.toString();
+  } catch {
+    const sep = pathOrUrl.includes("?") ? "&" : "?";
+    return `${pathOrUrl}${sep}lng=${encodeURIComponent(lng)}`;
+  }
+}
