@@ -12,7 +12,6 @@
     "mainNavAria": "Main navigation",
     "footerAria": "Footer",
     "contact": "Contact us",
-    "videos": "Videos",
     "mondeVeto": "The Veto World",
     "press": "Press & directories"
   },
@@ -169,39 +168,36 @@
     "responseTime": "Mon – Fri",
     "writeUs": "Send an email"
   },
-  "videos": {
-    "seoTitle": "VetoCrm tutorial videos — Overview, sign-up & clients",
-    "seoDescription": "VetoCrm video tutorials: product overview for veterinary practice management, account sign-up, and how to create a client.",
-    "seoKeywords": "VetoCrm tutorial, veterinary software video, veterinary CRM demo, VetoCrm sign up, create clinic client",
-    "eyebrow": "Tutorials",
-    "title": "Tutorial videos",
-    "lead": "See VetoCrm in action: product overview, sign-up, then how to create a client in your clinic.",
-    "watchOnYoutube": "Watch on YouTube",
-    "items": {
-      "presentation": {
-        "title": "VetoCrm overview",
-        "description": "A walkthrough of the practice management software for veterinary clinics."
-      },
-      "inscription": {
-        "title": "Sign up",
-        "description": "Create your account and open your clinic workspace in a few minutes."
-      },
-      "client": {
-        "title": "Create a client",
-        "description": "Add a client and get ready to manage their pets in VetoCrm."
-      }
-    }
-  },
   "mondeVeto": {
     "seoTitle": "The Veto World — Practice Management & Veterinary CRM Guides | VetoCrm",
-    "seoDescription": "Guides for clinics: digitization, AI, accounting, pet insurance, CRM and practice management. VetoCrm resources to run your clinic better.",
-    "seoKeywords": "veterinary blog, clinic digitization, veterinary practice management guide, veterinary CRM tips",
+    "seoDescription": "Guides and video tutorials for clinics: digitization, AI, accounting, pet insurance, CRM and practice management. VetoCrm resources to run your clinic better.",
+    "seoKeywords": "veterinary blog, clinic digitization, veterinary practice management guide, veterinary CRM tips, VetoCrm tutorial",
     "eyebrow": "Guides & news",
     "title": "The Veto World",
     "lead": "Practical articles for clinics and practices: digitization, AI, management, insurance and CRM — care better and run your clinic with more clarity.",
     "readArticle": "Read article",
     "readTime": "{{minutes}} min",
-    "related": "Related articles"
+    "related": "Related articles",
+    "videos": {
+      "label": "Tutorials",
+      "title": "Tutorial videos",
+      "lead": "See VetoCrm in action: product overview, sign-up, then how to create a client in your clinic.",
+      "watchOnYoutube": "Watch on YouTube",
+      "items": {
+        "presentation": {
+          "title": "VetoCrm overview",
+          "description": "A walkthrough of the practice management software for veterinary clinics."
+        },
+        "inscription": {
+          "title": "Sign up",
+          "description": "Create your account and open your clinic workspace in a few minutes."
+        },
+        "client": {
+          "title": "Create a client",
+          "description": "Add a client and get ready to manage their pets in VetoCrm."
+        }
+      }
+    }
   },
   "press": {
     "seoTitle": "Press & directories — VetoCrm kit",

@@ -1448,16 +1448,44 @@ a.mk-contact-card:hover {
   margin: 0 auto;
 }
 
+.mk-videos-section {
+  margin: 0 0 2.25rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--mk-line);
+}
+
+.mk-videos-heading {
+  margin: 0 0 0.5rem;
+  font-family: var(--mk-font-display);
+  font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mk-ink);
+}
+
+.mk-videos-lead {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--mk-muted);
+  max-width: 40rem;
+}
+
 .mk-videos-grid {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.25rem;
   grid-template-columns: 1fr;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 720px) {
   .mk-videos-grid {
-    grid-template-columns: 1fr;
-    gap: 1.75rem;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1100px) {
+  .mk-videos-grid {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 }
 
@@ -1488,14 +1516,15 @@ a.mk-contact-card:hover {
 .mk-video-body {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: 1.15rem 1.2rem 1.35rem;
+  gap: 0.45rem;
+  padding: 1rem 1.05rem 1.15rem;
+  flex: 1;
 }
 
-.mk-video-body h2 {
+.mk-video-body h3 {
   margin: 0;
   font-family: var(--mk-font-display);
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.35;
@@ -1504,8 +1533,8 @@ a.mk-contact-card:hover {
 
 .mk-video-body p {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.55;
+  font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--mk-muted);
 }
 

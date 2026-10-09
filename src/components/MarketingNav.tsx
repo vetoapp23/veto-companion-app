@@ -33,9 +33,6 @@ export function MarketingNav({ variant = "hero" }: Props) {
         <Link to="/contact" className={linkClass("/contact")}>
           {t("nav.contact")}
         </Link>
-        <Link to="/videos" className={linkClass("/videos")}>
-          {t("nav.videos")}
-        </Link>
         <Link to="/monde-veto" className={linkClass("/monde-veto")}>
           {t("nav.mondeVeto")}
         </Link>

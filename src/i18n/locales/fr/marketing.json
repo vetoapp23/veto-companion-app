@@ -12,7 +12,6 @@
     "mainNavAria": "Navigation principale",
     "footerAria": "Pied de page",
     "contact": "Nous contacter",
-    "videos": "Vidéos",
     "mondeVeto": "Le Monde Veto",
     "press": "Presse & annuaires"
   },
@@ -173,39 +172,36 @@
     "responseTime": "Lun. – Ven.",
     "writeUs": "Écrire un e-mail"
   },
-  "videos": {
-    "seoTitle": "Vidéos tutorielles VetoCrm — Présentation, inscription & clients",
-    "seoDescription": "Tutoriels vidéo VetoCrm : présentation du logiciel de gestion clinique vétérinaire, inscription et création d’un client.",
-    "seoKeywords": "tutoriel VetoCrm, vidéo logiciel vétérinaire, démo CRM vétérinaire, inscription VetoCrm, créer client clinique",
-    "eyebrow": "Tutoriels",
-    "title": "Vidéos tutorielles",
-    "lead": "Découvrez VetoCrm en vidéo : présentation du produit, inscription, puis création d’un client dans votre clinique.",
-    "watchOnYoutube": "Voir sur YouTube",
-    "items": {
-      "presentation": {
-        "title": "Présentation de VetoCrm",
-        "description": "Vue d’ensemble du logiciel de gestion pour cliniques et cabinets vétérinaires."
-      },
-      "inscription": {
-        "title": "Inscription",
-        "description": "Créez votre compte et démarrez votre espace clinique en quelques minutes."
-      },
-      "client": {
-        "title": "Création d’un client",
-        "description": "Ajoutez un client et préparez le suivi de ses animaux dans VetoCrm."
-      }
-    }
-  },
   "mondeVeto": {
     "seoTitle": "Le Monde Veto — Guides logiciel de gestion & CRM vétérinaire | VetoCrm",
-    "seoDescription": "Guides pour cliniques : digitalisation, IA, comptabilité, assurance, CRM et practice management. Ressources VetoCrm pour moderniser votre cabinet.",
-    "seoKeywords": "blog vétérinaire, digitalisation clinique, logiciel gestion vétérinaire, CRM vétérinaire guide, practice management véto",
+    "seoDescription": "Guides et tutoriels vidéo pour cliniques : digitalisation, IA, comptabilité, assurance, CRM et practice management. Ressources VetoCrm pour moderniser votre cabinet.",
+    "seoKeywords": "blog vétérinaire, digitalisation clinique, logiciel gestion vétérinaire, CRM vétérinaire guide, tutoriel VetoCrm, practice management véto",
     "eyebrow": "Guides & actualités",
     "title": "Le Monde Veto",
     "lead": "Articles pratiques pour cliniques et cabinets : digitalisation, IA, gestion, assurance et CRM — pour soigner mieux et piloter plus sereinement.",
     "readArticle": "Lire l’article",
     "readTime": "{{minutes}} min",
-    "related": "À lire aussi"
+    "related": "À lire aussi",
+    "videos": {
+      "label": "Tutoriels",
+      "title": "Vidéos tutorielles",
+      "lead": "Découvrez VetoCrm en vidéo : présentation du produit, inscription, puis création d’un client.",
+      "watchOnYoutube": "Voir sur YouTube",
+      "items": {
+        "presentation": {
+          "title": "Présentation de VetoCrm",
+          "description": "Vue d’ensemble du logiciel de gestion pour cliniques et cabinets vétérinaires."
+        },
+        "inscription": {
+          "title": "Inscription",
+          "description": "Créez votre compte et démarrez votre espace clinique en quelques minutes."
+        },
+        "client": {
+          "title": "Création d’un client",
+          "description": "Ajoutez un client et préparez le suivi de ses animaux dans VetoCrm."
+        }
+      }
+    }
   },
   "press": {
     "seoTitle": "Presse & annuaires — Kit VetoCrm",

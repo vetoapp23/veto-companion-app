@@ -1,10 +1,15 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock, ExternalLink } from "lucide-react";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { BLOG_ARTICLES, resolveBlogLang } from "@/content/blog/articles";
+import {
+  TUTORIAL_VIDEOS,
+  youtubeEmbedUrl,
+  youtubeWatchUrl,
+} from "@/content/videos";
 
 function formatDate(iso: string, lang: string) {
   try {
@@ -44,6 +49,14 @@ export default function MondeVetoPage() {
               image: siteUrl(a.cover),
               url: siteUrl(`/monde-veto/${a.slug}`),
               description: a.locales[lang].excerpt,
+            })),
+            hasPart: TUTORIAL_VIDEOS.map((video) => ({
+              "@type": "VideoObject",
+              name: t(`marketing:mondeVeto.videos.items.${video.id}.title`),
+              description: t(`marketing:mondeVeto.videos.items.${video.id}.description`),
+              embedUrl: youtubeEmbedUrl(video.youtubeId),
+              contentUrl: youtubeWatchUrl(video.youtubeId),
+              thumbnailUrl: `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
             })),
           },
           {
@@ -87,6 +100,44 @@ export default function MondeVetoPage() {
               </Link>
             </div>
           </div>
+
+          <section className="mk-videos-section" aria-labelledby="monde-veto-videos">
+            <p className="mk-section-label">{t("marketing:mondeVeto.videos.label")}</p>
+            <h2 id="monde-veto-videos" className="mk-videos-heading">
+              {t("marketing:mondeVeto.videos.title")}
+            </h2>
+            <p className="mk-videos-lead">{t("marketing:mondeVeto.videos.lead")}</p>
+
+            <div className="mk-videos-grid">
+              {TUTORIAL_VIDEOS.map((video) => (
+                <article key={video.id} className="mk-video-card">
+                  <div className="mk-video-embed">
+                    <iframe
+                      src={youtubeEmbedUrl(video.youtubeId)}
+                      title={t(`marketing:mondeVeto.videos.items.${video.id}.title`)}
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                  </div>
+                  <div className="mk-video-body">
+                    <h3>{t(`marketing:mondeVeto.videos.items.${video.id}.title`)}</h3>
+                    <p>{t(`marketing:mondeVeto.videos.items.${video.id}.description`)}</p>
+                    <a
+                      href={youtubeWatchUrl(video.youtubeId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mk-blog-read"
+                    >
+                      {t("marketing:mondeVeto.videos.watchOnYoutube")}
+                      <ExternalLink className="h-4 w-4" aria-hidden />
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <div className="mk-blog-grid">
             {articles.map((article) => {
