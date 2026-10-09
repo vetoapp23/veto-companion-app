@@ -12,6 +12,7 @@
     "mainNavAria": "Main navigation",
     "footerAria": "Footer",
     "contact": "Contact us",
+    "videos": "Videos",
     "mondeVeto": "The Veto World",
     "press": "Press & directories"
   },
@@ -167,6 +168,29 @@
     "supportBody": "We usually reply within 1–2 business days.",
     "responseTime": "Mon – Fri",
     "writeUs": "Send an email"
+  },
+  "videos": {
+    "seoTitle": "VetoCrm tutorial videos — Overview, sign-up & clients",
+    "seoDescription": "VetoCrm video tutorials: product overview for veterinary practice management, account sign-up, and how to create a client.",
+    "seoKeywords": "VetoCrm tutorial, veterinary software video, veterinary CRM demo, VetoCrm sign up, create clinic client",
+    "eyebrow": "Tutorials",
+    "title": "Tutorial videos",
+    "lead": "See VetoCrm in action: product overview, sign-up, then how to create a client in your clinic.",
+    "watchOnYoutube": "Watch on YouTube",
+    "items": {
+      "presentation": {
+        "title": "VetoCrm overview",
+        "description": "A walkthrough of the practice management software for veterinary clinics."
+      },
+      "inscription": {
+        "title": "Sign up",
+        "description": "Create your account and open your clinic workspace in a few minutes."
+      },
+      "client": {
+        "title": "Create a client",
+        "description": "Add a client and get ready to manage their pets in VetoCrm."
+      }
+    }
   },
   "mondeVeto": {
     "seoTitle": "The Veto World — Practice Management & Veterinary CRM Guides | VetoCrm",

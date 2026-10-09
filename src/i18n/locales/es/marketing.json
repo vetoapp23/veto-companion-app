@@ -12,6 +12,7 @@
     "mainNavAria": "Navegación principal",
     "footerAria": "Pie de página",
     "contact": "Contacto",
+    "videos": "Vídeos",
     "mondeVeto": "El Mundo Veto",
     "press": "Prensa y directorios"
   },
@@ -167,6 +168,29 @@
     "supportBody": "Respondemos en general en 1–2 días hábiles.",
     "responseTime": "Lun. – Vie.",
     "writeUs": "Enviar un correo"
+  },
+  "videos": {
+    "seoTitle": "Vídeos tutoriales VetoCrm — Presentación, registro y clientes",
+    "seoDescription": "Tutoriales en vídeo de VetoCrm: presentación del software de gestión clínica veterinaria, registro y creación de un cliente.",
+    "seoKeywords": "tutorial VetoCrm, vídeo software veterinario, demo CRM veterinario, registro VetoCrm, crear cliente clínica",
+    "eyebrow": "Tutoriales",
+    "title": "Vídeos tutoriales",
+    "lead": "Descubra VetoCrm en vídeo: presentación del producto, registro y creación de un cliente en su clínica.",
+    "watchOnYoutube": "Ver en YouTube",
+    "items": {
+      "presentation": {
+        "title": "Presentación de VetoCrm",
+        "description": "Visión general del software de gestión para clínicas veterinarias."
+      },
+      "inscription": {
+        "title": "Registro",
+        "description": "Cree su cuenta y active su espacio de clínica en pocos minutos."
+      },
+      "client": {
+        "title": "Creación de un cliente",
+        "description": "Añada un cliente y prepare el seguimiento de sus animales en VetoCrm."
+      }
+    }
   },
   "mondeVeto": {
     "seoTitle": "El Mundo Veto — Guías de gestión clínica y CRM veterinario | VetoCrm",

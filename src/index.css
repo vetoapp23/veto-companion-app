@@ -1448,6 +1448,67 @@ a.mk-contact-card:hover {
   margin: 0 auto;
 }
 
+.mk-videos-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .mk-videos-grid {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+}
+
+.mk-video-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--mk-line);
+  border-radius: 16px;
+  background: var(--mk-surface);
+  overflow: hidden;
+}
+
+.mk-video-embed {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: color-mix(in srgb, var(--mk-ink) 8%, transparent);
+}
+
+.mk-video-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.mk-video-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1.15rem 1.2rem 1.35rem;
+}
+
+.mk-video-body h2 {
+  margin: 0;
+  font-family: var(--mk-font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  color: var(--mk-ink);
+}
+
+.mk-video-body p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--mk-muted);
+}
+
 .mk-blog-eyebrow {
   margin: 0 0 0.5rem;
   font-size: 0.8rem;

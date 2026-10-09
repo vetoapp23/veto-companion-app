@@ -37,6 +37,7 @@ import { LegalPage } from "./pages/LegalPage";
 import ContactPage from "./pages/ContactPage";
 import MondeVetoPage from "./pages/MondeVetoPage";
 import MondeVetoArticlePage from "./pages/MondeVetoArticlePage";
+import VideosPage from "./pages/VideosPage";
 import PressPage from "./pages/PressPage";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
@@ -106,6 +107,7 @@ const App = () => (
                       <Route path="/refund" element={<LegalPage docId="refund" />} />
                       <Route path="/contact" element={<ContactPage />} />
                       <Route path="/press" element={<PressPage />} />
+                      <Route path="/videos" element={<VideosPage />} />
                       <Route path="/monde-veto" element={<MondeVetoPage />} />
                       <Route path="/monde-veto/:slug" element={<MondeVetoArticlePage />} />
                       <Route path="/import/dossier" element={<ImportMedicalDossier />} />
