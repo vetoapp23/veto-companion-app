@@ -1,70 +1,103 @@
+import { Suspense, lazy, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import { AnalyticsGate, CookieConsentBanner } from "@/components/CookieConsent";
-import { VetNavigation } from "@/components/VetNavigation";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ClientProvider } from "@/contexts/ClientContext";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { LoginForm } from "@/components/LoginForm";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute, PermissionRoute } from "@/components/AdminRoute";
 import { PlanFeatureRoute } from "@/components/PlanFeatureRoute";
 import { SuperAdminRoute } from "@/components/SuperAdminRoute";
-import SuperAdminLayout from "@/pages/super-admin/SuperAdminLayout";
-import SuperAdminOverview from "@/pages/super-admin/Overview";
-import SuperAdminOrganizations from "@/pages/super-admin/Organizations";
-import SuperAdminOrgDetail from "@/pages/super-admin/OrgDetail";
-import SuperAdminUsers from "@/pages/super-admin/Users";
-import SuperAdminPlans from "@/pages/super-admin/Plans";
-import SuperAdminBilling from "@/pages/super-admin/Billing";
-import SuperAdminAudit from "@/pages/super-admin/Audit";
-import SuperAdminSystem from "@/pages/super-admin/System";
 import { AuthRedirect } from "@/components/AuthRedirect";
 import { PendingCheckoutRedirect } from "@/components/PendingCheckoutRedirect";
 import { HashAuthRedirect } from "@/components/HashAuthRedirect";
-import Landing from "./pages/Landing";
-import Register from "./pages/Register";
-import Pricing from "./pages/Pricing";
-import AuthCallback from "./pages/AuthCallback";
-import Onboarding from "./pages/Onboarding";
-import { LegalPage } from "./pages/LegalPage";
-import ContactPage from "./pages/ContactPage";
-import MondeVetoPage from "./pages/MondeVetoPage";
-import MondeVetoArticlePage from "./pages/MondeVetoArticlePage";
-import PressPage from "./pages/PressPage";
-import Dashboard from "./pages/Dashboard";
-import Clients from "./pages/Clients";
-import Pets from "./pages/Pets";
-import Appointments from "./pages/Appointments";
-import Visits from "./pages/Visits";
-import VisitWorkspace from "./pages/VisitWorkspace";
-import Consultations from "./pages/Consultations";
-import History from "./pages/History";
-import Farm from "./pages/Farm";
-import Vaccinations from "./pages/Vaccinations";
-import Antiparasites from "./pages/Antiparasites";
-import Stock from "./pages/Stock";
-import AccountingNew from "./pages/AccountingNew";
-import StockManagement from "./pages/StockManagement";
-import TeamManagement from "./pages/TeamManagement";
-import NotFound from "./pages/NotFound";
-import Settings from "./pages/Settings";
-import BillingSettings from "./pages/BillingSettings";
-import Profile from "./pages/Profile";
-import AuthSettings from "./pages/AuthSettings";
-import { ResetPassword } from "./pages/ResetPassword";
-import ImportMedicalDossier from "./pages/ImportMedicalDossier";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { DemoTourProvider, DemoTourBootstrap } from "@/contexts/DemoTourContext";
-import { DemoTourOverlay } from "@/components/demo/DemoTourOverlay";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { queryClient } from "@/lib/queryClient";
+
+// Marketing home stays eager for fastest first paint
+import Landing from "./pages/Landing";
+
+const LoginForm = lazy(() =>
+  import("@/components/LoginForm").then((m) => ({ default: m.LoginForm })),
+);
+const VetNavigation = lazy(() =>
+  import("@/components/VetNavigation").then((m) => ({ default: m.VetNavigation })),
+);
+const MobileBottomNav = lazy(() =>
+  import("@/components/MobileBottomNav").then((m) => ({ default: m.MobileBottomNav })),
+);
+const DemoTourOverlay = lazy(() =>
+  import("@/components/demo/DemoTourOverlay").then((m) => ({ default: m.DemoTourOverlay })),
+);
+
+const Register = lazy(() => import("./pages/Register"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const LegalPage = lazy(() =>
+  import("./pages/LegalPage").then((m) => ({ default: m.LegalPage })),
+);
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const MondeVetoPage = lazy(() => import("./pages/MondeVetoPage"));
+const MondeVetoArticlePage = lazy(() => import("./pages/MondeVetoArticlePage"));
+const PressPage = lazy(() => import("./pages/PressPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Clients = lazy(() => import("./pages/Clients"));
+const Pets = lazy(() => import("./pages/Pets"));
+const Appointments = lazy(() => import("./pages/Appointments"));
+const Visits = lazy(() => import("./pages/Visits"));
+const VisitWorkspace = lazy(() => import("./pages/VisitWorkspace"));
+const Consultations = lazy(() => import("./pages/Consultations"));
+const History = lazy(() => import("./pages/History"));
+const Farm = lazy(() => import("./pages/Farm"));
+const Vaccinations = lazy(() => import("./pages/Vaccinations"));
+const Antiparasites = lazy(() => import("./pages/Antiparasites"));
+const Stock = lazy(() => import("./pages/Stock"));
+const AccountingNew = lazy(() => import("./pages/AccountingNew"));
+const TeamManagement = lazy(() => import("./pages/TeamManagement"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Settings = lazy(() => import("./pages/Settings"));
+const BillingSettings = lazy(() => import("./pages/BillingSettings"));
+const Profile = lazy(() => import("./pages/Profile"));
+const AuthSettings = lazy(() => import("./pages/AuthSettings"));
+const ResetPassword = lazy(() =>
+  import("./pages/ResetPassword").then((m) => ({ default: m.ResetPassword })),
+);
+const ImportMedicalDossier = lazy(() => import("./pages/ImportMedicalDossier"));
+
+const SuperAdminLayout = lazy(() => import("./pages/super-admin/SuperAdminLayout"));
+const SuperAdminOverview = lazy(() => import("./pages/super-admin/Overview"));
+const SuperAdminOrganizations = lazy(() => import("./pages/super-admin/Organizations"));
+const SuperAdminOrgDetail = lazy(() => import("./pages/super-admin/OrgDetail"));
+const SuperAdminUsers = lazy(() => import("./pages/super-admin/Users"));
+const SuperAdminPlans = lazy(() => import("./pages/super-admin/Plans"));
+const SuperAdminBilling = lazy(() => import("./pages/super-admin/Billing"));
+const SuperAdminAudit = lazy(() => import("./pages/super-admin/Audit"));
+const SuperAdminSystem = lazy(() => import("./pages/super-admin/System"));
+
+function RouteFallback() {
+  return (
+    <div
+      className="min-h-[40vh] flex items-center justify-center"
+      style={{ color: "#0f766e" }}
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="text-sm font-medium tracking-wide">VetoCrm…</span>
+    </div>
+  );
+}
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
+}
 
 const App = () => (
   <ErrorBoundary>
@@ -90,205 +123,247 @@ const App = () => (
                       <Route
                         path="/login"
                         element={
-                          <AuthRedirect>
-                            <LoginForm />
-                          </AuthRedirect>
+                          <LazyRoute>
+                            <AuthRedirect>
+                              <LoginForm />
+                            </AuthRedirect>
+                          </LazyRoute>
                         }
                       />
-                      <Route path="/register" element={<Register />} />
-                      <Route path="/auth/callback" element={<AuthCallback />} />
-                      <Route path="/onboarding" element={<Onboarding />} />
-                      <Route path="/pricing" element={<Pricing />} />
-                      <Route path="/privacy" element={<LegalPage docId="privacy" />} />
-                      <Route path="/terms" element={<LegalPage docId="terms" />} />
-                      <Route path="/legal" element={<LegalPage docId="legal" />} />
-                      <Route path="/cookies" element={<LegalPage docId="cookies" />} />
-                      <Route path="/refund" element={<LegalPage docId="refund" />} />
-                      <Route path="/contact" element={<ContactPage />} />
-                      <Route path="/press" element={<PressPage />} />
-                      <Route path="/monde-veto" element={<MondeVetoPage />} />
-                      <Route path="/monde-veto/:slug" element={<MondeVetoArticlePage />} />
-                      <Route path="/import/dossier" element={<ImportMedicalDossier />} />
-                      <Route path="/import/dossier/:token" element={<ImportMedicalDossier />} />
+                      <Route path="/register" element={<LazyRoute><Register /></LazyRoute>} />
+                      <Route path="/auth/callback" element={<LazyRoute><AuthCallback /></LazyRoute>} />
+                      <Route path="/onboarding" element={<LazyRoute><Onboarding /></LazyRoute>} />
+                      <Route path="/pricing" element={<LazyRoute><Pricing /></LazyRoute>} />
+                      <Route path="/privacy" element={<LazyRoute><LegalPage docId="privacy" /></LazyRoute>} />
+                      <Route path="/terms" element={<LazyRoute><LegalPage docId="terms" /></LazyRoute>} />
+                      <Route path="/legal" element={<LazyRoute><LegalPage docId="legal" /></LazyRoute>} />
+                      <Route path="/cookies" element={<LazyRoute><LegalPage docId="cookies" /></LazyRoute>} />
+                      <Route path="/refund" element={<LazyRoute><LegalPage docId="refund" /></LazyRoute>} />
+                      <Route path="/contact" element={<LazyRoute><ContactPage /></LazyRoute>} />
+                      <Route path="/press" element={<LazyRoute><PressPage /></LazyRoute>} />
+                      <Route path="/monde-veto" element={<LazyRoute><MondeVetoPage /></LazyRoute>} />
+                      <Route path="/monde-veto/:slug" element={<LazyRoute><MondeVetoArticlePage /></LazyRoute>} />
+                      <Route path="/import/dossier" element={<LazyRoute><ImportMedicalDossier /></LazyRoute>} />
+                      <Route path="/import/dossier/:token" element={<LazyRoute><ImportMedicalDossier /></LazyRoute>} />
                       <Route
                         path="/dashboard"
                         element={
-                          <ProtectedRoute>
-                            <VetNavigation />
-                            <Dashboard />
-                          </ProtectedRoute>
+                          <LazyRoute>
+                            <ProtectedRoute>
+                              <VetNavigation />
+                              <Dashboard />
+                            </ProtectedRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/clients"
                         element={
-                          <PermissionRoute permission="can_manage_clients">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="clients"><Clients /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_clients">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="clients"><Clients /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/pets"
                         element={
-                          <PermissionRoute permission="can_manage_animals">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="animals"><Pets /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_animals">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="animals"><Pets /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/appointments"
                         element={
-                          <PermissionRoute permission="can_manage_appointments">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="appointments"><Appointments /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_appointments">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="appointments"><Appointments /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/visites"
                         element={
-                          <PermissionRoute permission="can_manage_visits">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="visits"><Visits /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_visits">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="visits"><Visits /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/visites/:id"
                         element={
-                          <PermissionRoute permission="can_manage_visits">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="visits"><VisitWorkspace /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_visits">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="visits"><VisitWorkspace /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/consultations"
                         element={
-                          <PermissionRoute permission="can_create_consultations">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="consultations"><Consultations /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_create_consultations">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="consultations"><Consultations /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/history"
                         element={
-                          <PermissionRoute permission="can_view_history">
-                            <VetNavigation />
-                            <History />
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_view_history">
+                              <VetNavigation />
+                              <History />
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/farm"
                         element={
-                          <PermissionRoute permission="can_manage_farms">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_farms">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/vaccinations"
                         element={
-                          <PermissionRoute permission="can_manage_vaccinations">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="vaccinations"><Vaccinations /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_vaccinations">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="vaccinations"><Vaccinations /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/antiparasites"
                         element={
-                          <PermissionRoute permission="can_manage_antiparasites">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="antiparasites"><Antiparasites /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_antiparasites">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="antiparasites"><Antiparasites /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/accounting"
                         element={
-                          <PermissionRoute permission="can_manage_accounting">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="accounting"><AccountingNew /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_accounting">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="accounting"><AccountingNew /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/farms"
                         element={
-                          <PermissionRoute permission="can_manage_farms">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_farms">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="farm"><Farm /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/stock"
                         element={
-                          <PermissionRoute permission="can_manage_stock">
-                            <VetNavigation />
-                            <PlanFeatureRoute feature="stock"><Stock /></PlanFeatureRoute>
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_stock">
+                              <VetNavigation />
+                              <PlanFeatureRoute feature="stock"><Stock /></PlanFeatureRoute>
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/admin/team"
                         element={
-                          <AdminRoute>
-                            <VetNavigation />
-                            <TeamManagement />
-                          </AdminRoute>
+                          <LazyRoute>
+                            <AdminRoute>
+                              <VetNavigation />
+                              <TeamManagement />
+                            </AdminRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/settings"
                         element={
-                          <PermissionRoute permission="can_manage_settings">
-                            <VetNavigation />
-                            <Settings />
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_settings">
+                              <VetNavigation />
+                              <Settings />
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/settings/billing"
                         element={
-                          <PermissionRoute permission="can_manage_settings">
-                            <VetNavigation />
-                            <BillingSettings />
-                          </PermissionRoute>
+                          <LazyRoute>
+                            <PermissionRoute permission="can_manage_settings">
+                              <VetNavigation />
+                              <BillingSettings />
+                            </PermissionRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/profile"
                         element={
-                          <ProtectedRoute>
-                            <VetNavigation />
-                            <Profile />
-                          </ProtectedRoute>
+                          <LazyRoute>
+                            <ProtectedRoute>
+                              <VetNavigation />
+                              <Profile />
+                            </ProtectedRoute>
+                          </LazyRoute>
                         }
                       />
                       <Route
                         path="/auth-settings"
                         element={
-                          <ProtectedRoute>
-                            <VetNavigation />
-                            <AuthSettings />
-                          </ProtectedRoute>
+                          <LazyRoute>
+                            <ProtectedRoute>
+                              <VetNavigation />
+                              <AuthSettings />
+                            </ProtectedRoute>
+                          </LazyRoute>
                         }
                       />
 
                       <Route
                         path="/super-admin"
                         element={
-                          <SuperAdminRoute>
-                            <VetNavigation />
-                            <SuperAdminLayout />
-                          </SuperAdminRoute>
+                          <LazyRoute>
+                            <SuperAdminRoute>
+                              <VetNavigation />
+                              <SuperAdminLayout />
+                            </SuperAdminRoute>
+                          </LazyRoute>
                         }
                       >
                         <Route index element={<SuperAdminOverview />} />
@@ -300,14 +375,15 @@ const App = () => (
                         <Route path="audit" element={<SuperAdminAudit />} />
                         <Route path="system" element={<SuperAdminSystem />} />
                       </Route>
-                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/reset-password" element={<LazyRoute><ResetPassword /></LazyRoute>} />
 
-                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                      <Route path="*" element={<NotFound />} />
+                      <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
                     </Routes>
-                    <MobileBottomNav />
-                    <DemoTourBootstrap />
-                    <DemoTourOverlay />
+                    <Suspense fallback={null}>
+                      <MobileBottomNav />
+                      <DemoTourBootstrap />
+                      <DemoTourOverlay />
+                    </Suspense>
                   </div>
                   </DemoTourProvider>
                 </BrowserRouter>

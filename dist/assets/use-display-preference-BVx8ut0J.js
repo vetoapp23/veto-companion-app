@@ -1,0 +1,1 @@
+import{O as r}from"./index-CfItjhrY.js";const a=s=>{const{settings:i}=r(),e=i.displayPreferences[s];return{currentView:e,isTableView:e==="table",isCardsView:e==="cards",isCalendarView:e==="calendar",isListView:e==="list"||e==="table"||e==="cards"}};export{a as u};

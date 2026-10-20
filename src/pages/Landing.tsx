@@ -2,7 +2,9 @@ import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Users, Calendar, FileText, BarChart3, Shield, PawPrint, Play, Loader2 } from "lucide-react";
-import heroImage from "@/assets/vet-hero.jpg";
+import heroImageJpg from "@/assets/vet-hero.jpg";
+import heroImageWebp from "@/assets/vet-hero.webp";
+import heroImageWebpMobile from "@/assets/vet-hero-960.webp";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
@@ -101,13 +103,23 @@ export default function Landing() {
 
       <section className="mk-hero">
         <div className="mk-hero-media">
-          <img
-            src={heroImage}
-            alt={t("landing.heroAlt")}
-            width={1920}
-            height={1080}
-            fetchPriority="high"
-          />
+          <picture>
+            <source
+              type="image/webp"
+              media="(max-width: 768px)"
+              srcSet={heroImageWebpMobile}
+            />
+            <source type="image/webp" srcSet={heroImageWebp} />
+            <img
+              src={heroImageJpg}
+              alt={t("landing.heroAlt")}
+              width={1280}
+              height={720}
+              fetchPriority="high"
+              decoding="async"
+              sizes="100vw"
+            />
+          </picture>
           <div className="mk-hero-veil" aria-hidden />
           <div className="mk-hero-mesh" aria-hidden />
         </div>

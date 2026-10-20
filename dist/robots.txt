@@ -3,6 +3,9 @@ Allow: /
 Allow: /pricing
 Allow: /login
 Allow: /register
+Allow: /contact
+Allow: /monde-veto
+Allow: /sitemap.xml
 Disallow: /dashboard
 Disallow: /clients
 Disallow: /pets
@@ -23,4 +26,5 @@ Disallow: /super-admin
 Disallow: /auth-settings
 Disallow: /reset-password
 
-Sitemap: https://vetocrm.com/sitemap.xml
+Sitemap: https://www.vetocrm.com/sitemap.xml
+
