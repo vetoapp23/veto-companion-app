@@ -21,7 +21,6 @@ export default function PressPage() {
         description={t("marketing:press.seoDescription")}
         keywords={t("marketing:press.seoKeywords")}
         path="/press"
-        noIndex
       />
 
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--mk-fog)" }}>

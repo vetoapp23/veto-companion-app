@@ -52,27 +52,40 @@ export async function changePasswordAndRevokeOthers(params: {
     throw updateError;
   }
 
-  // Kill concurrent sessions on other browsers/devices (OWASP).
-  // Access JWTs may remain valid until expiry; refresh tokens are revoked.
-  const { error: revokeError } = await supabase.auth.signOut({
-    scope: "others",
-  });
-  if (revokeError) {
-    console.warn("Failed to revoke other sessions after password change:", revokeError);
-  }
+  await revokeOtherSessions();
 }
 
 /** Revoke every other session while keeping the current one. */
 export async function revokeOtherSessions(): Promise<void> {
-  const { error } = await supabase.auth.signOut({ scope: "others" });
-  if (error) throw error;
+  // 1) GoTrue API (refresh-token revoke)
+  const { error: apiError } = await supabase.auth.signOut({ scope: "others" });
+  if (apiError) {
+    console.warn("signOut(others) failed:", apiError);
+  }
+
+  // 2) DB-level belt: delete other rows in auth.sessions for this user
+  const { error: rpcError } = await supabase.rpc("revoke_other_auth_sessions");
+  if (rpcError) {
+    // If GoTrue already succeeded, RPC failure is non-fatal for UX
+    if (apiError) throw rpcError;
+    console.warn("revoke_other_auth_sessions RPC failed:", rpcError);
+  }
+
+  if (apiError && rpcError) {
+    throw apiError;
+  }
 }
 
 /** After a recovery-link password reset: revoke all sessions, force re-login. */
 export async function revokeAllSessionsAfterPasswordReset(): Promise<void> {
+  // Wipe sessions in DB while JWT is still valid
+  const { error: rpcError } = await supabase.rpc("revoke_all_auth_sessions");
+  if (rpcError) {
+    console.warn("revoke_all_auth_sessions RPC failed:", rpcError);
+  }
+
   const { error } = await supabase.auth.signOut({ scope: "global" });
   if (error) {
-    // Still clear local storage if remote revoke fails
     console.warn("Global signOut after password reset failed:", error);
     await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
   }
