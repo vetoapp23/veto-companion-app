@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { SeoHead } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   buildPlanMarketingBullets,
   resolvePlanDisplayName,
@@ -253,7 +254,7 @@ const Register = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <Link to="/" className="mk-brand text-xl sm:text-2xl">
-              Veto<span>Crm</span>
+              <BrandLogo size={36} />
             </Link>
             <LanguageSwitcher variant="marketing" />
           </div>
@@ -430,7 +431,7 @@ const Register = () => {
       <div className="w-full max-w-2xl">
         <div className="flex items-center justify-between mb-4">
           <Link to="/" className="mk-brand text-lg">
-            Veto<span>Crm</span>
+            <BrandLogo size={32} />
           </Link>
           <LanguageSwitcher variant="marketing" />
         </div>

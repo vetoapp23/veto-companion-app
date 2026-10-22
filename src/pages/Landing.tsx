@@ -57,7 +57,7 @@ export default function Landing() {
             name: LEGAL_ENTITY.brand,
             alternateName: ["Veto CRM", "VetoCrm Veterinary"],
             url: siteUrl("/"),
-            logo: siteUrl("/favicon.svg"),
+            logo: siteUrl("/logo.png"),
             description: t("landing.seoDescription"),
             email: LEGAL_ENTITY.publicEmail,
             sameAs: [LEGAL_ENTITY.linkedin, LEGAL_ENTITY.instagram],

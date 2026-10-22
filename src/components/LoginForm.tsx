@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { useGoogleLogin, useResetPassword, useLogin } from "@/hooks/useAuth";
 import { DemoLoginPanel } from "@/components/DemoLoginPanel";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import heroImage from "@/assets/vet-hero.jpg";
 import { SeoHead } from "@/components/SeoHead";
 
@@ -134,8 +135,8 @@ export function LoginForm() {
           </div>
         </div>
         <div className="mk-login-visual-content">
-          <Link to="/" className="mk-brand" style={{ display: "inline-block", marginBottom: "1.5rem" }}>
-            Veto<span>Crm</span>
+          <Link to="/" className="mk-brand" style={{ marginBottom: "1.5rem" }}>
+            <BrandLogo size={40} />
           </Link>
           <h1>{t("login.heroHeadline")}</h1>
           <p>{t("login.heroSub")}</p>
@@ -145,7 +146,7 @@ export function LoginForm() {
       <main className="mk-login-panel">
         <div className="mk-login-mobile-brand lg:hidden flex-wrap gap-2">
           <Link to="/" className="mk-brand" style={{ color: "var(--mk-ink)" }}>
-            Veto<span>Crm</span>
+            <BrandLogo size={32} />
           </Link>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <LanguageSwitcher variant="marketing" />

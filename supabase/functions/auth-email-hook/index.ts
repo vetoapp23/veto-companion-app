@@ -131,10 +131,19 @@ function renderEmail(opts: {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${BRAND.white};border-radius:20px;overflow:hidden;border:1px solid ${BRAND.line};box-shadow:0 12px 40px rgba(15,118,110,0.08);">
           <tr>
             <td style="background:linear-gradient(135deg,${BRAND.deep} 0%,${BRAND.teal} 100%);padding:28px 28px 24px;">
-              <p style="margin:0;font-size:22px;font-weight:800;letter-spacing:-0.04em;color:${BRAND.white};">
-                Veto<span style="color:${BRAND.mint};">Crm</span>
-              </p>
-              <p style="margin:8px 0 0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(244,251,249,0.75);font-weight:600;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:12px;">
+                    <img src="https://www.vetocrm.com/logo.png" width="40" height="40" alt="VetoCrm" style="display:block;border-radius:8px;border:0;" />
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <p style="margin:0;font-size:22px;font-weight:800;letter-spacing:-0.04em;color:${BRAND.white};">
+                      Veto<span style="color:${BRAND.mint};">Crm</span>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:10px 0 0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(244,251,249,0.75);font-weight:600;">
                 ${escapeHtml(copy.eyebrow)}
               </p>
             </td>

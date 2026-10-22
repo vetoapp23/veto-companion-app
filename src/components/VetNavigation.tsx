@@ -22,6 +22,7 @@ import {
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { cn } from "@/lib/utils";
@@ -117,19 +118,7 @@ export function VetNavigation() {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <Link to="/dashboard" className="app-brand flex items-center gap-2">
-              <img
-                src="/favicon.svg"
-                alt=""
-                className="h-8 w-8 rounded-lg"
-                width={32}
-                height={32}
-              />
-              <span className="hidden sm:inline">
-                Veto<span>Crm</span>
-              </span>
-              <span className="sm:hidden">
-                Veto<span>Crm</span>
-              </span>
+              <BrandLogo size={32} imgClassName="rounded-lg" />
             </Link>
             <div className="hidden sm:flex items-center gap-1.5">
               <ThemeToggle />

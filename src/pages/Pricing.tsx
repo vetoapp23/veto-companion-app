@@ -11,6 +11,7 @@ import { Check, Sparkles, ArrowRight, HardDrive, Users, Loader2 } from "lucide-r
 import { supabase } from "@/integrations/supabase/client";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { useAuth } from "@/contexts/AuthContext";
 import { startCheckoutSession } from "@/lib/stripeBilling";
@@ -170,7 +171,7 @@ export default function Pricing() {
         }}
       >
         <Link to="/" className="mk-brand" aria-label={t("nav.homeAria")}>
-          Veto<span>Crm</span>
+          <BrandLogo size={36} />
         </Link>
         <nav className="mk-nav-links" aria-label={t("nav.mainNavAria")}>
           <Link to="/contact" className="mk-link hidden md:inline-flex">

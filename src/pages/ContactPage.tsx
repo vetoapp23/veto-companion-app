@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Mail, Linkedin, Instagram, MessageCircle } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import { SeoHead } from "@/components/SeoHead";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { LEGAL_ENTITY } from "@/content/legal";
@@ -20,7 +21,7 @@ export default function ContactPage() {
 
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--mk-fog)" }}>
         <Link to="/" className="mk-brand">
-          Veto<span>Crm</span>
+          <BrandLogo size={36} />
         </Link>
         <div className="mk-nav-links">
           <LanguageSwitcher variant="marketing" />

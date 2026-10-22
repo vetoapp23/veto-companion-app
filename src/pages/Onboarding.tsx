@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { authKeys } from "@/hooks/useAuth";
 import { readPendingPlan, writePendingPlan } from "@/components/PendingCheckoutRedirect";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import { SeoHead } from "@/components/SeoHead";
 
 /**
@@ -168,7 +169,7 @@ export default function Onboarding() {
         <div className="w-full max-w-lg">
           <div className="flex items-center justify-between mb-4">
             <Link to="/" className="mk-brand text-lg">
-              Veto<span>Crm</span>
+              <BrandLogo size={32} />
             </Link>
             <LanguageSwitcher variant="marketing" />
           </div>

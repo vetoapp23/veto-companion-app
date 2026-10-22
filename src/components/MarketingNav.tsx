@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -24,7 +25,7 @@ export function MarketingNav({ variant = "hero" }: Props) {
   const nav = (
     <>
       <Link to="/" className="mk-brand" aria-label={t("nav.homeAria")}>
-        Veto<span>Crm</span>
+        <BrandLogo size={36} />
       </Link>
       <nav className="mk-nav-links" aria-label={t("nav.mainNavAria")}>
         <Link to="/pricing" className={linkClass("/pricing")}>

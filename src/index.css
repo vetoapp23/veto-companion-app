@@ -246,7 +246,7 @@
   text-decoration: none;
 }
 
-.app-brand span {
+.app-brand span span {
   color: hsl(var(--primary));
 }
 
@@ -715,6 +715,10 @@
   color: #f4fbf9;
 }
 
+.mk-nav-sticky .mk-brand span span {
+  color: var(--mk-mint);
+}
+
 .mk-nav-sticky .mk-link {
   color: rgba(244, 251, 249, 0.82);
 }
@@ -740,9 +744,11 @@
   letter-spacing: -0.04em;
   color: inherit;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
-.mk-brand span {
+.mk-brand span span {
   color: var(--mk-mint);
 }
 

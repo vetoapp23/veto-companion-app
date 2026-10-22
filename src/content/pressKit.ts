@@ -34,6 +34,7 @@ export const PRESS_KIT = {
     { name: "AlternativeTo", url: "https://alternativeto.net/", note: "Alternatives to Excel / Shepherd / generic CRM" },
     { name: "SaaSHub", url: "https://www.saashub.com/", note: "Tag: veterinary, CRM, practice management" },
   ],
+  logo: "/logo.png",
   screenshots: [
     "/monde-veto/screen-dashboard.png",
     "/monde-veto/screen-clients.png",

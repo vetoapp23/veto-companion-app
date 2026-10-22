@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { SeoHead } from "@/components/SeoHead";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BrandLogo } from "@/components/BrandLogo";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
 import { PRESS_KIT } from "@/content/pressKit";
 import { resolveBlogLang } from "@/content/blog/articles";
@@ -25,7 +26,7 @@ export default function PressPage() {
 
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--mk-fog)" }}>
         <Link to="/" className="mk-brand">
-          Veto<span>Crm</span>
+          <BrandLogo size={36} />
         </Link>
         <div className="mk-nav-links">
           <LanguageSwitcher variant="marketing" />
@@ -47,6 +48,9 @@ export default function PressPage() {
 
           <section className="mk-press-block">
             <h2>{t("marketing:press.brandTitle")}</h2>
+            <div className="mb-4">
+              <BrandLogo size={56} imgClassName="rounded-xl" />
+            </div>
             <p>
               <strong>{PRESS_KIT.brand}</strong> — {t("marketing:press.brandSpell")}
             </p>
