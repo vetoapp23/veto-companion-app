@@ -1,4 +1,4 @@
-import { Suspense, lazy, type ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +20,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { DemoTourProvider, DemoTourBootstrap } from "@/contexts/DemoTourContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { queryClient } from "@/lib/queryClient";
+import { lazyRetry as lazy } from "@/lib/lazyRetry";
 
 // Marketing home stays eager for fastest first paint
 import Landing from "./pages/Landing";
