@@ -17,9 +17,13 @@ export const isDemoQaPanelEnabled = import.meta.env.DEV === true;
 export const isPublicClinicDemoEnabled =
   import.meta.env.DEV === true || import.meta.env.VITE_ENABLE_DEMO === "true";
 
-export const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "DemoVetpro2026!";
+/** Requires VITE_DEMO_PASSWORD — no hardcoded fallback in the client bundle. */
+export const DEMO_PASSWORD = (import.meta.env.VITE_DEMO_PASSWORD as string | undefined)?.trim() || "";
 
 async function signInDemo(email: string) {
+  if (!DEMO_PASSWORD) {
+    throw new Error("Demo password not configured (VITE_DEMO_PASSWORD)");
+  }
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password: DEMO_PASSWORD,

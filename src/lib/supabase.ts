@@ -59,7 +59,7 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
     .from('user_profiles')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (error) {
     console.error('❌ getCurrentUserProfile: Error fetching profile:', error);
@@ -68,7 +68,12 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
     console.error('❌ Error details:', error.details);
     throw error;
   }
-  
+
+  if (!data) {
+    console.log('ℹ️ getCurrentUserProfile: No profile row yet');
+    return null;
+  }
+
   console.log('✅ getCurrentUserProfile: Profile found:', data);
   return data;
 }
@@ -128,19 +133,13 @@ export const updateUserProfile = async (updates: Partial<UserProfile>) => {
   const user = await getCurrentUser()
   if (!user) throw new Error('No authenticated user')
 
-  // First check if profile exists
-  const { data: existingProfile, error: fetchError } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  // If profile doesn't exist, create it first
+  const existingProfile = await getCurrentUserProfile()
   if (!existingProfile) {
-    await createUserProfileIfNotExists(user)
+    throw new Error(
+      'Profil introuvable. Terminez l’onboarding avant de modifier le profil.',
+    )
   }
 
-  // Prepare update data, excluding undefined values
   const updateData = Object.entries({
     ...updates,
     updated_at: new Date().toISOString()
@@ -159,76 +158,24 @@ export const updateUserProfile = async (updates: Partial<UserProfile>) => {
     .single()
 
   if (error) {
-    // Try upsert as fallback
-    const metadata = user.user_metadata || {};
-    const fullName = metadata.full_name || metadata.name || '';
-    const username = existingProfile?.username || metadata.username || user.email!.split('@')[0];
-    const role = (existingProfile?.role as 'admin' | 'assistant') || metadata.role || 'assistant';
-    
-    const upsertData = {
-      id: user.id,
-      email: user.email!,
-      username: username,
-      full_name: fullName,
-      role: role,
-      ...updateData
-    }
-
-    const { data: upsertResult, error: upsertError } = await supabase
-      .from('user_profiles')
-      .upsert(upsertData)
-      .select()
-      .single()
-
-    if (upsertError) {
-      throw new Error(`Profile update failed: ${upsertError.message}`)
-    }
-
-    return upsertResult
+    throw new Error(`Profile update failed: ${error.message}`)
   }
 
   return data
 }
 
-// Admin functions (require service role key for RLS bypass)
+/**
+ * Profiles are created only via SECURITY DEFINER RPC `create_user_profile`
+ * (onboarding / register). Direct INSERT is blocked by RLS.
+ */
 export const createUserProfileIfNotExists = async (user: SupabaseUser): Promise<UserProfile> => {
-  // First try to get existing profile
   const existingProfile = await getCurrentUserProfile();
   if (existingProfile) {
     return existingProfile;
   }
-
-  // Handle different metadata formats for different auth providers
-  const metadata = user.user_metadata || {};
-  
-  // For Google OAuth, full_name might be in 'name' field
-  // For regular signup, it's in 'full_name' field
-  const fullName = metadata.full_name || metadata.name || '';
-  
-  // Generate username from email if not provided
-  const username = metadata.username || user.email!.split('@')[0];
-  
-  // Default role to assistant if not provided
-  const role = metadata.role || 'assistant';
-
-  // If no profile exists, create one
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .insert({
-      id: user.id,
-      email: user.email!,
-      username: username,
-      full_name: fullName,
-      role: role
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
+  throw new Error(
+    'Profil introuvable. Terminez l’onboarding ou inscrivez-vous pour créer votre clinique.',
+  );
 };
 
 export const signInWithGoogle = async (opts?: { next?: string }) => {

@@ -1,1 +1,0 @@
-import{as as r,av as o,aw as a}from"./index-CfItjhrY.js";class i extends Error{constructor(s="DEMO_READONLY"){super(s),this.name="DemoReadOnlyError"}}function t(e){if(r(e))throw new i}function m(e){return r(e)||o()||a(e)}export{i as D,t as a,m as i};

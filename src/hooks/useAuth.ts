@@ -40,7 +40,13 @@ const fetchAuthSession = async (): Promise<User | null> => {
       console.log('✅ Profile loaded from database:', profile);
     } catch (profileError: any) {
       console.error('❌ Error loading profile:', profileError);
-      // OAuth first login: no clinic yet — allow session so /onboarding can run
+      // Real fetch error (not "missing row"): keep session but never elevate role.
+      profile = null;
+    }
+
+    // OAuth / first login: no clinic yet — pending stub so /onboarding can run.
+    // Never invent admin/super_admin privileges.
+    if (!profile) {
       const metadata = session.user.user_metadata || {};
       const fullName = metadata.full_name || metadata.name || null;
       profile = {
@@ -48,17 +54,12 @@ const fetchAuthSession = async (): Promise<User | null> => {
         email: session.user.email!,
         username: (session.user.email || 'user').split('@')[0],
         full_name: fullName,
-        role: 'admin',
+        role: 'assistant',
         status: 'pending',
         organization_id: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-    }
-
-    if (!profile) {
-      console.log('❌ No profile found or created');
-      return null;
     }
 
     console.log('✅ Auth session complete:', { id: session.user.id, email: session.user.email, role: profile.role });

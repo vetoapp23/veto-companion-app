@@ -30,15 +30,23 @@ export function useAccessStatus() {
       const { data, error } = await supabase.rpc("get_access_status" as any);
       if (error) {
         console.warn("[access] get_access_status failed", error.message);
-        // Fail open for super_admin profile, fail closed otherwise if we know status
+        // Fail closed: never unlock the app when the access RPC is unavailable.
         const status = (user?.profile as any)?.status;
+        const role = (user?.profile as any)?.role;
+        if (role === "super_admin" && status === "approved") {
+          return { access: "ok", reason: "fallback_super_admin", is_super_admin: true };
+        }
         if (status === "suspended" || status === "rejected") {
           return { access: "denied", reason: `account_${status}` };
         }
-        if (status === "pending") {
+        if (status === "pending" || !status) {
           return { access: "pending", reason: "account_pending" };
         }
-        return { access: "ok", reason: "fallback" };
+        return {
+          access: "denied",
+          reason: "access_check_failed",
+          message: "Impossible de vérifier l'accès. Réessayez dans un instant.",
+        };
       }
       return (data ?? { access: "ok" }) as AccessStatus;
     },
@@ -67,6 +75,8 @@ export function accessMessage(status?: AccessStatus | null): string {
       return "La plateforme est temporairement en lecture seule.";
     case "demo_readonly":
       return "Mode démo — exploration en lecture seule.";
+    case "access_check_failed":
+      return status.message || "Impossible de vérifier l'accès. Réessayez dans un instant.";
     default:
       return status.message || "Accès restreint.";
   }

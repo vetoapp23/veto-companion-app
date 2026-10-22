@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD") ?? "DemoVetpro2026!";
+const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD")?.trim() || "";
 
 const DEMOS: Array<{
   plan: "free" | "pro" | "pro_plus" | "duo" | "clinic";
@@ -1568,6 +1568,10 @@ Deno.serve(async (req) => {
 
   if (!enabled || !expected || !timingSafeEqual(provided, expected)) {
     return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
+  }
+
+  if (!DEMO_PASSWORD) {
+    return jsonResponse({ ok: false, error: "DEMO_PASSWORD env required" }, 500);
   }
 
   if (req.method !== "POST") {

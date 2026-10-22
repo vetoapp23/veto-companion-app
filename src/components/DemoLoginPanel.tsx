@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { clearDemoReadOnlySession } from "@/lib/demoMode";
-import { isDemoQaPanelEnabled } from "@/lib/demoLogin";
+import { DEMO_PASSWORD, isDemoQaPanelEnabled } from "@/lib/demoLogin";
 
 const DEMO_ACCOUNTS = [
   { plan: "free", email: "demo-free@vetpro.test", labelKey: "demo.plans.free" },
@@ -15,8 +15,6 @@ const DEMO_ACCOUNTS = [
   { plan: "duo", email: "demo-duo@vetpro.test", labelKey: "demo.plans.duo" },
   { plan: "clinic", email: "demo-clinic@vetpro.test", labelKey: "demo.plans.clinic" },
 ] as const;
-
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD || "DemoVetpro2026!";
 
 export function DemoLoginPanel() {
   const { t } = useTranslation("auth");
@@ -32,6 +30,14 @@ export function DemoLoginPanel() {
     // Internal QA logins are writable — clear public demo lock
     clearDemoReadOnlySession();
     try {
+      if (!DEMO_PASSWORD) {
+        toast({
+          title: tc("error"),
+          description: "VITE_DEMO_PASSWORD manquant",
+          variant: "destructive",
+        });
+        return;
+      }
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password: DEMO_PASSWORD,
@@ -77,9 +83,11 @@ export function DemoLoginPanel() {
           </Button>
         ))}
       </div>
-      <p className="text-[10px] text-center mt-2" style={{ color: "var(--mk-muted)" }}>
-        {t("demo.passwordLabel")} <code>{DEMO_PASSWORD}</code>
-      </p>
+      {DEMO_PASSWORD ? (
+        <p className="text-[10px] text-center mt-2" style={{ color: "var(--mk-muted)" }}>
+          {t("demo.passwordLabel")} <code>{DEMO_PASSWORD}</code>
+        </p>
+      ) : null}
     </div>
   );
 }

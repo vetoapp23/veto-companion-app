@@ -12,12 +12,10 @@ export const useRealtimeSync = () => {
   const queryClient = useQueryClient();
   const { data: user } = useAuthSession();
 
-  // Clear all cache when user changes (logout or switch account)
+  // Clear cache only after a known authenticated session is gone (logout),
+  // not during the initial auth loading window when user is still null.
   useEffect(() => {
     if (!user?.id) {
-      // User logged out - clear ALL cached data
-      console.log('🧹 Clearing all cached data on logout...');
-      queryClient.clear();
       return;
     }
 
@@ -143,6 +141,7 @@ export const useRealtimeSync = () => {
         (payload) => {
           console.log('🧾 Invoices change detected:', payload.eventType);
           queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          queryClient.invalidateQueries({ queryKey: ['accounting'] });
         }
       )
       .subscribe();
@@ -159,7 +158,8 @@ export const useRealtimeSync = () => {
         },
         (payload) => {
           console.log('📦 Stock change detected:', payload.eventType);
-          queryClient.invalidateQueries({ queryKey: ['stock'] });
+          queryClient.invalidateQueries({ queryKey: ['stock-items'] });
+          queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
         }
       )
       .subscribe();
