@@ -8,23 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, 
-  Key, 
   Bell, 
-  Globe, 
   Clock,
-  Smartphone,
   Monitor,
-  Tablet,
   Save,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  CheckCircle
+  Loader2,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AuthSettings() {
@@ -78,26 +71,7 @@ export default function AuthSettings() {
     theme: 'system'
   });
 
-  // État pour les sessions actives
-  const [activeSessions] = useState([
-    {
-      id: 1,
-      device: 'MacBook Pro',
-      browser: 'Chrome',
-      lastActiveKey: 'now' as const,
-      current: true,
-      ip: '192.168.1.100'
-    },
-    {
-      id: 2,
-      device: 'iPhone 14',
-      browser: 'Safari',
-      lastActiveKey: 'hoursAgo' as const,
-      lastActiveHours: 2,
-      current: false,
-      ip: '192.168.1.101'
-    }
-  ]);
+  const [revokingOthers, setRevokingOthers] = useState(false);
 
   const handleSaveSecurity = () => {
     toast({
@@ -134,35 +108,27 @@ export default function AuthSettings() {
     });
   };
 
-  const handleTerminateSession = (sessionId: number) => {
-    toast({
-      title: t("authSettings.activeSessions.terminatedTitle"),
-      description: t("authSettings.activeSessions.terminatedBody"),
-    });
-  };
-
-  const handleTerminateAllSessions = () => {
-    toast({
-      title: t("authSettings.activeSessions.allTerminatedTitle"),
-      description: t("authSettings.activeSessions.allTerminatedBody"),
-    });
-  };
-
-  const getDeviceIcon = (device: string) => {
-    if (device.includes('iPhone') || device.includes('Android')) {
-      return <Smartphone className="h-4 w-4" />;
-    } else if (device.includes('iPad') || device.includes('Tablet')) {
-      return <Tablet className="h-4 w-4" />;
-    } else {
-      return <Monitor className="h-4 w-4" />;
+  const handleTerminateOtherSessions = async () => {
+    setRevokingOthers(true);
+    try {
+      const { revokeOtherSessions } = await import("@/lib/authPassword");
+      await revokeOtherSessions();
+      toast({
+        title: t("authSettings.activeSessions.allTerminatedTitle"),
+        description: t("authSettings.activeSessions.allTerminatedBody"),
+      });
+    } catch (err) {
+      toast({
+        title: t("authSettings.activeSessions.revokeErrorTitle"),
+        description:
+          err instanceof Error
+            ? err.message
+            : t("authSettings.activeSessions.revokeErrorBody"),
+        variant: "destructive",
+      });
+    } finally {
+      setRevokingOthers(false);
     }
-  };
-
-  const formatLastActive = (session: (typeof activeSessions)[number]) => {
-    if (session.lastActiveKey === 'now') {
-      return t("authSettings.activeSessions.now");
-    }
-    return t("authSettings.activeSessions.hoursAgo", { count: session.lastActiveHours ?? 2 });
   };
 
   if (!user) return null;
@@ -309,48 +275,24 @@ export default function AuthSettings() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {activeSessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getDeviceIcon(session.device)}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{session.device}</span>
-                        {session.current && (
-                          <Badge variant="secondary" className="text-xs">
-                            {t("authSettings.activeSessions.current")}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {session.browser} • {t("authSettings.activeSessions.locationRabat")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("authSettings.activeSessions.lastActive", { time: formatLastActive(session) })}
-                      </p>
-                    </div>
-                  </div>
-                  {!session.current && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleTerminateSession(session.id)}
-                    >
-                      {t("authSettings.activeSessions.terminate")}
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <Separator />
-
+            <p className="text-sm text-muted-foreground">
+              {t("authSettings.activeSessions.help")}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t("authSettings.activeSessions.passwordLinkHint")}{" "}
+              <Link to="/profile" className="text-primary underline underline-offset-2 font-medium">
+                {t("authSettings.activeSessions.passwordLink")}
+              </Link>
+            </p>
             <Button
               variant="destructive"
-              onClick={handleTerminateAllSessions}
-              className="w-full"
+              onClick={() => void handleTerminateOtherSessions()}
+              className="w-full gap-2"
+              disabled={revokingOthers}
             >
+              {revokingOthers ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
               {t("authSettings.activeSessions.terminateAll")}
             </Button>
           </CardContent>

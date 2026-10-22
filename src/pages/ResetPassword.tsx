@@ -8,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Stethoscope, Loader2, Eye, EyeOff } from "lucide-react";
 import { supabase } from '@/lib/supabase';
+import {
+  revokeAllSessionsAfterPasswordReset,
+  validatePasswordStrength,
+} from '@/lib/authPassword';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 
@@ -46,15 +50,6 @@ export function ResetPassword() {
     checkSession();
   }, [t]);
 
-  const validatePassword = (pwd: string): string | null => {
-    if (pwd.length < 8) return t('resetPassword.rules.minLength');
-    if (!/[A-Z]/.test(pwd)) return t('resetPassword.rules.uppercase');
-    if (!/[a-z]/.test(pwd)) return t('resetPassword.rules.lowercase');
-    if (!/\d/.test(pwd)) return t('resetPassword.rules.digit');
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>?]/.test(pwd)) return t('resetPassword.rules.special');
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -77,7 +72,7 @@ export function ResetPassword() {
       return;
     }
 
-    const passwordError = validatePassword(password);
+    const passwordError = validatePasswordStrength(password, (key) => t(key));
     if (passwordError) {
       toast({
         title: t('resetPassword.invalidPassword'),
@@ -94,12 +89,15 @@ export function ResetPassword() {
 
       if (error) throw error;
 
+      // Force every device (including this recovery session) to re-authenticate.
+      await revokeAllSessionsAfterPasswordReset();
+
       toast({
         title: t('resetPassword.passwordUpdated'),
         description: t('resetPassword.passwordUpdatedBody'),
       });
 
-      navigate('/login');
+      navigate('/login', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t('resetPassword.updateError'));
     } finally {

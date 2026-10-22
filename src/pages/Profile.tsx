@@ -29,10 +29,14 @@ import { useUserProfile, useUpdateUserProfile } from '@/hooks/useDatabase';
 import { SUPPORTED_LANGS, type AppLanguage } from '@/i18n';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { isDemoWriteBlocked, assertDemoCanWrite, DemoReadOnlyError } from '@/lib/demoWriteGuard';
+import {
+  changePasswordAndRevokeOthers,
+  validatePasswordStrength,
+} from '@/lib/authPassword';
 import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
-  const { user, logout, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const { i18n } = useTranslation();
   const { t } = useTranslation("app");
@@ -43,6 +47,7 @@ export default function Profile() {
   const updateProfileMutation = useUpdateUserProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordBusy, setPasswordBusy] = useState(false);
   const demoLocked = isDemoWriteBlocked(user?.email);
   
   // État local pour les modifications - utilise les données de la base de données
@@ -143,22 +148,88 @@ export default function Profile() {
     }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
+    if (demoLocked) {
+      toast({
+        title: td("readOnlyToastTitle"),
+        description: td("readOnlyToastBody"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      toast({
+        title: tc("error"),
+        description: t("profile.passwordFieldsRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: tc("error"),
         description: t("profile.passwordMismatch"),
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
-    toast({
-      title: t("profile.passwordChanged"),
-      description: t("profile.passwordChangedBody"),
-    });
-    setIsChangingPassword(false);
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+
+    const strengthError = validatePasswordStrength(
+      passwordData.newPassword,
+      (key) => tSettings(key),
+    );
+    if (strengthError) {
+      toast({
+        title: t("profile.passwordInvalid"),
+        description: strengthError,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const email = user?.email;
+    if (!email) {
+      toast({
+        title: tc("error"),
+        description: t("profile.passwordNoEmail"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPasswordBusy(true);
+    try {
+      await changePasswordAndRevokeOthers({
+        email,
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      toast({
+        title: t("profile.passwordChanged"),
+        description: t("profile.passwordChangedBody"),
+      });
+      setIsChangingPassword(false);
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      const code = err instanceof Error ? err.message : "";
+      let description = t("profile.passwordChangeError");
+      if (code === "INVALID_CURRENT") description = t("profile.passwordWrongCurrent");
+      else if (code === "SAME_PASSWORD") description = t("profile.passwordSameAsOld");
+      else if (code === "MISSING_CURRENT") description = t("profile.passwordFieldsRequired");
+      else if (err instanceof Error && err.message && !["NO_EMAIL"].includes(err.message)) {
+        // Surface Supabase messages when useful
+        if (!/^[A-Z_]+$/.test(err.message)) description = err.message;
+      }
+      toast({
+        title: tc("error"),
+        description,
+        variant: "destructive",
+      });
+    } finally {
+      setPasswordBusy(false);
+    }
   };
 
   const handleSavePreferences = () => {
@@ -392,6 +463,107 @@ export default function Profile() {
           <LanguageSwitcher />
         </CardContent>
       </Card>
+
+      {!demoLocked && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              {t("profile.passwordTitle")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t("profile.passwordHint")}</p>
+            {!isChangingPassword ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2 rounded-full"
+                onClick={() => setIsChangingPassword(true)}
+              >
+                <Key className="h-4 w-4" />
+                {t("profile.changePassword")}
+              </Button>
+            ) : (
+              <div className="space-y-3 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">{t("profile.currentPassword")}</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    autoComplete="current-password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }))
+                    }
+                    disabled={passwordBusy}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">{t("profile.newPassword")}</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))
+                    }
+                    disabled={passwordBusy}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">{t("profile.confirmPassword")}</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                    }
+                    disabled={passwordBusy}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {tSettings("resetPassword.passwordRequirements")}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    className="gap-2 rounded-full"
+                    onClick={() => void handleChangePassword()}
+                    disabled={passwordBusy}
+                  >
+                    {passwordBusy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    {passwordBusy ? t("profile.passwordUpdating") : t("profile.passwordSave")}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={passwordBusy}
+                    onClick={() => {
+                      setIsChangingPassword(false);
+                      setPasswordData({
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
+                      });
+                    }}
+                  >
+                    {tc("cancel")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
