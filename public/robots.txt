@@ -1,11 +1,15 @@
+# VetoCrm crawl policy — marketing OK, auth/app private = no noise
 User-agent: *
 Allow: /
-Allow: /pricing
-Allow: /login
-Allow: /register
-Allow: /contact
-Allow: /monde-veto
-Allow: /sitemap.xml
+
+# Auth & account flows (thin / private)
+Disallow: /login
+Disallow: /auth/
+Disallow: /onboarding
+Disallow: /reset-password
+Disallow: /import/
+
+# Authenticated app (PHI / clinic data)
 Disallow: /dashboard
 Disallow: /clients
 Disallow: /pets
@@ -24,7 +28,8 @@ Disallow: /profile
 Disallow: /admin/
 Disallow: /super-admin
 Disallow: /auth-settings
-Disallow: /reset-password
+
+Allow: /sitemap.xml
+Allow: /robots.txt
 
 Sitemap: https://www.vetocrm.com/sitemap.xml
-

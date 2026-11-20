@@ -43,7 +43,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="marketing-shell">
+    <div className="marketing-shell mk-landing">
       <SeoHead
         title={t("landing.seoTitle")}
         description={t("landing.seoDescription")}
@@ -101,243 +101,249 @@ export default function Landing() {
         ]}
       />
 
-      <section className="mk-hero">
-        <div className="mk-hero-media">
-          <picture>
-            <source
-              type="image/webp"
-              media="(max-width: 768px)"
-              srcSet={heroImageWebpMobile}
-            />
-            <source type="image/webp" srcSet={heroImageWebp} />
-            <img
-              src={heroImageJpg}
-              alt={t("landing.heroAlt")}
-              width={1280}
-              height={720}
-              fetchPriority="high"
-              decoding="async"
-              sizes="100vw"
-            />
-          </picture>
-          <div className="mk-hero-veil" aria-hidden />
-          <div className="mk-hero-mesh" aria-hidden />
-        </div>
+      <a href="#mk-main" className="mk-skip-link">
+        {t("nav.skipToContent")}
+      </a>
 
-        <MarketingNav variant="hero" />
+      <MarketingNav variant="hero" />
 
-        <div className="mk-hero-body">
-          <h1 className="mk-hero-title">
-            Veto<span style={{ color: "var(--mk-mint)" }}>Crm</span>
-          </h1>
-          <p
-            className="mk-display"
-            style={{
-              fontSize: "clamp(1.35rem, 3.5vw, 2rem)",
-              fontWeight: 600,
-              letterSpacing: "-0.03em",
-              margin: "0.5rem 0 0",
-              color: "rgba(244, 251, 249, 0.95)",
-              animation: "mk-fade-up 0.8s ease 0.08s both",
-            }}
-          >
-            {t("landing.tagline")}
-          </p>
-          <p className="mk-hero-sub">{t("landing.heroSub")}</p>
-          <div className="mk-hero-ctas">
-            <Link to="/register" className="mk-btn mk-btn-primary">
-              {t("landing.ctaTrial")}
+      <main id="mk-main" tabIndex={-1}>
+        <section className="mk-hero" aria-labelledby="landing-hero-title">
+          <div className="mk-hero-media">
+            <picture>
+              <source
+                type="image/webp"
+                media="(max-width: 768px)"
+                srcSet={heroImageWebpMobile}
+              />
+              <source type="image/webp" srcSet={heroImageWebp} />
+              <img
+                src={heroImageJpg}
+                alt={t("landing.heroAlt")}
+                width={1280}
+                height={720}
+                fetchPriority="high"
+                decoding="async"
+                sizes="100vw"
+              />
+            </picture>
+            <div className="mk-hero-veil" aria-hidden />
+            <div className="mk-hero-mesh" aria-hidden />
+          </div>
+
+          <div className="mk-hero-body">
+            <h1 id="landing-hero-title" className="mk-hero-title" translate="no">
+              Veto<span className="mk-hero-brand-accent">Crm</span>
+            </h1>
+            <p className="mk-display mk-hero-tagline">{t("landing.tagline")}</p>
+            <p className="mk-hero-sub">{t("landing.heroSub")}</p>
+            <div className="mk-hero-ctas">
+              <Link to="/register" className="mk-btn mk-btn-primary">
+                {t("landing.ctaTrial")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <button
+                type="button"
+                className="mk-btn mk-btn-ghost"
+                disabled={demoBusy}
+                aria-busy={demoBusy}
+                onClick={() => void handleHeroDemo()}
+              >
+                {demoBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Play className="h-4 w-4" aria-hidden />
+                )}
+                {t("landing.ctaDemo")}
+              </button>
+              <Link to="/login" className="mk-btn mk-btn-ghost">
+                {t("landing.ctaAccess")}
+              </Link>
+            </div>
+          </div>
+
+          <div className="mk-scroll-hint" aria-hidden />
+        </section>
+
+        <section className="mk-section mk-section-defer" aria-labelledby="parcours-title">
+          <p className="mk-section-label">{t("landing.journeyLabel")}</p>
+          <h2 id="parcours-title" className="mk-section-title">
+            {t("landing.journeyTitle")}
+          </h2>
+          <p className="mk-section-copy">{t("landing.journeyCopy")}</p>
+
+          <div className="mk-flow">
+            <div className="mk-flow-step">
+              <div>
+                <h3>{t("landing.step1Title")}</h3>
+                <p>{t("landing.step1Body")}</p>
+              </div>
+            </div>
+            <div className="mk-flow-step">
+              <div>
+                <h3>{t("landing.step2Title")}</h3>
+                <p>{t("landing.step2Body")}</p>
+              </div>
+            </div>
+            <div className="mk-flow-step">
+              <div>
+                <h3>{t("landing.step3Title")}</h3>
+                <p>{t("landing.step3Body")}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className="mk-section mk-section-defer mk-section-tight"
+          aria-labelledby="capacites-title"
+        >
+          <p className="mk-section-label">{t("landing.capabilitiesLabel")}</p>
+          <h2 id="capacites-title" className="mk-section-title">
+            {t("landing.capabilitiesTitle")}
+          </h2>
+          <p className="mk-section-copy">{t("landing.capabilitiesCopy")}</p>
+
+          <div className="mk-capabilities">
+            <article className="mk-cap">
+              <h3>
+                <Users className="h-5 w-5" aria-hidden /> {t("landing.featClients")}
+              </h3>
+              <p>{t("landing.featClientsBody")}</p>
+            </article>
+            <article className="mk-cap">
+              <h3>
+                <Calendar className="h-5 w-5" aria-hidden /> {t("landing.featAgenda")}
+              </h3>
+              <p>{t("landing.featAgendaBody")}</p>
+            </article>
+            <article className="mk-cap">
+              <h3>
+                <FileText className="h-5 w-5" aria-hidden /> {t("landing.featConsult")}
+              </h3>
+              <p>{t("landing.featConsultBody")}</p>
+            </article>
+            <article className="mk-cap">
+              <h3>
+                <PawPrint className="h-5 w-5" aria-hidden /> {t("landing.featVax")}
+              </h3>
+              <p>{t("landing.featVaxBody")}</p>
+            </article>
+            <article className="mk-cap">
+              <h3>
+                <BarChart3 className="h-5 w-5" aria-hidden /> {t("landing.featStock")}
+              </h3>
+              <p>{t("landing.featStockBody")}</p>
+            </article>
+            <article className="mk-cap">
+              <h3>
+                <Shield className="h-5 w-5" aria-hidden /> {t("landing.featSecurity")}
+              </h3>
+              <p>{t("landing.featSecurityBody")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section
+          className="mk-section mk-section-defer mk-section-tight"
+          aria-labelledby="usecases-title"
+        >
+          <p className="mk-section-label">{t("landingUseCases.label")}</p>
+          <h2 id="usecases-title" className="mk-section-title">
+            {t("landingUseCases.title")}
+          </h2>
+          <p className="mk-section-copy">{t("landingUseCases.copy")}</p>
+          <div className="mk-usecases">
+            <article className="mk-usecase">
+              <h3>{t("landingUseCases.soloTitle")}</h3>
+              <p>{t("landingUseCases.soloBody")}</p>
+            </article>
+            <article className="mk-usecase">
+              <h3>{t("landingUseCases.clinicTitle")}</h3>
+              <p>{t("landingUseCases.clinicBody")}</p>
+            </article>
+            <article className="mk-usecase">
+              <h3>{t("landingUseCases.farmTitle")}</h3>
+              <p>{t("landingUseCases.farmBody")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section
+          className="mk-section mk-section-defer mk-section-tight"
+          aria-labelledby="resources-title"
+        >
+          <p className="mk-section-label">{t("landingResources.label")}</p>
+          <h2 id="resources-title" className="mk-section-title">
+            {t("landingResources.title")}
+          </h2>
+          <p className="mk-section-copy">{t("landingResources.copy")}</p>
+          <div className="mk-resource-links">
+            <Link to="/monde-veto/logiciel-gestion-clinique-veterinaire" className="mk-resource-link">
+              {t("landingResources.guidePm")}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
-            <button
-              type="button"
-              className="mk-btn mk-btn-ghost"
-              disabled={demoBusy}
-              onClick={() => void handleHeroDemo()}
+            <Link to="/monde-veto/veterinary-crm-software" className="mk-resource-link">
+              {t("landingResources.guideCrm")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link to="/monde-veto/alternative-excel-clinique-veterinaire" className="mk-resource-link">
+              {t("landingResources.guideExcel")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link to="/monde-veto/prix-logiciel-veterinaire-crm" className="mk-resource-link">
+              {t("landingResources.guidePrice")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link
+              to="/monde-veto/classement-meilleurs-crm-erp-veterinaire-2026"
+              className="mk-resource-link"
             >
-              {demoBusy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Play className="h-4 w-4" aria-hidden />
-              )}
-              {t("landing.ctaDemo")}
-            </button>
-            <Link to="/login" className="mk-btn mk-btn-ghost">
-              {t("landing.ctaAccess")}
+              {t("landingResources.guideRank")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link
+              to="/monde-veto/best-veterinary-practice-management-software-2027"
+              className="mk-resource-link"
+            >
+              {t("landingResources.guideBest2027")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        </section>
+
+        <section
+          className="mk-section mk-section-defer mk-section-tight"
+          aria-labelledby="faq-title"
+        >
+          <p className="mk-section-label">{t("landing.faqLabel")}</p>
+          <h2 id="faq-title" className="mk-section-title">
+            {t("landing.faqTitle")}
+          </h2>
+          <div className="mk-faq">
+            {faqItems.map((item) => (
+              <details key={item.q} className="mk-faq-item">
+                <summary className="mk-faq-summary">{item.q}</summary>
+                <p className="mk-faq-answer">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <div className="mk-cta-band mk-section-defer">
+          <h2>{t("landing.ctaBandTitle")}</h2>
+          <p>{t("landing.ctaBandBody")}</p>
+          <div className="mk-cta-band-actions">
+            <Link to="/register" className="mk-btn mk-btn-primary">
+              {t("landing.ctaCreateAccount")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link to="/pricing" className="mk-btn mk-btn-ghost">
+              {t("landing.ctaSeePricing")}
             </Link>
           </div>
         </div>
-
-        <div className="mk-scroll-hint" aria-hidden />
-      </section>
-
-      <section className="mk-section" aria-labelledby="parcours-title">
-        <p className="mk-section-label">{t("landing.journeyLabel")}</p>
-        <h2 id="parcours-title" className="mk-section-title">
-          {t("landing.journeyTitle")}
-        </h2>
-        <p className="mk-section-copy">{t("landing.journeyCopy")}</p>
-
-        <div className="mk-flow">
-          <div className="mk-flow-step">
-            <div>
-              <h3>{t("landing.step1Title")}</h3>
-              <p>{t("landing.step1Body")}</p>
-            </div>
-          </div>
-          <div className="mk-flow-step">
-            <div>
-              <h3>{t("landing.step2Title")}</h3>
-              <p>{t("landing.step2Body")}</p>
-            </div>
-          </div>
-          <div className="mk-flow-step">
-            <div>
-              <h3>{t("landing.step3Title")}</h3>
-              <p>{t("landing.step3Body")}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="capacites-title">
-        <p className="mk-section-label">{t("landing.capabilitiesLabel")}</p>
-        <h2 id="capacites-title" className="mk-section-title">
-          {t("landing.capabilitiesTitle")}
-        </h2>
-        <p className="mk-section-copy">{t("landing.capabilitiesCopy")}</p>
-
-        <div className="mk-capabilities">
-          <article className="mk-cap">
-            <h3>
-              <Users className="h-5 w-5" aria-hidden /> {t("landing.featClients")}
-            </h3>
-            <p>{t("landing.featClientsBody")}</p>
-          </article>
-          <article className="mk-cap">
-            <h3>
-              <Calendar className="h-5 w-5" aria-hidden /> {t("landing.featAgenda")}
-            </h3>
-            <p>{t("landing.featAgendaBody")}</p>
-          </article>
-          <article className="mk-cap">
-            <h3>
-              <FileText className="h-5 w-5" aria-hidden /> {t("landing.featConsult")}
-            </h3>
-            <p>{t("landing.featConsultBody")}</p>
-          </article>
-          <article className="mk-cap">
-            <h3>
-              <PawPrint className="h-5 w-5" aria-hidden /> {t("landing.featVax")}
-            </h3>
-            <p>{t("landing.featVaxBody")}</p>
-          </article>
-          <article className="mk-cap">
-            <h3>
-              <BarChart3 className="h-5 w-5" aria-hidden /> {t("landing.featStock")}
-            </h3>
-            <p>{t("landing.featStockBody")}</p>
-          </article>
-          <article className="mk-cap">
-            <h3>
-              <Shield className="h-5 w-5" aria-hidden /> {t("landing.featSecurity")}
-            </h3>
-            <p>{t("landing.featSecurityBody")}</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="usecases-title">
-        <p className="mk-section-label">{t("landingUseCases.label")}</p>
-        <h2 id="usecases-title" className="mk-section-title">
-          {t("landingUseCases.title")}
-        </h2>
-        <p className="mk-section-copy">{t("landingUseCases.copy")}</p>
-        <div className="mk-usecases">
-          <article className="mk-usecase">
-            <h3>{t("landingUseCases.soloTitle")}</h3>
-            <p>{t("landingUseCases.soloBody")}</p>
-          </article>
-          <article className="mk-usecase">
-            <h3>{t("landingUseCases.clinicTitle")}</h3>
-            <p>{t("landingUseCases.clinicBody")}</p>
-          </article>
-          <article className="mk-usecase">
-            <h3>{t("landingUseCases.farmTitle")}</h3>
-            <p>{t("landingUseCases.farmBody")}</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="resources-title">
-        <p className="mk-section-label">{t("landingResources.label")}</p>
-        <h2 id="resources-title" className="mk-section-title">
-          {t("landingResources.title")}
-        </h2>
-        <p className="mk-section-copy">{t("landingResources.copy")}</p>
-        <div className="mk-resource-links">
-          <Link to="/monde-veto/logiciel-gestion-clinique-veterinaire" className="mk-resource-link">
-            {t("landingResources.guidePm")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link to="/monde-veto/veterinary-crm-software" className="mk-resource-link">
-            {t("landingResources.guideCrm")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link to="/monde-veto/alternative-excel-clinique-veterinaire" className="mk-resource-link">
-            {t("landingResources.guideExcel")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link to="/monde-veto/prix-logiciel-veterinaire-crm" className="mk-resource-link">
-            {t("landingResources.guidePrice")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link to="/monde-veto/classement-meilleurs-crm-erp-veterinaire-2026" className="mk-resource-link">
-            {t("landingResources.guideRank")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
-      </section>
-
-      <section className="mk-section" style={{ paddingTop: 0 }} aria-labelledby="faq-title">
-        <p className="mk-section-label">{t("landing.faqLabel")}</p>
-        <h2 id="faq-title" className="mk-section-title">
-          {t("landing.faqTitle")}
-        </h2>
-        <div className="mk-faq" style={{ maxWidth: "42rem", margin: "1.5rem auto 0", textAlign: "left" }}>
-          {faqItems.map((item) => (
-            <details
-              key={item.q}
-              style={{
-                borderBottom: "1px solid var(--mk-line)",
-                padding: "1rem 0",
-              }}
-            >
-              <summary
-                className="mk-display"
-                style={{ cursor: "pointer", fontWeight: 600, fontSize: "1.05rem" }}
-              >
-                {item.q}
-              </summary>
-              <p style={{ marginTop: "0.65rem", color: "var(--mk-muted)", lineHeight: 1.55 }}>{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      <div className="mk-cta-band">
-        <h2>{t("landing.ctaBandTitle")}</h2>
-        <p>{t("landing.ctaBandBody")}</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", justifyContent: "center" }}>
-          <Link to="/register" className="mk-btn mk-btn-primary">
-            {t("landing.ctaCreateAccount")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link to="/pricing" className="mk-btn mk-btn-ghost">
-            {t("landing.ctaSeePricing")}
-          </Link>
-        </div>
-      </div>
+      </main>
 
       <MarketingLegalFooter />
     </div>

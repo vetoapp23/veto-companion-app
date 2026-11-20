@@ -4,10 +4,12 @@ import { ArrowRight, Clock, ExternalLink } from "lucide-react";
 import { SeoHead, siteUrl } from "@/components/SeoHead";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingLegalFooter } from "@/components/MarketingLegalFooter";
+import { MarketingYoutubeFacade } from "@/components/MarketingYoutubeFacade";
 import { BLOG_ARTICLES, resolveBlogLang } from "@/content/blog/articles";
 import {
   TUTORIAL_VIDEOS,
   youtubeEmbedUrl,
+  youtubeThumbnailUrl,
   youtubeWatchUrl,
 } from "@/content/videos";
 
@@ -56,7 +58,7 @@ export default function MondeVetoPage() {
               description: t(`marketing:mondeVeto.videos.items.${video.id}.description`),
               embedUrl: youtubeEmbedUrl(video.youtubeId),
               contentUrl: youtubeWatchUrl(video.youtubeId),
-              thumbnailUrl: `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+              thumbnailUrl: youtubeThumbnailUrl(video.youtubeId),
             })),
           },
           {
@@ -75,9 +77,13 @@ export default function MondeVetoPage() {
         ]}
       />
 
+      <a href="#mk-main" className="mk-skip-link">
+        {t("marketing:nav.skipToContent")}
+      </a>
+
       <MarketingNav variant="sticky" />
 
-      <main className="mk-blog flex-1">
+      <main id="mk-main" className="mk-blog flex-1" tabIndex={-1}>
         <div className="mk-blog-inner">
           <p className="mk-blog-eyebrow">{t("marketing:mondeVeto.eyebrow")}</p>
           <h1>{t("marketing:mondeVeto.title")}</h1>
@@ -94,14 +100,27 @@ export default function MondeVetoPage() {
                 {t("marketing:landingResources.guideCrm")}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
-              <Link to="/monde-veto/classement-meilleurs-crm-erp-veterinaire-2026" className="mk-resource-link">
+              <Link
+                to="/monde-veto/classement-meilleurs-crm-erp-veterinaire-2026"
+                className="mk-resource-link"
+              >
                 {t("marketing:landingResources.guideRank")}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link
+                to="/monde-veto/best-veterinary-practice-management-software-2027"
+                className="mk-resource-link"
+              >
+                {t("marketing:landingResources.guideBest2027")}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
           </div>
 
-          <section className="mk-videos-section" aria-labelledby="monde-veto-videos">
+          <section
+            className="mk-videos-section mk-section-defer"
+            aria-labelledby="monde-veto-videos"
+          >
             <p className="mk-section-label">{t("marketing:mondeVeto.videos.label")}</p>
             <h2 id="monde-veto-videos" className="mk-videos-heading">
               {t("marketing:mondeVeto.videos.title")}
@@ -109,33 +128,34 @@ export default function MondeVetoPage() {
             <p className="mk-videos-lead">{t("marketing:mondeVeto.videos.lead")}</p>
 
             <div className="mk-videos-grid">
-              {TUTORIAL_VIDEOS.map((video) => (
-                <article key={video.id} className="mk-video-card">
-                  <div className="mk-video-embed">
-                    <iframe
-                      src={youtubeEmbedUrl(video.youtubeId)}
-                      title={t(`marketing:mondeVeto.videos.items.${video.id}.title`)}
-                      loading="lazy"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      referrerPolicy="strict-origin-when-cross-origin"
+              {TUTORIAL_VIDEOS.map((video) => {
+                const title = t(`marketing:mondeVeto.videos.items.${video.id}.title`);
+                return (
+                  <article key={video.id} className="mk-video-card">
+                    <MarketingYoutubeFacade
+                      youtubeId={video.youtubeId}
+                      title={title}
+                      playLabel={t("marketing:mondeVeto.videos.playVideo", {
+                        title,
+                        defaultValue: `Play: ${title}`,
+                      })}
                     />
-                  </div>
-                  <div className="mk-video-body">
-                    <h3>{t(`marketing:mondeVeto.videos.items.${video.id}.title`)}</h3>
-                    <p>{t(`marketing:mondeVeto.videos.items.${video.id}.description`)}</p>
-                    <a
-                      href={youtubeWatchUrl(video.youtubeId)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mk-blog-read"
-                    >
-                      {t("marketing:mondeVeto.videos.watchOnYoutube")}
-                      <ExternalLink className="h-4 w-4" aria-hidden />
-                    </a>
-                  </div>
-                </article>
-              ))}
+                    <div className="mk-video-body">
+                      <h3>{title}</h3>
+                      <p>{t(`marketing:mondeVeto.videos.items.${video.id}.description`)}</p>
+                      <a
+                        href={youtubeWatchUrl(video.youtubeId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mk-blog-read"
+                      >
+                        {t("marketing:mondeVeto.videos.watchOnYoutube")}
+                        <ExternalLink className="h-4 w-4" aria-hidden />
+                      </a>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
 
@@ -143,7 +163,7 @@ export default function MondeVetoPage() {
             {articles.map((article) => {
               const loc = article.locales[lang];
               return (
-                <article key={article.slug} className="mk-blog-card">
+                <article key={article.slug} className="mk-blog-card mk-card-defer">
                   <Link to={`/monde-veto/${article.slug}`} className="mk-blog-card-media">
                     <img
                       src={article.cover}
@@ -151,6 +171,8 @@ export default function MondeVetoPage() {
                       width={1200}
                       height={800}
                       loading="lazy"
+                      decoding="async"
+                      sizes="(max-width: 720px) 100vw, (max-width: 1100px) 50vw, 33vw"
                     />
                   </Link>
                   <div className="mk-blog-card-body">

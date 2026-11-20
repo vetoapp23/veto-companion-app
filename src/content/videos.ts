@@ -19,3 +19,7 @@ export function youtubeEmbedUrl(youtubeId: string) {
 export function youtubeWatchUrl(youtubeId: string) {
   return `https://www.youtube.com/watch?v=${youtubeId}`;
 }
+
+export function youtubeThumbnailUrl(youtubeId: string) {
+  return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
+}

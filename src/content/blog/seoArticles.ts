@@ -1,8 +1,38 @@
 import type { BlogArticle } from "./types";
+import { ARTICLE_01 } from "./article01";
+import { ARTICLE_02 } from "./article02";
+import { ARTICLE_03 } from "./article03";
+import { ARTICLE_04 } from "./article04";
+import { ARTICLE_05 } from "./article05";
+import { ARTICLE_06 } from "./article06";
+import { ARTICLE_07 } from "./article07";
+import { ARTICLE_08 } from "./article08";
+import { ARTICLE_09 } from "./article09";
+import { ARTICLE_10 } from "./article10";
+import { ARTICLE_11 } from "./article11";
+import { ARTICLE_12 } from "./article12";
+import { ARTICLE_13 } from "./article13";
+import { ARTICLE_14 } from "./article14";
+import { ARTICLE_15 } from "./article15";
 import { RANKING_2026_ARTICLE } from "./ranking2026";
 
 /** SEO-focused comparison & product articles (screenshots from the live app). */
 export const BLOG_SEO_ARTICLES: BlogArticle[] = [
+  ARTICLE_01,
+  ARTICLE_02,
+  ARTICLE_03,
+  ARTICLE_04,
+  ARTICLE_05,
+  ARTICLE_06,
+  ARTICLE_07,
+  ARTICLE_08,
+  ARTICLE_09,
+  ARTICLE_10,
+  ARTICLE_11,
+  ARTICLE_12,
+  ARTICLE_13,
+  ARTICLE_14,
+  ARTICLE_15,
   RANKING_2026_ARTICLE,
   {
     slug: "application-web-veterinaire-vetocrm",

@@ -142,6 +142,7 @@ const App = () => (
                       <Route path="/legal" element={<LazyRoute><LegalPage docId="legal" /></LazyRoute>} />
                       <Route path="/cookies" element={<LazyRoute><LegalPage docId="cookies" /></LazyRoute>} />
                       <Route path="/refund" element={<LazyRoute><LegalPage docId="refund" /></LazyRoute>} />
+                      <Route path="/disclosure" element={<LazyRoute><LegalPage docId="disclosure" /></LazyRoute>} />
                       <Route path="/contact" element={<LazyRoute><ContactPage /></LazyRoute>} />
                       <Route path="/press" element={<LazyRoute><PressPage /></LazyRoute>} />
                       <Route path="/monde-veto" element={<LazyRoute><MondeVetoPage /></LazyRoute>} />

@@ -13,6 +13,7 @@ const DOC_PATH: Record<LegalDocId, string> = {
   legal: "/legal",
   cookies: "/cookies",
   refund: "/refund",
+  disclosure: "/disclosure",
 };
 
 type Props = {

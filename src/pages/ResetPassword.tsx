@@ -14,6 +14,18 @@ import {
 } from '@/lib/authPassword';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { SeoHead } from '@/components/SeoHead';
+
+function ResetPasswordSeo() {
+  return (
+    <SeoHead
+      title="Réinitialisation du mot de passe — VetoCrm"
+      description="Réinitialisez votre mot de passe VetoCrm."
+      path="/reset-password"
+      noIndex
+    />
+  );
+}
 
 export function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -108,6 +120,7 @@ export function ResetPassword() {
   if (!isValidSession && !error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4">
+        <ResetPasswordSeo />
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="flex justify-center">
@@ -125,6 +138,7 @@ export function ResetPassword() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4">
+        <ResetPasswordSeo />
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -149,6 +163,7 @@ export function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 px-4">
+      <ResetPasswordSeo />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">

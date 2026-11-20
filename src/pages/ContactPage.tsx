@@ -19,8 +19,12 @@ export default function ContactPage() {
         path="/contact"
       />
 
+      <a href="#mk-main" className="mk-skip-link">
+        {t("marketing:nav.skipToContent")}
+      </a>
+
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--mk-fog)" }}>
-        <Link to="/" className="mk-brand">
+        <Link to="/" className="mk-brand" aria-label={t("marketing:nav.homeAria")}>
           <BrandLogo size={36} />
         </Link>
         <div className="mk-nav-links">
@@ -35,7 +39,7 @@ export default function ContactPage() {
         </div>
       </header>
 
-      <main className="mk-contact flex-1">
+      <main id="mk-main" className="mk-contact flex-1" tabIndex={-1}>
         <div className="mk-contact-inner">
           <p className="mk-contact-eyebrow">{t("marketing:contact.eyebrow")}</p>
           <h1>{t("marketing:contact.title")}</h1>

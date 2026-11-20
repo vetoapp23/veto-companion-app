@@ -110,6 +110,7 @@ export function LoginForm() {
         title={t("seo.loginTitle")}
         description={t("seo.loginDescription")}
         path="/login"
+        noIndex
       />
       <aside className="mk-login-visual">
         <div className="mk-hero-media">

@@ -1,320 +1,382 @@
 import type { LegalBundle } from "./types";
 import { LEGAL_ENTITY as E } from "./types";
 
-const UPDATED = "11 de agosto de 2026";
+const UPDATED = "20 de noviembre de 2026";
+
+const ATTRIBUTION =
+  "Adaptado a partir de plantillas redactadas por abogados y publicadas por General Legal, PC bajo licencia CC0 1.0. Se ofrecen solo como referencia general y no constituyen asesoramiento jurídico ni crean una relación abogado-cliente.";
 
 export const legalEs: LegalBundle = {
   privacy: {
     title: "Política de privacidad",
     metaDescription:
-      "Política de privacidad de VetoCrm — tratamiento de datos (RGPD), pagos Stripe, subencargados y derechos de los usuarios.",
+      "Política de privacidad de VetoCrm — tratamiento de datos personales del SaaS de gestión clínica veterinaria (RGPD, Stripe, subencargados, derechos).",
     lastUpdated: UPDATED,
-    intro: `Esta Política explica cómo ${E.brand} (« nosotros ») recopila, utiliza, conserva y protege los datos personales al prestar su software SaaS de gestión para clínicas veterinarias en ${E.website} y aplicaciones asociadas. Está alineada con el Reglamento (UE) 2016/679 (RGPD), la normativa marroquí aplicable y las expectativas de Stripe y las tiendas de aplicaciones (App Store / Google Play).`,
+    intro: `${E.companyFormalName} (« ${E.brand} », « nosotros ») proporciona software en la nube de gestión para clínicas veterinarias (clientes, animales, citas, historiales, vacunas, stock, granjas y módulos relacionados) en ${E.website} y aplicaciones asociadas (el « Servicio »). Esta Política describe cómo tratamos la información personal recogida a través del Servicio, nuestras actividades de marketing y otras actividades aquí descritas. Usuarios europeos: véase la sección RGPD más abajo.`,
     sections: [
       {
         id: "roles",
         title: "1. Roles: responsable y encargado del tratamiento",
         paragraphs: [`${E.brand} actúa en dos roles distintos:`],
         bullets: [
-          "Responsable del tratamiento de los datos de cuenta, suscripción, facturación, soporte y uso de la plataforma (administradores, asistentes, super-admins).",
-          `Encargado del tratamiento de los datos de clientes, animales, historiales, citas y documentos introducidos por una clínica: la clínica (organización) es responsable; ${E.brand} solo los trata para prestar el servicio según sus instrucciones.`,
+          "Responsable del tratamiento de los datos de cuenta, suscripción, facturación, soporte, marketing (cuando haya consentimiento) y uso de la plataforma relativos al personal de la clínica (admins, asistentes, super-admins).",
+          `Encargado del tratamiento de los datos de clientes, animales, historiales, citas, recetas, granjas, stock y documentos introducidos por una clínica: la clínica (organización) es responsable; ${E.brand} trata esos datos solo para prestar el Servicio según las instrucciones de la clínica.`,
         ],
       },
       {
         id: "controller",
-        title: "2. Identidad del editor / responsable",
+        title: "2. Quiénes somos",
         paragraphs: [
-          `Editor del servicio: ${E.companyFormalName} (marca ${E.brand}).`,
-          `Sitio web: ${E.website}`,
-          `Contacto general: ${E.contactEmail}`,
-          `Privacidad: ${E.privacyEmail}`,
-          `Dirección de correspondencia: ${E.address}`,
-          `LinkedIn: ${E.linkedin}`,
-          `Instagram: ${E.instagram}`,
-          `Los datos de identificación del editor se publican en la página de Aviso legal.`,
+          `Editor / prestador: ${E.companyFormalName} (marca ${E.brand}).`,
+          `Sitio: ${E.website}`,
+          `Contacto / privacidad: ${E.privacyEmail}`,
+          `Correspondencia: ${E.address}`,
+          `LinkedIn: ${E.linkedin} · Instagram: ${E.instagram}`,
+          "Los datos de identificación también figuran en el Aviso legal.",
         ],
       },
       {
-        id: "data",
-        title: "3. Categorías de datos",
+        id: "collect",
+        title: "3. Información personal que recopilamos",
         paragraphs: ["Según el uso, podemos tratar:"],
         bullets: [
-          "Datos de identidad y cuenta: nombre, correo, contraseña (hash), teléfono, rol, idioma.",
-          "Datos de clínica / organización: nombre, dirección, ajustes, códigos de invitación, equipo.",
-          "Datos profesionales de la clínica (como encargado): propietarios, animales, consultas, vacunas, antiparasitarios, recetas, granjas, stock, contabilidad interna, archivos.",
-          "Datos de pago y suscripción: IDs de cliente Stripe, plan, estado, historial (no almacenamos el número completo de tarjeta).",
-          "Datos técnicos: registros de acceso, IP, dispositivo/navegador, cookies e identificadores similares, métricas de uso.",
-          "Comunicaciones: correos transaccionales y soporte.",
+          "Datos de contacto y cuenta: nombre, correo, teléfono, rol, idioma, contraseña hasheada.",
+          "Datos de clínica / organización: nombre, dirección, ajustes, códigos de invitación, miembros.",
+          "Contenido profesional de la clínica (como encargado): propietarios, animales, consultas, vacunas, antiparasitarios, recetas, granjas, stock, contabilidad interna, fotos y adjuntos.",
+          "Metadatos de pago: IDs de cliente/suscripción Stripe, plan, estado, historial (no almacenamos números completos de tarjeta ni CVC).",
+          "Comunicaciones: mensajes de soporte y correos transaccionales.",
+          "Datos de dispositivo y actividad: IP, navegador/dispositivo, páginas vistas, ubicación aproximada, registros de seguridad y uso.",
+          "Cookies e identificadores similares: véase la Política de cookies.",
         ],
       },
       {
-        id: "purposes",
-        title: "4. Finalidades y bases jurídicas (RGPD)",
+        id: "sources",
+        title: "4. Fuentes",
         bullets: [
-          "Ejecución del contrato: cuenta, CRM, autenticación, sincronización, soporte (art. 6.1.b).",
-          "Interés legítimo: seguridad, fraude, mejora del producto, analítica agregada (art. 6.1.f).",
-          "Obligación legal: facturación, conservación contable, requerimientos de autoridades (art. 6.1.c).",
-          "Consentimiento: cookies no esenciales y marketing si aplica (art. 6.1.a).",
+          "Usted y su equipo (formularios, CRM, cargas).",
+          "Recogida automática al usar el Servicio (logs, cookies, analytics si hay consentimiento).",
+          "Proveedores que actúan por nosotros (pago, hosting, correo).",
+          "Socios de operaciones corporativas (fusión, financiación, etc.) si aplica.",
         ],
       },
       {
-        id: "payments",
-        title: "5. Pagos (Stripe)",
-        paragraphs: [
-          "Los pagos de suscripción los procesa Stripe. Los datos de tarjeta se recogen directamente en entornos seguros de Stripe; VetoCrm no recibe ni almacena PAN/CVC completos.",
-          "Política de Stripe: https://stripe.com/privacy",
-          "Conservamos metadatos de suscripción necesarios (customer ID, subscription ID, estado, importes, MAD/EUR/USD).",
+        id: "use",
+        title: "5. Cómo usamos la información",
+        bullets: [
+          "Prestar, asegurar y operar el Servicio (cuentas, aislamiento multi-tenant, sincronización, soporte).",
+          "Procesar suscripciones y facturas vía Stripe.",
+          "Personalizar preferencias (idioma, UI) y mejorar el producto con analytics agregadas.",
+          "Enviar anuncios del servicio, alertas de seguridad y (con consentimiento si procede) marketing.",
+          "Detectar fraude, abusos e incidentes; cumplir la ley.",
+          "Como encargado: alojar y tratar el contenido clínico solo para prestar el Servicio a esa clínica.",
         ],
       },
       {
-        id: "processors",
-        title: "6. Destinatarios y subencargados",
+        id: "legal-bases",
+        title: "6. Bases jurídicas (RGPD / UK GDPR)",
+        bullets: [
+          "Ejecución del contrato (art. 6(1)(b)): cuenta, CRM, autenticación, facturación.",
+          "Interés legítimo (art. 6(1)(f)): seguridad, prevención del fraude, mejora del producto, analytics agregadas — sujeto a sus derechos.",
+          "Obligación legal (art. 6(1)(c)): facturación y respuestas a autoridades.",
+          "Consentimiento (art. 6(1)(a)): cookies/analytics no esenciales y marketing opcional — revocable en cualquier momento.",
+        ],
+      },
+      {
+        id: "sharing",
+        title: "7. Cómo compartimos la información",
         paragraphs: [
-          "Acceso limitado al personal autorizado de VetoCrm bajo confidencialidad.",
-          "Subencargados técnicos habituales:",
+          "No vendemos información personal. La compartimos solo para operar el Servicio:",
         ],
         bullets: [
-          "Supabase — base de datos, autenticación, almacenamiento de archivos.",
-          "Stripe — pagos y facturación.",
-          "Proveedores de correo / conectores para emails transaccionales.",
-          "Infraestructura cloud subyacente.",
+          "Dentro de su organización (miembros según roles).",
+          "Proveedores / subencargados bajo contrato: Supabase (base, auth, archivos); Vercel (hosting, Analytics y Speed Insights si están activos); Stripe (pagos); proveedores de correo transaccional.",
+          "Asesores profesionales bajo confidencialidad.",
+          "Autoridades cuando la ley lo exija o para proteger derechos y seguridad.",
+          "Sucesores en una operación corporativa (con salvaguardas adecuadas).",
         ],
       },
       {
         id: "transfers",
-        title: "7. Transferencias internacionales",
+        title: "8. Transferencias internacionales",
         paragraphs: [
-          "Según el hosting y proveedores, los datos pueden tratarse fuera de su país (incluido fuera del EEE), con garantías adecuadas (CTC de la UE, decisiones de adecuación u equivalentes) y medidas de seguridad.",
-          `Para clínicas en la UE/EEE, un acuerdo de encargo (DPA) está disponible bajo petición en ${E.contactEmail}.`,
+          "Según los proveedores, los datos pueden tratarse fuera de su país (incluido fuera del EEE/Reino Unido). Cuando proceda, nos basamos en salvaguardas adecuadas (CCT de la UE, decisiones de adecuación, etc.) y medidas técnicas.",
+          `Las clínicas de la UE/EEE pueden solicitar un acuerdo de encargo (DPA) en ${E.contactEmail}.`,
         ],
       },
       {
         id: "retention",
-        title: "8. Conservación",
+        title: "9. Conservación",
         bullets: [
-          "Cuenta y organización: durante el contrato y luego eliminación o anonimización en un plazo razonable tras el cierre.",
+          "Cuenta y organización: duración del contrato y luego borrado o anonimización en un plazo razonable tras el cierre (salvo obligación legal más larga).",
           "Facturación: plazos legales contables.",
-          "Registros de seguridad: periodo limitado necesario.",
-          "Cookies: según su tipo (véase Cookies).",
+          "Registros de seguridad: periodo limitado necesario para detectar incidentes.",
+          "Cookies: según el tipo (Política de cookies).",
         ],
       },
       {
         id: "security",
-        title: "9. Seguridad",
+        title: "10. Seguridad",
         paragraphs: [
-          "Aplicamos medidas técnicas y organizativas adecuadas: TLS, control de acceso por roles, aislamiento multi-tenant, hash de contraseñas, copias de seguridad de infraestructura, registro de accesos sensibles.",
-          "Ante una violación de datos con alto riesgo, informaremos conforme al RGPD.",
+          "Aplicamos medidas técnicas y organizativas adecuadas al riesgo: TLS, control de acceso por roles, aislamiento de organizaciones, hash de contraseñas, copias de seguridad y registro de accesos.",
+          "Ningún sistema es perfecto. Si una violación de datos personales puede causar un alto riesgo, notificaremos a las personas y autoridades según la ley aplicable (incluido el RGPD).",
         ],
       },
       {
         id: "rights",
-        title: "10. Sus derechos",
+        title: "11. Sus derechos",
         paragraphs: [
-          "Conforme al RGPD: acceso, rectificación, supresión, limitación, oposición, portabilidad y reclamación ante una autoridad de control.",
-          `Para ejercer derechos sobre su cuenta VetoCrm: ${E.privacyEmail} o ${E.supportEmail}.`,
-          "Para datos de pacientes/clientes de una clínica: contacte primero a la clínica (responsable). Nosotros asistiremos como encargado.",
+          "Según su ubicación, puede tener derechos de acceso, rectificación, borrado, limitación, oposición, portabilidad y a reclamar ante una autoridad de control.",
+          `Datos de cuenta / personal: ${E.privacyEmail} o ${E.supportEmail}.`,
+          "Datos de propietarios / pacientes en un espacio de clínica: contacte primero a la clínica (responsable). Asistimos como encargado.",
+        ],
+      },
+      {
+        id: "us-state",
+        title: "12. Avisos de privacidad de estados de EE. UU.",
+        paragraphs: [
+          "Si reside en California, Colorado, Connecticut, Virginia, Nevada u otro estado de EE. UU. con ley de privacidad integral, puede tener derechos a conocer, acceder, corregir, eliminar, obtener una copia de la información y a oponerse a la venta/compartición o a la publicidad dirigida, según corresponda.",
+          `${E.brand} no vende información personal y no la usa para publicidad conductual entre contextos más allá de las herramientas de analytics con consentimiento descritas en la Política de cookies.`,
+          `Para ejercer derechos: ${E.privacyEmail}.`,
         ],
       },
       {
         id: "deletion",
-        title: "11. Eliminación de cuenta (App Store / plataformas)",
+        title: "13. Eliminación de cuenta",
         paragraphs: [
-          "Puede solicitar la eliminación de su cuenta desde ajustes/perfil o por correo a support@vetocrm.com. Algunas datos pueden conservarse temporalmente por obligación legal o litigios.",
-          "Los administradores pueden solicitar exportación y luego eliminación de los datos de su organización.",
+          `Puede solicitar la eliminación de su cuenta desde ajustes o escribiendo a ${E.supportEmail}. La eliminación finaliza el acceso; algunos registros pueden conservarse temporalmente por motivos legales, de seguridad o de litigio.`,
+          "Los admins de clínica pueden solicitar exportación y luego borrado de los datos de la organización.",
         ],
       },
       {
         id: "children",
-        title: "12. Menores",
+        title: "14. Menores",
         paragraphs: [
-          "El servicio está dirigido a profesionales veterinarios, no a menores de 16 años (o la edad local de consentimiento digital).",
+          "El Servicio está destinado a profesionales veterinarios y personal de clínica. No está dirigido a menores de 16 años (o la edad local de consentimiento digital). No creamos conscientemente cuentas de usuario para menores.",
         ],
       },
       {
         id: "cookies",
-        title: "13. Cookies",
+        title: "15. Cookies y seguimiento",
         paragraphs: [
-          "Usamos cookies y tecnologías similares para autenticación, preferencias, seguridad y, en su caso, analítica. Detalles en la Política de cookies.",
+          "Usamos cookies y tecnologías similares para autenticación, preferencias, seguridad y, con consentimiento cuando sea necesario, analytics (incluidos Vercel Analytics y Speed Insights). Detalles: Política de cookies.",
         ],
       },
       {
         id: "changes",
-        title: "14. Cambios",
+        title: "16. Cambios",
         paragraphs: [
-          "Podemos actualizar esta Política. La fecha de «Última actualización» se revisará. En cambios materiales podremos avisarle en el producto o por correo.",
+          "Podemos actualizar esta Política. Cambiará la fecha de «Última actualización». En cambios materiales podemos avisarle en el producto o por correo.",
         ],
       },
       {
         id: "contact",
-        title: "15. Contacto",
+        title: "17. Contacto",
         paragraphs: [
           `Privacidad: ${E.privacyEmail}`,
           `Soporte: ${E.supportEmail}`,
-          `Web: ${E.website}`,
-          `LinkedIn: ${E.linkedin}`,
-          `Instagram: ${E.instagram}`,
+          `Sitio: ${E.website}`,
         ],
+      },
+      {
+        id: "attribution",
+        title: "18. Atribución de la plantilla",
+        paragraphs: [ATTRIBUTION],
       },
     ],
   },
 
   terms: {
-    title: "Condiciones de uso",
+    title: "Términos de uso",
     metaDescription:
-      "Condiciones de uso de VetoCrm — suscripciones, pagos Stripe, responsabilidad, baja y uso aceptable.",
+      "Términos de uso de VetoCrm — acceso, suscripciones, uso aceptable, responsabilidad y ley aplicable.",
     lastUpdated: UPDATED,
-    intro: `Estas Condiciones regulan el acceso y uso de ${E.brand}, software SaaS para clínicas veterinarias. Al crear una cuenta o usar el servicio, acepta estas Condiciones.`,
+    intro: `Estos Términos de uso (« Términos ») regulan el acceso a ${E.website} y al Servicio ${E.brand} operado por ${E.companyFormalName} (« ${E.brand} », « nosotros »). Al crear una cuenta, hacer clic en « Acepto » o usar el Servicio, usted acepta estos Términos en su nombre o en el de la entidad que representa. Debe tener al menos 18 años y estar autorizado a obligar a la clínica/organización. Si no está de acuerdo, no use el Servicio.`,
     sections: [
       {
         id: "service",
-        title: "1. Objeto del servicio",
+        title: "1. El Servicio",
         paragraphs: [
-          `${E.brand} ofrece herramientas de gestión en la nube (clientes, animales, agenda, consultas, vacunas, stock, granjas, contabilidad según el plan).`,
-          "El servicio se presta con obligación de medios, salvo mantenimiento planificado o incidentes ajenos a nuestro control razonable.",
+          `${E.brand} ofrece herramientas cloud de gestión para clínicas veterinarias (clientes, animales, agenda, consultas, vacunas, stock, granjas, contabilidad según el plan) para equipos multiusuario.`,
+          "Podemos modificar, suspender o discontinuar funciones con aviso razonable cuando sea posible. El Servicio se presta con diligencia comercialmente razonable, excluyendo mantenimiento planificado y causa de fuerza mayor.",
         ],
       },
       {
-        id: "eligibility",
-        title: "2. Elegibilidad y cuentas",
+        id: "accounts",
+        title: "2. Cuentas y seguridad",
         bullets: [
-          "Declara ser mayor de edad y estar autorizado a vincular a la clínica/organización.",
-          "Es responsable de la exactitud de los datos y de la confidencialidad de las credenciales.",
-          "El administrador gestiona invitaciones, roles y accesos del equipo.",
-          "Las cuentas demo son de evaluación y pueden reiniciarse o limitarse.",
+          "Proporcione información de registro exacta y manténgala actualizada.",
+          "Mantenga la confidencialidad de las credenciales; usted es responsable de la actividad bajo su cuenta.",
+          "Los admins de la organización gestionan invitaciones, roles y accesos.",
+          "Notifíquenos de inmediato cualquier acceso no autorizado. Las cuentas demo son limitadas y pueden reiniciarse.",
+        ],
+      },
+      {
+        id: "license",
+        title: "3. Licencia y restricciones",
+        paragraphs: [
+          "Sujeto a estos Términos y a su plan, le otorgamos una licencia limitada, no exclusiva, intransferible y revocable para acceder y usar el Servicio con fines profesionales internos de su clínica.",
+        ],
+        bullets: [
+          "No venda, alquile, sublicencie ni explote comercialmente el Servicio sin acuerdo escrito.",
+          "No realice ingeniería inversa, eluda la seguridad, haga scraping masivo ni cree un producto competidor a partir de nuestros materiales.",
+          "No acceda a datos de otra organización sin autorización.",
+          "Conserve los avisos de propiedad en cualquier copia permitida.",
         ],
       },
       {
         id: "plans",
-        title: "3. Planes, precios e impuestos",
+        title: "4. Planes, precios e impuestos",
         paragraphs: [
-          "Hay planes gratuitos y de pago. Los precios pueden mostrarse sin impuestos y variar según moneda (MAD, EUR, USD) y ciclo.",
-          "Pueden aplicarse impuestos (IVA u equivalentes) según su ubicación.",
-          "Podemos cambiar precios con preaviso razonable, aplicables en la siguiente renovación salvo indicación contraria.",
+          "Se ofrecen planes gratuitos y de pago con cuotas (usuarios, almacenamiento, funciones). Los precios pueden excluir impuestos y variar según moneda (MAD, EUR, USD) y ciclo.",
+          "Podemos cambiar precios con aviso razonable; los cambios aplican en la siguiente renovación salvo indicación contraria.",
         ],
       },
       {
         id: "stripe",
-        title: "4. Pago mediante Stripe",
+        title: "5. Pago mediante Stripe",
         paragraphs: [
-          "Los pagos los procesa Stripe. Al suscribirse autoriza los cargos recurrentes del ciclo elegido.",
-          "Si falla el pago, podemos suspender funciones de pago tras aviso.",
-          "Facturas/recibos: portal de facturación o soporte.",
+          "Los planes de pago se facturan a través de Stripe. Al suscribirse autoriza cargos recurrentes. Un fallo de pago puede suspender funciones de pago tras aviso.",
+          "Facturas/recibos vía portal de facturación o bajo petición. Las suscripciones vía tiendas móviles siguen las reglas de la tienda.",
         ],
       },
       {
         id: "cancel",
-        title: "5. Baja y reembolsos",
+        title: "6. Cancelación y reembolsos",
         paragraphs: [
-          "Puede cancelar o bajar de plan en cualquier momento; el efecto suele ser al final del periodo ya pagado (véase Política de reembolsos).",
+          "Puede cancelar o bajar de plan en cualquier momento; el efecto suele ser al final del periodo prepagado. Detalles: Política de reembolsos.",
         ],
       },
       {
-        id: "acceptable",
-        title: "6. Uso aceptable",
-        paragraphs: ["Queda prohibido, entre otros:"],
-        bullets: [
-          "Uso ilegal o lesivo de derechos de terceros.",
-          "Acceso no autorizado a datos de otras organizaciones.",
-          "Eludir medidas de seguridad o sobrecargar el servicio.",
-          "Revender el servicio sin acuerdo escrito o hacer scraping masivo.",
-          "Almacenar contenidos ilícitos.",
+        id: "privacy",
+        title: "7. Privacidad y cookies",
+        paragraphs: [
+          `Su uso también se rige por la Política de privacidad (${E.website}/privacy) y la Política de cookies (${E.website}/cookies), incorporadas por referencia. En caso de conflicto sobre el tratamiento de datos personales, prevalece la Política de privacidad.`,
         ],
       },
       {
         id: "customer-data",
-        title: "7. Datos de la clínica",
+        title: "8. Datos de la clínica",
         paragraphs: [
-          "Conserva los derechos sobre los datos que introduce y nos concede una licencia limitada para alojarlos y tratarlos al prestar el servicio.",
-          "Garantiza disponer de base legal para tratar datos de propietarios y registros asociados.",
-          "Actuamos como encargado; un DPA está disponible bajo petición.",
+          "Usted conserva los derechos sobre los datos que introduce. Nos concede una licencia limitada para alojarlos y tratarlos solo para prestar el Servicio.",
+          "Garantiza disponer de una base legal para tratar datos de propietarios y registros relacionados. Actuamos como encargado; un DPA está disponible bajo petición.",
         ],
       },
       {
-        id: "ip",
-        title: "8. Propiedad intelectual",
+        id: "feedback",
+        title: "9. Comentarios",
         paragraphs: [
-          "El software, la marca VetoCrm, el diseño y la documentación son nuestra propiedad o de licenciantes. Solo se concede licencia de uso del servicio.",
+          "Si comparte sugerencias, nos otorga una licencia perpetua, irrevocable, mundial y libre de regalías para usarlas sin atribución. No envíe información que considere confidencial.",
+        ],
+      },
+      {
+        id: "third-party",
+        title: "10. Servicios de terceros",
+        paragraphs: [
+          "El Servicio puede enlazar o integrarse con terceros (p. ej. Stripe, hosting). No los controlamos; se aplican sus términos. Usted los usa bajo su propio riesgo.",
+        ],
+      },
+      {
+        id: "disclaimer",
+        title: "11. Aviso profesional y « tal cual »",
+        paragraphs: [
+          `${E.brand} es una ayuda de gestión para profesionales veterinarios. No es un dispositivo médico y no sustituye el juicio clínico, el diagnóstico, la prescripción ni las obligaciones regulatorias. Usted es el único responsable de las decisiones profesionales.`,
+          "EL SERVICIO SE PROPORCIONA « TAL CUAL » Y « SEGÚN DISPONIBILIDAD ». EN LA MEDIDA PERMITIDA POR LA LEY, EXCLUIMOS GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN FIN PARTICULAR, TÍTULO Y NO INFRACCIÓN. NO GARANTIZAMOS UN FUNCIONAMIENTO ININTERRUMPIDO O SIN ERRORES.",
         ],
       },
       {
         id: "liability",
-        title: "9. Responsabilidad",
+        title: "12. Limitación de responsabilidad",
         paragraphs: [
-          "VetoCrm es una ayuda de gestión y no sustituye el criterio clínico veterinario.",
-          "En la medida permitida por la ley, nuestra responsabilidad agregada se limita a lo efectivamente pagado en los 12 meses anteriores (o 100 € / equivalente en plan gratuito).",
-          "No respondemos de daños indirectos (lucro cesante, pérdida de datos por mal uso, fuerza mayor, fallos de terceros).",
+          "En la máxima medida permitida por la ley, no respondemos por daños indirectos, consecuentes, incidentales, especiales o punitivos, lucro cesante ni pérdida de datos por mal uso o fallos de terceros.",
+          "Nuestra responsabilidad agregada relativa al Servicio está limitada a las cantidades que nos haya pagado efectivamente en los 12 meses anteriores a la reclamación (o el equivalente a 100 EUR en un plan gratuito).",
         ],
       },
       {
-        id: "apps",
-        title: "10. Apps / tiendas",
+        id: "indemnity",
+        title: "13. Indemnización",
         paragraphs: [
-          "Si descarga desde App Store o Google Play, aplican condiciones adicionales de la tienda. En suscripciones facturadas por la tienda, sus reglas de pago/reembolso pueden prevalecer.",
+          "Acepta defendernos e indemnizarnos frente a reclamaciones y costes razonables derivados de su uso del Servicio, sus datos clínicos, su incumplimiento de estos Términos o de la ley — en la medida permitida por el derecho aplicable.",
+        ],
+      },
+      {
+        id: "termination",
+        title: "14. Suspensión y terminación",
+        paragraphs: [
+          "Podemos suspender o terminar el acceso si incumple estos Términos, no paga o genera riesgo legal/de seguridad. Tras la terminación, finaliza la licencia; las cláusulas supervivientes continúan.",
         ],
       },
       {
         id: "law",
-        title: "11. Ley aplicable",
+        title: "15. Ley aplicable y disputas",
         paragraphs: [
-          "Salvo normas imperativas de protección, estas Condiciones se rigen por la ley marroquí y los tribunales de Rabat, sin perjuicio de fueros imperativos (p. ej. ciertos litigios B2C en la UE).",
+          `Sin perjuicio de protecciones imperativas de su país, estos Términos se rigen por las leyes de ${E.country}. Son competentes los tribunales de Rabat, salvo normas imperativas en contrario.`,
+          `Antes de un procedimiento formal, contacte ${E.contactEmail} para intentar una resolución amistosa.`,
         ],
       },
       {
-        id: "contact",
-        title: "12. Contacto",
-        paragraphs: [`${E.contactEmail} — ${E.website}`],
+        id: "general",
+        title: "16. General",
+        bullets: [
+          "Podemos actualizar estos Términos; los cambios materiales pueden notificarse en el producto o por correo.",
+          "Estos Términos, junto con las políticas de Privacidad, Cookies, Reembolsos y Divulgación, constituyen el acuerdo íntegro sobre el Servicio.",
+          "Si una disposición es inválida, se modificará en la medida mínima necesaria; el resto sigue vigente.",
+          "No puede ceder estos Términos sin nuestro consentimiento; nosotros podemos cederlos en una operación corporativa.",
+          `Contacto: ${E.contactEmail} — ${E.website}`,
+        ],
+      },
+      {
+        id: "attribution",
+        title: "17. Atribución de la plantilla",
+        paragraphs: [ATTRIBUTION],
       },
     ],
   },
 
   legal: {
     title: "Aviso legal",
-    metaDescription: "Aviso legal de VetoCrm — editor, alojamiento, contacto e identificación.",
+    metaDescription: "Aviso legal de VetoCrm — editor, hosting, contacto e identificación.",
     lastUpdated: UPDATED,
-    intro: "Información de identificación del editor del servicio VetoCrm.",
+    intro: "Identificación del editor del servicio en línea VetoCrm.",
     sections: [
       {
         id: "publisher",
         title: "1. Editor",
         paragraphs: [
           `Marca / servicio: ${E.brand}`,
-          `Denominación: ${E.companyFormalName}`,
-          `Web: ${E.website}`,
+          `Nombre: ${E.companyFormalName}`,
+          `Sitio: ${E.website}`,
           `Contacto: ${E.contactEmail}`,
-          `Dirección: ${E.address}`,
+          `Correspondencia: ${E.address}`,
           `LinkedIn: ${E.linkedin}`,
           `Instagram: ${E.instagram}`,
-          `Los datos de contacto anteriores identifican al editor del servicio. Las solicitudes legales o administrativas deben enviarse a ${E.contactEmail}.`,
         ],
       },
       {
         id: "director",
-        title: "2. Dirección de la publicación",
-        paragraphs: [
-          `Director de la publicación: ${E.publicationDirector}, contactable en ${E.contactEmail}.`,
-        ],
+        title: "2. Director de la publicación",
+        paragraphs: [`Director de la publicación: ${E.publicationDirector}, en ${E.contactEmail}.`],
       },
       {
         id: "hosting",
-        title: "3. Alojamiento",
+        title: "3. Hosting",
         paragraphs: [
           `Aplicación (front): ${E.hostingApp}.`,
           `Datos y backend: ${E.hostingData}.`,
-          `Consultas sobre alojamiento o ubicación de datos: ${E.supportEmail}.`,
+          `Consultas: ${E.supportEmail}.`,
         ],
       },
       {
         id: "ip",
         title: "4. Propiedad intelectual",
         paragraphs: [
-          "Los elementos del sitio y la app están protegidos. Queda prohibida su reproducción no autorizada.",
+          "Los materiales del sitio y la app (textos, gráficos, logo, software) están protegidos. Queda prohibida la reproducción no autorizada.",
         ],
       },
       {
         id: "med",
         title: "5. Aviso profesional",
         paragraphs: [
-          "VetoCrm es software de gestión para profesionales veterinarios. No es un producto sanitario ni sustituye la pericia clínica.",
+          "VetoCrm es software de gestión para profesionales veterinarios. No es un dispositivo médico y no sustituye la experiencia clínica. Véase también la página de Divulgación.",
         ],
       },
     ],
@@ -322,54 +384,79 @@ export const legalEs: LegalBundle = {
 
   cookies: {
     title: "Política de cookies",
-    metaDescription: "Política de cookies de VetoCrm — esenciales, preferencias, analítica y consentimiento.",
+    metaDescription:
+      "Política de cookies de VetoCrm — cookies esenciales, preferencias, Vercel Analytics / Speed Insights y gestión del consentimiento.",
     lastUpdated: UPDATED,
-    intro: `Esta página explica cómo ${E.brand} usa cookies y tecnologías similares en ${E.website} y en la aplicación.`,
+    intro: `Esta Política explica cómo ${E.brand} (« nosotros ») usa cookies y tecnologías similares en ${E.website} y en la app, de acuerdo con nuestra Política de privacidad. Está adaptada de la Cookie Notice de General Legal a nuestro stack real.`,
     sections: [
       {
         id: "what",
         title: "1. ¿Qué es una cookie?",
         paragraphs: [
-          "Una cookie es un pequeño archivo en su dispositivo. Pueden usarse tecnologías similares (local storage, píxeles).",
+          "Una cookie es un pequeño archivo que se coloca en su dispositivo al visitar un sitio. También podemos usar almacenamiento local del navegador y píxeles. Usamos cookies de sesión y persistentes.",
+          "Las cookies de primera parte las depositamos nosotros; las de terceros pueden depositarlas proveedores (p. ej. analytics tras el consentimiento).",
         ],
       },
       {
         id: "types",
-        title: "2. Tipos de cookies",
+        title: "2. Tipos que usamos",
         bullets: [
-          "Esenciales / técnicas: sesión de autenticación, seguridad, balanceo — necesarias para el servicio.",
-          "Preferencias: idioma (p. ej. vetocrm-lang), estado de UI (sidebar).",
-          "Analíticas (si se activan): medición agregada — con consentimiento si no son estrictamente necesarias.",
-          "Marketing (si se activan): solo con consentimiento previo.",
+          "Esenciales / técnicas: sesión de autenticación (p. ej. Supabase), seguridad, balanceo — necesarias para el Servicio. No requieren consentimiento.",
+          "Preferencias / funcionalidad: idioma (vetocrm-lang), elección de cookies (vetocrm_cookie_consent), estado de UI.",
+          "Analytics / rendimiento (solo si acepta cookies no esenciales): Vercel Analytics y Vercel Speed Insights — audiencia agregada y Core Web Vitals.",
+          "Publicidad / redes sociales: no se usan actualmente en vetocrm.com. Si se añaden, actualizaremos esta Política y pediremos consentimiento cuando proceda.",
         ],
       },
       {
-        id: "manage",
-        title: "3. Gestionar opciones",
+        id: "providers",
+        title: "3. Quién las sirve",
+        bullets: [
+          `${E.brand} / primera parte — preferencias y consentimiento.`,
+          "Supabase — cookies/tokens de auth esenciales para usuarios conectados.",
+          "Vercel — hosting; scripts de Analytics y Speed Insights solo tras consentimiento del banner.",
+          "Stripe — puede establecer cookies en páginas de pago.",
+        ],
+      },
+      {
+        id: "choices",
+        title: "4. Sus opciones",
         paragraphs: [
-          "Puede borrar o bloquear cookies en el navegador. Bloquear las esenciales puede impedir el inicio de sesión.",
-          "Si hay banner de consentimiento, puede aceptar, rechazar o personalizar las no esenciales.",
+          "En la primera visita mostramos un banner: puede aceptar o rechazar cookies no esenciales. Las esenciales siguen activas.",
+          "Puede borrar datos del sitio o bloquear cookies en el navegador; bloquear las esenciales puede impedir el inicio de sesión.",
+          "Para revisar el consentimiento: borre la clave vetocrm_cookie_consent del almacenamiento local del sitio y recargue — o contáctenos.",
+        ],
+      },
+      {
+        id: "other",
+        title: "5. Otras tecnologías",
+        paragraphs: [
+          "Podemos usar almacenamiento local para idioma y consentimiento. No usamos Flash LSO ni herramientas de session-replay (p. ej. FullStory) hoy.",
+          "Los correos transaccionales pueden incluir medición de apertura/clic para fiabilidad de entrega.",
         ],
       },
       {
         id: "duration",
-        title: "4. Duración",
+        title: "6. Duración",
         paragraphs: [
-          "Las de sesión caducan al cerrar el navegador. Las persistentes tienen duración limitada (p. ej. idioma hasta 1 año; sidebar hasta 7 días).",
+          "Las cookies de sesión expiran al cerrar el navegador. Las de preferencia suelen durar hasta 12 meses salvo renovación. Los identificadores de analytics siguen la retención del proveedor cuando están activos.",
         ],
       },
       {
-        id: "third",
-        title: "5. Terceros",
+        id: "changes",
+        title: "7. Cambios",
         paragraphs: [
-          "Stripe puede depositar cookies en páginas de pago: https://stripe.com/cookies",
-          "Proveedores de auth/hosting pueden usar cookies técnicas de seguridad.",
+          "Podemos actualizar esta Política. Consulte la fecha de actualización. Los cambios materiales pueden destacarse en el banner o en la Política de privacidad.",
         ],
       },
       {
         id: "contact",
-        title: "6. Contacto",
-        paragraphs: [`${E.privacyEmail}`],
+        title: "8. Contacto",
+        paragraphs: [`Preguntas: ${E.privacyEmail}. Más sobre usos de datos: Política de privacidad.`],
+      },
+      {
+        id: "attribution",
+        title: "9. Atribución de la plantilla",
+        paragraphs: [ATTRIBUTION],
       },
     ],
   },
@@ -377,54 +464,117 @@ export const legalEs: LegalBundle = {
   refund: {
     title: "Política de reembolsos y cancelación",
     metaDescription:
-      "Cancelación de suscripción y reembolsos VetoCrm vía Stripe y App Store — pruebas, renovaciones y bajadas de plan.",
+      "Cancelación y reembolsos de suscripciones VetoCrm vía Stripe y tiendas — pruebas, renovaciones y bajadas de plan.",
     lastUpdated: UPDATED,
-    intro: `Esta Política complementa las Condiciones y detalla la cancelación y los reembolsos de suscripciones ${E.brand}, incluidos Stripe y tiendas de apps.`,
+    intro: `Esta Política complementa los Términos de uso y explica la cancelación y los reembolsos de las suscripciones ${E.brand}, incluidos Stripe y las tiendas de apps.`,
     sections: [
       {
         id: "cancel",
         title: "1. Cancelación",
         paragraphs: [
-          "Puede cancelar en cualquier momento desde facturación/ajustes o escribiendo a support@vetocrm.com.",
-          "Salvo indicación contraria, la baja surte efecto al final del periodo ya pagado.",
-          "Después puede aplicar un plan gratuito o funciones reducidas según cuotas.",
+          `Puede cancelar una suscripción de pago en cualquier momento desde facturación/ajustes o contactando ${E.supportEmail}.`,
+          "Salvo indicación contraria, la cancelación surte efecto al final del periodo pagado en curso; conserva el acceso de pago hasta entonces.",
+          "Después puede aplicarse un plan gratuito o funciones reducidas según cuotas.",
         ],
       },
       {
         id: "refunds",
         title: "2. Reembolsos (Stripe / web)",
         paragraphs: [
-          "Por regla general, los periodos ya iniciados no se reembolsan a prorrata.",
-          "Como gesto comercial, puede otorgarse reembolso total en los 14 días siguientes al primer pago de un plan anual si el uso del servicio no ha sido sustancial (caso por caso).",
-          "Solicitudes: support@vetocrm.com con el correo de la cuenta y prueba de pago. Los reembolsos Stripe aparecen según los plazos de su banco.",
+          "Por regla general, los periodos de facturación iniciados no son reembolsables a prorrata.",
+          "Como gesto comercial, puede concederse un reembolso íntegro en los 14 días siguientes al primer pago de un plan anual si la cuenta no ha usado de forma sustancial el Servicio (caso por caso).",
+          `Solicitudes: ${E.contactEmail} con el correo de la cuenta y prueba de pago. Los reembolsos de Stripe aparecen según los plazos bancarios (a menudo 5–10 días hábiles).`,
         ],
       },
       {
         id: "stores",
-        title: "3. Compras App Store / Google Play",
+        title: "3. App Store / Google Play",
         paragraphs: [
-          "Si la suscripción se hizo vía Apple o Google, la cancelación y el reembolso los gestiona principalmente la tienda.",
-          "VetoCrm no siempre puede reembolsar una compra in-app; podemos orientarle al procedimiento Apple/Google.",
+          "Si se suscribió vía Apple o Google, la cancelación y los reembolsos los gestiona principalmente la tienda. VetoCrm no siempre puede reembolsar una compra in-app directamente.",
         ],
       },
       {
         id: "trials",
         title: "4. Pruebas y planes gratuitos",
         paragraphs: [
-          "Las pruebas gratuitas, si existen, se convierten en pago salvo cancelación antes del fin. Los planes gratuitos no dan derecho a reembolso.",
+          "Las pruebas gratuitas, si se ofrecen, se convierten en suscripción de pago salvo cancelación antes del fin de la prueba. Los planes gratuitos no son reembolsables.",
         ],
       },
       {
         id: "chargebacks",
-        title: "5. Controversias de pago",
+        title: "5. Disputas de pago",
         paragraphs: [
-          "Antes de un chargeback bancario, contacte a soporte. Los abusos pueden conllevar suspensión de la cuenta.",
+          "Antes de un chargeback bancario, contacte a soporte para una resolución amistosa. Las disputas abusivas pueden conllevar suspensión de cuenta.",
         ],
       },
       {
         id: "contact",
-        title: "6. Contacto facturación",
+        title: "6. Contacto de facturación",
         paragraphs: [`${E.supportEmail} — ${E.website}`],
+      },
+    ],
+  },
+
+  disclosure: {
+    title: "Divulgación",
+    metaDescription:
+      "Divulgaciones de VetoCrm — aviso profesional, transparencia publicitaria, alianzas y afiliados.",
+    lastUpdated: UPDATED,
+    intro: `Esta Divulgación explica limitaciones importantes y prácticas de transparencia de ${E.brand}. Complementa los Términos de uso, la Política de privacidad y el Aviso legal.`,
+    sections: [
+      {
+        id: "professional",
+        title: "1. Aviso profesional / médico",
+        paragraphs: [
+          `${E.brand} es software para organizar la práctica veterinaria (CRM, agenda, historiales, stock, etc.). No es un dispositivo médico, no ofrece consejo veterinario y no diagnostica, trata ni prescribe.`,
+          "Los veterinarios y el personal de clínica son los únicos responsables de las decisiones clínicas, recetas, bienestar animal y obligaciones regulatorias.",
+          "El contenido del sitio de marketing y del blog (« Monde Veto ») es informativo y educativo. No sustituye una consulta profesional.",
+        ],
+      },
+      {
+        id: "results",
+        title: "2. Resultados y testimonios",
+        paragraphs: [
+          "Ejemplos, capturas, casos o testimonios describen experiencias individuales. Los resultados varían según la clínica y el uso. El rendimiento pasado no garantiza resultados futuros.",
+        ],
+      },
+      {
+        id: "advertising",
+        title: "3. Publicidad y marketing",
+        paragraphs: [
+          "Podemos promocionar VetoCrm mediante el sitio, correo, redes, Product Hunt, búsqueda o anuncios de pago (p. ej. Meta). Los anuncios se etiquetan cuando las plataformas lo exigen.",
+          "Si un contenido incluye una asociación de pago, un enlace de afiliado o un emplazamiento patrocinado, divulgaremos claramente esa conexión material (p. ej. « Patrocinado », « Socio », « Afiliado »).",
+        ],
+      },
+      {
+        id: "affiliates",
+        title: "4. Afiliados y referidos",
+        paragraphs: [
+          "Si ofrecemos programas de referidos o afiliados, los participantes pueden ganar una comisión o crédito cuando alguien se suscribe mediante su enlace. El precio final para el cliente no aumenta solo por ese enlace, salvo que indiquemos lo contrario.",
+        ],
+      },
+      {
+        id: "third-party",
+        title: "5. Herramientas y marcas de terceros",
+        paragraphs: [
+          "Las menciones de Stripe, Supabase, Vercel, Apple, Google u otras marcas son solo identificativas. No estamos afiliados ni respaldados por esas empresas salvo declaración expresa. Sus marcas les pertenecen.",
+        ],
+      },
+      {
+        id: "ai",
+        title: "6. IA y contenido automatizado",
+        paragraphs: [
+          "Podemos usar herramientas de software (incluida redacción asistida por IA) para textos de marketing o de interfaz. Los datos clínicos que introduce siguen tratándose según la Política de privacidad y las instrucciones de su clínica; no los vendemos para entrenar modelos de IA públicos.",
+        ],
+      },
+      {
+        id: "contact",
+        title: "7. Contacto",
+        paragraphs: [
+          `Preguntas sobre esta Divulgación: ${E.contactEmail}`,
+          `Privacidad: ${E.privacyEmail}`,
+          `Sitio: ${E.website}`,
+        ],
       },
     ],
   },

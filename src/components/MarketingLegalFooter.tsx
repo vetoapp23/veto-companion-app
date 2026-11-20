@@ -30,6 +30,9 @@ export function MarketingLegalFooter() {
         <Link to="/cookies" className="mk-link">
           {t("common:cookies")}
         </Link>
+        <Link to="/disclosure" className="mk-link">
+          {t("common:disclosure")}
+        </Link>
         <Link to="/legal" className="mk-link">
           {t("common:legal")}
         </Link>

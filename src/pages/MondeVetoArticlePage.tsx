@@ -96,9 +96,13 @@ export default function MondeVetoArticlePage() {
         ]}
       />
 
+      <a href="#mk-main" className="mk-skip-link">
+        {t("marketing:nav.skipToContent")}
+      </a>
+
       <MarketingNav variant="sticky" />
 
-      <main className="mk-article flex-1">
+      <main id="mk-main" className="mk-article flex-1" tabIndex={-1}>
         <article className="mk-article-inner">
           <div className="mk-blog-meta mk-article-meta">
             <span className="mk-blog-chip">{loc.category}</span>
@@ -119,6 +123,8 @@ export default function MondeVetoArticlePage() {
               width={1200}
               height={800}
               fetchPriority="high"
+              decoding="async"
+              sizes="(max-width: 44rem) 100vw, 44rem"
             />
           </figure>
 
@@ -144,6 +150,8 @@ export default function MondeVetoArticlePage() {
                       width={1200}
                       height={750}
                       loading="lazy"
+                      decoding="async"
+                      sizes="(max-width: 44rem) 100vw, 44rem"
                     />
                     {section.imageCaption && <figcaption>{section.imageCaption}</figcaption>}
                   </figure>
@@ -186,12 +194,20 @@ export default function MondeVetoArticlePage() {
           </aside>
 
           {related.length > 0 && (
-            <section className="mk-article-related">
+            <section className="mk-article-related mk-section-defer">
               <h2>{t("marketing:mondeVeto.related")}</h2>
               <div className="mk-article-related-grid">
                 {related.map((r) => (
                   <Link key={r.slug} to={`/monde-veto/${r.slug}`} className="mk-article-related-card">
-                    <img src={r.cover} alt={r.coverAlt[lang]} width={400} height={260} loading="lazy" />
+                    <img
+                      src={r.cover}
+                      alt={r.coverAlt[lang]}
+                      width={400}
+                      height={260}
+                      loading="lazy"
+                      decoding="async"
+                      sizes="(max-width: 720px) 100vw, 200px"
+                    />
                     <span>{r.locales[lang].title}</span>
                   </Link>
                 ))}

@@ -13,7 +13,8 @@
     "footerAria": "Pied de page",
     "contact": "Nous contacter",
     "mondeVeto": "Le Monde Veto",
-    "press": "Presse & annuaires"
+    "press": "Presse & annuaires",
+    "skipToContent": "Aller au contenu"
   },
   "landing": {
     "seoTitle": "VetoCrm — Logiciel de gestion clinique vétérinaire & CRM",
@@ -187,6 +188,7 @@
       "title": "Vidéos tutorielles",
       "lead": "Découvrez VetoCrm en vidéo : présentation du produit, inscription, puis création d’un client.",
       "watchOnYoutube": "Voir sur YouTube",
+      "playVideo": "Lire la vidéo : {{title}}",
       "items": {
         "presentation": {
           "title": "Présentation de VetoCrm",
@@ -233,7 +235,8 @@
     "guideCrm": "CRM vétérinaire",
     "guideExcel": "Quitter Excel",
     "guidePrice": "Tarifs & budget",
-    "guideRank": "Classement 2026"
+    "guideRank": "Classement 2026",
+    "guideBest2027": "Meilleurs PIMS 2027"
   },
   "landingUseCases": {
     "label": "Cas d’usage",

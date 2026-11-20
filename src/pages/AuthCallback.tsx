@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase, getCurrentUserProfile } from "@/lib/supabase";
 import { authKeys } from "@/hooks/useAuth";
 import { readPendingPlan } from "@/components/PendingCheckoutRedirect";
+import { SeoHead } from "@/components/SeoHead";
 
 /**
  * OAuth / magic-link landing: establish session, then route to
@@ -103,6 +104,12 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background">
+      <SeoHead
+        title="Connexion — VetoCrm"
+        description="Finalisation de la connexion VetoCrm."
+        path="/auth/callback"
+        noIndex
+      />
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">{message}</p>
       <Link to="/login" className="text-xs text-muted-foreground underline">

@@ -24,8 +24,12 @@ export default function PressPage() {
         path="/press"
       />
 
+      <a href="#mk-main" className="mk-skip-link">
+        {t("marketing:nav.skipToContent")}
+      </a>
+
       <header className="mk-nav" style={{ position: "sticky", top: 0, zIndex: 20, background: "var(--mk-fog)" }}>
-        <Link to="/" className="mk-brand">
+        <Link to="/" className="mk-brand" aria-label={t("marketing:nav.homeAria")}>
           <BrandLogo size={36} />
         </Link>
         <div className="mk-nav-links">
@@ -40,7 +44,7 @@ export default function PressPage() {
         </div>
       </header>
 
-      <main className="mk-blog flex-1">
+      <main id="mk-main" className="mk-blog flex-1" tabIndex={-1}>
         <div className="mk-blog-inner" style={{ maxWidth: "48rem" }}>
           <p className="mk-blog-eyebrow">{t("marketing:press.eyebrow")}</p>
           <h1>{t("marketing:press.title")}</h1>

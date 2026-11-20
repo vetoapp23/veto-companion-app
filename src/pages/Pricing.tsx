@@ -159,6 +159,9 @@ export default function Pricing() {
           ],
         }}
       />
+      <a href="#mk-main" className="mk-skip-link">
+        {t("nav.skipToContent")}
+      </a>
       <header
         className="mk-nav"
         style={{
@@ -191,6 +194,7 @@ export default function Pricing() {
         </nav>
       </header>
 
+      <main id="mk-main" tabIndex={-1}>
       {/* Hero */}
       <section className="py-12 md:py-16 text-center">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl space-y-4">
@@ -364,6 +368,7 @@ export default function Pricing() {
       <p className="text-center text-sm px-4 pb-2" style={{ color: "var(--mk-muted)" }}>
         {t("pricing.footerNote")}
       </p>
+      </main>
       <MarketingLegalFooter />
     </div>
   );

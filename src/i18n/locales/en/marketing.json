@@ -13,7 +13,8 @@
     "footerAria": "Footer",
     "contact": "Contact us",
     "mondeVeto": "The Veto World",
-    "press": "Press & directories"
+    "press": "Press & directories",
+    "skipToContent": "Skip to content"
   },
   "landing": {
     "seoTitle": "VetoCrm — Veterinary Practice Management Software & CRM",
@@ -183,6 +184,7 @@
       "title": "Tutorial videos",
       "lead": "See VetoCrm in action: product overview, sign-up, then how to create a client in your clinic.",
       "watchOnYoutube": "Watch on YouTube",
+      "playVideo": "Play video: {{title}}",
       "items": {
         "presentation": {
           "title": "VetoCrm overview",
@@ -229,7 +231,8 @@
     "guideCrm": "Veterinary CRM",
     "guideExcel": "Leave spreadsheets",
     "guidePrice": "Pricing & budget",
-    "guideRank": "2026 ranking"
+    "guideRank": "2026 ranking",
+    "guideBest2027": "Best PIMS 2027"
   },
   "landingUseCases": {
     "label": "Use cases",

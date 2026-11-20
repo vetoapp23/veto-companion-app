@@ -577,6 +577,48 @@
   background: var(--mk-fog);
   -webkit-font-smoothing: antialiased;
   color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mk-skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  background: var(--mk-ink);
+  color: #f4fbf9;
+  font-family: var(--mk-font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 0.2s ease;
+}
+
+.mk-skip-link:focus {
+  outline: none;
+}
+
+.mk-skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--mk-mint);
+  outline-offset: 3px;
+}
+
+#mk-main {
+  scroll-margin-top: 5.5rem;
+}
+
+#mk-main:focus {
+  outline: none;
+}
+
+#mk-main:focus-visible {
+  outline: 2px solid var(--mk-teal);
+  outline-offset: 4px;
 }
 
 /* Dark mode: keep marketing + shadcn tokens in sync (Cards/Buttons stay readable) */
@@ -617,9 +659,7 @@
   color-scheme: dark;
 }
 
-.marketing-shell * {
-  transition: none;
-}
+/* Intentional motion only — declare transitions on interactive selectors (.mk-btn, .mk-link, …) */
 
 .mk-display {
   font-family: var(--mk-font-display);
@@ -678,10 +718,53 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem 1.5rem;
+  padding: 1.25rem max(1.5rem, env(safe-area-inset-right)) 1.25rem max(1.5rem, env(safe-area-inset-left));
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+}
+
+/* Landing: nav overlays hero so skip-link can land in a single <main> after the header */
+.mk-landing {
+  position: relative;
+}
+
+.mk-landing > .mk-nav {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  color: #f4fbf9;
+  padding-top: max(1.25rem, env(safe-area-inset-top));
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
+}
+
+.mk-landing > .mk-nav .mk-brand {
+  color: #f4fbf9;
+}
+
+.mk-landing > .mk-nav .mk-link {
+  color: rgba(244, 251, 249, 0.82);
+}
+
+.mk-landing > .mk-nav .mk-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mk-landing > .mk-nav .mk-link-compact {
+  color: rgba(244, 251, 249, 0.9);
+}
+
+.mk-landing .mk-hero {
+  padding-top: 4.75rem;
 }
 
 /* Same dark landing header on content pages (Monde Veto, etc.) */
@@ -708,7 +791,8 @@
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 0.95rem 1.5rem;
+  padding: 0.95rem max(1.5rem, env(safe-area-inset-right)) 0.95rem max(1.5rem, env(safe-area-inset-left));
+  padding-top: max(0.95rem, env(safe-area-inset-top));
 }
 
 .mk-nav-sticky .mk-brand {
@@ -773,6 +857,15 @@
   background: color-mix(in srgb, var(--mk-teal) 12%, transparent);
 }
 
+.mk-link:focus {
+  outline: none;
+}
+
+.mk-link:focus-visible {
+  outline: 2px solid var(--mk-mint);
+  outline-offset: 2px;
+}
+
 .mk-hero .mk-link {
   color: rgba(244, 251, 249, 0.82);
 }
@@ -805,6 +898,21 @@
 
 .mk-btn:active {
   transform: translateY(0);
+}
+
+.mk-btn:focus {
+  outline: none;
+}
+
+.mk-btn:focus-visible {
+  outline: 2px solid var(--mk-mint);
+  outline-offset: 3px;
+}
+
+.mk-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
 }
 
 .mk-btn-primary {
@@ -882,6 +990,7 @@
   line-height: 0.95;
   font-size: clamp(2.75rem, 9vw, 5.75rem) !important;
   margin: 0 0 0.35rem;
+  text-wrap: balance;
   animation: mk-fade-up 0.8s ease both;
 }
 
@@ -961,9 +1070,9 @@
     padding-right: 1rem;
   }
 
-  .mk-cta-band > div {
-    flex-direction: column !important;
-    align-items: stretch !important;
+  .mk-cta-band-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .mk-cta-band .mk-btn {
@@ -1028,6 +1137,98 @@
   line-height: 1.15;
   margin: 0 0 0.75rem;
   color: var(--mk-ink);
+  text-wrap: balance;
+  scroll-margin-top: 5rem;
+}
+
+.mk-section-tight {
+  padding-top: 0;
+}
+
+.mk-section-defer,
+.mk-card-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
+.mk-card-defer {
+  contain-intrinsic-size: auto 420px;
+}
+
+.mk-hero-brand-accent {
+  color: var(--mk-mint);
+}
+
+.mk-hero-tagline {
+  font-size: clamp(1.35rem, 3.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0.5rem 0 0;
+  color: rgba(244, 251, 249, 0.95);
+  animation: mk-fade-up 0.8s ease 0.08s both;
+  text-wrap: balance;
+}
+
+.mk-faq {
+  max-width: 42rem;
+  margin: 1.5rem auto 0;
+  text-align: left;
+}
+
+.mk-faq-item {
+  border-bottom: 1px solid var(--mk-line);
+  padding: 0.15rem 0;
+}
+
+.mk-faq-summary {
+  font-family: var(--mk-font-display);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.05rem;
+  list-style: none;
+  padding: 1rem 0;
+  color: var(--mk-ink);
+  text-wrap: pretty;
+}
+
+.mk-faq-summary::-webkit-details-marker {
+  display: none;
+}
+
+.mk-faq-summary::after {
+  content: "+";
+  float: right;
+  font-weight: 500;
+  color: var(--mk-teal);
+  margin-left: 0.75rem;
+}
+
+.mk-faq-item[open] > .mk-faq-summary::after {
+  content: "–";
+}
+
+.mk-faq-summary:focus {
+  outline: none;
+}
+
+.mk-faq-summary:focus-visible {
+  outline: 2px solid var(--mk-teal);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.mk-faq-answer {
+  margin: 0 0 1rem;
+  color: var(--mk-muted);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.mk-cta-band-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
 }
 
 .mk-section-copy {
@@ -1510,13 +1711,62 @@ a.mk-contact-card:hover {
   background: color-mix(in srgb, var(--mk-ink) 8%, transparent);
 }
 
-.mk-video-embed iframe {
+.mk-video-embed iframe,
+.mk-video-facade {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
+}
+
+.mk-video-facade {
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: #0b1218;
+  color: #f4fbf9;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mk-video-facade img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mk-video-facade-play {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mk-teal) 88%, #000);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.mk-video-facade:hover .mk-video-facade-play,
+.mk-video-facade:focus-visible .mk-video-facade-play {
+  transform: translate(-50%, -50%) scale(1.06);
+  background: var(--mk-teal);
+}
+
+.mk-video-facade:focus {
+  outline: none;
+}
+
+.mk-video-facade:focus-visible {
+  outline: 2px solid var(--mk-mint);
+  outline-offset: -2px;
 }
 
 .mk-video-body {
@@ -1824,6 +2074,16 @@ a.mk-contact-card:hover {
   font-weight: 600;
   color: var(--mk-ink);
   list-style: none;
+}
+
+.mk-article-faq-item summary:focus {
+  outline: none;
+}
+
+.mk-article-faq-item summary:focus-visible {
+  outline: 2px solid var(--mk-teal);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .mk-article-faq-item summary::-webkit-details-marker {
@@ -2369,12 +2629,31 @@ a.mk-contact-card:hover {
   .mk-hero-mesh,
   .mk-scroll-hint,
   .mk-hero-title,
+  .mk-hero-tagline,
   .mk-hero-sub,
   .mk-hero-ctas,
   .mk-login-card,
   .mk-demo,
-  .mk-login-visual-content {
+  .mk-login-visual-content,
+  .mk-video-facade-play {
     animation: none !important;
+  }
+
+  .mk-btn,
+  .mk-blog-card,
+  .mk-blog-card-media img,
+  .mk-video-facade-play,
+  .mk-skip-link {
+    transition: none !important;
+  }
+
+  .mk-btn:hover,
+  .mk-blog-card:hover {
+    transform: none;
+  }
+
+  .mk-blog-card:hover .mk-blog-card-media img {
+    transform: none;
   }
 }
 

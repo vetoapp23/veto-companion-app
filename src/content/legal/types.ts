@@ -1,4 +1,4 @@
-export type LegalDocId = "privacy" | "terms" | "legal" | "cookies" | "refund";
+export type LegalDocId = "privacy" | "terms" | "legal" | "cookies" | "refund" | "disclosure";
 
 export type LegalSection = {
   id: string;
